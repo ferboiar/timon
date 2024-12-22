@@ -1,7 +1,7 @@
 {
     "image": "mcr.microsoft.com/vscode/devcontainers/universal:linux",
     "features": {
-        "ghcr.io/devcontainers/features/node:18": {} // Usar una versión más reciente de Node.js
+        "ghcr.io/devcontainers/features/node:20": {}
     },
     "postCreateCommand": "npm install",
     "forwardPorts": [3000]
