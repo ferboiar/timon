@@ -1,17 +1,19 @@
 {
-    "image": "mcr.microsoft.com/devcontainers/node:18",  // Switch to Node.js 18 image
-    "features": {
-      // Puedes quitar esto si no lo necesitas, ya que la imagen base ya incluye node
-      // "ghcr.io/devcontainers/features/node:latest": {}
-      "ghcr.io/devcontainers/features/mysql-client:latest": {}  // Add MySQL client
-    },
-    "postCreateCommand": "npm install",  // Keep for installing Node.js dependencies
-    "forwardPorts": [3000],  // Optional: Keep for forwarding port 3000
-    "customizations": {
+  "build": {
+      "dockerfile": "Dockerfile" // Indica que se use el Dockerfile
+  },
+  "settings": {
+      "terminal.integrated.defaultProfile.linux": "bash" // Opcional: Configura la terminal a bash
+  },
+  "postCreateCommand": "npm install", // Ejecuta npm install después de crear el contenedor
+  "forwardPorts": [3000], // Opcional: Reenvía el puerto 3000
+  "remoteUser": "node",
+      "customizations": {
       "vscode": {
-        "extensions": [
-          "ms-azuretools.vscode-docker"  // Optional: Keep for Docker extension
-        ]
+          "extensions": [
+              "ms-azuretools.vscode-docker", // Extension Docker (opcional)
+              "ms-vscode.remote-explorer" // Extension Remote Explorer (opcional)
+          ]
       }
-    }
   }
+}
