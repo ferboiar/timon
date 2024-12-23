@@ -1,8 +1,17 @@
 {
-    "image": "mcr.microsoft.com/vscode/devcontainers/universal:linux",
+    "image": "mcr.microsoft.com/devcontainers/node:18",  // Switch to Node.js 18 image
     "features": {
-        "ghcr.io/devcontainers/features/node:20": {}
+      // Puedes quitar esto si no lo necesitas, ya que la imagen base ya incluye node
+      // "ghcr.io/devcontainers/features/node:latest": {}
+      "ghcr.io/devcontainers/features/mysql-client:latest": {}  // Add MySQL client
     },
-    "postCreateCommand": "npm install",
-    "forwardPorts": [3000]
-}
+    "postCreateCommand": "npm install",  // Keep for installing Node.js dependencies
+    "forwardPorts": [3000],  // Optional: Keep for forwarding port 3000
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "ms-azuretools.vscode-docker"  // Optional: Keep for Docker extension
+        ]
+      }
+    }
+  }

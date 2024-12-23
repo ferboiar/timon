@@ -19,7 +19,7 @@
   "author": "Fer",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.20.0" // Usando ^ para obtener la última versión 4.x con correcciones de seguridad
+    "express": "^4.20.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
