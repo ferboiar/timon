@@ -1,17 +1,4 @@
-//import express from 'express';
-
-//const app = express();
-//const port = 3000;
-
-//app.get('/', (req, res) => {
-//  res.send('¡Hola Mundo desde Timón!');
-//});
-
-//app.listen(port, () => {
-//  console.log(`Timón escuchando en el puerto ${port}`);
-//});
-
-const { getRecibos } = require('./db/db_utils');
+import { getRecibos } from './db/db_utils.js';
 
 async function main() {
     try {
