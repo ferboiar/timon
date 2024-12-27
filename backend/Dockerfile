@@ -13,8 +13,7 @@ RUN npm install
 #comento pq docker-compose.yml ya monta el código fuente en /app
 #COPY . .
 
-# redunda lo que ya viene en el docker-compose.yml
-#CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev"]
 
 # Opcional: Instala otras dependencias del sistema si las necesitas. Por ejemplo, para Python:
 # RUN apt-get -y install python3 python3-pip
