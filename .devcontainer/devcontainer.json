@@ -1,19 +1,27 @@
 {
-  "build": {
-      "dockerfile": "Dockerfile" // Indica que se use el Dockerfile
-  },
-  "settings": {
-      "terminal.integrated.defaultProfile.linux": "bash" // Opcional: Configura la terminal a bash
-  },
-  "postCreateCommand": "npm install", // Ejecuta npm install después de crear el contenedor
-  "forwardPorts": [3000], // Opcional: Reenvía el puerto 3000
-  "remoteUser": "node",
-      "customizations": {
-      "vscode": {
-          "extensions": [
-              "ms-azuretools.vscode-docker", // Extension Docker (opcional)
-              "ms-vscode.remote-explorer" // Extension Remote Explorer (opcional)
-          ]
-      }
-  }
+    "name": "Timon",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "backend",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash"
+            },
+            "extensions": [
+                "esbenp.prettier-vscode",
+                "dbaeumer.vscode-eslint",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode.remote-explorer"
+            ]
+        }
+    },
+    "portsAttributes": {
+        "3000": {
+            "label": "Backend"
+        },
+        "5173": {
+            "label": "Frontend"
+        }
+    }
 }
