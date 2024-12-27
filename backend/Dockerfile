@@ -7,7 +7,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 
 WORKDIR /app
 
-COPY package*.json ./ && ls -l
+COPY package*.json ./
+RUN ls -l
 RUN npm install --verbose
 
 #comento pq docker-compose.yml ya monta el código fuente en /app
