@@ -9,6 +9,7 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN ls -l
+RUN echo "--- INICIANDO npm install ---"
 RUN npm install --verbose
 
 #comento pq docker-compose.yml ya monta el código fuente en /app
