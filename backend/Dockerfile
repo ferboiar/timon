@@ -10,6 +10,7 @@ RUN echo "--- REVISANDO contenido de /backend ---"
 RUN ls -l
 
 COPY package*.json ./
+RUN pwd
 RUN ls -l
 RUN echo "--- INICIANDO npm install ---"
 RUN npm install --verbose
