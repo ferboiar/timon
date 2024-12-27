@@ -8,4 +8,5 @@ RUN npm install
 #comento pq docker-compose.yml ya monta el código fuente en /app
 #COPY . .
 
-CMD ["npm", "run", "dev"]
+# redunda lo que ya viene en el docker-compose.yml
+#CMD ["npm", "run", "dev"]
