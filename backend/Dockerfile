@@ -14,8 +14,11 @@ RUN ls -l
 RUN echo "--- INICIANDO npm install ---"
 RUN npm install --verbose
 
-#comento pq docker-compose.yml ya monta el código fuente en /app
-#COPY . .
+RUN echo "--- COPIANDO repositorio ---"
+COPY . .
+
+RUN echo "--- REVISANDO contenido de /app II ---"
+RUN ls -l
 
 CMD ["npm", "run", "dev"]
 
