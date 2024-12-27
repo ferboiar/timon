@@ -9,6 +9,11 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "scripts": {
+    "start": "echo '--- INICIANDO APLICACIÓN (PRODUCCIÓN) ---'; node src/index.js",
+    "dev": "echo '--- INICIANDO APLICACIÓN (DESARROLLO) ---'; nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "keywords": [
     "contabilidad",
     "finanzas",
