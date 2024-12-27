@@ -2,7 +2,7 @@
     "name": "Timon",
     "dockerComposeFile": "docker-compose.yml",
     "service": "backend",
-    "workspaceFolder": "/workspace",
+    "workspaceFolder": "/app",
     "customizations": {
         "vscode": {
             "settings": {
