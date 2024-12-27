@@ -6,6 +6,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+RUN echo "--- REVISANDO contenido de /app ---"
+RUN ls -l
 
 COPY package*.json ./
 RUN ls -l
