@@ -5,17 +5,17 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-RUN echo "--- REVISANDO contenido de /app ---"
+WORKDIR /backend
+RUN echo "--- REVISANDO contenido de /backend ---"
 RUN ls -l
 
-#COPY package*.json ./
-#RUN ls -l
+COPY package*.json ./
+RUN ls -l
 RUN echo "--- INICIANDO npm install ---"
 RUN npm install --verbose
 
-#RUN echo "--- COPIANDO repositorio ---"
-#COPY . .
+RUN echo "--- COPIANDO repositorio ---"
+COPY . .
 
 RUN echo "--- REVISANDO contenido de /app II ---"
 RUN ls -l
