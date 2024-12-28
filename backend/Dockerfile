@@ -5,7 +5,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /backend
+WORKDIR /timon/backend
 
 COPY package*.json ./
 
