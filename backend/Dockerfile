@@ -8,7 +8,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 WORKDIR /backend
 
 COPY package*.json ./
-RUN ls -la -R
 
 RUN npm install
 
