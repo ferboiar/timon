@@ -6,20 +6,13 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /backend
-RUN echo "--- REVISANDO contenido de /backend ---"
-RUN ls -l
 
 COPY package*.json ./
-RUN pwd
 RUN ls -la -R
-RUN echo "--- INICIANDO npm install ---"
-RUN npm install --verbose
 
-RUN echo "--- COPIANDO repositorio ---"
+RUN npm install
+
 COPY . .
-
-RUN echo "--- REVISANDO contenido de /app II ---"
-RUN ls -la -R
 
 CMD ["npm", "run", "dev"]
 
