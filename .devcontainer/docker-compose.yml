@@ -6,7 +6,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ../backend:/backend
+#      - ../backend:/backend
       - ../:/timon
 #  frontend:
 #    build:
