@@ -5,16 +5,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /timon/backend
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-CMD ["npm", "run", "dev", "2>&1"]
-
 # Opcional: Instala otras dependencias del sistema si las necesitas. Por ejemplo, para Python:
 # RUN apt-get -y install python3 python3-pip
 

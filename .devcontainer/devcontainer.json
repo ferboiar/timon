@@ -1,8 +1,8 @@
 {
     "name": "Timon",
-    "dockerComposeFile": "docker-compose.yml",
-    "service": "backend",
-    "workspaceFolder": "/timon",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
     "customizations": {
         "vscode": {
             "settings": {
@@ -16,6 +16,8 @@
             ]
         }
     },
+    "postCreateCommand": "npm install",
+    "remoteUser": "node",
     "forwardPorts": [3000, 5173],
     "portsAttributes": {
         "3000": {
