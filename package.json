@@ -3,8 +3,8 @@
     "version": "0.1.0",
     "description": "Aplicación de contabilidad doméstica",
     "scripts": {
-        "start:backend": "node backend/src/index.js",
-        "dev:backend": "nodemon backend/src/index.js",
+        "start:backend": "node backend/src/server.mjs",
+        "dev:backend": "nodemon backend/src/server.mjs",
         "test:backend": "echo \"Error: no test specified\" && exit 1",
         "dev:frontend": "vite",
         "build:frontend": "vite build",

@@ -1,51 +1,35 @@
-import fs from 'fs/promises';
-import mysql from 'mysql2/promise';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { getConnection } from './db_connection.mjs';
 
-async function getRecibos() {
+const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria'];
+
+async function getRecibos(filters) {
+    let connection;
     try {
-        // 1. Construir la ruta al archivo de contraseñas de forma segura
-        const __filename = fileURLToPath(import.meta.url);
-        const __dirname = path.dirname(__filename);
-        const passwordsPath = path.join(__dirname, '.db_password'); // Asegúrate de que db_password esté en el mismo directorio que db_utils.js
+        connection = await getConnection();
+        let query = 'SELECT * FROM recibos WHERE 1=1';
+        const params = [];
 
-        // 2. Leer la contraseña del archivo de forma asíncrona y segura
-        let password;
-        try {
-            const passwordBuffer = await fs.readFile(passwordsPath);
-            password = passwordBuffer.toString().trim();
-        } catch (readError) {
-            if (readError.code === 'ENOENT') {
-                console.error('Error: Archivo de contraseñas no encontrado en:', passwordsPath);
-            } else {
-                console.error('Error al leer el archivo de contraseñas:', readError);
+        for (const [key, value] of Object.entries(filters)) {
+            if (value) {
+                if (!validFilters.includes(key)) {
+                    throw new Error(`Filtro no válido: ${key}. Filtros válidos: ${validFilters.join(', ')}`);
+                }
+                if (key === 'año') {
+                    query += ' AND YEAR(fecha) = ?';
+                } else {
+                    query += ` AND ${key} = ?`;
+                }
+                params.push(value);
             }
-            throw new Error('No se pudo leer la contraseña de la base de datos.'); // Lanza un error para detener la ejecución
         }
 
-        // 3. Crear la conexión a la base de datos
-        const connection = await mysql.createConnection({
-            host: 'mysql-fer-particular.b.aivencloud.com',
-            port: 10613,
-            user: 'avnadmin',
-            password, // Usar la contraseña leída del archivo
-            database: 'conta_hogar',
-            ssl: {
-                rejectUnauthorized: false
-            }
-        });
-
-        // 4. Ejecutar la consulta
-        const [rows] = await connection.execute('SELECT * FROM recibos');
-
-        // 5. Cerrar la conexión
-        await connection.close();
-
+        const [rows] = await connection.execute(query, params);
         return rows;
     } catch (error) {
         console.error('Error al obtener los recibos:', error);
-        throw error; // Re-lanza el error para que se maneje en un nivel superior
+        throw error;
+    } finally {
+        if (connection) connection.release();
     }
 }
 
