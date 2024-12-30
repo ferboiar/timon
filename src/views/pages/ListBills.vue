@@ -210,7 +210,7 @@ function getStatusLabel(status) {
                                 </InputIcon>
                                 <InputText v-model="filters['global'].value" placeholder="Buscar..." />
                             </IconField>
-                            <Button icon="pi pi-plus" class="p-button-text" @click="toggle" />
+                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="toggle" />
                             <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                         </div>
                     </div>
