@@ -27,7 +27,7 @@ const statuses = ref([
 ]);
 
 function formatCurrency(value) {
-    if (value) return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    if (value) return value.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
     return;
 }
 
