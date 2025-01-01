@@ -1,11 +1,24 @@
 <script setup>
-import { ProductService } from '@/service/ProductService';
+import { BillService } from '@/service/BillService';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 
+const bills = ref([]);
+/*
 onMounted(() => {
     ProductService.getProducts().then((data) => (products.value = data));
+});
+*/
+
+onMounted(async () => {
+    try {
+        const response = await BillService.getBillsByPeriodicity('anual');
+        console.log('onMounted. BillService. Recibos anuales:', response);
+        bills.value = response;
+    } catch (error) {
+        console.error('onMounted. BillService. Error al cargar los recibos anuales:', error);
+    }
 });
 
 const items = ref([
@@ -55,11 +68,6 @@ const statuses = ref([
     { label: 'LOWSTOCK', value: 'lowstock' },
     { label: 'PENDIENTE', value: 'outofstock' }
 ]);
-
-function formatCurrency(value) {
-    if (value) return value.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
-    return;
-}
 
 function openNew() {
     product.value = {};
@@ -217,27 +225,27 @@ function getStatusLabel(status) {
                     <DataTable
                         ref="dt"
                         v-model:selection="selectedProducts"
-                        :value="products"
+                        :value="bills"
                         dataKey="id"
                         :paginator="true"
                         :rows="10"
                         :filters="filters"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 25]"
-                        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                     >
                         <!--
                         <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
 -->
-                        <Column field="code" header="Concepto" sortable style="min-width: 10rem"></Column>
-                        <Column field="price" header="Importe" sortable style="min-width: 3rem">
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="slotProps">
-                                {{ formatCurrency(slotProps.data.price) }}
+                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.importe) }}
                             </template>
                         </Column>
-                        <Column field="name" header="Fecha" sortable style="min-width: 8rem"></Column>
-                        <Column field="category" header="Categoría" sortable style="min-width: 8rem"></Column>
-                        <Column field="inventoryStatus" header="Estado" sortable style="min-width: 7rem">
+                        <Column field="fecha" header="Fecha" sortable style="min-width: 8rem"></Column>
+                        <Column field="categoria" header="Categoría" sortable style="min-width: 8rem"></Column>
+                        <Column field="estado" header="Estado" sortable style="min-width: 7rem">
                             <template #body="slotProps">
                                 <Tag :value="slotProps.data.inventoryStatus" :severity="getStatusLabel(slotProps.data.inventoryStatus)" />
                             </template>

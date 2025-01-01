@@ -3,8 +3,8 @@
     "version": "0.1.0",
     "description": "Aplicación de contabilidad doméstica",
     "scripts": {
-        "start:backend": "node backend/src/server.mjs",
-        "dev:backend": "nodemon backend/src/server.mjs",
+        "start:backend": "NODE_ENV=production node backend/src/server.mjs",
+        "dev:backend": "NODE_ENV=development nodemon backend/src/server.mjs",
         "test:backend": "echo \"Error: no test specified\" && exit 1",
         "dev:frontend": "vite",
         "build:frontend": "vite build",
@@ -25,7 +25,9 @@
     "license": "MIT",
     "dependencies": {
         "@primevue/themes": "^4.2.4",
+        "axios": "^1.7.9",
         "chart.js": "3.3.2",
+        "cors": "^2.8.5",
         "express": "^4.20.0",
         "mysql2": "^3.12.0",
         "primeicons": "^7.0.0",

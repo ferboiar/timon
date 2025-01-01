@@ -3,6 +3,19 @@ import { getConnection } from './db_connection.mjs';
 const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria'];
 
 /**
+ * Formatea una fecha en formato ISO 8601 a dd/mm/yy
+ * @param {string} isoDate - Fecha en formato ISO 8601
+ * @returns {string} - Fecha formateada en dd/mm/yy
+ */
+function formatDate(isoDate) {
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+}
+
+/**
  * Obtiene los recibos de la base de datos según los filtros proporcionados.
  * Si no se proporcionan filtros, devuelve todos los recibos.
  * Si se proporciona un filtro no válido, lanza un error.
@@ -18,17 +31,15 @@ async function getRecibos(filters) {
         let query = 'SELECT * FROM recibos WHERE 1=1';
         const params = [];
 
-        console.log('Parámetros recibidos:', filters);
+        console.log('API. Parámetros recibidos:', filters);
 
         // Eliminar el parámetro vscodeBrowserReqId si está presente
         delete filters.vscodeBrowserReqId;
 
-        console.log('Parámetros procesados:', filters);
-
         // Validar filtros antes de construir la consulta
         for (const key of Object.keys(filters)) {
             if (!validFilters.includes(key) && key !== 'fecha') {
-                throw new Error(`Filtro no válido: ${key}. Filtros válidos: ${validFilters.join(', ')}`);
+                throw new Error(`API. Filtro no válido: ${key}. Filtros válidos: ${validFilters.join(', ')}`);
             }
         }
 
@@ -49,13 +60,20 @@ async function getRecibos(filters) {
             }
         }
 
-        console.log('Consulta construida:', query);
-        console.log('Parámetros de la consulta:', params);
+        console.log('API. Consulta construida:', query);
+        console.log('API. Parámetros de la consulta:', params);
 
         const [rows] = await connection.execute(query, params);
-        return rows;
+
+        // Formatear las fechas en los resultados
+        return rows.map((row) => {
+            if (row.fecha) {
+                row.fecha = formatDate(row.fecha);
+            }
+            return row;
+        });
     } catch (error) {
-        console.error('Error al obtener los recibos:', error);
+        console.error('API. Error al obtener los recibos:', error);
         throw error;
     } finally {
         if (connection) connection.release();
