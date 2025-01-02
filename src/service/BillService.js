@@ -4,14 +4,6 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:3000/api/recibos';
 
-/**
- * Formatea un valor monetario según la localización y la moneda especificada.
- * @param {number} value - El valor a formatear.
- * @param {string} locale - La localización (por defecto 'es-ES').
- * @param {string} currency - La moneda (por defecto 'EUR').
- * @returns {string} - El valor formateado.
- */
-
 export class BillService {
     // Obtener todos los recibos
     static async getBills() {

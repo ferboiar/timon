@@ -4,7 +4,35 @@ import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 
-const bills = ref([]);
+const bills = ref([]); // recibos
+const bill = ref({}); // UN recibo
+const comment = ref(null);
+const billDialog = ref(false);
+
+const estados = ref([
+    { label: 'Cargado', value: 'cargado' },
+    { label: 'Pendiente', value: 'nocargado' }
+]);
+
+const categorias = ref([
+    { label: 'Ahorros', value: 'ahorros' },
+    { label: 'Comida', value: 'comida' },
+    { label: 'Educación', value: 'educacion' },
+    { label: 'Entretenimiento', value: 'entretenimiento' },
+    { label: 'Seguros', value: 'seguros' },
+    { label: 'Servicios', value: 'servicios' },
+    { label: 'Transporte', value: 'transporte' },
+    { label: 'Vivienda', value: 'vivienda' },
+    { label: 'Otros gastos', value: 'otros' }
+]);
+
+const periodicidad = ref([
+    { label: 'Anual', value: 'anual' },
+    { label: 'Trimestral', value: 'trimestral' },
+    { label: 'Bimestral', value: 'bimestral' },
+    { label: 'Mensual', value: 'mensual' }
+]);
+
 /*
 onMounted(() => {
     ProductService.getProducts().then((data) => (products.value = data));
@@ -50,72 +78,71 @@ function toggle() {
     menuRef.value.toggle(event);
 }
 
+function toggleComment(event) {
+    comment.value.toggle(event);
+}
+
 // crud.vue:
 const toast = useToast();
 const dt = ref();
 const products = ref();
-const productDialog = ref(false);
+
 const deleteProductDialog = ref(false);
 const deleteProductsDialog = ref(false);
-const product = ref({});
+
 const selectedProducts = ref();
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 const submitted = ref(false);
-const statuses = ref([
-    { label: 'CARGADO', value: 'instock' },
-    { label: 'LOWSTOCK', value: 'lowstock' },
-    { label: 'PENDIENTE', value: 'outofstock' }
-]);
 
 function openNew() {
-    product.value = {};
+    bill.value = {};
     submitted.value = false;
-    productDialog.value = true;
+    billDialog.value = true;
 }
 
 function hideDialog() {
-    productDialog.value = false;
+    billDialog.value = false;
     submitted.value = false;
 }
 
 function saveProduct() {
     submitted.value = true;
 
-    if (product?.value.name?.trim()) {
-        if (product.value.id) {
-            product.value.inventoryStatus = product.value.inventoryStatus.value ? product.value.inventoryStatus.value : product.value.inventoryStatus;
-            products.value[findIndexById(product.value.id)] = product.value;
-            toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
+    if (bill?.value.name?.trim()) {
+        if (bill.value.id) {
+            bill.value.inventoryStatus = bill.value.inventoryStatus.value ? bill.value.inventoryStatus.value : bill.value.inventoryStatus;
+            products.value[findIndexById(bill.value.id)] = bill.value;
+            toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo actualizado', life: 3000 });
         } else {
-            product.value.id = createId();
-            product.value.code = createId();
-            product.value.image = 'product-placeholder.svg';
-            product.value.inventoryStatus = product.value.inventoryStatus ? product.value.inventoryStatus.value : 'INSTOCK';
-            products.value.push(product.value);
+            bill.value.id = createId();
+            bill.value.code = createId();
+            bill.value.image = 'product-placeholder.svg';
+            bill.value.inventoryStatus = bill.value.inventoryStatus ? bill.value.inventoryStatus.value : 'INSTOCK';
+            products.value.push(bill.value);
             toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Created', life: 3000 });
         }
 
-        productDialog.value = false;
-        product.value = {};
+        billDialog.value = false;
+        bill.value = {};
     }
 }
 
-function editProduct(prod) {
-    product.value = { ...prod };
-    productDialog.value = true;
+function editBill(prod) {
+    bill.value = { ...prod };
+    billDialog.value = true;
 }
 
 function confirmDeleteProduct(prod) {
-    product.value = prod;
+    bill.value = prod;
     deleteProductDialog.value = true;
 }
 
 function deleteProduct() {
-    products.value = products.value.filter((val) => val.id !== product.value.id);
+    products.value = products.value.filter((val) => val.id !== bill.value.id);
     deleteProductDialog.value = false;
-    product.value = {};
+    bill.value = {};
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
 }
 
@@ -157,13 +184,10 @@ function deleteSelectedProducts() {
 
 function getStatusLabel(status) {
     switch (status) {
-        case 'INSTOCK':
+        case 'cargado':
             return 'success';
 
-        case 'LOWSTOCK':
-            return 'warn';
-
-        case 'OUTOFSTOCK':
+        case 'nocargado':
             return 'danger';
 
         default:
@@ -234,7 +258,7 @@ function getStatusLabel(status) {
                         :rowsPerPageOptions="[5, 10, 25]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                     >
-                        <!--
+                        <!-- Columna que añade un checkbox para seleccionar los recibos
                         <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
 -->
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
@@ -244,15 +268,27 @@ function getStatusLabel(status) {
                             </template>
                         </Column>
                         <Column field="fecha" header="Fecha" sortable style="min-width: 8rem"></Column>
-                        <Column field="categoria" header="Categoría" sortable style="min-width: 8rem"></Column>
-                        <Column field="estado" header="Estado" sortable style="min-width: 7rem">
+                        <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                             <template #body="slotProps">
-                                <Tag :value="slotProps.data.inventoryStatus" :severity="getStatusLabel(slotProps.data.inventoryStatus)" />
+                                <i
+                                    :class="slotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : slotProps.data.estado === 'nocargado' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
+                                    v-tooltip="slotProps.data.estado === 'cargado' ? 'Cargado' : slotProps.data.estado === 'nocargado' ? 'Pendiente' : ''"
+                                />
+                            </template>
+                        </Column>
+                        <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
+                            <template #body="slotProps">
+                                <template v-if="slotProps.data.comentario">
+                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="toggleComment($event)" v-tooltip="slotProps.data.comentario" />
+                                    <Popover ref="comment" id="overlay_panel" style="width: 450px">
+                                        <p>{{ slotProps.data.comentario }}</p>
+                                    </Popover>
+                                </template>
                             </template>
                         </Column>
                         <Column :exportable="false" style="min-width: 12rem">
                             <template #body="slotProps">
-                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editProduct(slotProps.data)" />
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(slotProps.data)" />
                                 <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteProduct(slotProps.data)" />
                             </template>
                         </Column>
@@ -296,52 +332,39 @@ function getStatusLabel(status) {
             </div>
         </div>
 
-        <Dialog v-model:visible="productDialog" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
+        <Dialog v-model:visible="billDialog" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
-                    <label for="name" class="block font-bold mb-3">Concepto</label>
-                    <InputText id="name" v-model.trim="product.name" required="true" autofocus :invalid="submitted && !product.name" fluid />
-                    <small v-if="submitted && !product.name" class="text-red-500">El concepto es obligatorio.</small>
+                    <label for="concepto" class="block font-bold mb-3">Concepto</label>
+                    <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
+                    <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                 </div>
                 <div>
-                    <label for="description" class="block font-bold mb-3">Comentario</label>
-                    <Textarea id="description" v-model="product.description" required="true" rows="3" cols="20" fluid />
+                    <label for="comentario" class="block font-bold mb-3">Comentario</label>
+                    <Textarea id="comentario" v-model="bill.comentario" required="true" rows="3" cols="20" fluid />
                 </div>
-                <div>
-                    <label for="inventoryStatus" class="block font-bold mb-3">Estado</label>
-                    <Select id="inventoryStatus" v-model="product.inventoryStatus" :options="statuses" optionLabel="label" placeholder="Selecciona el estado" fluid></Select>
-                </div>
-
-                <div>
-                    <span class="block font-bold mb-4">Categoría</span>
-                    <div class="grid grid-cols-12 gap-4">
-                        <div class="flex items-center gap-2 col-span-6">
-                            <RadioButton id="category1" v-model="product.category" name="category" value="Accessories" />
-                            <label for="category1">Accessories</label>
-                        </div>
-                        <div class="flex items-center gap-2 col-span-6">
-                            <RadioButton id="category2" v-model="product.category" name="category" value="Clothing" />
-                            <label for="category2">Clothing</label>
-                        </div>
-                        <div class="flex items-center gap-2 col-span-6">
-                            <RadioButton id="category3" v-model="product.category" name="category" value="Electronics" />
-                            <label for="category3">Electronics</label>
-                        </div>
-                        <div class="flex items-center gap-2 col-span-6">
-                            <RadioButton id="category4" v-model="product.category" name="category" value="Fitness" />
-                            <label for="category4">Fitness</label>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-6">
-                        <label for="price" class="block font-bold mb-3">Importe</label>
-                        <InputNumber id="price" v-model="product.price" mode="currency" currency="EUR" locale="es-ES" fluid />
+                        <label for="estado" class="block font-bold mb-3">Estado</label>
+                        <Select id="estado" v-model="bill.estado" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" fluid />
                     </div>
                     <div class="col-span-6">
-                        <label for="quantity" class="block font-bold mb-3">Fecha</label>
-                        <InputNumber id="quantity" v-model="product.quantity" integeronly fluid />
+                        <label for="categoria" class="block font-bold mb-3">Categoría</label>
+                        <Select id="categoria" v-model="bill.categoria" :options="categorias" optionValue="value" optionLabel="label" placeholder="Selecciona la categoría" fluid />
+                    </div>
+                </div>
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-3">
+                        <label for="importe" class="block font-bold mb-3">Importe</label>
+                        <InputNumber id="importe" v-model="bill.importe" mode="currency" currency="EUR" locale="es-ES" fluid />
+                    </div>
+                    <div class="col-span-5">
+                        <label for="fecha" class="block font-bold mb-3">Fecha {{ bill.fecha }}</label>
+                        <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon />
+                    </div>
+                    <div class="col-span-4">
+                        <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>
+                        <Select id="periodicidad" v-model="bill.periodicidad" :options="periodicidad" optionValue="value" optionLabel="label" placeholder="Selecciona" fluid />
                     </div>
                 </div>
             </div>
@@ -355,8 +378,8 @@ function getStatusLabel(status) {
         <Dialog v-model:visible="deleteProductDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
-                <span v-if="product"
-                    >¿Seguro que quieres borrar el recibo <b>{{ product.name }}</b
+                <span v-if="bill"
+                    >¿Seguro que quieres borrar el recibo <b>{{ bill.name }}</b
                     >?</span
                 >
             </div>
@@ -369,7 +392,7 @@ function getStatusLabel(status) {
         <Dialog v-model:visible="deleteProductsDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
-                <span v-if="product">¿Seguro que quieres borrar los recibos seleccionados?</span>
+                <span v-if="bill">¿Seguro que quieres borrar los recibos seleccionados?</span>
             </div>
             <template #footer>
                 <Button label="No" icon="pi pi-times" text @click="deleteProductsDialog = false" />

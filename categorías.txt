@@ -1,0 +1,50 @@
+1. **Vivienda**:
+   - Hipoteca
+   - Alquiler
+   - IBI vivienda
+   - Comunidad
+   - Garaje
+   - Canon ayuntamiento garaje
+   - IBIU garaje
+
+2. **Servicios**:
+   - Luz
+   - Agua
+   - Gas
+   - Internet
+
+3. **Seguros**:
+   - Seguro del coche
+   - Seguro del hogar
+   - Decesos
+
+4. **Transporte**:
+   - Gasolina
+   - Impuesto de circulación
+   - ITV
+   - Abono transporte
+   - Mantenimiento coche / revisiones
+
+5. **Entretenimiento**:
+   - Streaming (Netflix, Amazon Prime)
+   - Vacaciones
+   - Restaurantes
+   - Regalos (cumpleaños, navidad..)
+
+6. **Educación**:
+   - Comedor
+   - Extraescolares
+   - Matinera/vespraes
+   - AFA
+   - Excursiones colegio
+   - Material escolar
+   - Regalos profesores cole
+   
+7. ** Comida **
+   - Supermercado
+
+8. **Ahorros e Inversiones**:
+   - Ahorros
+
+9. **Otros Gastos**:
+   - Otros gastos no categorizados

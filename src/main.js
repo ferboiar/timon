@@ -10,6 +10,9 @@ import ToastService from 'primevue/toastservice';
 import '@/assets/styles.scss';
 import '@/assets/tailwind.css';
 
+// Importar la localización de primelocale
+import esLocale from 'primelocale/es.json';
+
 const app = createApp(App);
 
 app.use(router);
@@ -19,7 +22,8 @@ app.use(PrimeVue, {
         options: {
             darkModeSelector: '.app-dark'
         }
-    }
+    },
+    locale: esLocale // Pasar el objeto de localización directamente
 });
 app.use(ToastService);
 app.use(ConfirmationService);
