@@ -181,19 +181,6 @@ function deleteSelectedProducts() {
     selectedProducts.value = null;
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Products Deleted', life: 3000 });
 }
-
-function getStatusLabel(status) {
-    switch (status) {
-        case 'cargado':
-            return 'success';
-
-        case 'nocargado':
-            return 'danger';
-
-        default:
-            return null;
-    }
-}
 </script>
 
 <template>
@@ -267,7 +254,11 @@ function getStatusLabel(status) {
                                 {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.importe) }}
                             </template>
                         </Column>
-                        <Column field="fecha" header="Fecha" sortable style="min-width: 8rem"></Column>
+                        <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
+                            <template #body="slotProps">
+                                {{ $formatDate(slotProps.data.fecha) }}
+                            </template>
+                        </Column>
                         <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                             <template #body="slotProps">
                                 <i
@@ -359,8 +350,8 @@ function getStatusLabel(status) {
                         <InputNumber id="importe" v-model="bill.importe" mode="currency" currency="EUR" locale="es-ES" fluid />
                     </div>
                     <div class="col-span-5">
-                        <label for="fecha" class="block font-bold mb-3">Fecha {{ bill.fecha }}</label>
-                        <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon />
+                        <label for="fecha" class="block font-bold mb-3">Fecha</label>
+                        <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon showButtonBar />
                     </div>
                     <div class="col-span-4">
                         <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>

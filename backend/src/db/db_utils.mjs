@@ -65,13 +65,15 @@ async function getRecibos(filters) {
 
         const [rows] = await connection.execute(query, params);
 
+        return rows;
+        /*
         // Formatear las fechas en los resultados
         return rows.map((row) => {
             if (row.fecha) {
                 row.fecha = formatDate(row.fecha);
             }
             return row;
-        });
+        });*/
     } catch (error) {
         console.error('API. Error al obtener los recibos:', error);
         throw error;
