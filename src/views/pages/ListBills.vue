@@ -4,7 +4,7 @@ import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 
-const bills = ref([]); // recibos
+const annualBills = ref([]);
 const bill = ref({}); // UN recibo
 const comment = ref(null);
 const billDialog = ref(false);
@@ -33,17 +33,11 @@ const periodicidad = ref([
     { label: 'Mensual', value: 'mensual' }
 ]);
 
-/*
-onMounted(() => {
-    ProductService.getProducts().then((data) => (products.value = data));
-});
-*/
-
 onMounted(async () => {
     try {
         const response = await BillService.getBillsByPeriodicity('anual');
         console.log('onMounted. BillService. Recibos anuales:', response);
-        bills.value = response;
+        annualBills.value = response;
     } catch (error) {
         console.error('onMounted. BillService. Error al cargar los recibos anuales:', error);
     }
@@ -67,16 +61,24 @@ const items = ref([
         icon: 'pi pi-home'
     }
 ]);
+
+// >>>> Menú de la tarjeta
 const cardMenu = ref([
-    { label: 'Save', icon: 'pi pi-fw pi-check' },
+    { label: 'Add', icon: 'pi pi-fw pi-plus' },
     { label: 'Update', icon: 'pi pi-fw pi-refresh' },
-    { label: 'Delete', icon: 'pi pi-fw pi-trash' }
+    { label: 'Export', icon: 'pi pi-fw pi-upload' }
 ]);
+
 const menuRef = ref(null);
 
-function toggle() {
+function toggleCardMenu(event, periodicity) {
     menuRef.value.toggle(event);
+    const updateItem = cardMenu.value.find(item => item.label === 'Update');
+    if (updateItem) {
+        updateItem.command = () => updateBills(periodicity);
+    }
 }
+// <<<<
 
 function toggleComment(event) {
     comment.value.toggle(event);
@@ -84,13 +86,20 @@ function toggleComment(event) {
 
 // crud.vue:
 const toast = useToast();
-const dt = ref();
+const dt_anual = ref();
+const dt_trimestral = ref();
+const dt_bimestral = ref();
+const dt_mensual = ref();
 const products = ref();
 
 const deleteProductDialog = ref(false);
 const deleteProductsDialog = ref(false);
 
-const selectedProducts = ref();
+const selectedAnualBills = ref();
+const selectedQuarterlyBills = ref();
+const selectedBimonthlyBills = ref();
+const selectedMonthlyBills = ref();
+
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
@@ -167,8 +176,10 @@ function createId() {
     return id;
 }
 
+//modificar esta función más adelante para que me permita exportar los recibos de todas las
+//periodicidades en un único fichero CSV
 function exportCSV() {
-    dt.value.exportCSV();
+    dt_anual.value.exportCSV();
 }
 
 function confirmDeleteSelected() {
@@ -176,10 +187,31 @@ function confirmDeleteSelected() {
 }
 
 function deleteSelectedProducts() {
-    products.value = products.value.filter((val) => !selectedProducts.value.includes(val));
+    products.value = products.value.filter((val) => !selectedAnualBills.value.includes(val));
     deleteProductsDialog.value = false;
-    selectedProducts.value = null;
+    selectedAnualBills.value = null;
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Products Deleted', life: 3000 });
+}
+
+function updateBills(periodicity) {
+    BillService.getBillsByPeriodicity(periodicity)
+        .then((response) => {
+            if (periodicity === 'anual') {
+                annualBills.value = response;
+            } else if (periodicity === 'trimestral') {
+                // Actualizar los datos de la tabla trimestral
+                // dt_trimestral.value = response;
+            } else if (periodicity === 'bimestral') {
+                // Actualizar los datos de la tabla bimestral
+                // dt_bimestral.value = response;
+            } else if (periodicity === 'mensual') {
+                // Actualizar los datos de la tabla mensual
+                // dt_mensual.value = response;
+            }
+        })
+        .catch((error) => {
+            console.error(`Error al actualizar la lista de recibos ${periodicity}:`, error);
+        });
 }
 </script>
 
@@ -208,7 +240,7 @@ function deleteSelectedProducts() {
             <Toolbar class="mb-6">
                 <template #start>
                     <Button label="New" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNew" />
-                    <Button label="Delete" icon="pi pi-trash" severity="secondary" @click="confirmDeleteSelected" :disabled="!selectedProducts || !selectedProducts.length" />
+                    <Button label="Delete" icon="pi pi-trash" severity="secondary" @click="confirmDeleteSelected" :disabled="!selectedAnualBills || !selectedAnualBills.length" />
                 </template>
 
                 <template #end>
@@ -229,23 +261,23 @@ function deleteSelectedProducts() {
                                 </InputIcon>
                                 <InputText v-model="filters['global'].value" placeholder="Buscar..." />
                             </IconField>
-                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="toggle" />
+                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'anual')" />
                             <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                         </div>
                     </div>
                     <DataTable
-                        ref="dt"
-                        v-model:selection="selectedProducts"
-                        :value="bills"
+                        ref="dt_anual"
+                        v-model:selection="selectedAnualBills"
+                        :value="annualBills"
                         dataKey="id"
                         :paginator="true"
                         :rows="10"
                         :filters="filters"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        :rowsPerPageOptions="[5, 10, 25]"
+                        :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                     >
-                        <!-- Columna que añade un checkbox para seleccionar los recibos
+                        <!-- Columna que añade un checkbox para seleccionar los recibos 
                         <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
 -->
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
@@ -288,7 +320,7 @@ function deleteSelectedProducts() {
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
                         <div class="font-semibold text-xl mb-4">Trimestrales</div>
-                        <Button icon="pi pi-plus" class="p-button-text" @click="toggle" />
+                        <Button icon="pi pi-plus" class="p-button-text" @click="toggleCardMenu" />
                     </div>
                     <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                     <p class="leading-normal m-0">
@@ -301,7 +333,7 @@ function deleteSelectedProducts() {
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
                         <div class="font-semibold text-xl mb-4">Bimestrales</div>
-                        <Button icon="pi pi-plus" class="p-button-text" @click="toggle" />
+                        <Button icon="pi pi-plus" class="p-button-text" @click="toggleCardMenu" />
                     </div>
                     <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                     <p class="leading-normal m-0">
@@ -312,7 +344,7 @@ function deleteSelectedProducts() {
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
                         <div class="font-semibold text-xl mb-4">Mensuales</div>
-                        <Button icon="pi pi-plus" class="p-button-text" @click="toggle" />
+                        <Button icon="pi pi-plus" class="p-button-text" @click="toggleCardMenu" />
                     </div>
                     <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                     <p class="leading-normal m-0">

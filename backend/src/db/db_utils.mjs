@@ -3,19 +3,6 @@ import { getConnection } from './db_connection.mjs';
 const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria'];
 
 /**
- * Formatea una fecha en formato ISO 8601 a dd/mm/yy
- * @param {string} isoDate - Fecha en formato ISO 8601
- * @returns {string} - Fecha formateada en dd/mm/yy
- */
-function formatDate(isoDate) {
-    const date = new Date(isoDate);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = String(date.getFullYear()).slice(-2);
-    return `${day}/${month}/${year}`;
-}
-
-/**
  * Obtiene los recibos de la base de datos según los filtros proporcionados.
  * Si no se proporcionan filtros, devuelve todos los recibos.
  * Si se proporciona un filtro no válido, lanza un error.
@@ -66,14 +53,6 @@ async function getRecibos(filters) {
         const [rows] = await connection.execute(query, params);
 
         return rows;
-        /*
-        // Formatear las fechas en los resultados
-        return rows.map((row) => {
-            if (row.fecha) {
-                row.fecha = formatDate(row.fecha);
-            }
-            return row;
-        });*/
     } catch (error) {
         console.error('API. Error al obtener los recibos:', error);
         throw error;
@@ -83,32 +62,50 @@ async function getRecibos(filters) {
 }
 
 /**
- * Inserta un nuevo recibo en la base de datos.
+ * Inserta o actualiza un recibo en la base de datos.
  *
  * @param {string} fecha - La fecha del recibo.
  * @param {string} concepto - El concepto del recibo.
  * @param {string} periodicidad - La periodicidad del recibo.
  * @param {number} importe - El importe del recibo.
- * @param {string} [categoria=null] - La categoría del recibo (opcional).
+ * @param {string} [categoria="otros"] - La categoría del recibo (opcional).
+ * @param {string} [estado="nocargado"] - El estado del recibo (opcional).
+ * @param {string} [comentario=""] - El comentario del recibo (opcional).
  * @throws {Error} - Si falta algún parámetro obligatorio.
  */
-async function pushRecibo(fecha, concepto, periodicidad, importe, categoria = null) {
+async function pushRecibo(fecha, concepto, periodicidad, importe, categoria = 'otros', estado = 'nocargado', comentario = '') {
     // Verificar que todos los parámetros obligatorios estén presentes
     if (!fecha || !concepto || !periodicidad || !importe) {
-        throw new Error("Los parámetros 'fecha', 'concepto', 'periodicidad' e 'importe' son obligatorios.");
+        throw new Error("API. Los parámetros 'fecha', 'concepto', 'periodicidad' e 'importe' son obligatorios.");
     }
 
     let connection;
     try {
         connection = await getConnection();
-        const query = `
-            INSERT INTO recibos (fecha, concepto, categoria, periodicidad, importe)
-            VALUES (?, ?, ?, ?, ?)
-        `;
-        const params = [fecha, concepto, categoria, periodicidad, importe];
-        await connection.execute(query, params);
+
+        // Comprobar si el recibo ya existe
+        const [existingRecibo] = await connection.execute('SELECT * FROM recibos WHERE concepto = ?', [concepto]);
+
+        if (existingRecibo.length > 0) {
+            // Actualizar recibo existente
+            const updateQuery = `
+                UPDATE recibos
+                SET fecha = ?, periodicidad = ?, importe = ?, categoria = ?, estado = ?, comentario = ?
+                WHERE concepto = ?
+            `;
+            const updateParams = [fecha, periodicidad, importe, categoria, estado, comentario, concepto];
+            await connection.execute(updateQuery, updateParams);
+        } else {
+            // Insertar nuevo recibo
+            const insertQuery = `
+                INSERT INTO recibos (fecha, concepto, categoria, estado, periodicidad, importe, comentario)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `;
+            const insertParams = [fecha, concepto, categoria, estado, periodicidad, importe, comentario];
+            await connection.execute(insertQuery, insertParams);
+        }
     } catch (error) {
-        console.error('Error al insertar el recibo:', error);
+        console.error('API. Error al insertar o actualizar el recibo:', error);
         throw error;
     } finally {
         if (connection) connection.release();
