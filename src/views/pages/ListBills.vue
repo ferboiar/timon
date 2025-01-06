@@ -2,7 +2,7 @@
 import { BillService } from '@/service/BillService';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 const annualBills = ref([]);
 const bill = ref({}); // UN recibo
@@ -10,8 +10,8 @@ const comment = ref(null);
 const billDialog = ref(false);
 
 const estados = ref([
-    { label: 'Cargado', value: 'cargado' },
-    { label: 'Pendiente', value: 'nocargado' }
+    { label: 'C', value: 'cargado' }, // Cargado
+    { label: 'P', value: 'nocargado' } // Pendiente
 ]);
 
 const categorias = ref([
@@ -73,7 +73,7 @@ const menuRef = ref(null);
 
 function toggleCardMenu(event, periodicity) {
     menuRef.value.toggle(event);
-    const updateItem = cardMenu.value.find(item => item.label === 'Update');
+    const updateItem = cardMenu.value.find((item) => item.label === 'Update');
     if (updateItem) {
         updateItem.command = () => updateBills(periodicity);
     }
@@ -213,6 +213,37 @@ function updateBills(periodicity) {
             console.error(`Error al actualizar la lista de recibos ${periodicity}:`, error);
         });
 }
+
+const showFields = ref({
+    fechaCargo: false,
+    fechaCargo2: false,
+    fechaCargo3: false,
+    fechaCargo4: false,
+    fechaCargo5: false,
+    fechaCargo6: false,
+    estado: false,
+    estado2: false,
+    estado3: false,
+    estado4: false,
+    estado5: false,
+    estado6: false
+});
+
+watch(
+    () => bill.value.periodicidad,
+    (newVal) => {
+        if (newVal === 'anual') {
+            showFields.value = { fechaCargo: true, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false, estado: true, estado2: false, estado3: false, estado4: false, estado5: false, estado6: false };
+        } else if (newVal === 'bimestral') {
+            showFields.value = { fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: true, fechaCargo6: true, estado: true, estado2: true, estado3: true, estado4: true, estado5: true, estado6: true };
+        } else if (newVal === 'trimestral') {
+            showFields.value = { fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: false, fechaCargo6: false, estado: true, estado2: true, estado3: true, estado4: true, estado5: false, estado6: false };
+        } else if (newVal === 'mensual') {
+            showFields.value = { fechaCargo: false, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false, estado: false, estado2: false, estado3: false, estado4: false, estado5: false, estado6: false };
+        }
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
@@ -367,27 +398,67 @@ function updateBills(periodicity) {
                     <Textarea id="comentario" v-model="bill.comentario" required="true" rows="3" cols="20" fluid />
                 </div>
                 <div class="grid grid-cols-12 gap-4">
-                    <div class="col-span-6">
-                        <label for="estado" class="block font-bold mb-3">Estado</label>
-                        <Select id="estado" v-model="bill.estado" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" fluid />
-                    </div>
-                    <div class="col-span-6">
+                    <div class="col-span-5">
                         <label for="categoria" class="block font-bold mb-3">Categoría</label>
                         <Select id="categoria" v-model="bill.categoria" :options="categorias" optionValue="value" optionLabel="label" placeholder="Selecciona la categoría" fluid />
                     </div>
-                </div>
-                <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-3">
                         <label for="importe" class="block font-bold mb-3">Importe</label>
                         <InputNumber id="importe" v-model="bill.importe" mode="currency" currency="EUR" locale="es-ES" fluid />
                     </div>
-                    <div class="col-span-5">
-                        <label for="fecha" class="block font-bold mb-3">Fecha</label>
-                        <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon showButtonBar />
-                    </div>
                     <div class="col-span-4">
                         <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>
                         <Select id="periodicidad" v-model="bill.periodicidad" :options="periodicidad" optionValue="value" optionLabel="label" placeholder="Selecciona" fluid />
+                    </div>
+                </div>
+                <div class="grid grid-cols-12 gap-4">
+                    <div v-if="showFields.fechaCargo" class="col-span-4">
+                        <label for="fecha" class="block font-bold mb-3">Fecha cargo</label>
+                        <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
+                    </div>
+                    <div v-if="showFields.estado" class="col-span-2">
+                        <label for="estado" class="block font-bold mb-3">Estado</label>
+                        <Select id="estado" v-model="bill.estado" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" v-tooltip="bill.estado" fluid />
+                    </div>
+                    <div v-if="showFields.fechaCargo2" class="col-span-4">
+                        <label for="fecha2" class="block font-bold mb-3">Fecha 2º cargo</label>
+                        <Calendar id="fecha2" v-model="bill.fecha2" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
+                    </div>
+                    <div v-if="showFields.estado2" class="col-span-2">
+                        <label for="estado2" class="block font-bold mb-3">Estado</label>
+                        <Select id="estado2" v-model="bill.estado2" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" fluid />
+                    </div>
+                    <div v-if="showFields.fechaCargo3" class="col-span-4">
+                        <label for="fecha3" class="block font-bold mb-3">Fecha 3º cargo</label>
+                        <Calendar id="fecha3" v-model="bill.fecha3" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
+                    </div>
+                    <div v-if="showFields.estado3" class="col-span-2">
+                        <label for="estado3" class="block font-bold mb-3">Estado</label>
+                        <Select id="estado3" v-model="bill.estado3" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" fluid />
+                    </div>
+                    <div v-if="showFields.fechaCargo4" class="col-span-4">
+                        <label for="fecha4" class="block font-bold mb-3">Fecha 4º cargo</label>
+                        <Calendar id="fecha4" v-model="bill.fecha4" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
+                    </div>
+                    <div v-if="showFields.estado4" class="col-span-2">
+                        <label for="estado4" class="block font-bold mb-3">Estado</label>
+                        <Select id="estado4" v-model="bill.estado4" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" fluid />
+                    </div>
+                    <div v-if="showFields.fechaCargo5" class="col-span-4">
+                        <label for="fecha5" class="block font-bold mb-3">Fecha 5º cargo</label>
+                        <Calendar id="fecha5" v-model="bill.fecha5" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
+                    </div>
+                    <div v-if="showFields.estado5" class="col-span-2">
+                        <label for="estado5" class="block font-bold mb-3">Estado</label>
+                        <Select id="estado5" v-model="bill.estado5" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" fluid />
+                    </div>
+                    <div v-if="showFields.fechaCargo6" class="col-span-4">
+                        <label for="fecha6" class="block font-bold mb-3">Fecha 6º cargo</label>
+                        <Calendar id="fecha6" v-model="bill.fecha6" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
+                    </div>
+                    <div v-if="showFields.estado6" class="col-span-2">
+                        <label for="estado6" class="block font-bold mb-3">Estado</label>
+                        <Select id="estado6" v-model="bill.estado6" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" fluid />
                     </div>
                 </div>
             </div>
