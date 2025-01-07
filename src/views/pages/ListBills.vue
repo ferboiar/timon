@@ -411,23 +411,41 @@ watch(
                         <Select id="periodicidad" v-model="bill.periodicidad" :options="periodicidad" optionValue="value" optionLabel="label" placeholder="Selecciona" fluid />
                     </div>
                 </div>
-                <div class="grid grid-cols-12 gap-4">
+                <div class="grid grid-cols-12 gap-1">
                     <div v-if="showFields.fechaCargo" class="col-span-4">
                         <label for="fecha" class="block font-bold mb-3">Fecha cargo</label>
-                        <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
+                        <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
-                    <div v-if="showFields.estado" class="col-span-2">
-                        <label for="estado" class="block font-bold mb-3">Estado</label>
-                        <Select id="estado" v-model="bill.estado" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" v-tooltip="bill.estado" fluid />
+                    <div v-if="showFields.estado" class="col-span-2 mt-2">
+                        <label for="estado" class="block mb-3">&nbsp;</label>
+                        <Checkbox
+                            modelValue="bill.estado === 'cargado'"
+                            @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
+                            v-tooltip="bill.estado === 'cargado' ? 'Cargado' : 'Pendiente'"
+                            :invalid="bill.estado === 'pendiente'"
+                            :binary="true"
+                        />
                     </div>
+
                     <div v-if="showFields.fechaCargo2" class="col-span-4">
                         <label for="fecha2" class="block font-bold mb-3">Fecha 2º cargo</label>
                         <Calendar id="fecha2" v-model="bill.fecha2" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
                     </div>
                     <div v-if="showFields.estado2" class="col-span-2">
-                        <label for="estado2" class="block font-bold mb-3">Estado</label>
-                        <Select id="estado2" v-model="bill.estado2" :options="estados" optionValue="value" optionLabel="label" placeholder="Selecciona el estado" fluid />
+                        <label for="estado2" class="block mb-3">&nbsp;</label>
+                        <ToggleButton
+                            :modelValue="bill.estado2 === 'cargado'"
+                            :onLabel="''"
+                            :offLabel="''"
+                            :onIcon="'pi pi-fw pi-check'"
+                            :offIcon="'pi pi-fw pi-times'"
+                            :style="{ width: '2em', paddingLeft: '1.5em' }"
+                            @update:modelValue="(value) => (bill.estado2 = value ? 'cargado' : 'pendiente')"
+                            v-tooltip="bill.estado2 === 'cargado' ? 'Cargado' : 'Pendiente'"
+                        />
                     </div>
+                </div>
+                <div class="grid grid-cols-12 gap-3">
                     <div v-if="showFields.fechaCargo3" class="col-span-4">
                         <label for="fecha3" class="block font-bold mb-3">Fecha 3º cargo</label>
                         <Calendar id="fecha3" v-model="bill.fecha3" dateFormat="dd/mm/yy" showIcon iconDisplay="input" showButtonBar />
