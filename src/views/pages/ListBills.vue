@@ -11,7 +11,7 @@ const billDialog = ref(false);
 
 const estados = ref([
     { label: 'C', value: 'cargado' }, // Cargado
-    { label: 'P', value: 'nocargado' } // Pendiente
+    { label: 'P', value: 'pendiente' } // Pendiente
 ]);
 
 const categorias = ref([
@@ -325,8 +325,8 @@ watch(
                         <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                             <template #body="slotProps">
                                 <i
-                                    :class="slotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : slotProps.data.estado === 'nocargado' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
-                                    v-tooltip="slotProps.data.estado === 'cargado' ? 'Cargado' : slotProps.data.estado === 'nocargado' ? 'Pendiente' : ''"
+                                    :class="slotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : slotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
+                                    v-tooltip="slotProps.data.estado === 'cargado' ? 'Cargado' : slotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                 />
                             </template>
                         </Column>

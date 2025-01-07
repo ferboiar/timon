@@ -1,6 +1,6 @@
 import { getConnection } from './db_connection.mjs';
 
-const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria'];
+const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 'estado'];
 
 /**
  * Obtiene los recibos de la base de datos según los filtros proporcionados.
@@ -15,7 +15,12 @@ async function getRecibos(filters) {
     let connection;
     try {
         connection = await getConnection();
-        let query = 'SELECT * FROM recibos WHERE 1=1';
+        let query = `
+            SELECT r.*, fc.fecha, fc.estado, fc.comentario
+            FROM recibos r
+            JOIN fechas_cargo fc ON r.id = fc.recibo_id
+            WHERE 1=1
+        `;
         const params = [];
 
         console.log('API. Parámetros recibidos:', filters);
@@ -34,14 +39,14 @@ async function getRecibos(filters) {
         for (const [key, value] of Object.entries(filters)) {
             if (value) {
                 if (key === 'año') {
-                    query += ' AND YEAR(fecha) = ?';
+                    query += ' AND YEAR(fc.fecha) = ?';
                     params.push(value);
                 } else if (key === 'fecha' && value.includes('a')) {
                     const [startDate, endDate] = value.split('a');
-                    query += ' AND fecha BETWEEN ? AND ?';
+                    query += ' AND fc.fecha BETWEEN ? AND ?';
                     params.push(startDate, endDate);
                 } else if (validFilters.includes(key)) {
-                    query += ` AND ${key} = ?`;
+                    query += ` AND ${key === 'estado' ? 'fc.' : 'r.'}${key} = ?`;
                     params.push(value);
                 }
             }
@@ -73,7 +78,7 @@ async function getRecibos(filters) {
  * @param {string} [comentario=""] - El comentario del recibo (opcional).
  * @throws {Error} - Si falta algún parámetro obligatorio.
  */
-async function pushRecibo(fecha, concepto, periodicidad, importe, categoria = 'otros', estado = 'nocargado', comentario = '') {
+async function pushRecibo(fecha, concepto, periodicidad, importe, categoria = 'otros', estado = 'pendiente', comentario = '') {
     // Verificar que todos los parámetros obligatorios estén presentes
     if (!fecha || !concepto || !periodicidad || !importe) {
         throw new Error("API. Los parámetros 'fecha', 'concepto', 'periodicidad' e 'importe' son obligatorios.");
