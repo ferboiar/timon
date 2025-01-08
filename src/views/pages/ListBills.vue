@@ -211,7 +211,7 @@ function updateBills(periodicity) {
                 annualBills.value = response;
             } else if (periodicity === 'trimestral') {
                 // Actualizar los datos de la tabla trimestral
-                // dt_trimestral.value = response;
+                dt_trimestral.value = response;
             } else if (periodicity === 'bimestral') {
                 // Actualizar los datos de la tabla bimestral
                 // dt_bimestral.value = response;
@@ -356,13 +356,65 @@ watch(
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
                         <div class="font-semibold text-xl mb-4">Trimestrales</div>
-                        <Button icon="pi pi-plus" class="p-button-text" @click="toggleCardMenu" />
+                        <div class="flex flex-wrap gap-2 items-center justify-between">
+                            <IconField>
+                                <InputIcon>
+                                    <i class="pi pi-search" />
+                                </InputIcon>
+                                <InputText v-model="filters['global'].value" placeholder="Buscar..." />
+                            </IconField>
+                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'anual')" />
+                            <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
+                        </div>
                     </div>
-                    <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
-                    <p class="leading-normal m-0">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-                        consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                    </p>
+                    <DataTable
+                        ref="dt_anual"
+                        v-model:selection="selectedQuarterlyBills"
+                        :value="quarterlyBills"
+                        dataKey="id"
+                        :paginator="true"
+                        :rows="10"
+                        :filters="filters"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 15, 20]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
+                    >
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column field="importe" header="Importe" sortable style="min-width: 3rem">
+                            <template #body="slotProps">
+                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.importe) }}
+                            </template>
+                        </Column>
+                        <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
+                            <template #body="slotProps">
+                                {{ $formatDate(slotProps.data.fecha) }}
+                            </template>
+                        </Column>
+                        <Column field="estado" header="Estado" sortable style="min-width: 2rem">
+                            <template #body="slotProps">
+                                <i
+                                    :class="slotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : slotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
+                                    v-tooltip="slotProps.data.estado === 'cargado' ? 'Cargado' : slotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                />
+                            </template>
+                        </Column>
+                        <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
+                            <template #body="slotProps">
+                                <template v-if="slotProps.data.comentario">
+                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="toggleComment($event)" v-tooltip="slotProps.data.comentario" />
+                                    <Popover ref="comment" id="overlay_panel" style="width: 450px">
+                                        <p>{{ slotProps.data.comentario }}</p>
+                                    </Popover>
+                                </template>
+                            </template>
+                        </Column>
+                        <Column :exportable="false" style="min-width: 12rem">
+                            <template #body="slotProps">
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(slotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteProduct(slotProps.data)" />
+                            </template>
+                        </Column>
+                    </DataTable>
                 </div>
             </div>
             <div class="md:w-1/2 mt-6 md:mt-0">
