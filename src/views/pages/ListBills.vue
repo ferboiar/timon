@@ -2,7 +2,7 @@
 import { BillService } from '@/service/BillService';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 const annualBills = ref([]);
 const quarterlyBills = ref([]);
@@ -11,6 +11,8 @@ const monthlyBills = ref([]);
 const bill = ref({}); // UN recibo
 const comment = ref(null);
 const billDialog = ref(false);
+
+const expandedRows = ref([]); // Filas expandidas en la tabla trimestral
 
 const estados = ref([
     { label: 'C', value: 'cargado' }, // Cargado
@@ -254,6 +256,17 @@ watch(
     },
     { immediate: true }
 );
+
+const groupedQuarterlyBills = computed(() => {
+    const grouped = {};
+    quarterlyBills.value.forEach((bill) => {
+        if (!grouped[bill.concepto]) {
+            grouped[bill.concepto] = { concepto: bill.concepto, importe: bill.importe, bills: [] };
+        }
+        grouped[bill.concepto].bills.push(bill);
+    });
+    return Object.values(grouped);
+});
 </script>
 
 <template>
@@ -323,37 +336,37 @@ watch(
 -->
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
-                            <template #body="slotProps">
-                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.importe) }}
+                            <template #body="anualSlotProps">
+                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(anualSlotProps.data.importe) }}
                             </template>
                         </Column>
                         <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
-                            <template #body="slotProps">
-                                {{ $formatDate(slotProps.data.fecha) }}
+                            <template #body="anualSlotProps">
+                                {{ $formatDate(anualSlotProps.data.fecha) }}
                             </template>
                         </Column>
                         <Column field="estado" header="Estado" sortable style="min-width: 2rem">
-                            <template #body="slotProps">
+                            <template #body="anualSlotProps">
                                 <i
-                                    :class="slotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : slotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
-                                    v-tooltip="slotProps.data.estado === 'cargado' ? 'Cargado' : slotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                    :class="anualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : anualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
+                                    v-tooltip="anualSlotProps.data.estado === 'cargado' ? 'Cargado' : anualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                 />
                             </template>
                         </Column>
                         <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
-                            <template #body="slotProps">
-                                <template v-if="slotProps.data.comentario">
-                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="toggleComment($event)" v-tooltip="slotProps.data.comentario" />
+                            <template #body="anualSlotProps">
+                                <template v-if="anualSlotProps.data.comentario">
+                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="toggleComment($event)" v-tooltip="anualSlotProps.data.comentario" />
                                     <Popover ref="comment" id="overlay_panel" style="width: 450px">
-                                        <p>{{ slotProps.data.comentario }}</p>
+                                        <p>{{ anualSlotProps.data.comentario }}</p>
                                     </Popover>
                                 </template>
                             </template>
                         </Column>
                         <Column :exportable="false" style="min-width: 12rem">
-                            <template #body="slotProps">
-                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(slotProps.data)" />
-                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteProduct(slotProps.data)" />
+                            <template #body="anualSlotProps">
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(anualSlotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteProduct(anualSlotProps.data)" />
                             </template>
                         </Column>
                     </DataTable>
@@ -375,7 +388,7 @@ watch(
                     <DataTable
                         ref="dt_trimestral"
                         v-model:selection="selectedQuarterlyBills"
-                        :value="quarterlyBills"
+                        :value="groupedQuarterlyBills"
                         dataKey="id"
                         :paginator="true"
                         :rows="10"
@@ -383,42 +396,56 @@ watch(
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
+                        rowGroupMode="subheader"
+                        groupField="concepto"
+                        :expandedRows="expandedRows"
                     >
+                        <template #headerTemplate="trimestralSlotProps">
+                            <span class="font-bold">{{ trimestralSlotProps.group }}</span>
+                        </template>
+                        <template #footerTemplate="trimestralSlotProps">
+                            <span class="font-bold">Total: {{ trimestralSlotProps.groupData.length }}</span>
+                        </template>
+                        <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
-                            <template #body="slotProps">
-                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.importe) }}
+                            <template #body="trimestralSlotProps">
+                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(trimestralSlotProps.data.importe) }}
                             </template>
                         </Column>
-                        <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
-                            <template #body="slotProps">
-                                {{ $formatDate(slotProps.data.fecha) }}
-                            </template>
-                        </Column>
-                        <Column field="estado" header="Estado" sortable style="min-width: 2rem">
-                            <template #body="slotProps">
-                                <i
-                                    :class="slotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : slotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
-                                    v-tooltip="slotProps.data.estado === 'cargado' ? 'Cargado' : slotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
-                                />
-                            </template>
-                        </Column>
-                        <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
-                            <template #body="slotProps">
-                                <template v-if="slotProps.data.comentario">
-                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="toggleComment($event)" v-tooltip="slotProps.data.comentario" />
-                                    <Popover ref="comment" id="overlay_panel" style="width: 450px">
-                                        <p>{{ slotProps.data.comentario }}</p>
-                                    </Popover>
-                                </template>
-                            </template>
-                        </Column>
-                        <Column :exportable="false" style="min-width: 12rem">
-                            <template #body="slotProps">
-                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(slotProps.data)" />
-                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteProduct(slotProps.data)" />
-                            </template>
-                        </Column>
+                        <template #expansion="trimestralSlotProps">
+                            <DataTable :value="trimestralSlotProps.data.bills">
+                                <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
+                                    <template #body="trimestralSlotProps">
+                                        {{ $formatDate(trimestralSlotProps.data.fecha) }}
+                                    </template>
+                                </Column>
+                                <Column field="estado" header="Estado" sortable style="min-width: 2rem">
+                                    <template #body="trimestralSlotProps">
+                                        <i
+                                            :class="trimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : trimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
+                                            v-tooltip="trimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : trimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                        />
+                                    </template>
+                                </Column>
+                                <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
+                                    <template #body="trimestralSlotProps">
+                                        <template v-if="trimestralSlotProps.data.comentario">
+                                            <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="toggleComment($event)" v-tooltip="trimestralSlotProps.data.comentario" />
+                                            <Popover ref="comment" id="overlay_panel" style="width: 450px">
+                                                <p>{{ trimestralSlotProps.data.comentario }}</p>
+                                            </Popover>
+                                        </template>
+                                    </template>
+                                </Column>
+                                <Column :exportable="false" style="min-width: 12rem">
+                                    <template #body="trimestralSlotProps">
+                                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data)" />
+                                        <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteProduct(trimestralSlotProps.data)" />
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </template>
                     </DataTable>
                 </div>
             </div>
