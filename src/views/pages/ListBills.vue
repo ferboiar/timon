@@ -111,9 +111,14 @@ const selectedQuarterlyBills = ref();
 const selectedBimonthlyBills = ref();
 const selectedMonthlyBills = ref();
 
-const filters = ref({
+const filtersAnual = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
+
+const filtersTrimestral = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+});
+
 const submitted = ref(false);
 
 function openNew() {
@@ -295,7 +300,7 @@ watch(
                                 <InputIcon>
                                     <i class="pi pi-search" />
                                 </InputIcon>
-                                <InputText v-model="filters['global'].value" placeholder="Buscar..." />
+                                <InputText v-model="filtersAnual['global'].value" placeholder="Buscar..." />
                             </IconField>
                             <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'anual')" />
                             <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
@@ -308,7 +313,7 @@ watch(
                         dataKey="id"
                         :paginator="true"
                         :rows="10"
-                        :filters="filters"
+                        :filters="filtersAnual"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
@@ -361,20 +366,20 @@ watch(
                                 <InputIcon>
                                     <i class="pi pi-search" />
                                 </InputIcon>
-                                <InputText v-model="filters['global'].value" placeholder="Buscar..." />
+                                <InputText v-model="filtersTrimestral['global'].value" placeholder="Buscar..." />
                             </IconField>
-                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'anual')" />
+                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'trimestral')" />
                             <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                         </div>
                     </div>
                     <DataTable
-                        ref="dt_anual"
+                        ref="dt_trimestral"
                         v-model:selection="selectedQuarterlyBills"
                         :value="quarterlyBills"
                         dataKey="id"
                         :paginator="true"
                         :rows="10"
-                        :filters="filters"
+                        :filters="filtersTrimestral"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
