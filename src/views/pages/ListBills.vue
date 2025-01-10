@@ -9,7 +9,7 @@ const quarterlyBills = ref([]);
 const bimonthlyBills = ref([]);
 const monthlyBills = ref([]);
 const bill = ref({}); // UN recibo
-const comment = ref(null);
+
 const billDialog = ref(false);
 
 const expandedRows = ref([]); // Filas expandidas en la tabla trimestral
@@ -76,26 +76,53 @@ const items = ref([
 ]);
 
 // >>>> Menú de la tarjeta
-const cardMenu = ref([
-    { label: 'Add', icon: 'pi pi-fw pi-plus' },
-    { label: 'Update', icon: 'pi pi-fw pi-refresh' },
-    { label: 'Export', icon: 'pi pi-fw pi-upload' }
-]);
-
+const cardMenu = ref([]);
 const menuRef = ref(null);
 
 function toggleCardMenu(event, periodicity) {
+    cardMenu.value = [
+        { label: 'Añadir', icon: 'pi pi-fw pi-plus' },
+        { label: 'Actualizar', icon: 'pi pi-fw pi-refresh' },
+        { label: 'Exportar', icon: 'pi pi-fw pi-upload' }
+    ];
+
+    if (periodicity === 'trimestral' || periodicity === 'bimestral') {
+        cardMenu.value.push({ label: 'Expandir todo', icon: 'pi pi-fw pi-chevron-down', command: expandirTodo }, { label: 'Contraer todo', icon: 'pi pi-fw pi-chevron-right', command: contraerTodo });
+    }
+
     menuRef.value.toggle(event);
     const updateItem = cardMenu.value.find((item) => item.label === 'Update');
     if (updateItem) {
         updateItem.command = () => updateBills(periodicity);
     }
 }
+
+//expandedRows.value = products.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+
+function expandirTodo() {
+    if (dt_trimestral.value) {
+        expandedRows.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+    } else if (dt_bimestral.value) {
+        expandedRows.value = groupedBimonthlyBillsBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+    }
+}
+
+function contraerTodo() {
+    expandedRows.value = [];
+}
 // <<<<
 
-function toggleComment(event) {
-    comment.value.toggle(event);
+// >>>> Gestiona el "bocadillo" (popover) que muestra el comentario del recibo
+const activeComment = ref(null);
+const commentPopover = ref(null);
+
+function toggleComment(event, specificComment) {
+    activeComment.value = specificComment;
+    if (commentPopover.value) {
+        commentPopover.value.toggle(event);
+    }
 }
+// <<<<
 
 // crud.vue:
 const toast = useToast();
@@ -242,6 +269,7 @@ const showFields = ref({
 });
 
 watch(
+    // Watch for changes in bill.value.periodicidad
     () => bill.value.periodicidad,
     (newVal) => {
         if (newVal === 'anual') {
@@ -356,10 +384,7 @@ const groupedQuarterlyBills = computed(() => {
                         <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
                             <template #body="anualSlotProps">
                                 <template v-if="anualSlotProps.data.comentario">
-                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="toggleComment($event)" v-tooltip="anualSlotProps.data.comentario" />
-                                    <Popover ref="comment" id="overlay_panel" style="width: 450px">
-                                        <p>{{ anualSlotProps.data.comentario }}</p>
-                                    </Popover>
+                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, anualSlotProps.data.comentario)" v-tooltip="anualSlotProps.data.comentario" />
                                 </template>
                             </template>
                         </Column>
@@ -387,7 +412,7 @@ const groupedQuarterlyBills = computed(() => {
                     </div>
                     <DataTable
                         ref="dt_trimestral"
-                        v-model:selection="selectedQuarterlyBills"
+                        v-model:expandedRows="expandedRows"
                         :value="groupedQuarterlyBills"
                         dataKey="id"
                         :paginator="true"
@@ -398,14 +423,7 @@ const groupedQuarterlyBills = computed(() => {
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                         rowGroupMode="subheader"
                         groupField="concepto"
-                        :expandedRows="expandedRows"
                     >
-                        <template #headerTemplate="trimestralSlotProps">
-                            <span class="font-bold">{{ trimestralSlotProps.group }}</span>
-                        </template>
-                        <template #footerTemplate="trimestralSlotProps">
-                            <span class="font-bold">Total: {{ trimestralSlotProps.groupData.length }}</span>
-                        </template>
                         <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
@@ -431,10 +449,7 @@ const groupedQuarterlyBills = computed(() => {
                                 <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
                                     <template #body="trimestralSlotProps">
                                         <template v-if="trimestralSlotProps.data.comentario">
-                                            <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="toggleComment($event)" v-tooltip="trimestralSlotProps.data.comentario" />
-                                            <Popover ref="comment" id="overlay_panel" style="width: 450px">
-                                                <p>{{ trimestralSlotProps.data.comentario }}</p>
-                                            </Popover>
+                                            <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, trimestralSlotProps.data.comentario)" v-tooltip="trimestralSlotProps.data.comentario" />
                                         </template>
                                     </template>
                                 </Column>
@@ -619,4 +634,8 @@ const groupedQuarterlyBills = computed(() => {
             </template>
         </Dialog>
     </div>
+
+    <Popover ref="commentPopover" id="overlay_panel" style="width: 450px">
+        <p>{{ activeComment }}</p>
+    </Popover>
 </template>
