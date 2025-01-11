@@ -76,20 +76,20 @@ const menuRef = ref(null);
 
 function toggleCardMenu(event, periodicity) {
     cardMenu.value = [
-        { label: 'Añadir', icon: 'pi pi-fw pi-plus' },
-        { label: 'Actualizar', icon: 'pi pi-fw pi-refresh' },
+        { label: 'Añadir', icon: 'pi pi-fw pi-plus', command: () => openNew(periodicity) },
+        { label: 'Actualizar', icon: 'pi pi-fw pi-refresh', command: () => updateBills(periodicity) },
         { label: 'Exportar', icon: 'pi pi-fw pi-upload' }
     ];
 
     if (periodicity === 'trimestral' || periodicity === 'bimestral') {
-        cardMenu.value.push({ label: 'Expandir todo', icon: 'pi pi-fw pi-chevron-down', command: expandirTodo }, { label: 'Contraer todo', icon: 'pi pi-fw pi-chevron-right', command: contraerTodo });
+        cardMenu.value.push(
+            // eslint-disable-next-line prettier/prettier
+            { separator: true },
+            { label: 'Expandir todo', icon: 'pi pi-fw pi-chevron-down', command: () => expandirTodo() },
+            { label: 'Contraer todo', icon: 'pi pi-fw pi-chevron-right', command: () => contraerTodo() }
+        );
     }
-
     menuRef.value.toggle(event);
-    const updateItem = cardMenu.value.find((item) => item.label === 'Update');
-    if (updateItem) {
-        updateItem.command = () => updateBills(periodicity);
-    }
 }
 
 function expandirTodo() {
@@ -102,6 +102,27 @@ function expandirTodo() {
 
 function contraerTodo() {
     expandedRows.value = [];
+}
+
+function updateBills(periodicity) {
+    BillService.getBillsByPeriodicity(periodicity)
+        .then((response) => {
+            if (periodicity === 'anual') {
+                annualBills.value = response;
+            } else if (periodicity === 'trimestral') {
+                // Actualizar los datos de la tabla trimestral
+                dt_trimestral.value = response;
+            } else if (periodicity === 'bimestral') {
+                // Actualizar los datos de la tabla bimestral
+                // dt_bimestral.value = response;
+            } else if (periodicity === 'mensual') {
+                // Actualizar los datos de la tabla mensual
+                // dt_mensual.value = response;
+            }
+        })
+        .catch((error) => {
+            console.error(`Error al actualizar la lista de recibos ${periodicity}:`, error);
+        });
 }
 // <<<<
 
@@ -155,8 +176,9 @@ const filtersTrimestral = ref({
 
 const submitted = ref(false);
 
-function openNew() {
+function openNew(periodicity) {
     bill.value = {};
+    bill.value.periodicidad = periodicity;
     submitted.value = false;
     billDialog.value = true;
 }
@@ -243,28 +265,8 @@ function deleteSelectedProducts() {
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Products Deleted', life: 3000 });
 }
 
-function updateBills(periodicity) {
-    BillService.getBillsByPeriodicity(periodicity)
-        .then((response) => {
-            if (periodicity === 'anual') {
-                annualBills.value = response;
-            } else if (periodicity === 'trimestral') {
-                // Actualizar los datos de la tabla trimestral
-                dt_trimestral.value = response;
-            } else if (periodicity === 'bimestral') {
-                // Actualizar los datos de la tabla bimestral
-                // dt_bimestral.value = response;
-            } else if (periodicity === 'mensual') {
-                // Actualizar los datos de la tabla mensual
-                // dt_mensual.value = response;
-            }
-        })
-        .catch((error) => {
-            console.error(`Error al actualizar la lista de recibos ${periodicity}:`, error);
-        });
-}
-
 const showFields = ref({
+    commentBox: false,
     fechaCargo: false,
     fechaCargo2: false,
     fechaCargo3: false,
@@ -278,13 +280,13 @@ watch(
     () => bill.value.periodicidad,
     (newVal) => {
         if (newVal === 'anual') {
-            showFields.value = { fechaCargo: true, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false };
+            showFields.value = { commentBox: true, fechaCargo: true, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false };
         } else if (newVal === 'bimestral') {
-            showFields.value = { fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: true, fechaCargo6: true };
+            showFields.value = { commentBox: false, fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: true, fechaCargo6: true };
         } else if (newVal === 'trimestral') {
-            showFields.value = { fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: false, fechaCargo6: false };
+            showFields.value = { commentBox: false, fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: false, fechaCargo6: false };
         } else if (newVal === 'mensual' || !newVal) {
-            showFields.value = { fechaCargo: false, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false };
+            showFields.value = { commentBox: true, fechaCargo: false, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false };
         }
     },
     { immediate: true }
@@ -502,14 +504,14 @@ const groupedQuarterlyBills = computed(() => {
                     <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
                     <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                 </div>
-                <div>
+                <div v-if="showFields.commentBox">
                     <label for="comentario" class="block font-bold mb-3">Comentario</label>
                     <Textarea id="comentario" v-model="bill.comentario" required="true" rows="3" cols="20" fluid />
                 </div>
                 <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-5">
                         <label for="categoria" class="block font-bold mb-3">Categoría</label>
-                        <Select id="categoria" v-model="bill.categoria" :options="categorias" optionValue="value" optionLabel="label" placeholder="Selecciona la categoría" fluid />
+                        <Select id="categoria" v-model="bill.categoria" :options="categorias" optionValue="value" optionLabel="label" fluid />
                     </div>
                     <div class="col-span-3">
                         <label for="importe" class="block font-bold mb-3">Importe</label>
@@ -517,7 +519,7 @@ const groupedQuarterlyBills = computed(() => {
                     </div>
                     <div class="col-span-4">
                         <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>
-                        <Select id="periodicidad" v-model="bill.periodicidad" :options="periodicidad" optionValue="value" optionLabel="label" placeholder="Selecciona" fluid />
+                        <Select id="periodicidad" v-model="bill.periodicidad" :options="periodicidad" optionValue="value" optionLabel="label" fluid />
                     </div>
                 </div>
 
@@ -526,7 +528,9 @@ const groupedQuarterlyBills = computed(() => {
                         <label for="fecha" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>Fecha cargo</span>
                             <div class="flex items-center absolute right-2">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                                <div v-if="!showFields.commentBox">
+                                    <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                                </div>
                                 <Checkbox :modelValue="bill.estado === 'cargado'" @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')" v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'" :binary="true" />
                             </div>
                         </label>
@@ -543,15 +547,12 @@ const groupedQuarterlyBills = computed(() => {
                         <Calendar id="fecha2" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                     <div v-if="showFields.fechaCargo3" class="col-span-4">
-                        <label for="fecha3" class="block font-bold mb-3 flex items-center">
+                        <label for="fecha3" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>3<sup>er</sup> cargo</span>
-                            <Checkbox
-                                :modelValue="bill.estado === 'cargado'"
-                                @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                :binary="true"
-                                class="ml-3"
-                            />
+                            <div class="flex items-center absolute right-2">
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                                <Checkbox :modelValue="bill.estado === 'cargado'" @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')" v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'" :binary="true" />
+                            </div>
                         </label>
                         <Calendar id="fecha3" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
@@ -559,42 +560,51 @@ const groupedQuarterlyBills = computed(() => {
 
                 <div class="grid grid-cols-12 gap-2">
                     <div v-if="showFields.fechaCargo4" class="col-span-4">
-                        <label for="fecha4" class="block font-bold mb-3 flex items-center">
+                        <label for="fecha4" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>4º cargo</span>
+                            <div class="flex items-center absolute right-7">
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                            </div>
                             <Checkbox
                                 :modelValue="bill.estado === 'cargado'"
                                 @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
                                 v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
                                 :binary="true"
-                                class="ml-4"
+                                class="absolute right-2"
                             />
                         </label>
                         <Calendar id="fecha4" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
 
                     <div v-if="showFields.fechaCargo5" class="col-span-4">
-                        <label for="fecha5" class="block font-bold mb-3 flex items-center">
+                        <label for="fecha5" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>5º cargo</span>
+                            <div class="flex items-center absolute right-7">
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                            </div>
                             <Checkbox
                                 :modelValue="bill.estado === 'cargado'"
                                 @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
                                 v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
                                 :binary="true"
-                                class="ml-4"
+                                class="absolute right-2"
                             />
                         </label>
                         <Calendar id="fecha5" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
 
                     <div v-if="showFields.fechaCargo6" class="col-span-4">
-                        <label for="fecha5" class="block font-bold mb-3 flex items-center">
+                        <label for="fecha5" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>6º cargo</span>
+                            <div class="flex items-center absolute right-7">
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                            </div>
                             <Checkbox
                                 :modelValue="bill.estado === 'cargado'"
                                 @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
                                 v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
                                 :binary="true"
-                                class="ml-4"
+                                class="absolute right-2"
                             />
                         </label>
                         <Calendar id="fecha6" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
