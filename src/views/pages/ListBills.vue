@@ -35,16 +35,21 @@ const periodicidad = ref([
 
 onMounted(async () => {
     try {
-        annualBills.value = await BillService.getBillsByPeriodicity('anual');
+        const [anual, trimestral, bimestral, mensual] = await Promise.all([
+            BillService.getBillsByPeriodicity('anual'),
+            BillService.getBillsByPeriodicity('trimestral'),
+            BillService.getBillsByPeriodicity('bimestral'),
+            BillService.getBillsByPeriodicity('mensual')
+        ]);
+
+        annualBills.value = anual;
+        quarterlyBills.value = trimestral;
+        bimonthlyBills.value = bimestral;
+        monthlyBills.value = mensual;
+
         console.log('onMounted. BillService. Recibos anuales:', annualBills.value);
-
-        quarterlyBills.value = await BillService.getBillsByPeriodicity('trimestral');
         console.log('onMounted. BillService. Recibos trimestrales:', quarterlyBills.value);
-
-        bimonthlyBills.value = await BillService.getBillsByPeriodicity('bimestral');
         console.log('onMounted. BillService. Recibos bimestrales:', bimonthlyBills.value);
-
-        monthlyBills.value = await BillService.getBillsByPeriodicity('mensual');
         console.log('onMounted. BillService. Recibos mensuales:', monthlyBills.value);
     } catch (error) {
         console.error('onMounted. BillService. Error al cargar los recibos:', error);
