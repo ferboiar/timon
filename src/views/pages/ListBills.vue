@@ -14,11 +14,6 @@ const billDialog = ref(false);
 
 const expandedRows = ref([]); // Filas expandidas en la tabla trimestral
 
-const estados = ref([
-    { label: 'C', value: 'cargado' }, // Cargado
-    { label: 'P', value: 'pendiente' } // Pendiente
-]);
-
 const categorias = ref([
     { label: 'Ahorros', value: 'ahorros' },
     { label: 'Comida', value: 'comida' },
@@ -97,8 +92,6 @@ function toggleCardMenu(event, periodicity) {
     }
 }
 
-//expandedRows.value = products.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-
 function expandirTodo() {
     if (dt_trimestral.value) {
         expandedRows.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
@@ -115,12 +108,24 @@ function contraerTodo() {
 // >>>> Gestiona el "bocadillo" (popover) que muestra el comentario del recibo
 const activeComment = ref(null);
 const commentPopover = ref(null);
+const editCommentPopover = ref(null);
 
-function toggleComment(event, specificComment) {
+function toggleComment(event, specificComment, popoverType = 'comment') {
     activeComment.value = specificComment;
-    if (commentPopover.value) {
+    if (popoverType == 'comment' && commentPopover.value) {
         commentPopover.value.toggle(event);
+    } else if (popoverType == 'editComment' && editCommentPopover.value) {
+        editCommentPopover.value.toggle(event);
     }
+}
+function saveComment() {
+    bill.value.comentario = activeComment;
+    editCommentPopover.value.hide();
+}
+
+function hideComment() {
+    commentPopover.value.hide();
+    editCommentPopover.value.hide();
 }
 // <<<<
 
@@ -384,7 +389,7 @@ const groupedQuarterlyBills = computed(() => {
                         <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
                             <template #body="anualSlotProps">
                                 <template v-if="anualSlotProps.data.comentario">
-                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, anualSlotProps.data.comentario)" v-tooltip="anualSlotProps.data.comentario" />
+                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, anualSlotProps.data.comentario, 'comment')" v-tooltip="anualSlotProps.data.comentario" />
                                 </template>
                             </template>
                         </Column>
@@ -449,7 +454,7 @@ const groupedQuarterlyBills = computed(() => {
                                 <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
                                     <template #body="trimestralSlotProps">
                                         <template v-if="trimestralSlotProps.data.comentario">
-                                            <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, trimestralSlotProps.data.comentario)" v-tooltip="trimestralSlotProps.data.comentario" />
+                                            <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, trimestralSlotProps.data.comentario, 'comment')" v-tooltip="trimestralSlotProps.data.comentario" />
                                         </template>
                                     </template>
                                 </Column>
@@ -518,34 +523,28 @@ const groupedQuarterlyBills = computed(() => {
 
                 <div class="grid grid-cols-12 gap-2">
                     <div v-if="showFields.fechaCargo" class="col-span-4">
-                        <label for="fecha" class="block font-bold mb-3 flex items-center">
+                        <label for="fecha" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>Fecha cargo</span>
-                            <Checkbox
-                                :modelValue="bill.estado === 'cargado'"
-                                @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                :binary="true"
-                                class="ml-9"
-                            />
+                            <div class="flex items-center absolute right-2">
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                                <Checkbox :modelValue="bill.estado === 'cargado'" @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')" v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'" :binary="true" />
+                            </div>
                         </label>
                         <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                     <div v-if="showFields.fechaCargo2" class="col-span-4">
-                        <label for="fecha2" class="block font-bold mb-3 flex items-center">
-                            <span>Fecha 2º cargo</span>
-                            <Checkbox
-                                :modelValue="bill.estado === 'cargado'"
-                                @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                :binary="true"
-                                class="ml-4"
-                            />
+                        <label for="fecha2" class="block font-bold mb-3 flex justify-between items-center relative">
+                            <span>2º cargo</span>
+                            <div class="flex items-center absolute right-2">
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                                <Checkbox :modelValue="bill.estado === 'cargado'" @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')" v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'" :binary="true" />
+                            </div>
                         </label>
                         <Calendar id="fecha2" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                     <div v-if="showFields.fechaCargo3" class="col-span-4">
                         <label for="fecha3" class="block font-bold mb-3 flex items-center">
-                            <span>Fecha 3<sup>er</sup> cargo</span>
+                            <span>3<sup>er</sup> cargo</span>
                             <Checkbox
                                 :modelValue="bill.estado === 'cargado'"
                                 @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
@@ -561,7 +560,7 @@ const groupedQuarterlyBills = computed(() => {
                 <div class="grid grid-cols-12 gap-2">
                     <div v-if="showFields.fechaCargo4" class="col-span-4">
                         <label for="fecha4" class="block font-bold mb-3 flex items-center">
-                            <span>Fecha 4º cargo</span>
+                            <span>4º cargo</span>
                             <Checkbox
                                 :modelValue="bill.estado === 'cargado'"
                                 @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
@@ -575,7 +574,7 @@ const groupedQuarterlyBills = computed(() => {
 
                     <div v-if="showFields.fechaCargo5" class="col-span-4">
                         <label for="fecha5" class="block font-bold mb-3 flex items-center">
-                            <span>Fecha 5º cargo</span>
+                            <span>5º cargo</span>
                             <Checkbox
                                 :modelValue="bill.estado === 'cargado'"
                                 @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
@@ -589,7 +588,7 @@ const groupedQuarterlyBills = computed(() => {
 
                     <div v-if="showFields.fechaCargo6" class="col-span-4">
                         <label for="fecha5" class="block font-bold mb-3 flex items-center">
-                            <span>Fecha 6º cargo</span>
+                            <span>6º cargo</span>
                             <Checkbox
                                 :modelValue="bill.estado === 'cargado'"
                                 @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
@@ -637,5 +636,13 @@ const groupedQuarterlyBills = computed(() => {
 
     <Popover ref="commentPopover" id="overlay_panel" style="width: 450px">
         <p>{{ activeComment }}</p>
+    </Popover>
+    <Popover ref="editCommentPopover" id="overlay_panel" style="width: 450px">
+        <label for="comentario" class="block font-bold mb-3">Comentario para esta fecha de cargo</label>
+        <Textarea id="comentario" v-model="activeComment" required="true" rows="3" cols="20" fluid />
+        <div class="flex justify-end mt-2">
+            <Button icon="pi pi-times" class="p-button-text" text @click="hideComment" />
+            <Button icon="pi pi-check" class="p-button-text" @click="saveComment" />
+        </div>
     </Popover>
 </template>
