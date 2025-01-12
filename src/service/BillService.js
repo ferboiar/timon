@@ -33,7 +33,7 @@ export class BillService {
             const response = await axios.post(API_URL, bill);
             return response.data;
         } catch (error) {
-            console.error('BillService. Error al guardar el recibo:', error);
+            console.error('BillService. Error al guardar el recibo: ', error);
             throw error;
         }
     }
@@ -44,7 +44,7 @@ export class BillService {
             const response = await axios.delete(`${API_URL}/${id}`);
             return response.data;
         } catch (error) {
-            console.error(`Error al eliminar el recibo con ID ${id}:`, error);
+            console.error(`Error al eliminar el recibo con ID ${id}: `, error);
             throw error;
         }
     }

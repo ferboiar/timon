@@ -75,12 +75,52 @@ async function getRecibos(filters) {
  * @param {number} importe - El importe del recibo.
  * @param {string} categoria - La categoría del recibo.
  * @param {Array} cargo - Un array de objetos que contiene fecha, estado y comentario.
- * @throws {Error} - Si falta algún parámetro obligatorio.
+ * @throws {Error} - Si falta algún parámetro obligatorio o si algún parámetro no es válido.
  */
 async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo) {
+    console.log('pushRecibo(). Parámetros recibidos:', { id, concepto, periodicidad, importe, categoria, cargo });
     // Verificar que todos los parámetros obligatorios estén presentes
     if (!concepto || !periodicidad || !importe || !categoria || !cargo || !Array.isArray(cargo)) {
-        throw new Error('Los campos concepto, periodicidad, importe, categoria y cargo son obligatorios.');
+        throw new Error('API. Los campos concepto, periodicidad, importe, categoria y cargo son obligatorios.');
+    }
+
+    // Filtrar elementos del array cargo que tienen fecha como null. Esas fechas no se deben insertar en la base de datos.
+    cargo = cargo.filter((c) => c.fecha !== null);
+
+    console.log('pushRecibo(). Parámetros filtrados:', { id, concepto, periodicidad, importe, categoria, cargo });
+
+    // Validar formato de los parámetros
+    const validCategorias = ['vivienda', 'servicios', 'seguros', 'transporte', 'entretenimiento', 'educacion', 'comida', 'ahorros', 'otros'];
+    const validPeriodicidades = ['mensual', 'bimestral', 'trimestral', 'anual'];
+    const validEstados = ['cargado', 'pendiente'];
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (typeof concepto !== 'string' || concepto.length > 30) {
+        throw new Error('API. El concepto debe ser una cadena de texto de máximo 30 caracteres.');
+    }
+    if (!validPeriodicidades.includes(periodicidad)) {
+        throw new Error(`API. La periodicidad debe ser una de las siguientes: ${validPeriodicidades.join(', ')}.`);
+    }
+    if (typeof importe !== 'number' || importe < 0) {
+        throw new Error('API. El importe debe ser un número positivo.');
+    }
+    if (!validCategorias.includes(categoria)) {
+        throw new Error(`API. La categoría debe ser una de las siguientes: ${validCategorias.join(', ')}.`);
+    }
+    for (const c of cargo) {
+        if (!c.fecha || !c.estado || !c.comentario) {
+            console.log('API. Valor de c.fecha:', c.fecha);
+            console.log('API. Valor de c.estado:', c.estado);
+            console.log('API. Valor de c.comentario:', c.comentario);
+            throw new Error('API. Cada cargo debe contener fecha, estado y comentario.');
+        }
+        const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+        if (!dateRegex.test(fecha)) {
+            throw new Error('API. La fecha debe estar en el formato YYYY-MM-DD.');
+        }
+        if (!validEstados.includes(c.estado)) {
+            throw new Error(`API. El estado del cargo debe ser uno de los siguientes: ${validEstados.join(', ')}.`);
+        }
     }
 
     let connection;
@@ -98,16 +138,18 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
                 // Actualizar fechas de cargo
                 for (const c of cargo) {
                     const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, c.fecha]);
+                    const estado = c.estado === '' ? 'pendiente' : c.estado;
+                    const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
                     if (existingCargo.length > 0) {
                         //actualiza si existe
-                        await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ? WHERE recibo_id = ? AND fecha = ?', [c.estado, c.comentario, id, c.fecha]);
+                        await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ? WHERE recibo_id = ? AND fecha = ?', [estado, c.comentario, id, fecha]);
                     } else {
                         //insertar si no existe
-                        await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [id, c.fecha, c.estado, c.comentario]);
+                        await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [id, fecha, estado, c.comentario]);
                     }
                 }
             } else {
-                throw new Error('El recibo con el ID especificado no existe.');
+                throw new Error('API. El recibo con el ID especificado no existe.');
             }
         } else {
             // Insertar nuevo recibo
@@ -117,11 +159,13 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
 
             // Insertar fechas de cargo
             for (const c of cargo) {
-                await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [newReciboId, c.fecha, c.estado, c.comentario]);
+                const estado = c.estado === '' ? 'pendiente' : c.estado;
+                const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+                await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario]);
             }
         }
     } catch (error) {
-        console.error('API. Error al insertar o actualizar el recibo:', error);
+        console.error('API. Error al insertar o actualizar el recibo: ', error);
         throw error;
     } finally {
         if (connection) connection.release();
