@@ -69,45 +69,56 @@ async function getRecibos(filters) {
 /**
  * Inserta o actualiza un recibo en la base de datos.
  *
- * @param {string} fecha - La fecha del recibo.
+ * @param {number} id - El ID del recibo.
  * @param {string} concepto - El concepto del recibo.
  * @param {string} periodicidad - La periodicidad del recibo.
  * @param {number} importe - El importe del recibo.
- * @param {string} [categoria="otros"] - La categoría del recibo (opcional).
- * @param {string} [estado="nocargado"] - El estado del recibo (opcional).
- * @param {string} [comentario=""] - El comentario del recibo (opcional).
+ * @param {string} categoria - La categoría del recibo.
+ * @param {Array} cargo - Un array de objetos que contiene fecha, estado y comentario.
  * @throws {Error} - Si falta algún parámetro obligatorio.
  */
-async function pushRecibo(fecha, concepto, periodicidad, importe, categoria = 'otros', estado = 'pendiente', comentario = '') {
+async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo) {
     // Verificar que todos los parámetros obligatorios estén presentes
-    if (!fecha || !concepto || !periodicidad || !importe) {
-        throw new Error("API. Los parámetros 'fecha', 'concepto', 'periodicidad' e 'importe' son obligatorios.");
+    if (!concepto || !periodicidad || !importe || !categoria || !cargo || !Array.isArray(cargo)) {
+        throw new Error('Los campos concepto, periodicidad, importe, categoria y cargo son obligatorios.');
     }
 
     let connection;
     try {
         connection = await getConnection();
 
-        // Comprobar si el recibo ya existe
-        const [existingRecibo] = await connection.execute('SELECT * FROM recibos WHERE concepto = ?', [concepto]);
+        if (id) {
+            // Comprobar si el recibo ya existe
+            const [existingRecibo] = await connection.execute('SELECT * FROM recibos WHERE id = ?', [id]);
 
-        if (existingRecibo.length > 0) {
-            // Actualizar recibo existente
-            const updateQuery = `
-                UPDATE recibos
-                SET fecha = ?, periodicidad = ?, importe = ?, categoria = ?, estado = ?, comentario = ?
-                WHERE concepto = ?
-            `;
-            const updateParams = [fecha, periodicidad, importe, categoria, estado, comentario, concepto];
-            await connection.execute(updateQuery, updateParams);
+            if (existingRecibo.length > 0) {
+                // Actualizar recibo existente
+                await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria = ? WHERE id = ?', [concepto, periodicidad, importe, categoria, id]);
+
+                // Actualizar fechas de cargo
+                for (const c of cargo) {
+                    const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, c.fecha]);
+                    if (existingCargo.length > 0) {
+                        //actualiza si existe
+                        await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ? WHERE recibo_id = ? AND fecha = ?', [c.estado, c.comentario, id, c.fecha]);
+                    } else {
+                        //insertar si no existe
+                        await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [id, c.fecha, c.estado, c.comentario]);
+                    }
+                }
+            } else {
+                throw new Error('El recibo con el ID especificado no existe.');
+            }
         } else {
             // Insertar nuevo recibo
-            const insertQuery = `
-                INSERT INTO recibos (fecha, concepto, categoria, estado, periodicidad, importe, comentario)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            `;
-            const insertParams = [fecha, concepto, categoria, estado, periodicidad, importe, comentario];
-            await connection.execute(insertQuery, insertParams);
+            const [result] = await connection.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria) VALUES (?, ?, ?, ?)', [concepto, periodicidad, importe, categoria]);
+
+            const newReciboId = result.insertId;
+
+            // Insertar fechas de cargo
+            for (const c of cargo) {
+                await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [newReciboId, c.fecha, c.estado, c.comentario]);
+            }
         }
     } catch (error) {
         console.error('API. Error al insertar o actualizar el recibo:', error);

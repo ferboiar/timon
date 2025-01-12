@@ -18,12 +18,15 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    const { fecha, concepto, periodicidad, importe, categoria } = req.body;
+    const { id, concepto, periodicidad, importe, categoria, cargo } = req.body;
+    if (!Array.isArray(cargo)) {
+        return res.status(400).json({ error: 'El campo cargo es obligatorio y debe ser un array.' });
+    }
     try {
-        await pushRecibo(fecha, concepto, periodicidad, importe, categoria);
-        res.status(201).json({ message: 'Recibo insertado correctamente' });
+        await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo);
+        res.status(201).json({ message: 'Recibo insertado o actualizado correctamente' });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(400).json({ error: `Error al insertar o actualizar el recibo: ${error.message}`, details: error.stack });
     }
 });
 

@@ -27,24 +27,13 @@ export class BillService {
         }
     }
 
-    // Crear un nuevo recibo
-    static async createBill(bill) {
+    // Guardar un recibo (crear o actualizar)
+    static async saveBill(bill) {
         try {
             const response = await axios.post(API_URL, bill);
             return response.data;
         } catch (error) {
-            console.error('Error al crear el recibo:', error);
-            throw error;
-        }
-    }
-
-    // Actualizar un recibo existente
-    static async updateBill(id, bill) {
-        try {
-            const response = await axios.put(`${API_URL}/${id}`, bill);
-            return response.data;
-        } catch (error) {
-            console.error(`Error al actualizar el recibo con ID ${id}:`, error);
+            console.error('BillService. Error al guardar el recibo:', error);
             throw error;
         }
     }

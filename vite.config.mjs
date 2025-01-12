@@ -5,7 +5,6 @@ import vue from '@vitejs/plugin-vue';
 import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
 import vueDevTools from 'vite-plugin-vue-devtools';
-
 import Inspector from 'vite-plugin-vue-inspector';
 
 // https://vitejs.dev/config/

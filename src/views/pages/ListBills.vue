@@ -8,20 +8,7 @@ const annualBills = ref([]);
 const quarterlyBills = ref([]);
 const bimonthlyBills = ref([]);
 const monthlyBills = ref([]);
-const bill = ref({
-    concepto: '',
-    categoria: '',
-    importe: 0,
-    periodicidad: '',
-    cargo: [
-        { fecha: null, estado: '', comentario: '' }, // Primer cargo
-        { fecha: null, estado: '', comentario: '' }, // Segundo cargo
-        { fecha: null, estado: '', comentario: '' }, // Tercer cargo
-        { fecha: null, estado: '', comentario: '' }, // Cuarto cargo
-        { fecha: null, estado: '', comentario: '' }, // Quinto cargo
-        { fecha: null, estado: '', comentario: '' } // Sexto cargo
-    ]
-});
+const bill = ref({}); // UN recibo
 
 const billDialog = ref(false);
 
@@ -152,10 +139,8 @@ function toggleComment(event, specificComment, popoverType = 'comment') {
         editCommentPopover.value.toggle(event);
     }
 }
-
-//bill.value.comentario = activeComment;
 function saveComment() {
-    bill.value.cargo[activeCommentIndex.value].comentario = activeComment.value;
+    bill.value.comentario = activeComment;
     editCommentPopover.value.hide();
 }
 
@@ -192,20 +177,8 @@ const filtersTrimestral = ref({
 const submitted = ref(false);
 
 function openNew(periodicity) {
-    bill.value = {
-        concepto: '',
-        categoria: '',
-        importe: 0,
-        periodicidad: periodicity,
-        cargo: [
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' }
-        ]
-    };
+    bill.value = {};
+    bill.value.periodicidad = periodicity;
     submitted.value = false;
     billDialog.value = true;
 }
@@ -215,64 +188,42 @@ function hideDialog() {
     submitted.value = false;
 }
 
-function saveProduct() {
+async function guardarRecibo() {
     submitted.value = true;
 
-    if (bill?.value.concepto?.trim()) {
-        if (bill.value.id) {
-            // Actualizar recibo existente
-            const index = findIndexById(bill.value.id);
-            if (index !== -1) {
-                products.value[index] = bill.value;
-                toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo actualizado', life: 3000 });
-            }
-        } else {
-            // Crear nuevo recibo
-            bill.value.id = createId();
-            products.value.push(bill.value);
-            toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo creado', life: 3000 });
-        }
+    // Asegurarse de que todos los campos de la estructura bill estén definidos
+    bill.value = {
+        concepto: bill.value.concepto || '',
+        periodicidad: bill.value.periodicidad || '',
+        importe: bill.value.importe || 0,
+        categoria: bill.value.categoria || '',
+        cargo: bill.value.cargo || []
+    };
 
-        billDialog.value = false;
-        bill.value = {
-            concepto: '',
-            categoria: '',
-            importe: 0,
-            periodicidad: '',
-            cargo: [
-                { fecha: null, estado: '', comentario: '' },
-                { fecha: null, estado: '', comentario: '' },
-                { fecha: null, estado: '', comentario: '' },
-                { fecha: null, estado: '', comentario: '' },
-                { fecha: null, estado: '', comentario: '' },
-                { fecha: null, estado: '', comentario: '' }
-            ]
-        };
+    console.log('Detalles del recibo a guardar:', bill.value);
+    /*
+    if (bill.value.concepto.trim() && Array.isArray(bill.value.cargo)) {
+        try {
+            await BillService.saveBill(bill.value);
+            toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo guardado', life: 3000 });
+
+            // Actualizar la lista de recibos según la periodicidad
+            updateBills(bill.value.periodicidad);
+
+            billDialog.value = false;
+            bill.value = {};
+        } catch (error) {
+            toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el recibo: ${error.message}`, life: 3000 });
+            console.error('Detalles del error:', error.response?.data || error.message);
+        }
+    } else {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array.', life: 3000 });
     }
+        */
 }
 
 function editBill(prod) {
-    // Precargar los datos existentes de prod.cargo en bill.value.cargo
-    bill.value = {
-        concepto: prod.concepto,
-        categoria: prod.categoria,
-        importe: prod.importe,
-        periodicidad: prod.periodicidad,
-        cargo: [
-            { fecha: prod.fecha || null, estado: prod.estado || '', comentario: prod.comentario || '' },
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' },
-            { fecha: null, estado: '', comentario: '' }
-        ]
-    };
-
-    // Asegurarse de que siempre haya 6 cargos sin sobrescribir los existentes
-    while (bill.value.cargo.length < 6) {
-        bill.value.cargo.push({ fecha: null, estado: '', comentario: '' });
-    }
-
+    bill.value = { ...prod };
     billDialog.value = true;
 }
 
@@ -590,47 +541,32 @@ const groupedQuarterlyBills = computed(() => {
                             <span>Fecha cargo</span>
                             <div class="flex items-center absolute right-2">
                                 <div v-if="!showFields.commentBox">
-                                    <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[0].comentario, 'editComment')" v-tooltip="bill.cargo[0].comentario" />
+                                    <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
                                 </div>
-                                <Checkbox
-                                    :modelValue="bill.cargo[0].estado === 'cargado'"
-                                    @update:modelValue="(value) => (bill.cargo[0].estado = value ? 'cargado' : 'pendiente')"
-                                    v-tooltip="bill.cargo[0].estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                    :binary="true"
-                                />
+                                <Checkbox :modelValue="bill.estado === 'cargado'" @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')" v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'" :binary="true" />
                             </div>
                         </label>
-                        <Calendar id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                     <div v-if="showFields.fechaCargo2" class="col-span-4">
                         <label for="fecha2" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>2º cargo</span>
                             <div class="flex items-center absolute right-2">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[1].comentario, 'editComment')" v-tooltip="bill.cargo[1].comentario" />
-                                <Checkbox
-                                    :modelValue="bill.cargo[1].estado === 'cargado'"
-                                    @update:modelValue="(value) => (bill.cargo[1].estado = value ? 'cargado' : 'pendiente')"
-                                    v-tooltip="bill.cargo[1].estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                    :binary="true"
-                                />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                                <Checkbox :modelValue="bill.estado === 'cargado'" @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')" v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'" :binary="true" />
                             </div>
                         </label>
-                        <Calendar id="fecha2" v-model="bill.cargo[1].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha2" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                     <div v-if="showFields.fechaCargo3" class="col-span-4">
                         <label for="fecha3" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>3<sup>er</sup> cargo</span>
                             <div class="flex items-center absolute right-2">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[2].comentario, 'editComment')" v-tooltip="bill.cargo[2].comentario" />
-                                <Checkbox
-                                    :modelValue="bill.cargo[2].estado === 'cargado'"
-                                    @update:modelValue="(value) => (bill.cargo[2].estado = value ? 'cargado' : 'pendiente')"
-                                    v-tooltip="bill.cargo[2].estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                    :binary="true"
-                                />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
+                                <Checkbox :modelValue="bill.estado === 'cargado'" @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')" v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'" :binary="true" />
                             </div>
                         </label>
-                        <Calendar id="fecha3" v-model="bill.cargo[2].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha3" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                 </div>
 
@@ -639,58 +575,58 @@ const groupedQuarterlyBills = computed(() => {
                         <label for="fecha4" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>4º cargo</span>
                             <div class="flex items-center absolute right-7">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[3].comentario, 'editComment')" v-tooltip="bill.cargo[3].comentario" />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
                             </div>
                             <Checkbox
-                                :modelValue="bill.cargo[3].estado === 'cargado'"
-                                @update:modelValue="(value) => (bill.cargo[3].estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="bill.cargo[3].estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
+                                :modelValue="bill.estado === 'cargado'"
+                                @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
+                                v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
                                 :binary="true"
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha4" v-model="bill.cargo[3].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha4" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
 
                     <div v-if="showFields.fechaCargo5" class="col-span-4">
                         <label for="fecha5" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>5º cargo</span>
                             <div class="flex items-center absolute right-7">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[4].comentario, 'editComment')" v-tooltip="bill.cargo[4].comentario" />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
                             </div>
                             <Checkbox
-                                :modelValue="bill.cargo[4].estado === 'cargado'"
-                                @update:modelValue="(value) => (bill.cargo[4].estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="bill.cargo[4].estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
+                                :modelValue="bill.estado === 'cargado'"
+                                @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
+                                v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
                                 :binary="true"
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha5" v-model="bill.cargo[4].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha5" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
 
                     <div v-if="showFields.fechaCargo6" class="col-span-4">
                         <label for="fecha5" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>6º cargo</span>
                             <div class="flex items-center absolute right-7">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[5].comentario, 'editComment')" v-tooltip="bill.cargo[5].comentario" />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.comentario, 'editComment')" v-tooltip="bill.comentario" />
                             </div>
                             <Checkbox
-                                :modelValue="bill.cargo[5].estado === 'cargado'"
-                                @update:modelValue="(value) => (bill.cargo[5].estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="bill.cargo[5].estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
+                                :modelValue="bill.estado === 'cargado'"
+                                @update:modelValue="(value) => (bill.estado = value ? 'cargado' : 'pendiente')"
+                                v-tooltip="bill.estado === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
                                 :binary="true"
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha6" v-model="bill.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                 </div>
             </div>
 
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-                <Button label="Save" icon="pi pi-check" @click="saveProduct" />
+                <Button label="Save" icon="pi pi-check" @click="guardarRecibo" />
             </template>
         </Dialog>
 
