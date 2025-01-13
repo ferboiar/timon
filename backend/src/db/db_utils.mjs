@@ -70,8 +70,11 @@ async function getValidValues(column, table = 'recibos') {
     let connection;
     try {
         connection = await getConnection();
-        const [rows] = await connection.execute(`SELECT DISTINCT ${column} FROM ${table}`);
-        return rows.map((row) => row[column]);
+        const [rows] = await connection.execute(`SHOW COLUMNS FROM ${table} LIKE '${column}'`);
+        const enumValues = rows[0].Type.match(/enum\((.*)\)/)[1]
+            .replace(/'/g, '')
+            .split(',');
+        return enumValues;
     } catch (error) {
         console.error(`API. Error al obtener valores válidos para ${column} de la tabla ${table}:`, error);
         throw error;

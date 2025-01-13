@@ -141,11 +141,13 @@ function updateBills(periodicity) {
 
 // >>>> Gestiona el "bocadillo" (popover) que muestra el comentario del recibo
 const activeComment = ref(null);
+const activeCommentIndex = ref(null);
 const commentPopover = ref(null);
 const editCommentPopover = ref(null);
 
-function toggleComment(event, specificComment, popoverType = 'comment') {
+function toggleComment(event, specificComment, index, popoverType = 'comment') {
     activeComment.value = specificComment;
+    activeCommentIndex.value = index;
     if (popoverType == 'comment' && commentPopover.value) {
         commentPopover.value.toggle(event);
     } else if (popoverType == 'editComment' && editCommentPopover.value) {
@@ -153,7 +155,6 @@ function toggleComment(event, specificComment, popoverType = 'comment') {
     }
 }
 function saveComment() {
-    //bill.value.comentario = activeComment;
     bill.value.cargo[activeCommentIndex.value].comentario = activeComment.value;
     editCommentPopover.value.hide();
 }
@@ -599,7 +600,7 @@ const groupedQuarterlyBills = computed(() => {
                             <span>Fecha cargo</span>
                             <div class="flex items-center absolute right-2">
                                 <div v-if="!showFields.commentBox">
-                                    <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[0].comentario, 'editComment')" v-tooltip="bill.cargo[0].comentario" />
+                                    <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[0].comentario, 0, 'editComment')" v-tooltip="bill.cargo[0].comentario" />
                                 </div>
                                 <Checkbox
                                     :modelValue="(bill.cargo[0].estado || 'pendiente') === 'cargado'"
@@ -615,7 +616,7 @@ const groupedQuarterlyBills = computed(() => {
                         <label for="fecha2" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>2º cargo</span>
                             <div class="flex items-center absolute right-2">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[1].comentario, 'editComment')" v-tooltip="bill.cargo[1].comentario" />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[1].comentario, 1, 'editComment')" v-tooltip="bill.cargo[1].comentario" />
                                 <Checkbox
                                     :modelValue="(bill.cargo[1].estado || 'pendiente') === 'cargado'"
                                     @update:modelValue="(value) => (bill.cargo[1].estado = value ? 'cargado' : 'pendiente')"
@@ -630,7 +631,7 @@ const groupedQuarterlyBills = computed(() => {
                         <label for="fecha3" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>3<sup>er</sup> cargo</span>
                             <div class="flex items-center absolute right-2">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[2].comentario, 'editComment')" v-tooltip="bill.cargo[2].comentario" />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[2].comentario, 2, 'editComment')" v-tooltip="bill.cargo[2].comentario" />
                                 <Checkbox
                                     :modelValue="(bill.cargo[2].estado || 'pendiente') === 'cargado'"
                                     @update:modelValue="(value) => (bill.cargo[2].estado = value ? 'cargado' : 'pendiente')"
@@ -648,7 +649,7 @@ const groupedQuarterlyBills = computed(() => {
                         <label for="fecha4" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>4º cargo</span>
                             <div class="flex items-center absolute right-7">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[3].comentario, 'editComment')" v-tooltip="bill.cargo[3].comentario" />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[3].comentario, 3, 'editComment')" v-tooltip="bill.cargo[3].comentario" />
                             </div>
                             <Checkbox
                                 :modelValue="(bill.cargo[3].estado || 'pendiente') === 'cargado'"
@@ -665,7 +666,7 @@ const groupedQuarterlyBills = computed(() => {
                         <label for="fecha5" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>5º cargo</span>
                             <div class="flex items-center absolute right-7">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[4].comentario, 'editComment')" v-tooltip="bill.cargo[4].comentario" />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[4].comentario, 4, 'editComment')" v-tooltip="bill.cargo[4].comentario" />
                             </div>
                             <Checkbox
                                 :modelValue="(bill.cargo[4].estado || 'pendiente') === 'cargado'"
@@ -682,7 +683,7 @@ const groupedQuarterlyBills = computed(() => {
                         <label for="fecha5" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>6º cargo</span>
                             <div class="flex items-center absolute right-7">
-                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[5].comentario, 'editComment')" v-tooltip="bill.cargo[5].comentario" />
+                                <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[5].comentario, 5, 'editComment')" v-tooltip="bill.cargo[5].comentario" />
                             </div>
                             <Checkbox
                                 :modelValue="(bill.cargo[5].estado || 'pendiente') === 'cargado'"
