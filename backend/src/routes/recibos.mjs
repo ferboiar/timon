@@ -1,14 +1,22 @@
+// Importamos Router de express para crear rutas
 import { Router } from 'express';
+// Importamos las funciones getRecibos y pushRecibo desde el módulo db_utils.mjs
 import { getRecibos, pushRecibo } from '../db/db_utils.mjs';
 
+// Creamos una instancia de Router
 const router = Router();
 
+// Definimos una ruta GET para obtener recibos
 router.get('/', async (req, res) => {
+    // Obtenemos los filtros de la consulta
     const filters = req.query;
     try {
+        // Llamamos a la función getRecibos con los filtros y enviamos la respuesta en formato JSON
         const recibos = await getRecibos(filters);
+        //It sends the recibos data as a JSON response to the client, facilitating the transfer of structured data between the server and the client.
         res.json(recibos);
     } catch (error) {
+        // Si hay un error, enviamos una respuesta con el código de estado y el mensaje de error
         if (error.message.startsWith('Filtro no válido')) {
             res.status(400).json({ error: error.message });
         } else {

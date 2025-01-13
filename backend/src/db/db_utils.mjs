@@ -66,6 +66,20 @@ async function getRecibos(filters) {
     }
 }
 
+async function getValidValues(column, table = 'recibos') {
+    let connection;
+    try {
+        connection = await getConnection();
+        const [rows] = await connection.execute(`SELECT DISTINCT ${column} FROM ${table}`);
+        return rows.map((row) => row[column]);
+    } catch (error) {
+        console.error(`API. Error al obtener valores válidos para ${column} de la tabla ${table}:`, error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 /**
  * Inserta o actualiza un recibo en la base de datos.
  *
@@ -86,13 +100,12 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
 
     // Filtrar elementos del array cargo que tienen fecha como null. Esas fechas no se deben insertar en la base de datos.
     cargo = cargo.filter((c) => c.fecha !== null);
-
     console.log('pushRecibo(). Parámetros filtrados:', { id, concepto, periodicidad, importe, categoria, cargo });
 
-    // Validar formato de los parámetros
-    const validCategorias = ['vivienda', 'servicios', 'seguros', 'transporte', 'entretenimiento', 'educacion', 'comida', 'ahorros', 'otros'];
-    const validPeriodicidades = ['mensual', 'bimestral', 'trimestral', 'anual'];
-    const validEstados = ['cargado', 'pendiente'];
+    // Obtener valores válidos desde la base de datos
+    const validCategorias = await getValidValues('categoria');
+    const validPeriodicidades = await getValidValues('periodicidad');
+    const validEstados = await getValidValues('estado', 'fechas_cargo');
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
     if (typeof concepto !== 'string' || concepto.length > 30) {
