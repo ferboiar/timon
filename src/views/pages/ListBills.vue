@@ -9,6 +9,7 @@ const quarterlyBills = ref([]);
 const bimonthlyBills = ref([]);
 const monthlyBills = ref([]);
 const bill = ref({
+    id: null, // Añadir el parámetro id
     concepto: '',
     categoria: '',
     importe: 0,
@@ -18,8 +19,7 @@ const bill = ref({
         { fecha: null, estado: 'pendiente', comentario: '' }, // Segundo cargo
         { fecha: null, estado: 'pendiente', comentario: '' }, // Tercer cargo
         { fecha: null, estado: 'pendiente', comentario: '' }, // Cuarto cargo
-        { fecha: null, estado: 'pendiente', comentario: '' }, // Quinto cargo
-        { fecha: null, estado: 'pendiente', comentario: '' } // Sexto cargo
+        { fecha: null, estado: 'pendiente', comentario: '' } // Quinto cargo
     ]
 });
 
@@ -173,7 +173,7 @@ const dt_bimestral = ref();
 const dt_mensual = ref();
 const products = ref();
 
-const deleteProductDialog = ref(false);
+const deleteBillDialog = ref(false); // Renombrar deleteProductDialog a deleteBillDialog
 const deleteProductsDialog = ref(false);
 
 const selectedAnualBills = ref();
@@ -193,6 +193,7 @@ const submitted = ref(false);
 
 function openNew(periodicity) {
     bill.value = {
+        id: null, // Inicializar id a null
         concepto: '',
         categoria: '',
         importe: 0,
@@ -214,15 +215,23 @@ function hideDialog() {
     billDialog.value = false;
     submitted.value = false;
 }
-
+/*
+function ajustarFecha(fecha) {
+    if (!fecha) return null;
+    const date = new Date(fecha);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+}
+*/
 async function guardarRecibo() {
     submitted.value = true;
 
     // Asegurarse de que todos los campos de la estructura bill estén definidos
     bill.value = {
+        id: bill.value.id || null, // Asegurarse de que id esté definido
         concepto: bill.value.concepto || '',
         periodicidad: bill.value.periodicidad || '',
-        importe: bill.value.importe || 0,
+        importe: parseFloat(bill.value.importe) || 0, // Asegurarse de que importe sea un número
         categoria: bill.value.categoria || '',
         cargo: bill.value.cargo || []
     };
@@ -239,6 +248,7 @@ async function guardarRecibo() {
 
             billDialog.value = false;
             bill.value = {
+                id: null, // Reiniciar id a null
                 concepto: '',
                 categoria: '',
                 importe: 0,
@@ -262,8 +272,9 @@ async function guardarRecibo() {
 }
 
 function editBill(prod) {
-    // Precargar los datos existentes de prod.cargo en bill.value.cargo
+    // Precargar los datos existentes de prod en bill.value
     bill.value = {
+        id: prod.id, // Capturar la id proveniente de la base de datos
         concepto: prod.concepto,
         categoria: prod.categoria,
         importe: prod.importe,
@@ -286,37 +297,24 @@ function editBill(prod) {
     billDialog.value = true;
 }
 
-function confirmDeleteProduct(prod) {
+function confirmDeleteBill(prod) {
+    // Renombrar confirmDeleteProduct a confirmDeleteBill
     bill.value = prod;
-    deleteProductDialog.value = true;
+    deleteBillDialog.value = true;
 }
 
-function deleteProduct() {
-    products.value = products.value.filter((val) => val.id !== bill.value.id);
-    deleteProductDialog.value = false;
-    bill.value = {};
-    toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
-}
-
-function findIndexById(id) {
-    let index = -1;
-    for (let i = 0; i < products.value.length; i++) {
-        if (products.value[i].id === id) {
-            index = i;
-            break;
-        }
+async function deleteBill() {
+    try {
+        const periodicidad = bill.value.periodicidad;
+        await BillService.deleteBill(bill.value.id);
+        updateBills(periodicidad);
+        deleteBillDialog.value = false;
+        bill.value = {};
+        toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo eliminado', life: 3000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el recibo: ${error.message}`, life: 5000 });
+        console.error('deleteBill(). Error al eliminar el recibo: ', error.response?.data || error.message);
     }
-
-    return index;
-}
-
-function createId() {
-    let id = '';
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (var i = 0; i < 5; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return id;
 }
 
 //modificar esta función más adelante para que me permita exportar los recibos de todas las
@@ -469,7 +467,7 @@ const groupedQuarterlyBills = computed(() => {
                         <Column :exportable="false" style="min-width: 12rem">
                             <template #body="anualSlotProps">
                                 <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(anualSlotProps.data)" />
-                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteProduct(anualSlotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(anualSlotProps.data)" />
                             </template>
                         </Column>
                     </DataTable>
@@ -534,7 +532,7 @@ const groupedQuarterlyBills = computed(() => {
                                 <Column :exportable="false" style="min-width: 12rem">
                                     <template #body="trimestralSlotProps">
                                         <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data)" />
-                                        <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteProduct(trimestralSlotProps.data)" />
+                                        <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(trimestralSlotProps.data)" />
                                     </template>
                                 </Column>
                             </DataTable>
@@ -610,7 +608,7 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <Calendar id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
                     <div v-if="showFields.fechaCargo2" class="col-span-4">
                         <label for="fecha2" class="block font-bold mb-3 flex justify-between items-center relative">
@@ -625,7 +623,7 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <Calendar id="fecha2" v-model="bill.cargo[1].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha2" v-model="bill.cargo[1].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
                     <div v-if="showFields.fechaCargo3" class="col-span-4">
                         <label for="fecha3" class="block font-bold mb-3 flex justify-between items-center relative">
@@ -640,7 +638,7 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <Calendar id="fecha3" v-model="bill.cargo[2].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha3" v-model="bill.cargo[2].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
                 </div>
 
@@ -659,7 +657,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha4" v-model="bill.cargo[3].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha4" v-model="bill.cargo[3].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
 
                     <div v-if="showFields.fechaCargo5" class="col-span-4">
@@ -676,7 +674,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha5" v-model="bill.cargo[4].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha5" v-model="bill.cargo[4].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
 
                     <div v-if="showFields.fechaCargo6" class="col-span-4">
@@ -693,7 +691,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Calendar id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
                 </div>
             </div>
@@ -704,7 +702,7 @@ const groupedQuarterlyBills = computed(() => {
             </template>
         </Dialog>
 
-        <Dialog v-model:visible="deleteProductDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+        <Dialog v-model:visible="deleteBillDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
                 <span v-if="bill"
@@ -713,8 +711,8 @@ const groupedQuarterlyBills = computed(() => {
                 >
             </div>
             <template #footer>
-                <Button label="No" icon="pi pi-times" text @click="deleteProductDialog = false" />
-                <Button label="Yes" icon="pi pi-check" @click="deleteProduct" />
+                <Button label="No" icon="pi pi-times" text @click="deleteBillDialog = false" />
+                <Button label="Yes" icon="pi pi-check" @click="deleteBill" />
             </template>
         </Dialog>
 

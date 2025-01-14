@@ -1,7 +1,7 @@
 // Importamos Router de express para crear rutas
 import { Router } from 'express';
 // Importamos las funciones getRecibos y pushRecibo desde el módulo db_utils.mjs
-import { getRecibos, pushRecibo } from '../db/db_utils.mjs';
+import { deleteRecibo, getRecibos, pushRecibo } from '../db/db_utils.mjs'; // Renombrar deleteBill a deleteRecibo
 
 // Creamos una instancia de Router
 const router = Router();
@@ -35,6 +35,21 @@ router.post('/', async (req, res) => {
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente' });
     } catch (error) {
         res.status(400).json({ error: `Error al insertar o actualizar el recibo: ${error.message}`, details: error.stack });
+    }
+});
+
+// Definimos una ruta DELETE para eliminar recibos
+router.delete('/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const success = await deleteRecibo(id); // Renombrar deleteBill a deleteRecibo
+        if (success) {
+            res.status(200).send({ message: 'Recibo eliminado correctamente' });
+        } else {
+            res.status(404).send({ message: 'Recibo no encontrado' });
+        }
+    } catch (error) {
+        res.status(500).send({ message: 'Error al eliminar el recibo', error: error.message });
     }
 });
 

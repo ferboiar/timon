@@ -44,7 +44,7 @@ export class BillService {
             const response = await axios.delete(`${API_URL}/${id}`);
             return response.data;
         } catch (error) {
-            console.error(`Error al eliminar el recibo con ID ${id}: `, error);
+            console.error(`BillService. Error al eliminar el recibo con ID ${id}: `, error);
             throw error;
         }
     }
@@ -55,7 +55,7 @@ export class BillService {
             const response = await axios.get(`${API_URL}?periodicidad=${periodicity}`);
             return response.data;
         } catch (error) {
-            console.error(`BillService. Error al obtener los recibos con periodicidad ${periodicity}:`, error);
+            console.error(`BillService. Error al obtener los recibos con periodicidad ${periodicity}: `, error);
             throw error;
         }
     }

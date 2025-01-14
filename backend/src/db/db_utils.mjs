@@ -125,9 +125,6 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
     }
     for (const c of cargo) {
         if (!c.fecha || !c.estado || !c.comentario) {
-            console.log('API. Valor de c.fecha:', c.fecha);
-            console.log('API. Valor de c.estado:', c.estado);
-            console.log('API. Valor de c.comentario:', c.comentario);
             throw new Error('API. Cada cargo debe contener fecha, estado y comentario.');
         }
         const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
@@ -182,6 +179,29 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
         }
     } catch (error) {
         console.error('API. Error al insertar o actualizar el recibo: ', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export async function deleteRecibo(id) {
+    let connection;
+    try {
+        connection = await getConnection();
+        await connection.beginTransaction();
+
+        // Eliminar registros relacionados en la tabla fechas_cargo
+        await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
+
+        // Eliminar el recibo
+        const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
+
+        await connection.commit();
+        return result.affectedRows > 0;
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error('API. Error al eliminar el recibo: ', error);
         throw error;
     } finally {
         if (connection) connection.release();
