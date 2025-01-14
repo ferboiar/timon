@@ -109,7 +109,7 @@ function expandirTodo() {
     if (dt_trimestral.value) {
         expandedRows.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
     } else if (dt_bimestral.value) {
-        expandedRows.value = groupedBimonthlyBillsBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+        expandedRows.value = groupedBimonthlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
     }
 }
 
