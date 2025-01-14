@@ -42,7 +42,7 @@ router.post('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const id = req.params.id;
-        const success = await deleteRecibo(id); // Renombrar deleteBill a deleteRecibo
+        const success = await deleteRecibo(id);
         if (success) {
             res.status(200).send({ message: 'Recibo eliminado correctamente' });
         } else {
