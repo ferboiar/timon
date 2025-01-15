@@ -41,8 +41,9 @@ router.post('/', async (req, res) => {
 // Definimos una ruta DELETE para eliminar recibos
 router.delete('/:id', async (req, res) => {
     try {
-        const id = req.params.id;
-        const success = await deleteRecibo(id);
+        const { id } = req.params;
+        const { fecha, periodicidad } = req.query;
+        const success = await deleteRecibo(id, fecha, periodicidad);
         if (success) {
             res.status(200).send({ message: 'Recibo eliminado correctamente' });
         } else {

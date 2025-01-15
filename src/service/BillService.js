@@ -39,12 +39,14 @@ export class BillService {
     }
 
     // Eliminar un recibo
-    static async deleteBill(id) {
+    static async deleteBill(id, fecha, periodicidad) {
         try {
-            const response = await axios.delete(`${API_URL}/${id}`);
+            const response = await axios.delete(`${API_URL}/${id}`, {
+                params: { fecha, periodicidad }
+            });
             return response.data;
         } catch (error) {
-            console.error(`BillService. Error al eliminar el recibo con ID ${id}: `, error);
+            console.error(`BillService. Error al eliminar el recibo ${periodicidad} del ${fecha} con ID ${id}: `, error);
             throw error;
         }
     }

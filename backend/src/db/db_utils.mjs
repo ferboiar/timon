@@ -185,20 +185,34 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
     }
 }
 
-export async function deleteRecibo(id) {
+async function deleteRecibo(id, fecha, periodicidad) {
     let connection;
     try {
         connection = await getConnection();
         await connection.beginTransaction();
 
-        // Eliminar registros relacionados en la tabla fechas_cargo
-        await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
+        if (periodicidad !== 'mensual') {
+            const fecha_formateada = new Date(fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
 
-        // Eliminar el recibo
-        const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
+            // Eliminar recibo de la tabla fechas_cargo
+            await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, fecha_formateada]);
 
-        await connection.commit();
-        return result.affectedRows > 0;
+            // Si no tiene más fechas de cargo eliminar el recibo de la tabla recibos
+            const [remainingCargos] = await connection.query('SELECT COUNT(*) as count FROM fechas_cargo WHERE recibo_id = ?', [id]);
+            if (remainingCargos[0].count === 0) {
+                const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
+                await connection.commit();
+                return result.affectedRows > 0;
+            } else {
+                await connection.commit();
+                return true;
+            }
+        } else {
+            // Para recibos mensuales, eliminar directamente de la tabla recibos
+            const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
+            await connection.commit();
+            return result.affectedRows > 0;
+        }
     } catch (error) {
         if (connection) await connection.rollback();
         console.error('API. Error al eliminar el recibo: ', error);
@@ -208,4 +222,4 @@ export async function deleteRecibo(id) {
     }
 }
 
-export { getRecibos, pushRecibo };
+export { deleteRecibo, getRecibos, pushRecibo };

@@ -65,22 +65,10 @@ onMounted(async () => {
 });
 
 const items = ref([
-    {
-        label: 'Save',
-        icon: 'pi pi-check'
-    },
-    {
-        label: 'Update',
-        icon: 'pi pi-upload'
-    },
-    {
-        label: 'Delete',
-        icon: 'pi pi-trash'
-    },
-    {
-        label: 'Home Page',
-        icon: 'pi pi-home'
-    }
+    { label: 'Save', icon: 'pi pi-check' },
+    { label: 'Update', icon: 'pi pi-upload' },
+    { label: 'Delete', icon: 'pi pi-trash' },
+    { label: 'Home Page', icon: 'pi pi-home' }
 ]);
 
 // >>>> Menú de la tarjeta
@@ -91,6 +79,7 @@ function toggleCardMenu(event, periodicity) {
     cardMenu.value = [
         { label: 'Añadir', icon: 'pi pi-fw pi-plus', command: () => openNew(periodicity) },
         { label: 'Actualizar', icon: 'pi pi-fw pi-refresh', command: () => updateBills(periodicity) },
+        { label: 'Multiselección', icon: 'pi pi-fw pi-check-square', command: () => showSelector() },
         { label: 'Exportar', icon: 'pi pi-fw pi-upload' }
     ];
 
@@ -306,7 +295,7 @@ function confirmDeleteBill(prod) {
 async function deleteBill() {
     try {
         const periodicidad = bill.value.periodicidad;
-        await BillService.deleteBill(bill.value.id);
+        await BillService.deleteBill(bill.value.id, bill.value.fecha, bill.value.periodicidad);
         updateBills(periodicidad);
         deleteBillDialog.value = false;
         bill.value = {};
@@ -569,7 +558,7 @@ const groupedQuarterlyBills = computed(() => {
         <Dialog v-model:visible="billDialog" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
-                    <label for="concepto" class="block font-bold mb-3">Concepto</label>
+                    <label for="concepto" class="block font-bold mb-3">Concepto (ID del recibo: {{ bill.id }})</label>
                     <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
                     <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                 </div>
