@@ -16,9 +16,9 @@ async function getRecibos(filters) {
     try {
         connection = await getConnection();
         let query = `
-            SELECT r.*, fc.fecha, fc.estado, fc.comentario
+            SELECT r.*, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.comentario
             FROM recibos r
-            JOIN fechas_cargo fc ON r.id = fc.recibo_id
+            LEFT JOIN fechas_cargo fc ON r.id = fc.recibo_id
             WHERE 1=1
         `;
         const params = [];
@@ -150,14 +150,14 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
 
                 // Actualizar fechas de cargo
                 for (const c of cargo) {
-                    const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, c.fecha]);
-                    const estado = c.estado === '' ? 'pendiente' : c.estado;
                     const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+                    const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, fecha]);
+                    const estado = c.estado === '' ? 'pendiente' : c.estado; // Si estado está vacío, se considera 'pendiente'
                     if (existingCargo.length > 0) {
-                        //actualiza si existe
+                        // Actualizar si existe
                         await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ? WHERE recibo_id = ? AND fecha = ?', [estado, c.comentario, id, fecha]);
                     } else {
-                        //insertar si no existe
+                        // Insertar si no existe
                         await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [id, fecha, estado, c.comentario]);
                     }
                 }

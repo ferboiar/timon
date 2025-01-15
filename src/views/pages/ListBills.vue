@@ -15,11 +15,12 @@ const bill = ref({
     importe: 0,
     periodicidad: '',
     cargo: [
-        { fecha: null, estado: 'pendiente', comentario: '' }, // Primer cargo
-        { fecha: null, estado: 'pendiente', comentario: '' }, // Segundo cargo
-        { fecha: null, estado: 'pendiente', comentario: '' }, // Tercer cargo
-        { fecha: null, estado: 'pendiente', comentario: '' }, // Cuarto cargo
-        { fecha: null, estado: 'pendiente', comentario: '' } // Quinto cargo
+        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Primer cargo
+        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Segundo cargo
+        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Tercer cargo
+        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Cuarto cargo
+        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Quinto cargo
+        { id: null, fecha: null, estado: 'pendiente', comentario: '' } // Sexto cargo
     ]
 });
 
@@ -188,12 +189,12 @@ function openNew(periodicity) {
         importe: 0,
         periodicidad: periodicity,
         cargo: [
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' }
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' }
         ]
     };
     submitted.value = false;
@@ -217,17 +218,29 @@ async function guardarRecibo() {
 
     // Asegurarse de que todos los campos de la estructura bill estén definidos
     bill.value = {
-        id: bill.value.id || null, // Asegurarse de que id esté definido
+        id: bill.value.id || null,
         concepto: bill.value.concepto || '',
         periodicidad: bill.value.periodicidad || '',
         importe: parseFloat(bill.value.importe) || 0, // Asegurarse de que importe sea un número
         categoria: bill.value.categoria || '',
-        cargo: bill.value.cargo || []
+        cargo: [
+            {
+                id: bill.value.cargo[0].id || null,
+                fecha: bill.value.cargo[0].fecha ? new Date(bill.value.cargo[0].fecha) : null,
+                estado: bill.value.cargo[0].estado || '',
+                comentario: bill.value.cargo[0].comentario || ''
+            },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' }
+        ]
     };
 
     console.log('guardarRecibo(). Recibo a guardar:', bill.value);
 
-    if (bill.value.concepto.trim() && Array.isArray(bill.value.cargo)) {
+    if (bill.value.concepto.trim() && Array.isArray(bill.value.cargo) && bill.value.cargo.every((c) => c.id && c.fecha && c.estado && c.comentario)) {
         try {
             await BillService.saveBill(bill.value);
             toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo guardado!', life: 5000 });
@@ -243,12 +256,12 @@ async function guardarRecibo() {
                 importe: 0,
                 periodicidad: '',
                 cargo: [
-                    { fecha: null, estado: 'pendiente', comentario: '' },
-                    { fecha: null, estado: 'pendiente', comentario: '' },
-                    { fecha: null, estado: 'pendiente', comentario: '' },
-                    { fecha: null, estado: 'pendiente', comentario: '' },
-                    { fecha: null, estado: 'pendiente', comentario: '' },
-                    { fecha: null, estado: 'pendiente', comentario: '' }
+                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+                    { id: null, fecha: null, estado: 'pendiente', comentario: '' }
                 ]
             };
         } catch (error) {
@@ -256,7 +269,19 @@ async function guardarRecibo() {
             console.error('guardarRecibo(). Error al guardar el recibo: ', error.response?.data || error.message);
         }
     } else {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array.', life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array con fecha, estado y comentario.', life: 5000 });
+        console.log('bill.value.concepto.trim():', bill.value.concepto.trim());
+        console.log('Array.isArray(bill.value.cargo):', Array.isArray(bill.value.cargo));
+        console.log(
+            'bill.value.cargo.every((c) => c.id && c.fecha && c.estado && c.comentario):',
+            bill.value.cargo.every((c) => c.id && c.fecha && c.estado && c.comentario)
+        );
+        bill.value.cargo.every((c) => {
+            console.log('c.id:', c.id);
+            console.log('c.fecha:', c.fecha);
+            console.log('c.estado:', c.estado);
+            console.log('c.comentario:', c.comentario);
+        });
     }
 }
 
@@ -269,18 +294,23 @@ function editBill(prod) {
         importe: prod.importe,
         periodicidad: prod.periodicidad,
         cargo: [
-            { fecha: prod.fecha || null, estado: prod.estado || '', comentario: prod.comentario || '' },
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' },
-            { fecha: null, estado: 'pendiente', comentario: '' }
+            {
+                id: prod.fc_id || null,
+                fecha: prod.fecha || null,
+                estado: prod.estado || '',
+                comentario: prod.comentario || ''
+            },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
+            { id: null, fecha: null, estado: 'pendiente', comentario: '' }
         ]
     };
 
     // Asegurarse de que siempre haya 6 cargos sin sobrescribir los existentes
     while (bill.value.cargo.length < 6) {
-        bill.value.cargo.push({ fecha: null, estado: 'pendiente', comentario: '' });
+        bill.value.cargo.push({ id: null, fecha: null, estado: 'pendiente', comentario: '' });
     }
 
     billDialog.value = true;
@@ -558,7 +588,7 @@ const groupedQuarterlyBills = computed(() => {
         <Dialog v-model:visible="billDialog" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
-                    <label for="concepto" class="block font-bold mb-3">Concepto (ID del recibo: {{ bill.id }})</label>
+                    <label for="concepto" class="block font-bold mb-3">Concepto (ID recibos: {{ bill.id }}, ID fechas_cargo: {{ bill.cargo[0].id }})</label>
                     <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
                     <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                 </div>
@@ -597,7 +627,7 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <Calendar id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
                     <div v-if="showFields.fechaCargo2" class="col-span-4">
                         <label for="fecha2" class="block font-bold mb-3 flex justify-between items-center relative">
@@ -612,7 +642,7 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <Calendar id="fecha2" v-model="bill.cargo[1].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha2" v-model="bill.cargo[1].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
                     <div v-if="showFields.fechaCargo3" class="col-span-4">
                         <label for="fecha3" class="block font-bold mb-3 flex justify-between items-center relative">
@@ -627,7 +657,7 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <Calendar id="fecha3" v-model="bill.cargo[2].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha3" v-model="bill.cargo[2].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
                 </div>
 
@@ -646,7 +676,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha4" v-model="bill.cargo[3].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha4" v-model="bill.cargo[3].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
 
                     <div v-if="showFields.fechaCargo5" class="col-span-4">
@@ -663,7 +693,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha5" v-model="bill.cargo[4].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha5" v-model="bill.cargo[4].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
 
                     <div v-if="showFields.fechaCargo6" class="col-span-4">
@@ -680,7 +710,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <Calendar id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
                     </div>
                 </div>
             </div>
