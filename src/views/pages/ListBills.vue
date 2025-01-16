@@ -205,15 +205,11 @@ function hideDialog() {
     billDialog.value = false;
     submitted.value = false;
 }
-/*
-function ajustarFecha(fecha) {
-    if (!fecha) return null;
-    const date = new Date(fecha);
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return date.toISOString().split('T')[0];
-}
-*/
+
 async function guardarRecibo() {
+    /*
+    const fechaLocal = new Date(bill.value.cargo[0].fecha.getTime() - bill.value.cargo[0].fecha.getTimezoneOffset() * 60000);
+*/
     submitted.value = true;
 
     // Asegurarse de que todos los campos de la estructura bill estén definidos
@@ -221,12 +217,13 @@ async function guardarRecibo() {
         id: bill.value.id || null,
         concepto: bill.value.concepto || '',
         periodicidad: bill.value.periodicidad || '',
-        importe: parseFloat(bill.value.importe) || 0, // Asegurarse de que importe sea un número
+        importe: parseFloat(bill.value.importe) || 0, // Asegura que importe sea número y no string
         categoria: bill.value.categoria || '',
         cargo: [
             {
                 id: bill.value.cargo[0].id || null,
-                fecha: bill.value.cargo[0].fecha ? new Date(bill.value.cargo[0].fecha) : null,
+                //asigna un objeto Date con la fecha del cargo y le resta la diferencia horaria para que se guarde en la base de datos con la fecha correcta
+                fecha: new Date(bill.value.cargo[0].fecha.getTime() - bill.value.cargo[0].fecha.getTimezoneOffset() * 60000) || null,
                 estado: bill.value.cargo[0].estado || '',
                 comentario: bill.value.cargo[0].comentario || ''
             },
@@ -240,7 +237,7 @@ async function guardarRecibo() {
 
     console.log('guardarRecibo(). Recibo a guardar:', bill.value);
 
-    if (bill.value.concepto.trim() && Array.isArray(bill.value.cargo) && bill.value.cargo.every((c) => c.id && c.fecha && c.estado && c.comentario)) {
+    if (bill.value.concepto.trim() && Array.isArray(bill.value.cargo)) {
         try {
             await BillService.saveBill(bill.value);
             toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo guardado!', life: 5000 });
@@ -269,19 +266,7 @@ async function guardarRecibo() {
             console.error('guardarRecibo(). Error al guardar el recibo: ', error.response?.data || error.message);
         }
     } else {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array con fecha, estado y comentario.', life: 5000 });
-        console.log('bill.value.concepto.trim():', bill.value.concepto.trim());
-        console.log('Array.isArray(bill.value.cargo):', Array.isArray(bill.value.cargo));
-        console.log(
-            'bill.value.cargo.every((c) => c.id && c.fecha && c.estado && c.comentario):',
-            bill.value.cargo.every((c) => c.id && c.fecha && c.estado && c.comentario)
-        );
-        bill.value.cargo.every((c) => {
-            console.log('c.id:', c.id);
-            console.log('c.fecha:', c.fecha);
-            console.log('c.estado:', c.estado);
-            console.log('c.comentario:', c.comentario);
-        });
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array con id, fecha, estado y comentario.', life: 5000 });
     }
 }
 

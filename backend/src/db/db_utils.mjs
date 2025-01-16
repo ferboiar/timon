@@ -127,7 +127,9 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
         if (!c.fecha || !c.estado || !c.comentario) {
             throw new Error('API. Cada cargo debe contener fecha, estado y comentario.');
         }
-        const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+        const f = new Date(c.fecha);
+        const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
+        const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
         if (!dateRegex.test(fecha)) {
             throw new Error('API. La fecha debe estar en el formato YYYY-MM-DD.');
         }
