@@ -102,7 +102,12 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
     }
 
     // Filtrar elementos del array cargo que tienen fecha como null. Esas fechas no se deben insertar en la base de datos.
-    cargo = cargo.filter((c) => c.fecha !== null);
+    if (periodicidad !== 'mensual') {
+        cargo = cargo.filter((c) => c.fecha !== null);
+    } else {
+        // si es mensual, solo se debe insertar el primer arrray de cargo
+        cargo = [cargo[0]];
+    }
     console.log('pushRecibo(). Parámetros filtrados:', { id, concepto, periodicidad, importe, categoria, cargo });
 
     // Obtener valores válidos desde la base de datos
@@ -124,14 +129,10 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
         throw new Error(`API. La categoría debe ser una de las siguientes: ${validCategorias.join(', ')}.`);
     }
     for (const c of cargo) {
-        if (!c.fecha || !c.estado || !c.comentario) {
-            throw new Error('API. Cada cargo debe contener fecha, estado y comentario.');
-        }
-        const f = new Date(c.fecha);
-        const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
-        const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
-        if (!dateRegex.test(fecha)) {
-            throw new Error('API. La fecha debe estar en el formato YYYY-MM-DD.');
+        if (c.fecha) {
+            if (!dateRegex.test(new Date(c.fecha).toISOString().split('T')[0])) {
+                throw new Error('API. La fecha debe estar en el formato YYYY-MM-DD.');
+            }
         }
         if (!validEstados.includes(c.estado)) {
             throw new Error(`API. El estado del cargo debe ser uno de los siguientes: ${validEstados.join(', ')}.`);
@@ -152,12 +153,16 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
 
                 // Actualizar fechas de cargo
                 for (const c of cargo) {
-                    const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
-                    const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, fecha]);
+                    const f = new Date(c.fecha);
+                    const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
+                    const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+
+                    //const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+                    const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
                     const estado = c.estado === '' ? 'pendiente' : c.estado; // Si estado está vacío, se considera 'pendiente'
                     if (existingCargo.length > 0) {
                         // Actualizar si existe
-                        await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ? WHERE recibo_id = ? AND fecha = ?', [estado, c.comentario, id, fecha]);
+                        await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ? WHERE id = ?', [estado, c.comentario, fecha, c.id]);
                     } else {
                         // Insertar si no existe
                         await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [id, fecha, estado, c.comentario]);
@@ -169,13 +174,17 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
         } else {
             // Insertar nuevo recibo
             const [result] = await connection.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria) VALUES (?, ?, ?, ?)', [concepto, periodicidad, importe, categoria]);
-
             const newReciboId = result.insertId;
 
             // Insertar fechas de cargo
             for (const c of cargo) {
                 const estado = c.estado === '' ? 'pendiente' : c.estado;
-                const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+
+                const f = new Date(c.fecha);
+                const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
+                const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+
+                //const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
                 await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario]);
             }
         }

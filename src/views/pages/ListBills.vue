@@ -207,9 +207,6 @@ function hideDialog() {
 }
 
 async function guardarRecibo() {
-    /*
-    const fechaLocal = new Date(bill.value.cargo[0].fecha.getTime() - bill.value.cargo[0].fecha.getTimezoneOffset() * 60000);
-*/
     submitted.value = true;
 
     // Asegurarse de que todos los campos de la estructura bill estén definidos
@@ -222,9 +219,8 @@ async function guardarRecibo() {
         cargo: [
             {
                 id: bill.value.cargo[0].id || null,
-                //asigna un objeto Date con la fecha del cargo y le resta la diferencia horaria para que se guarde en la base de datos con la fecha correcta
-                fecha: new Date(bill.value.cargo[0].fecha.getTime() - bill.value.cargo[0].fecha.getTimezoneOffset() * 60000) || null,
-                estado: bill.value.cargo[0].estado || '',
+                fecha: bill.value.cargo[0].fecha ? new Date(bill.value.cargo[0].fecha) : null,
+                estado: bill.value.cargo[0].estado || 'pendiente',
                 comentario: bill.value.cargo[0].comentario || ''
             },
             { id: null, fecha: null, estado: 'pendiente', comentario: '' },
@@ -234,6 +230,14 @@ async function guardarRecibo() {
             { id: null, fecha: null, estado: 'pendiente', comentario: '' }
         ]
     };
+
+    // Ajustar la zona horaria si hay fecha
+    // asigna un objeto Date con la fecha del cargo y le resta la diferencia horaria
+    // para que se guarde en la base de datos con la fecha correcta
+    if (bill.value.cargo[0].fecha) {
+        const fechaLocal = new Date(bill.value.cargo[0].fecha.getTime() - bill.value.cargo[0].fecha.getTimezoneOffset() * 60000);
+        bill.value.cargo[0].fecha = fechaLocal;
+    }
 
     console.log('guardarRecibo(). Recibo a guardar:', bill.value);
 
@@ -340,6 +344,7 @@ function deleteSelectedProducts() {
 
 const showFields = ref({
     commentBox: false,
+    estadoCheck: false,
     fechaCargo: false,
     fechaCargo2: false,
     fechaCargo3: false,
@@ -359,7 +364,7 @@ watch(
         } else if (newVal === 'trimestral') {
             showFields.value = { commentBox: false, fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: false, fechaCargo6: false };
         } else if (newVal === 'mensual' || !newVal) {
-            showFields.value = { commentBox: true, fechaCargo: false, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false };
+            showFields.value = { commentBox: true, estadoCheck: true, fechaCargo: false, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false };
         }
     },
     { immediate: true }
@@ -612,7 +617,17 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <DatePicker id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                    </div>
+                    <div v-if="showFields.estadoCheck" class="col-span-4">
+                        <label for="estado" class="block font-bold mb-3"
+                            >Estado&nbsp;&nbsp;&nbsp;&nbsp;
+                            <Checkbox
+                                :modelValue="(bill.cargo[0].estado || 'pendiente') === 'cargado'"
+                                @update:modelValue="(value) => (bill.cargo[0].estado = value ? 'cargado' : 'pendiente')"
+                                v-tooltip="(bill.cargo[0].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
+                                :binary="true"
+                        /></label>
                     </div>
                     <div v-if="showFields.fechaCargo2" class="col-span-4">
                         <label for="fecha2" class="block font-bold mb-3 flex justify-between items-center relative">
@@ -627,7 +642,7 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <DatePicker id="fecha2" v-model="bill.cargo[1].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha2" v-model="bill.cargo[1].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                     <div v-if="showFields.fechaCargo3" class="col-span-4">
                         <label for="fecha3" class="block font-bold mb-3 flex justify-between items-center relative">
@@ -642,7 +657,7 @@ const groupedQuarterlyBills = computed(() => {
                                 />
                             </div>
                         </label>
-                        <DatePicker id="fecha3" v-model="bill.cargo[2].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha3" v-model="bill.cargo[2].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                 </div>
 
@@ -661,7 +676,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <DatePicker id="fecha4" v-model="bill.cargo[3].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha4" v-model="bill.cargo[3].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
 
                     <div v-if="showFields.fechaCargo5" class="col-span-4">
@@ -678,7 +693,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <DatePicker id="fecha5" v-model="bill.cargo[4].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha5" v-model="bill.cargo[4].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
 
                     <div v-if="showFields.fechaCargo6" class="col-span-4">
@@ -695,7 +710,7 @@ const groupedQuarterlyBills = computed(() => {
                                 class="absolute right-2"
                             />
                         </label>
-                        <DatePicker id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar timezone="UTC" />
+                        <DatePicker id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
                     </div>
                 </div>
             </div>
