@@ -25,6 +25,7 @@ const bill = ref({
 });
 
 const billDialog = ref(false);
+const billDialogTB = ref(false);
 
 const expandedRows = ref([]); // Filas expandidas en la tabla trimestral
 
@@ -163,7 +164,8 @@ const dt_bimestral = ref();
 const dt_mensual = ref();
 const products = ref();
 
-const deleteBillDialog = ref(false); // Renombrar deleteProductDialog a deleteBillDialog
+const deleteBillDialog = ref(false);
+const deleteBillDialogTB = ref(false);
 const deleteProductsDialog = ref(false);
 
 const selectedAnualBills = ref();
@@ -203,6 +205,7 @@ function openNew(periodicity) {
 
 function hideDialog() {
     billDialog.value = false;
+    billDialogTB.value = false;
     submitted.value = false;
 }
 
@@ -216,6 +219,7 @@ async function guardarRecibo() {
         periodicidad: bill.value.periodicidad || '',
         importe: parseFloat(bill.value.importe) || 0, // Asegura que importe sea número y no string
         categoria: bill.value.categoria || '',
+        /*
         cargo: [
             {
                 id: bill.value.cargo[0].id || null,
@@ -229,6 +233,13 @@ async function guardarRecibo() {
             { id: null, fecha: null, estado: 'pendiente', comentario: '' },
             { id: null, fecha: null, estado: 'pendiente', comentario: '' }
         ]
+*/
+        cargo: bill.value.cargo.map((c) => ({
+            id: c.id ?? null,
+            fecha: c.fecha ? new Date(c.fecha) : null,
+            estado: c.estado ?? 'pendiente',
+            comentario: c.comentario ?? ''
+        }))
     };
 
     // Ajustar la zona horaria si hay fecha
@@ -250,6 +261,7 @@ async function guardarRecibo() {
             updateBills(bill.value.periodicidad);
 
             billDialog.value = false;
+            billDialogTB.value = false;
             bill.value = {
                 id: null, // Reiniciar id a null
                 concepto: '',
@@ -302,7 +314,13 @@ function editBill(prod) {
         bill.value.cargo.push({ id: null, fecha: null, estado: 'pendiente', comentario: '' });
     }
 
-    billDialog.value = true;
+    console.log('Factura a editar:', bill.value);
+
+    if (bill.value.periodicidad === 'anual' || bill.value.periodicidad === 'mensual') {
+        billDialog.value = true;
+    } else {
+        billDialogTB.value = true;
+    }
 }
 
 function confirmDeleteBill(prod) {
@@ -374,7 +392,7 @@ const groupedQuarterlyBills = computed(() => {
     const grouped = {};
     quarterlyBills.value.forEach((bill) => {
         if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { concepto: bill.concepto, importe: bill.importe, bills: [] };
+            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, bills: [] };
         }
         grouped[bill.concepto].bills.push(bill);
     });
@@ -516,6 +534,14 @@ const groupedQuarterlyBills = computed(() => {
                                 {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(trimestralSlotProps.data.importe) }}
                             </template>
                         </Column>
+
+                        <Column :exportable="false" style="min-width: 12rem">
+                            <template #body="trimestralSlotProps">
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(trimestralSlotProps.data)" />
+                            </template>
+                        </Column>
+
                         <template #expansion="trimestralSlotProps">
                             <DataTable :value="trimestralSlotProps.data.bills">
                                 <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
@@ -711,6 +737,35 @@ const groupedQuarterlyBills = computed(() => {
                             />
                         </label>
                         <DatePicker id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                    </div>
+                </div>
+            </div>
+
+            <template #footer>
+                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Save" icon="pi pi-check" @click="guardarRecibo" />
+            </template>
+        </Dialog>
+
+        <Dialog v-model:visible="billDialogTB" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
+            <div class="flex flex-col gap-6">
+                <div>
+                    <label for="concepto" class="block font-bold mb-3">Concepto (ID recibos: {{ bill.id }}, ID fechas_cargo: {{ bill.cargo[0].id }})</label>
+                    <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
+                    <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
+                </div>
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-5">
+                        <label for="categoria" class="block font-bold mb-3">Categoría</label>
+                        <Select id="categoria" v-model="bill.categoria" :options="categorias" optionValue="value" optionLabel="label" fluid />
+                    </div>
+                    <div class="col-span-3">
+                        <label for="importe" class="block font-bold mb-3">Importe</label>
+                        <InputNumber id="importe" v-model="bill.importe" mode="currency" currency="EUR" locale="es-ES" fluid />
+                    </div>
+                    <div class="col-span-4">
+                        <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>
+                        <Select id="periodicidad" v-model="bill.periodicidad" :options="periodicidad" optionValue="value" optionLabel="label" fluid />
                     </div>
                 </div>
             </div>
