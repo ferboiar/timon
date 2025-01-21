@@ -105,7 +105,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
     if (periodicidad !== 'mensual') {
         cargo = cargo.filter((c) => c.fecha !== null);
     } else {
-        // si es mensual, solo se debe insertar el primer arrray de cargo
+        // si es mensual, solo se debe insertar el primer array de cargo
         cargo = [cargo[0]];
     }
     console.log('pushRecibo(). Parámetros filtrados:', { id, concepto, periodicidad, importe, categoria, cargo });
@@ -149,7 +149,10 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
 
             if (existingRecibo.length > 0) {
                 // Actualizar recibo existente
-                await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria = ? WHERE id = ?', [concepto, periodicidad, importe, categoria, id]);
+                const [updateResult] = await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria = ? WHERE id = ?', [concepto, periodicidad, importe, categoria, id]);
+
+                // Traza para comprobar que el update se haya hecho correctamente
+                console.log(`Update realizado correctamente en tabla recibos. Filas afectadas: ${updateResult.affectedRows}`);
 
                 // Actualizar fechas de cargo
                 for (const c of cargo) {
@@ -157,12 +160,14 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
                     const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
                     const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
 
-                    //const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
                     const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
                     const estado = c.estado === '' ? 'pendiente' : c.estado; // Si estado está vacío, se considera 'pendiente'
                     if (existingCargo.length > 0) {
                         // Actualizar si existe
-                        await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ? WHERE id = ?', [estado, c.comentario, fecha, c.id]);
+                        const [updateCargoResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ? WHERE id = ?', [estado, c.comentario, fecha, c.id]);
+
+                        // Traza para comprobar que el update se haya hecho correctamente
+                        console.log(`Update realizado correctamente en tabla fechas_cargo. Filas afectadas: ${updateCargoResult.affectedRows}`);
                     } else {
                         // Insertar si no existe
                         await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [id, fecha, estado, c.comentario]);
@@ -202,11 +207,28 @@ async function deleteRecibo(id, fecha, periodicidad) {
         connection = await getConnection();
         await connection.beginTransaction();
 
-        if (periodicidad !== 'mensual') {
-            const fecha_formateada = new Date(fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+        if (periodicidad === 'bimestral' || periodicidad === 'trimestral') {
+            if (!fecha) {
+                // Borrar todos los recibos de fechas_cargo con recibo_id = id
+                await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
 
-            // Eliminar recibo de la tabla fechas_cargo
-            await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, fecha_formateada]);
+                // Borrar todos los recibos de recibos con id = id
+                const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
+                await connection.commit();
+                return result.affectedRows > 0;
+            }
+        }
+
+        if (periodicidad !== 'mensual') {
+            const fecha_formateada = fecha ? new Date(fecha).toISOString().split('T')[0] : null; // Convertir fecha al formato YYYY-MM-DD
+
+            if (fecha_formateada) {
+                // Eliminar recibo de la tabla fechas_cargo
+                await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, fecha_formateada]);
+            } else {
+                // Eliminar todos los recibos de fechas_cargo con recibo_id = id
+                await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
+            }
 
             // Si no tiene más fechas de cargo eliminar el recibo de la tabla recibos
             const [remainingCargos] = await connection.query('SELECT COUNT(*) as count FROM fechas_cargo WHERE recibo_id = ?', [id]);
@@ -219,7 +241,8 @@ async function deleteRecibo(id, fecha, periodicidad) {
                 return true;
             }
         } else {
-            // Para recibos mensuales, eliminar directamente de la tabla recibos
+            // Para recibos mensuales, eliminar las entradas en fechas_cargo y luego de la tabla recibos
+            await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
             const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
             await connection.commit();
             return result.affectedRows > 0;

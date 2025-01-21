@@ -26,6 +26,7 @@ const bill = ref({
 
 const billDialog = ref(false);
 const billDialogTB = ref(false);
+const billDialogTB_FC = ref(false);
 
 const expandedRows = ref([]); // Filas expandidas en la tabla trimestral
 
@@ -115,7 +116,7 @@ function updateBills(periodicity) {
                 annualBills.value = response;
             } else if (periodicity === 'trimestral') {
                 // Actualizar los datos de la tabla trimestral
-                dt_trimestral.value = response;
+                quarterlyBills.value = response;
             } else if (periodicity === 'bimestral') {
                 // Actualizar los datos de la tabla bimestral
                 // dt_bimestral.value = response;
@@ -206,6 +207,7 @@ function openNew(periodicity) {
 function hideDialog() {
     billDialog.value = false;
     billDialogTB.value = false;
+    billDialogTB_FC.value = false;
     submitted.value = false;
 }
 
@@ -219,21 +221,6 @@ async function guardarRecibo() {
         periodicidad: bill.value.periodicidad || '',
         importe: parseFloat(bill.value.importe) || 0, // Asegura que importe sea número y no string
         categoria: bill.value.categoria || '',
-        /*
-        cargo: [
-            {
-                id: bill.value.cargo[0].id || null,
-                fecha: bill.value.cargo[0].fecha ? new Date(bill.value.cargo[0].fecha) : null,
-                estado: bill.value.cargo[0].estado || 'pendiente',
-                comentario: bill.value.cargo[0].comentario || ''
-            },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' }
-        ]
-*/
         cargo: bill.value.cargo.map((c) => ({
             id: c.id ?? null,
             fecha: c.fecha ? new Date(c.fecha) : null,
@@ -243,8 +230,6 @@ async function guardarRecibo() {
     };
 
     // Ajustar la zona horaria si hay fecha
-    // asigna un objeto Date con la fecha del cargo y le resta la diferencia horaria
-    // para que se guarde en la base de datos con la fecha correcta
     if (bill.value.cargo[0].fecha) {
         const fechaLocal = new Date(bill.value.cargo[0].fecha.getTime() - bill.value.cargo[0].fecha.getTimezoneOffset() * 60000);
         bill.value.cargo[0].fecha = fechaLocal;
@@ -262,20 +247,19 @@ async function guardarRecibo() {
 
             billDialog.value = false;
             billDialogTB.value = false;
+            billDialogTB_FC.value = false;
             bill.value = {
                 id: null, // Reiniciar id a null
                 concepto: '',
                 categoria: '',
                 importe: 0,
                 periodicidad: '',
-                cargo: [
-                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-                    { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-                    { id: null, fecha: null, estado: 'pendiente', comentario: '' }
-                ]
+                cargo: bill.value.cargo.map(() => ({
+                    id: null,
+                    fecha: null,
+                    estado: 'pendiente',
+                    comentario: ''
+                }))
             };
         } catch (error) {
             toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el recibo: ${error.message}`, life: 5000 });
@@ -286,7 +270,7 @@ async function guardarRecibo() {
     }
 }
 
-function editBill(prod) {
+function editBill(prod, openFCDialog = false) {
     // Precargar los datos existentes de prod en bill.value
     bill.value = {
         id: prod.id, // Capturar la id proveniente de la base de datos
@@ -314,9 +298,11 @@ function editBill(prod) {
         bill.value.cargo.push({ id: null, fecha: null, estado: 'pendiente', comentario: '' });
     }
 
-    console.log('Factura a editar:', bill.value);
+    console.log('Recibo a editar: ', bill.value);
 
-    if (bill.value.periodicidad === 'anual' || bill.value.periodicidad === 'mensual') {
+    if (openFCDialog) {
+        billDialogTB_FC.value = true;
+    } else if (bill.value.periodicidad === 'anual' || bill.value.periodicidad === 'mensual') {
         billDialog.value = true;
     } else {
         billDialogTB.value = true;
@@ -566,7 +552,7 @@ const groupedQuarterlyBills = computed(() => {
                                 </Column>
                                 <Column :exportable="false" style="min-width: 12rem">
                                     <template #body="trimestralSlotProps">
-                                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data)" />
+                                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data, true)" />
                                         <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(trimestralSlotProps.data)" />
                                     </template>
                                 </Column>
@@ -776,6 +762,36 @@ const groupedQuarterlyBills = computed(() => {
             </template>
         </Dialog>
 
+        <Dialog v-model:visible="billDialogTB_FC" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
+            <div class="flex flex-col gap-6">
+                <div>
+                    <label for="comentario" class="block font-bold mb-3">Comentario (ID recibos: {{ bill.id }}, ID fechas_cargo: {{ bill.cargo[0].id }})</label>
+                    <Textarea id="comentario" v-model="bill.cargo[0].comentario" required="true" autofocus rows="3" cols="20" fluid />
+                </div>
+
+                <div class="grid grid-cols-12 gap-2">
+                    <div class="col-span-4">
+                        <label for="fecha" class="block font-bold mb-3 flex justify-between items-center relative">
+                            <span>Fecha cargo</span>
+                            <Checkbox
+                                :modelValue="(bill.cargo[0].estado || 'pendiente') === 'cargado'"
+                                @update:modelValue="(value) => (bill.cargo[0].estado = value ? 'cargado' : 'pendiente')"
+                                v-tooltip="(bill.cargo[0].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
+                                :binary="true"
+                                class="absolute right-2"
+                            />
+                        </label>
+                        <DatePicker id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                    </div>
+                </div>
+            </div>
+
+            <template #footer>
+                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Save" icon="pi pi-check" @click="guardarRecibo" />
+            </template>
+        </Dialog>
+
         <Dialog v-model:visible="deleteBillDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
@@ -785,7 +801,7 @@ const groupedQuarterlyBills = computed(() => {
                 >
             </div>
             <template #footer>
-                <Button label="No" icon="pi pi-times" text @click="deleteBillDialog = false" />
+                <Button label="No" icon="pi pi-times" autofocus text @click="deleteBillDialog = false" />
                 <Button label="Yes" icon="pi pi-check" @click="deleteBill" />
             </template>
         </Dialog>
@@ -796,7 +812,7 @@ const groupedQuarterlyBills = computed(() => {
                 <span v-if="bill">¿Seguro que quieres borrar los recibos seleccionados?</span>
             </div>
             <template #footer>
-                <Button label="No" icon="pi pi-times" text @click="deleteProductsDialog = false" />
+                <Button label="No" icon="pi pi-times" autofocus text @click="deleteProductsDialog = false" />
                 <Button label="Yes" icon="pi pi-check" text @click="deleteSelectedProducts" />
             </template>
         </Dialog>
