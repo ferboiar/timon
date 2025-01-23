@@ -57,11 +57,12 @@ onMounted(async () => {
             BillService.getBillsByPeriodicity('bimestral'),
             BillService.getBillsByPeriodicity('mensual')
         ]);
-
+        /*
         console.log('onMounted. BillService. Recibos anuales:', annualBills.value);
         console.log('onMounted. BillService. Recibos trimestrales:', quarterlyBills.value);
         console.log('onMounted. BillService. Recibos bimestrales:', bimonthlyBills.value);
         console.log('onMounted. BillService. Recibos mensuales:', monthlyBills.value);
+*/
     } catch (error) {
         console.error('onMounted. BillService. Error al cargar los recibos:', error);
     }
