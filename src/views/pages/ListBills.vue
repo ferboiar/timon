@@ -14,14 +14,14 @@ const bill = ref({
     categoria: '',
     importe: 0,
     periodicidad: '',
-    cargo: [
-        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Primer cargo
-        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Segundo cargo
-        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Tercer cargo
-        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Cuarto cargo
-        { id: null, fecha: null, estado: 'pendiente', comentario: '' }, // Quinto cargo
-        { id: null, fecha: null, estado: 'pendiente', comentario: '' } // Sexto cargo
-    ]
+    cargo: Array(6)
+        .fill()
+        .map(() => ({
+            id: null,
+            fecha: null,
+            estado: 'pendiente',
+            comentario: ''
+        }))
 });
 
 const billDialog = ref(false);
@@ -192,14 +192,14 @@ function openNew(periodicity) {
         categoria: '',
         importe: 0,
         periodicidad: periodicity,
-        cargo: [
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' }
-        ]
+        cargo: Array(6)
+            .fill()
+            .map(() => ({
+                id: null,
+                fecha: null,
+                estado: 'pendiente',
+                comentario: ''
+            }))
     };
     submitted.value = false;
     billDialog.value = true;
@@ -280,24 +280,24 @@ function editBill(prod, openFCDialog = false) {
         importe: prod.importe,
         periodicidad: prod.periodicidad,
         cargo: [
+            // Primer elemento con datos existentes
             {
-                id: prod.fc_id || null,
-                fecha: prod.fecha || null,
-                estado: prod.estado || '',
-                comentario: prod.comentario || ''
+                id: prod.fc_id ?? null,
+                fecha: prod.fecha ? new Date(prod.fecha) : null,
+                estado: prod.estado ?? 'pendiente',
+                comentario: prod.comentario ?? ''
             },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' },
-            { id: null, fecha: null, estado: 'pendiente', comentario: '' }
+            // Resto de elementos (5 elementos adicionales)
+            ...Array(5)
+                .fill()
+                .map(() => ({
+                    id: null,
+                    fecha: null,
+                    estado: 'pendiente',
+                    comentario: ''
+                }))
         ]
     };
-
-    // Asegurarse de que siempre haya 6 cargos sin sobrescribir los existentes
-    while (bill.value.cargo.length < 6) {
-        bill.value.cargo.push({ id: null, fecha: null, estado: 'pendiente', comentario: '' });
-    }
 
     console.log('Recibo a editar: ', bill.value);
 
@@ -526,7 +526,7 @@ const groupedQuarterlyBills = computed(() => {
                             <template #body="trimestralSlotProps">
                                 <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data)" />
                                 <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(trimestralSlotProps.data)" />
-                                <Button v-if="trimestralSlotProps.data.bills.length <= 3" icon="pi pi-plus" outlined rounded class="ml-2" @click="addBillEntry(trimestralSlotProps.data)" />
+                                <Button v-if="trimestralSlotProps.data.bills.length <= 3" icon="pi pi-plus" outlined rounded class="ml-2" @click="editBill(trimestralSlotProps.data, true)" />
                             </template>
                         </Column>
 
