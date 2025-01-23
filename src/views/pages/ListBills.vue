@@ -526,6 +526,7 @@ const groupedQuarterlyBills = computed(() => {
                             <template #body="trimestralSlotProps">
                                 <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data)" />
                                 <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(trimestralSlotProps.data)" />
+                                <Button v-if="trimestralSlotProps.data.bills.length <= 3" icon="pi pi-plus" outlined rounded class="ml-2" @click="addBillEntry(trimestralSlotProps.data)" />
                             </template>
                         </Column>
 
