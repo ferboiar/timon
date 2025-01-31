@@ -24,6 +24,8 @@ const bill = ref({
         }))
 });
 
+// Eliminar el watch para evitar bucles infinitos
+
 const billDialog = ref(false);
 const billDialogTB = ref(false);
 const billDialogTB_FC = ref(false);
@@ -230,10 +232,22 @@ async function guardarRecibo() {
         }))
     };
 
-    // Ajustar la zona horaria si hay fecha
-    if (bill.value.cargo[0].fecha) {
-        const fechaLocal = new Date(bill.value.cargo[0].fecha.getTime() - bill.value.cargo[0].fecha.getTimezoneOffset() * 60000);
-        bill.value.cargo[0].fecha = fechaLocal;
+    // Ajustar la zona horaria para todos los cargos donde haya fecha
+    bill.value.cargo.forEach((c, index) => {
+        if (c.fecha) {
+            const fechaLocal = new Date(c.fecha.getTime() - c.fecha.getTimezoneOffset() * 60000);
+            bill.value.cargo[index].fecha = fechaLocal;
+        }
+    });
+
+    // Comprobar fechas de cargo duplicadas para recibos trimestrales o bimestrales
+    if (bill.value.periodicidad === 'trimestral' || bill.value.periodicidad === 'bimestral') {
+        const fechas = bill.value.cargo.map((c) => (c.fecha ? c.fecha.toISOString().split('T')[0] : null)).filter((f) => f !== null);
+        const fechasUnicas = new Set(fechas);
+        if (fechas.length !== fechasUnicas.size) {
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Hay fechas de cargo duplicadas. Por favor, rectifique.', life: 5000 });
+            return;
+        }
     }
 
     console.log('guardarRecibo(). Recibo a guardar:', bill.value);
@@ -531,7 +545,7 @@ const groupedQuarterlyBills = computed(() => {
                         </Column>
 
                         <template #expansion="trimestralSlotProps">
-                            <DataTable :value="trimestralSlotProps.data.bills">
+                            <DataTable :value="trimestralSlotProps.data.bills" sortField="fecha" :sortOrder="1">
                                 <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
                                     <template #body="trimestralSlotProps">
                                         {{ $formatDate(trimestralSlotProps.data.fecha) }}
