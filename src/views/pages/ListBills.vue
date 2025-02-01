@@ -85,7 +85,7 @@ function toggleCardMenu(event, periodicity) {
     cardMenu.value = [
         { label: 'Añadir', icon: 'pi pi-fw pi-plus', command: () => openNew(periodicity) },
         { label: 'Actualizar', icon: 'pi pi-fw pi-refresh', command: () => updateBills(periodicity) },
-        { label: 'Multiselección', icon: 'pi pi-fw pi-check-square', command: () => showSelector() },
+        { label: 'Multiselección', icon: 'pi pi-fw pi-check-square', command: () => showSelector(periodicity) },
         { label: 'Exportar', icon: 'pi pi-fw pi-upload' }
     ];
 
@@ -325,7 +325,6 @@ function editBill(prod, openFCDialog = false) {
 }
 
 function confirmDeleteBill(prod) {
-    // Renombrar confirmDeleteProduct a confirmDeleteBill
     bill.value = prod;
     deleteBillDialog.value = true;
 }
@@ -399,6 +398,18 @@ const groupedQuarterlyBills = computed(() => {
     });
     return Object.values(grouped);
 });
+
+// muestra/oculta la columna de selección
+const showSelectionColumn = ref({
+    anual: false,
+    bimestral: false,
+    trimestral: false,
+    mensual: false
+});
+
+const showSelector = (periodicity) => {
+    showSelectionColumn.value[periodicity] = !showSelectionColumn.value[periodicity];
+};
 </script>
 
 <template>
@@ -463,9 +474,9 @@ const groupedQuarterlyBills = computed(() => {
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                     >
-                        <!-- Columna que añade un checkbox para seleccionar los recibos 
-                        <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
--->
+                        <!-- Columna que añade un checkbox para seleccionar los recibos -->
+                        <Column v-if="showSelectionColumn.anual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
+
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="anualSlotProps">
@@ -516,6 +527,7 @@ const groupedQuarterlyBills = computed(() => {
                     </div>
                     <DataTable
                         ref="dt_trimestral"
+                        v-model:selection="selectedQuarterlyBills"
                         v-model:expandedRows="expandedRows"
                         :value="groupedQuarterlyBills"
                         dataKey="id"
@@ -528,6 +540,7 @@ const groupedQuarterlyBills = computed(() => {
                         rowGroupMode="subheader"
                         groupField="concepto"
                     >
+                        <Column v-if="showSelectionColumn.trimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
