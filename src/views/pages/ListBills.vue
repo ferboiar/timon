@@ -70,13 +70,6 @@ onMounted(async () => {
     }
 });
 
-const items = ref([
-    { label: 'Save', icon: 'pi pi-check' },
-    { label: 'Update', icon: 'pi pi-upload' },
-    { label: 'Delete', icon: 'pi pi-trash' },
-    { label: 'Home Page', icon: 'pi pi-home' }
-]);
-
 // >>>> Menú de la tarjeta
 const cardMenu = ref([]);
 const menuRef = ref(null);
@@ -86,7 +79,7 @@ function toggleCardMenu(event, periodicity) {
         { label: 'Añadir', icon: 'pi pi-fw pi-plus', command: () => openNew(periodicity) },
         { label: 'Actualizar', icon: 'pi pi-fw pi-refresh', command: () => updateBills(periodicity) },
         { label: 'Multiselección', icon: 'pi pi-fw pi-check-square', command: () => showSelector(periodicity) },
-        { label: 'Exportar', icon: 'pi pi-fw pi-upload' }
+        { label: 'Exportar', icon: 'pi pi-fw pi-upload', command: () => exportCSV(periodicity) }
     ];
 
     if (periodicity === 'trimestral' || periodicity === 'bimestral') {
@@ -113,24 +106,45 @@ function contraerTodo() {
 }
 
 function updateBills(periodicity) {
-    BillService.getBillsByPeriodicity(periodicity)
-        .then((response) => {
-            if (periodicity === 'anual') {
-                annualBills.value = response;
-            } else if (periodicity === 'trimestral') {
-                // Actualizar los datos de la tabla trimestral
-                quarterlyBills.value = response;
-            } else if (periodicity === 'bimestral') {
-                // Actualizar los datos de la tabla bimestral
-                // dt_bimestral.value = response;
-            } else if (periodicity === 'mensual') {
-                // Actualizar los datos de la tabla mensual
-                // dt_mensual.value = response;
-            }
-        })
-        .catch((error) => {
-            console.error(`Error al actualizar la lista de recibos ${periodicity}:`, error);
+    if (periodicity === 'all') {
+        ['anual', 'trimestral', 'bimestral', 'mensual'].forEach((period) => {
+            BillService.getBillsByPeriodicity(period)
+                .then((response) => {
+                    if (period === 'anual') {
+                        annualBills.value = response;
+                    } else if (period === 'trimestral') {
+                        quarterlyBills.value = response;
+                    } else if (period === 'bimestral') {
+                        bimonthlyBills.value = response;
+                    } else if (period === 'mensual') {
+                        monthlyBills.value = response;
+                    }
+                })
+                .catch((error) => {
+                    toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar la lista de recibos ${period}: ${error.message}`, life: 5000 });
+                    console.error(`Error al actualizar la lista de recibos ${period}:`, error);
+                });
         });
+        toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Todos los recibos actualizados.', life: 3000 });
+    } else {
+        BillService.getBillsByPeriodicity(periodicity)
+            .then((response) => {
+                if (periodicity === 'anual') {
+                    annualBills.value = response;
+                } else if (periodicity === 'trimestral') {
+                    quarterlyBills.value = response;
+                } else if (periodicity === 'bimestral') {
+                    bimonthlyBills.value = response;
+                } else if (periodicity === 'mensual') {
+                    monthlyBills.value = response;
+                }
+                toast.add({ severity: 'success', summary: 'Actualizado', detail: `Listado de recibos ${periodicity}es actualizado.`, life: 3000 });
+            })
+            .catch((error) => {
+                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar la lista de recibos ${periodicity}es: ${error.message}`, life: 5000 });
+                console.error(`Error al actualizar la lista de recibos ${periodicity}:`, error);
+            });
+    }
 }
 // <<<<
 
@@ -170,7 +184,7 @@ const products = ref();
 
 const deleteBillDialog = ref(false);
 const deleteBillDialogTB = ref(false);
-const deleteProductsDialog = ref(false);
+const deleteSelectedBillsDialog = ref(false);
 
 const selectedAnualBills = ref();
 const selectedQuarterlyBills = ref();
@@ -345,19 +359,73 @@ async function deleteBill() {
 
 //modificar esta función más adelante para que me permita exportar los recibos de todas las
 //periodicidades en un único fichero CSV
-function exportCSV() {
-    dt_anual.value.exportCSV();
+function exportCSV(periodicity) {
+    const exportData = (bills) => {
+        const csvContent = [['Periodicidad', 'Concepto', 'Importe', 'Fecha', 'Estado', 'Comentario'], ...bills.map((bill) => [bill.periodicidad, bill.concepto, bill.importe, bill.fecha, bill.estado, bill.comentario])]
+            .map((e) => e.join(','))
+            .join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'bills.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    if (periodicity === 'all') {
+        const allBills = [...annualBills.value, ...quarterlyBills.value, ...bimonthlyBills.value, ...monthlyBills.value];
+        exportData(allBills);
+    } else {
+        if (periodicity === 'anual') {
+            exportData(annualBills.value);
+        } else if (periodicity === 'trimestral') {
+            exportData(quarterlyBills.value);
+        } else if (periodicity === 'bimestral') {
+            exportData(bimonthlyBills.value);
+        } else if (periodicity === 'mensual') {
+            exportData(monthlyBills.value);
+        }
+    }
 }
 
 function confirmDeleteSelected() {
-    deleteProductsDialog.value = true;
+    deleteSelectedBillsDialog.value = true;
 }
 
-function deleteSelectedProducts() {
-    products.value = products.value.filter((val) => !selectedAnualBills.value.includes(val));
-    deleteProductsDialog.value = false;
-    selectedAnualBills.value = null;
-    toast.add({ severity: 'success', summary: 'Successful', detail: 'Products Deleted', life: 3000 });
+async function deleteSelectedBills() {
+    try {
+        const selectedBills = [...(selectedAnualBills.value || []), ...(selectedQuarterlyBills.value || []), ...(selectedBimonthlyBills.value || []), ...(selectedMonthlyBills.value || [])];
+
+        if (selectedBills.length === 0) {
+            toast.add({ severity: 'warn', summary: 'Warning', detail: 'No hay recibos seleccionados para eliminar', life: 3000 });
+            return;
+        }
+
+        const deletePromises = selectedBills.map((bill) => BillService.deleteBill(bill.id, bill.fecha, bill.periodicidad));
+
+        await Promise.all(deletePromises);
+
+        deleteSelectedBillsDialog.value = false;
+        selectedAnualBills.value = null;
+        selectedQuarterlyBills.value = null;
+        selectedBimonthlyBills.value = null;
+        selectedMonthlyBills.value = null;
+
+        toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibos eliminados', life: 3000 });
+
+        // Actualizar las listas de recibos según la periodicidad
+        const periodicitiesToUpdate = new Set(selectedBills.map((bill) => bill.periodicidad));
+        for (const periodicity of periodicitiesToUpdate) {
+            updateBills(periodicity);
+        }
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar los recibos: ${error.message}`, life: 5000 });
+        console.error('deleteSelectedBills(). Error al eliminar los recibos: ', error.response?.data || error.message);
+    }
 }
 
 const showFields = ref({
@@ -415,33 +483,21 @@ const showSelector = (periodicity) => {
 <template>
     <div class="flex flex-col">
         <div class="card">
-            <div class="font-semibold text-xl mb-4">Toolbar</div>
-            <Toolbar>
-                <template #start>
-                    <Button icon="pi pi-plus" class="mr-2" severity="secondary" text />
-                    <Button icon="pi pi-print" class="mr-2" severity="secondary" text />
-                    <Button icon="pi pi-upload" severity="secondary" text />
-                </template>
-
-                <template #center>
-                    <IconField>
-                        <InputIcon>
-                            <i class="pi pi-search" />
-                        </InputIcon>
-                        <InputText placeholder="Search" />
-                    </IconField>
-                </template>
-
-                <template #end> <SplitButton label="Save" :model="items"></SplitButton></template>
-            </Toolbar>
+            <div class="font-semibold text-xl mb-4"></div>
             <Toolbar class="mb-6">
                 <template #start>
-                    <Button label="New" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNew" />
-                    <Button label="Delete" icon="pi pi-trash" severity="secondary" @click="confirmDeleteSelected" :disabled="!selectedAnualBills || !selectedAnualBills.length" />
+                    <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNew" />
+                    <Button
+                        label="Borrar"
+                        icon="pi pi-trash"
+                        severity="secondary"
+                        @click="confirmDeleteSelected"
+                        :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
+                    />
+                    <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" @click="updateBills('all')" />
                 </template>
-
                 <template #end>
-                    <Button label="Export" icon="pi pi-upload" severity="secondary" @click="exportCSV($event)" />
+                    <Button label="Export" icon="pi pi-upload" severity="secondary" @click="exportCSV('all')" />
                 </template>
             </Toolbar>
         </div>
@@ -835,14 +891,14 @@ const showSelector = (periodicity) => {
             </template>
         </Dialog>
 
-        <Dialog v-model:visible="deleteProductsDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+        <Dialog v-model:visible="deleteSelectedBillsDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
                 <span v-if="bill">¿Seguro que quieres borrar los recibos seleccionados?</span>
             </div>
             <template #footer>
-                <Button label="No" icon="pi pi-times" autofocus text @click="deleteProductsDialog = false" />
-                <Button label="Yes" icon="pi pi-check" text @click="deleteSelectedProducts" />
+                <Button label="No" icon="pi pi-times" autofocus text @click="deleteSelectedBillsDialog = false" />
+                <Button label="Yes" icon="pi pi-check" text @click="deleteSelectedBills" />
             </template>
         </Dialog>
     </div>
