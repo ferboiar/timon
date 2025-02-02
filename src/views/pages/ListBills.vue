@@ -2,7 +2,7 @@
 import { BillService } from '@/service/BillService';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 
 const annualBills = ref([]);
 const quarterlyBills = ref([]);
@@ -199,6 +199,10 @@ const filtersTrimestral = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 
+const filtersBimestrales = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+});
+
 const submitted = ref(false);
 
 function openNew(periodicity) {
@@ -357,37 +361,49 @@ async function deleteBill() {
     }
 }
 
-//modificar esta función más adelante para que me permita exportar los recibos de todas las
-//periodicidades en un único fichero CSV
+const { appContext } = getCurrentInstance();
+
 function exportCSV(periodicity) {
-    const exportData = (bills) => {
-        const csvContent = [['Periodicidad', 'Concepto', 'Importe', 'Fecha', 'Estado', 'Comentario'], ...bills.map((bill) => [bill.periodicidad, bill.concepto, bill.importe, bill.fecha, bill.estado, bill.comentario])]
-            .map((e) => e.join(','))
+    const exportData = (bills, filename, formatDate) => {
+        const csvContent = [
+            ['Periodicidad', 'Concepto', 'Importe', 'Fecha', 'Estado', 'Comentario'],
+            ...bills.map((bill) => [
+                bill.periodicidad,
+                bill.concepto,
+                parseFloat(bill.importe).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
+                formatDate(bill.fecha), // Usar la función pasada como argumento
+                bill.estado,
+                bill.comentario
+            ])
+        ]
+            .map((e) => e.map((field) => `${field}`).join(';'))
             .join('\n');
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', 'bills.csv');
+        link.setAttribute('download', filename);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
+    const formatDate = appContext.config.globalProperties.$formatDate; // Obtener la función global
+
     if (periodicity === 'all') {
         const allBills = [...annualBills.value, ...quarterlyBills.value, ...bimonthlyBills.value, ...monthlyBills.value];
-        exportData(allBills);
+        exportData(allBills, 'allBills.csv', formatDate);
     } else {
         if (periodicity === 'anual') {
-            exportData(annualBills.value);
+            exportData(annualBills.value, 'recibosAnuales.csv', formatDate);
         } else if (periodicity === 'trimestral') {
-            exportData(quarterlyBills.value);
+            exportData(quarterlyBills.value, 'recibosTrimestrales.csv', formatDate);
         } else if (periodicity === 'bimestral') {
-            exportData(bimonthlyBills.value);
+            exportData(bimonthlyBills.value, 'recibosBimestrales.csv', formatDate);
         } else if (periodicity === 'mensual') {
-            exportData(monthlyBills.value);
+            exportData(monthlyBills.value, 'recibosMensuales.csv', formatDate);
         }
     }
 }
@@ -467,6 +483,17 @@ const groupedQuarterlyBills = computed(() => {
     return Object.values(grouped);
 });
 
+const groupedBimonthlyBills = computed(() => {
+    const grouped = {};
+    bimonthlyBills.value.forEach((bill) => {
+        if (!grouped[bill.concepto]) {
+            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, bills: [] };
+        }
+        grouped[bill.concepto].bills.push(bill);
+    });
+    return Object.values(grouped);
+});
+
 // muestra/oculta la columna de selección
 const showSelectionColumn = ref({
     anual: false,
@@ -491,10 +518,11 @@ const showSelector = (periodicity) => {
                         label="Borrar"
                         icon="pi pi-trash"
                         severity="secondary"
+                        class="mr-2"
                         @click="confirmDeleteSelected"
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
-                    <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" @click="updateBills('all')" />
+                    <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
                 </template>
                 <template #end>
                     <Button label="Export" icon="pi pi-upload" severity="secondary" @click="exportCSV('all')" />
@@ -523,8 +551,8 @@ const showSelector = (periodicity) => {
                         v-model:selection="selectedAnualBills"
                         :value="annualBills"
                         dataKey="id"
-                        :paginator="true"
-                        :rows="10"
+                        :paginator="annualBills.length > 8"
+                        :rows="8"
                         :filters="filtersAnual"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
@@ -583,12 +611,12 @@ const showSelector = (periodicity) => {
                     </div>
                     <DataTable
                         ref="dt_trimestral"
-                        v-model:selection="selectedQuarterlyBills"
+                        v-model:selection="selectedBimonthlyBills"
                         v-model:expandedRows="expandedRows"
                         :value="groupedQuarterlyBills"
                         dataKey="id"
-                        :paginator="true"
-                        :rows="10"
+                        :paginator="groupedQuarterlyBills.length > 8"
+                        :rows="8"
                         :filters="filtersTrimestral"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
@@ -650,14 +678,83 @@ const showSelector = (periodicity) => {
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
                         <div class="font-semibold text-xl mb-4">Bimestrales</div>
-                        <Button icon="pi pi-plus" class="p-button-text" @click="toggleCardMenu" />
+                        <div class="flex flex-wrap gap-2 items-center justify-between">
+                            <IconField>
+                                <InputIcon>
+                                    <i class="pi pi-search" />
+                                </InputIcon>
+                                <InputText v-model="filtersBimestrales['global'].value" placeholder="Buscar..." />
+                            </IconField>
+                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'bimestral')" />
+                            <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
+                        </div>
                     </div>
-                    <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
-                    <p class="leading-normal m-0">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-                        consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                    </p>
+
+                    <DataTable
+                        ref="dt_bimestral"
+                        v-model:selection="selectedBimonthlyBills"
+                        v-model:expandedRows="expandedRows"
+                        :value="groupedBimonthlyBills"
+                        dataKey="id"
+                        :paginator="groupedBimonthlyBills.length > 8"
+                        :rows="8"
+                        :filters="filtersBimestral"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 15, 20]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
+                        rowGroupMode="subheader"
+                        groupField="concepto"
+                    >
+                        <Column v-if="showSelectionColumn.trimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
+                        <Column expander style="width: 5rem" />
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column field="importe" header="Importe" sortable style="min-width: 3rem">
+                            <template #body="bimestralSlotProps">
+                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(bimestralSlotProps.data.importe) }}
+                            </template>
+                        </Column>
+
+                        <Column :exportable="false" style="min-width: 12rem">
+                            <template #body="bimestralSlotProps">
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(bimestralSlotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(bimestralSlotProps.data)" />
+                                <Button v-if="bimestralSlotProps.data.bills.length <= 3" icon="pi pi-plus" outlined rounded class="ml-2" @click="editBill(bimestralSlotProps.data, true)" />
+                            </template>
+                        </Column>
+
+                        <template #expansion="bimestralSlotProps">
+                            <DataTable :value="bimestralSlotProps.data.bills" sortField="fecha" :sortOrder="1">
+                                <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
+                                    <template #body="bimestralSlotProps">
+                                        {{ $formatDate(bimestralSlotProps.data.fecha) }}
+                                    </template>
+                                </Column>
+                                <Column field="estado" header="Estado" sortable style="min-width: 2rem">
+                                    <template #body="bimestralSlotProps">
+                                        <i
+                                            :class="bimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : bimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
+                                            v-tooltip="bimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : bimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                        />
+                                    </template>
+                                </Column>
+                                <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
+                                    <template #body="bimestralSlotProps">
+                                        <template v-if="bimestralSlotProps.data.comentario">
+                                            <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, bimestralSlotProps.data.comentario, 'comment')" v-tooltip="bimestralSlotProps.data.comentario" />
+                                        </template>
+                                    </template>
+                                </Column>
+                                <Column :exportable="false" style="min-width: 12rem">
+                                    <template #body="bimestralSlotProps">
+                                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(bimestralSlotProps.data, true)" />
+                                        <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(bimestralSlotProps.data)" />
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </template>
+                    </DataTable>
                 </div>
+
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
                         <div class="font-semibold text-xl mb-4">Mensuales</div>
