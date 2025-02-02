@@ -86,17 +86,17 @@ function toggleCardMenu(event, periodicity) {
         cardMenu.value.push(
             // eslint-disable-next-line prettier/prettier
             { separator: true },
-            { label: 'Expandir todo', icon: 'pi pi-fw pi-chevron-down', command: () => expandirTodo() },
-            { label: 'Contraer todo', icon: 'pi pi-fw pi-chevron-right', command: () => contraerTodo() }
+            { label: 'Expandir todo', icon: 'pi pi-fw pi-chevron-down', command: () => expandirTodo(periodicity) },
+            { label: 'Contraer todo', icon: 'pi pi-fw pi-chevron-right', command: () => contraerTodo(periodicity) }
         );
     }
     menuRef.value.toggle(event);
 }
 
-function expandirTodo() {
-    if (dt_trimestral.value) {
+function expandirTodo(periodicity) {
+    if (periodicity === 'trimestral') {
         expandedRows.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-    } else if (dt_bimestral.value) {
+    } else if (periodicity === 'bimestral') {
         expandedRows.value = groupedBimonthlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
     }
 }
