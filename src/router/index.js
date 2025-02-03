@@ -19,6 +19,11 @@ const router = createRouter({
                     component: () => import('@/views/pages/ListBills.vue')
                 },
                 {
+                    path: '/pages/calendar',
+                    name: 'calendario',
+                    component: () => import('@/views/pages/Calendar.vue')
+                },
+                {
                     path: '/uikit/formlayout',
                     name: 'formlayout',
                     component: () => import('@/views/uikit/FormLayout.vue')
