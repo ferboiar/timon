@@ -1,47 +1,24 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 
-const date = ref(null);
-const highlightedDates = ref([]);
-
-onMounted(async () => {
-    try {
-        //const response = await BillService.getBillDates(); // Supongamos que esta función obtiene las fechas de los recibos
-        //highlightedDates.value = response.map(bill => new Date(bill.fecha)); // Convierte las fechas a objetos Date
-        highlightedDates.value = [
-            new Date('2025-01-01'),
-            new Date('2025-01-15'),
-            new Date('2025-02-01'),
-            new Date('2025-02-15'),
-            new Date('2025-03-01'),
-            new Date('2025-03-15'),
-            new Date('2025-04-01'),
-            new Date('2025-04-15'),
-            new Date('2025-05-01'),
-            new Date('2025-05-15'),
-            new Date('2025-06-01'),
-            new Date('2025-06-15'),
-            new Date('2025-07-01'),
-            new Date('2025-07-15'),
-            new Date('2025-08-01'),
-            new Date('2025-08-15'),
-            new Date('2025-09-01'),
-            new Date('2025-09-15'),
-            new Date('2025-10-01'),
-            new Date('2025-10-15'),
-            new Date('2025-11-01'),
-            new Date('2025-11-15'),
-            new Date('2025-12-01'),
-            new Date('2025-12-15')
-        ];
-    } catch (error) {
-        console.error('Error al obtener las fechas de los recibos:', error);
-    }
-});
+const enero = ref(new Date(2025, 0, 1));
+const febrero = ref(new Date(2025, 1, 1));
+const marzo = ref(new Date(2025, 2, 1));
 </script>
 <template>
     <div className="card">
         <div class="font-semibold text-xl mb-4">Calendario</div>
-        <DatePicker v-model="date" inline showWeek :highlightedDates="highlightedDates" />
+        <DatePicker v-model="enero" inline showWeek dateFormat="dd/mm/yy" variant="filled" class="w-full sm:w-[30rem]">
+            <template #date="slotProps">
+                <strong v-if="slotProps.date.day > 10 && slotProps.date.day < 15" style="text-decoration: line-through">{{ slotProps.date.day }}</strong>
+                <template v-else>{{ slotProps.date.day }}</template>
+            </template>
+        </DatePicker>
+        <DatePicker v-model="febrero" inline showWeek dateFormat="dd/mm/yy" variant="filled" class="w-full sm:w-[30rem]">
+            <template #date="slotProps">
+                <strong v-if="slotProps.date.day > 10 && slotProps.date.day < 15" style="text-decoration: line-through">{{ slotProps.date.day }}</strong>
+                <template v-else>{{ slotProps.date.day }}</template>
+            </template>
+        </DatePicker>
     </div>
 </template>
