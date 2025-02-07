@@ -35,6 +35,7 @@
     "primelocale": "^1.2.3",
     "primevue": "^4.2.4",
     "vue": "^3.4.34",
+    "vue-cal": "^4.10.2",
     "vue-router": "^4.4.0"
   },
   "devDependencies": {
