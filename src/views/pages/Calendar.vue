@@ -20,33 +20,10 @@ const getVueCalDate = (monthIndex) => {
 
 const { isDarkTheme } = useLayout();
 
-/*
-() => ({
-    events: [
-        {
-            start: '2025-02-21',
-            end: '2025-02-21',
-            title: 'Need to go shopping',
-            class: 'leisure'
-        },
-        {
-            start: '2025-02-13',
-            end: '2025-02-13',
-            title: 'Golf with John',
-            class: 'sport'
-        },
-        {
-            start: '2025-02-03',
-            end: '2025-02-03',
-            title: "Dad's birthday!",
-            class: 'sport'
-        }
-    ]
-});*/
 const events = ref([
-    { start: '2024-01-15', end: '2024-01-15', title: 'Evento 1' },
-    { start: '2024-02-20', end: '2024-02-20', title: 'Evento 2' },
-    { start: '2024-03-05', end: '2024-03-05', title: 'Evento 3' }
+    { start: '2025-01-15', end: '2025-01-15', title: 'Evento 1' },
+    { start: '2025-02-20', end: '2025-02-20', title: 'Evento 2' },
+    { start: '2025-03-05', end: '2025-03-05', title: 'Evento 3' }
 ]);
 </script>
 
@@ -73,6 +50,11 @@ const events = ref([
                 >
                     <template v-slot:title="{ title }">
                         {{ title.replace(/\d+/g, '') }}
+                    </template>
+                    <template v-slot:cell-content="{ cell, events }">
+                        <div v-tooltip.top="events.length ? events[0].title : ''" :class="{ 'vuecal__cell-date': true }">
+                            {{ cell.content }}
+                        </div>
                     </template>
                 </vue-cal>
             </div>
@@ -116,11 +98,33 @@ const events = ref([
 .calendar-dark :deep(.vuecal__cell-date) {
     color: #fff !important;
 }
-
-.vuecal__cell--has-events {
-    background-color: #d34e10;
+:deep(.vuecal__cell--has-events) {
+    background-color: transparent !important;
 }
-.vuecal__cell-events-count {
+:deep(.vuecal__cell--has-events .vuecal__cell-date) {
+    background-color: var(--primary-color) !important;
+    color: #080808 !important;
+    opacity: 0.7;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+/* Asegura que el tooltip no interfiera con el estilo del calendario */
+:deep(.vuecal__cell--has-events .vuecal__cell-content) {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+:deep(.vuecal__cell-events-count) {
     display: none;
+}
+:deep(.vuecal__cell--out-of-scope) {
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 </style>
