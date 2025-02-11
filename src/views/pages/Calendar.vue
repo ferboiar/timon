@@ -1,5 +1,6 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
+import { BillService } from '@/service/BillService';
 import { computed, ref } from 'vue';
 import VueCal from 'vue-cal';
 import 'vue-cal/dist/vuecal.css';
@@ -7,11 +8,40 @@ import 'vue-cal/dist/vuecal.css';
 const selectedDate = ref(new Date()); // Initialize with a default date
 const displayedYear = computed(() => selectedDate.value.getFullYear());
 
+// cachear los resultados dado que estos no cambian con frecuencia para evitar llamadas repetidas al servidor
+// esta cache es de memoria y se reinicia con cada recarga de la página
+const cache = new Map();
+
+const fetchBillsByYear = async (year) => {
+    console.log('fetchBillsByYear(). Año solicitado:', year);
+    console.log('fetchBillsByYear(). Estado de la caché:', cache);
+
+    if (cache.has(year)) {
+        console.log(`Recibos del año ${year} (desde caché):`, cache.get(year));
+        return cache.get(year);
+    }
+    try {
+        const bills = await BillService.getBillsByYear(year);
+        cache.set(year, bills);
+        console.log(`Recibos del año ${year}:`, bills);
+        return bills;
+    } catch (error) {
+        console.error(`Error al obtener los recibos del año ${year}:`, error);
+        throw error;
+    }
+};
+
+// Llamar a fetchBillsByYear al cargar la página por primera vez
+fetchBillsByYear(displayedYear.value);
+
 const previous = () => {
     selectedDate.value = new Date(selectedDate.value.getFullYear() - 1, selectedDate.value.getMonth(), selectedDate.value.getDate());
+    fetchBillsByYear(displayedYear.value);
 };
+
 const next = () => {
     selectedDate.value = new Date(selectedDate.value.getFullYear() + 1, selectedDate.value.getMonth(), selectedDate.value.getDate());
+    fetchBillsByYear(displayedYear.value);
 };
 
 const getVueCalDate = (monthIndex) => {

@@ -61,4 +61,15 @@ export class BillService {
             throw error;
         }
     }
+
+    // Obtener recibos por año
+    static async getBillsByYear(year) {
+        try {
+            const response = await axios.get(`${API_URL}?año=${year}`);
+            return response.data;
+        } catch (error) {
+            console.error(`BillService. Error al obtener los recibos del año ${year}: `, error);
+            throw error;
+        }
+    }
 }
