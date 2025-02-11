@@ -34,13 +34,8 @@ const fetchBillsByYear = async (year) => {
 // Llamar a fetchBillsByYear al cargar la página por primera vez
 fetchBillsByYear(displayedYear.value);
 
-const previous = () => {
-    selectedDate.value = new Date(selectedDate.value.getFullYear() - 1, selectedDate.value.getMonth(), selectedDate.value.getDate());
-    fetchBillsByYear(displayedYear.value);
-};
-
-const next = () => {
-    selectedDate.value = new Date(selectedDate.value.getFullYear() + 1, selectedDate.value.getMonth(), selectedDate.value.getDate());
+const changeYear = (increment) => {
+    selectedDate.value = new Date(selectedDate.value.getFullYear() + increment, selectedDate.value.getMonth(), selectedDate.value.getDate());
     fetchBillsByYear(displayedYear.value);
 };
 
@@ -60,9 +55,9 @@ const events = ref([
 <template>
     <div :class="{ 'calendar-dark': isDarkTheme }" class="card">
         <div class="flex items-center justify-center gap-4 mb-4">
-            <Button icon="pi pi-caret-left" severity="secondary" class="mr-2" @click="previous" />
+            <Button icon="pi pi-caret-left" severity="secondary" class="mr-2" @click="changeYear(-1)" />
             <div class="font-semibold text-xl">{{ displayedYear }}</div>
-            <Button icon="pi pi-caret-right" severity="secondary" class="mr-2" @click="next" />
+            <Button icon="pi pi-caret-right" severity="secondary" class="mr-2" @click="changeYear(1)" />
         </div>
 
         <div class="calendar-grid">
@@ -79,7 +74,7 @@ const events = ref([
                     :events="events"
                 >
                     <template v-slot:title="{ title }">
-                        {{ title.replace(/\d+/g, '') }}
+                        {{ title.replace(/\s*\d{4}\s*/g, '') }}
                     </template>
                     <template v-slot:cell-content="{ cell, events }">
                         <div v-tooltip.top="events.length ? events[0].title : ''" :class="{ 'vuecal__cell-date': true }">
@@ -103,13 +98,16 @@ const events = ref([
 }
 :deep(.vuecal__title-bar) {
     background-color: transparent !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+}
+:deep(.vuecal__title) {
+    justify-content: flex-start !important;
+    padding-left: 12px !important;
+    text-align: left !important;
 }
 :deep(.vuecal__arrow) {
     display: none !important;
-}
-:deep(.vuecal__title) {
-    justify-content: start;
-    padding-left: 12px;
 }
 .vuecal {
     max-width: 300px;
@@ -156,5 +154,9 @@ const events = ref([
 :deep(.vuecal__cell--out-of-scope) {
     visibility: hidden !important;
     pointer-events: none !important;
+}
+:deep(.vuecal__cell--selected *),
+:deep(.vuecal__cell--selected) {
+    border: none !important;
 }
 </style>
