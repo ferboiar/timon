@@ -1,6 +1,6 @@
 import { getConnection } from './db_connection.mjs';
 
-const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 'estado'];
+const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 'estado', 'activo'];
 
 /**
  * Obtiene los recibos de la base de datos según los filtros proporcionados.
@@ -16,7 +16,7 @@ async function getRecibos(filters) {
     try {
         connection = await getConnection();
         let query = `
-            SELECT r.*, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.comentario
+            SELECT r.*, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.activo, fc.comentario
             FROM recibos r
             LEFT JOIN fechas_cargo fc ON r.id = fc.recibo_id
             WHERE 1=1
@@ -37,7 +37,8 @@ async function getRecibos(filters) {
 
         // Construir la consulta basada en los filtros válidos
         for (const [key, value] of Object.entries(filters)) {
-            if (value) {
+            if (value !== undefined && value !== null) {
+                // Cambiado para permitir valores false
                 if (key === 'año') {
                     query += ' AND YEAR(fc.fecha) = ?';
                     params.push(value);
@@ -45,6 +46,11 @@ async function getRecibos(filters) {
                     const [startDate, endDate] = value.split('a');
                     query += ' AND fc.fecha BETWEEN ? AND ?';
                     params.push(startDate, endDate);
+                } else if (key === 'activo') {
+                    // Convertir el valor a booleano independientemente de si es string o boolean
+                    const boolValue = value === true || value === 'true';
+                    query += ' AND fc.activo = ?';
+                    params.push(boolValue);
                 } else if (validFilters.includes(key)) {
                     query += ` AND ${key === 'estado' ? 'fc.' : 'r.'}${key} = ?`;
                     params.push(value);
@@ -137,6 +143,10 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
         if (!validEstados.includes(c.estado)) {
             throw new Error(`API. El estado del cargo debe ser uno de los siguientes: ${validEstados.join(', ')}.`);
         }
+        // Nueva validación para activo
+        if (typeof c.activo !== 'boolean') {
+            c.activo = true; // Valor por defecto si no se especifica
+        }
     }
 
     let connection;
@@ -163,14 +173,12 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
                     const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
                     const estado = c.estado === '' ? 'pendiente' : c.estado; // Si estado está vacío, se considera 'pendiente'
                     if (existingCargo.length > 0) {
-                        // Actualizar si existe
-                        const [updateCargoResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ? WHERE id = ?', [estado, c.comentario, fecha, c.id]);
-
-                        // Traza para comprobar que el update se haya hecho correctamente
+                        // Actualizar si existe, incluyendo activo
+                        const [updateCargoResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ? WHERE id = ?', [estado, c.comentario, fecha, c.activo, c.id]);
                         console.log(`Update realizado correctamente en tabla fechas_cargo. Filas afectadas: ${updateCargoResult.affectedRows}`);
                     } else {
-                        // Insertar si no existe
-                        await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [id, fecha, estado, c.comentario]);
+                        // Insertar si no existe, incluyendo activo
+                        await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario, c.activo]);
                     }
                 }
             } else {
@@ -190,7 +198,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
                 const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
 
                 //const fecha = new Date(c.fecha).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
-                await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario) VALUES (?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario]);
+                await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario, c.activo]);
             }
         }
     } catch (error) {
