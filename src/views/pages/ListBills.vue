@@ -542,7 +542,9 @@ const showSelector = (periodicity) => {
             <div class="md:w-1/2">
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
-                        <div class="font-semibold text-xl mb-4">Anuales</div>
+                        <OverlayBadge value="2">
+                            <div class="font-semibold text-xl mb-4">Anuales</div>
+                        </OverlayBadge>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
                                 <InputIcon>
