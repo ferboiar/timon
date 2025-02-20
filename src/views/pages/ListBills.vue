@@ -78,6 +78,7 @@ function toggleCardMenu(event, periodicity) {
         { label: 'Añadir', icon: 'pi pi-fw pi-plus', command: () => openNew(periodicity) },
         { label: 'Actualizar', icon: 'pi pi-fw pi-refresh', command: () => updateBills(periodicity) },
         { label: 'Multiselección', icon: 'pi pi-fw pi-check-square', command: () => showSelector(periodicity) },
+        { label: 'Mostrar ocultos', icon: 'pi pi-fw pi-eye', command: () => showSelector(periodicity) },
         { label: 'Exportar', icon: 'pi pi-fw pi-upload', command: () => exportCSV(periodicity) }
     ];
 
@@ -192,9 +193,17 @@ const selectedQuarterlyBills = ref();
 const selectedBimonthlyBills = ref();
 const selectedMonthlyBills = ref();
 
+const showInactive = ref(false);
+
 const filtersAnual = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    activo: { value: true, matchMode: FilterMatchMode.EQUALS }
 });
+
+function toggleShowInactive() {
+    showInactive.value = !showInactive.value;
+    filtersAnual.value.activo.value = showInactive.value ? null : true;
+}
 
 const filtersTrimestral = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
@@ -510,6 +519,10 @@ const showSelectionColumn = ref({
 const showSelector = (periodicity) => {
     showSelectionColumn.value[periodicity] = !showSelectionColumn.value[periodicity];
 };
+
+const inactiveAnnualBillsCount = computed(() => {
+    return annualBills.value.filter((bill) => !bill.activo).length;
+});
 </script>
 
 <template>
@@ -528,6 +541,7 @@ const showSelector = (periodicity) => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
+                    <Button label="Mostrar inactivos" icon="pi pi-eye" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>
                 <template #end>
                     <!--
@@ -542,9 +556,10 @@ const showSelector = (periodicity) => {
             <div class="md:w-1/2">
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
-                        <OverlayBadge value="2">
-                            <div class="font-semibold text-xl mb-4">Anuales</div>
-                        </OverlayBadge>
+                        <div class="font-semibold text-xl mb-4 flex items-center relative">
+                            <span>Anuales</span>
+                            <OverlayBadge v-if="inactiveAnnualBillsCount > 0" :value="inactiveAnnualBillsCount" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
+                        </div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
                                 <InputIcon>
