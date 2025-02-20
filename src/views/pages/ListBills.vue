@@ -197,12 +197,12 @@ const showInactive = ref(false);
 
 const filtersAnual = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    activo: { value: true, matchMode: FilterMatchMode.EQUALS }
+    activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
 });
 
 function toggleShowInactive() {
     showInactive.value = !showInactive.value;
-    filtersAnual.value.activo.value = showInactive.value ? null : true;
+    filtersAnual.value.activo.value = showInactive.value ? null : 1;
 }
 
 const filtersTrimestral = ref({
