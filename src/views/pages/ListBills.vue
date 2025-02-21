@@ -20,7 +20,8 @@ const bill = ref({
             id: null,
             fecha: null,
             estado: 'pendiente',
-            comentario: ''
+            comentario: '',
+            activo: 1
         }))
 });
 
@@ -78,7 +79,6 @@ function toggleCardMenu(event, periodicity) {
         { label: 'Añadir', icon: 'pi pi-fw pi-plus', command: () => openNew(periodicity) },
         { label: 'Actualizar', icon: 'pi pi-fw pi-refresh', command: () => updateBills(periodicity) },
         { label: 'Multiselección', icon: 'pi pi-fw pi-check-square', command: () => showSelector(periodicity) },
-        { label: 'Mostrar ocultos', icon: 'pi pi-fw pi-eye', command: () => showSelector(periodicity) },
         { label: 'Exportar', icon: 'pi pi-fw pi-upload', command: () => exportCSV(periodicity) }
     ];
 
@@ -221,7 +221,7 @@ const submitted = ref(false);
 
 function openNew(periodicity) {
     bill.value = {
-        id: null, // Inicializar id a null
+        id: null,
         concepto: '',
         categoria: '',
         importe: 0,
@@ -232,7 +232,8 @@ function openNew(periodicity) {
                 id: null,
                 fecha: null,
                 estado: 'pendiente',
-                comentario: ''
+                comentario: '',
+                activo: 1 // Inicializar activo a 1 dentro de cargo
             }))
     };
     submitted.value = false;
@@ -260,7 +261,8 @@ async function guardarRecibo() {
             id: c.id ?? null,
             fecha: c.fecha ? new Date(c.fecha) : null,
             estado: c.estado ?? 'pendiente',
-            comentario: c.comentario ?? ''
+            comentario: c.comentario ?? '',
+            activo: c.activo ?? 1
         }))
     };
 
@@ -305,7 +307,8 @@ async function guardarRecibo() {
                     id: null,
                     fecha: null,
                     estado: 'pendiente',
-                    comentario: ''
+                    comentario: '',
+                    activo: 1
                 }))
             };
         } catch (error) {
@@ -330,6 +333,7 @@ function editBill(prod, openFCDialog = false) {
             {
                 id: prod.fc_id ?? null,
                 fecha: prod.fecha ? new Date(prod.fecha) : null,
+                activo: prod.activo ?? 1,
                 estado: prod.estado ?? 'pendiente',
                 comentario: prod.comentario ?? ''
             },
@@ -339,6 +343,7 @@ function editBill(prod, openFCDialog = false) {
                 .map(() => ({
                     id: null,
                     fecha: null,
+                    activo: 1,
                     estado: 'pendiente',
                     comentario: ''
                 }))
@@ -541,7 +546,7 @@ const inactiveAnnualBillsCount = computed(() => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
-                    <Button label="Mostrar inactivos" icon="pi pi-eye" severity="secondary" class="mr-2" @click="toggleShowInactive" />
+                    <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>
                 <template #end>
                     <!--
@@ -843,8 +848,12 @@ const inactiveAnnualBillsCount = computed(() => {
         <Dialog v-model:visible="billDialog" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
-                    <label for="concepto" class="block font-bold mb-3">Concepto (ID recibos: {{ bill.id }}, ID fechas_cargo: {{ bill.cargo[0].id }})</label>
-                    <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
+                    <label for="concepto" class="block font-bold mb-3">Concepto (activo: {{ bill.cargo[0].activo }})</label>
+                    <!--
+                    <ToggleSwitch id="activo" v-model:checked="bill.cargo[0].activo" :checked="bill.cargo[0].activo === 1" @change="bill.cargo[0].activo = $event.target.checked ? 1 : 0" />
+-->
+                    <ToggleSwitch v-model="checked" />
+                    <ToggleSwitch id="activo" v-model="checked" :checked="bill.cargo[0].activo === 1" @change="bill.cargo[0].activo = $event.target.checked ? 1 : 0" />
                     <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                 </div>
                 <div v-if="showFields.commentBox">
