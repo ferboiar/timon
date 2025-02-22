@@ -848,12 +848,17 @@ const inactiveAnnualBillsCount = computed(() => {
         <Dialog v-model:visible="billDialog" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
-                    <label for="concepto" class="block font-bold mb-3">Concepto (activo: {{ bill.cargo[0].activo }})</label>
-                    <!--
-                    <ToggleSwitch id="activo" v-model:checked="bill.cargo[0].activo" :checked="bill.cargo[0].activo === 1" @change="bill.cargo[0].activo = $event.target.checked ? 1 : 0" />
--->
-                    <ToggleSwitch v-model="checked" />
-                    <ToggleSwitch id="activo" v-model="checked" :checked="bill.cargo[0].activo === 1" @change="bill.cargo[0].activo = $event.target.checked ? 1 : 0" />
+                    <div class="flex justify-between items-center mb-3">
+                        <label for="concepto" class="font-bold">Concepto</label>
+                        <ToggleSwitch
+                            id="activo"
+                            :modelValue="(bill.cargo[0].activo || 0) === 1"
+                            @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
+                            :binary="true"
+                            v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
+                        />
+                    </div>
+                    <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
                     <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                 </div>
                 <div v-if="showFields.commentBox">
@@ -998,7 +1003,16 @@ const inactiveAnnualBillsCount = computed(() => {
         <Dialog v-model:visible="billDialogTB" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
-                    <label for="concepto" class="block font-bold mb-3">Concepto (ID recibos: {{ bill.id }}, ID fechas_cargo: {{ bill.cargo[0].id }})</label>
+                    <div class="flex justify-between items-center mb-3">
+                        <label for="concepto" class="font-bold">Concepto</label>
+                        <ToggleSwitch
+                            id="activo"
+                            :modelValue="(bill.cargo[0].activo || 0) === 1"
+                            @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
+                            :binary="true"
+                            v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
+                        />
+                    </div>
                     <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
                     <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                 </div>

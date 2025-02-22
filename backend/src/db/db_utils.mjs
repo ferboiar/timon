@@ -144,8 +144,11 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
             throw new Error(`API. El estado del cargo debe ser uno de los siguientes: ${validEstados.join(', ')}.`);
         }
         // Nueva validación para activo
-        if (typeof c.activo !== 'boolean') {
-            c.activo = true; // Valor por defecto si no se especifica
+        if (c.activo === undefined || c.activo === null) {
+            c.activo = 1; // Valor por defecto
+        } else {
+            // Convertir a 1 o 0 explícitamente
+            c.activo = c.activo ? 1 : 0;
         }
     }
 
