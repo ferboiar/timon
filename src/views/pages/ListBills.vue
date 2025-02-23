@@ -93,20 +93,53 @@ function toggleCardMenu(event, periodicity) {
     menuRef.value.toggle(event);
 }
 
+const isExpanded = ref(false);
+const tableT = ref(false); // Estado de la tabla trimestral
+const tableB = ref(false); // Estado de la tabla bimestral
+
+function toggleExpandCollapseAll() {
+    isExpanded.value = !isExpanded.value;
+    if (isExpanded.value) {
+        contraerTodo('all');
+    } else {
+        expandirTodo('all');
+    }
+}
+
 function expandirTodo(periodicity) {
     if (periodicity === 'trimestral') {
         expandedRowsTrimestral.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+        tableT.value = true;
     } else if (periodicity === 'bimestral') {
         expandedRowsBimestral.value = groupedBimonthlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+        tableB.value = true;
+    } else if (periodicity === 'all') {
+        expandedRowsTrimestral.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+        expandedRowsBimestral.value = groupedBimonthlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+        tableT.value = true;
+        tableB.value = true;
     }
+    checkGlobalExpandState();
 }
 
 function contraerTodo(periodicity) {
     if (periodicity === 'trimestral') {
         expandedRowsTrimestral.value = [];
+        tableT.value = false;
     } else if (periodicity === 'bimestral') {
         expandedRowsBimestral.value = [];
+        tableB.value = false;
+    } else if (periodicity === 'all') {
+        expandedRowsTrimestral.value = [];
+        expandedRowsBimestral.value = [];
+        tableT.value = false;
+        tableB.value = false;
     }
+    checkGlobalExpandState();
+}
+
+function checkGlobalExpandState() {
+    isExpanded.value = tableT.value && tableB.value;
 }
 
 function updateBills(periodicity) {
@@ -562,6 +595,7 @@ const inactiveAnnualBillsCount = computed(() => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
+                    <Button :label="isExpanded.value ? 'Contraer todo' : 'Expandir todo'" icon="pi pi-arrows-v" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>
                 <template #end>
