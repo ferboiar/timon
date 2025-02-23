@@ -331,6 +331,11 @@ async function guardarRecibo() {
 }
 
 function editBill(prod, openFCDialog = false) {
+    //console.log('Datos del recibo obtenidos de la base de datos:', JSON.stringify(prod, null, 2));
+
+    // Verificar que prod.bills está definido y tiene al menos un elemento, si no usar
+    const activo = prod.bills && prod.bills.length > 0 ? prod.bills[0].activo : prod.activo;
+
     // Precargar los datos existentes de prod en bill.value
     bill.value = {
         id: prod.id, // Capturar la id proveniente de la base de datos
@@ -343,7 +348,7 @@ function editBill(prod, openFCDialog = false) {
             {
                 id: prod.fc_id ?? null,
                 fecha: prod.fecha ? new Date(prod.fecha) : null,
-                activo: prod.activo ?? 1,
+                activo: activo ?? 1,
                 estado: prod.estado ?? 'pendiente',
                 comentario: prod.comentario ?? ''
             },
@@ -360,7 +365,8 @@ function editBill(prod, openFCDialog = false) {
         ]
     };
 
-    console.log('Recibo a editar: ', bill.value);
+    console.log('Recibo a editar:', JSON.stringify(bill.value, null, 2));
+    //console.log('Recibo a editar: ', bill.value);
 
     if (openFCDialog) {
         billDialogTB_FC.value = true;
@@ -556,6 +562,7 @@ const inactiveAnnualBillsCount = computed(() => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
+                    <Button :label="allExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="allExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>
                 <template #end>
