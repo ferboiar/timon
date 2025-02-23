@@ -284,10 +284,20 @@ async function guardarRecibo() {
         }
     }
 
-    console.log('guardarRecibo(). Recibo a guardar:', bill.value);
+    //console.log('guardarRecibo(). Recibo a guardar:', bill.value);
 
     if (bill.value.concepto.trim() && Array.isArray(bill.value.cargo)) {
         try {
+            // Si el recibo es trimestral o bimestral, propagar el valor de activo a todas las fechas de cargo
+            if (bill.value.periodicidad === 'trimestral' || bill.value.periodicidad === 'bimestral') {
+                const activo = bill.value.cargo[0].activo;
+                bill.value.cargo.forEach((c) => {
+                    c.activo = activo;
+                });
+            }
+
+            console.log('guardarRecibo(). Recibo a guardar:', bill.value);
+
             await BillService.saveBill(bill.value);
             toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo guardado!', life: 5000 });
 
@@ -306,9 +316,9 @@ async function guardarRecibo() {
                 cargo: bill.value.cargo.map(() => ({
                     id: null,
                     fecha: null,
+                    activo: 1,
                     estado: 'pendiente',
-                    comentario: '',
-                    activo: 1
+                    comentario: ''
                 }))
             };
         } catch (error) {
@@ -316,7 +326,7 @@ async function guardarRecibo() {
             console.error('guardarRecibo(). Error al guardar el recibo: ', error.response?.data || error.message);
         }
     } else {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array con id, fecha, estado y comentario.', life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array con id, fecha, activo, estado y comentario.', life: 5000 });
     }
 }
 
@@ -1000,11 +1010,12 @@ const inactiveAnnualBillsCount = computed(() => {
             </template>
         </Dialog>
 
+        <!-- Dialog para los recibos Trimestrales y Bimestrales -->
         <Dialog v-model:visible="billDialogTB" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
                     <div class="flex justify-between items-center mb-3">
-                        <label for="concepto" class="font-bold">Concepto</label>
+                        <label for="concepto" class="font-bold">Concepto (Recibo: {{ bill.id }}, activo: {{ bill.cargo[0].activo }})</label>
                         <ToggleSwitch
                             id="activo"
                             :modelValue="(bill.cargo[0].activo || 0) === 1"

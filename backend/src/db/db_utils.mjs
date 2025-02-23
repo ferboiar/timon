@@ -107,6 +107,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
         throw new Error('API. Los campos concepto, periodicidad, importe, categoria y cargo son obligatorios.');
     }
 
+    const activo = cargo[0].activo; //guardo el valor de activo para luego actualizar todas las fechas de cargo, no sea que se borre al procesar el array
     // Filtrar elementos del array cargo que tienen fecha como null. Esas fechas no se deben insertar en la base de datos.
     if (periodicidad !== 'mensual') {
         cargo = cargo.filter((c) => c.fecha !== null);
@@ -143,7 +144,6 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
         if (!validEstados.includes(c.estado)) {
             throw new Error(`API. El estado del cargo debe ser uno de los siguientes: ${validEstados.join(', ')}.`);
         }
-        // Nueva validación para activo
         if (c.activo === undefined || c.activo === null) {
             c.activo = 1; // Valor por defecto
         } else {
@@ -184,6 +184,10 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
                         await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario, c.activo]);
                     }
                 }
+
+                // Actualizar el valor de activo para todas las fechas de cargo del recibo dado que activo
+                // es un valor global para todas las fechas de cargo de un mismo recibo
+                await connection.execute('UPDATE fechas_cargo SET activo = ? WHERE recibo_id = ?', [activo, id]);
             } else {
                 throw new Error('API. El recibo con el ID especificado no existe.');
             }
