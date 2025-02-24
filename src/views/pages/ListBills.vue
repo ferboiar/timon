@@ -94,8 +94,8 @@ function toggleCardMenu(event, periodicity) {
 }
 
 const isExpanded = ref(false);
-const tableT = ref(false); // Estado expansión de la tabla trimestral
-const tableB = ref(false); // Estado expansión de la tabla bimestral
+const tableT = ref(false); // Estado de la tabla trimestral
+const tableB = ref(false); // Estado de la tabla bimestral
 
 function toggleExpandCollapseAll() {
     if (isExpanded.value) {
@@ -227,26 +227,32 @@ const selectedMonthlyBills = ref();
 
 const showInactive = ref(false);
 
+function toggleShowInactive() {
+    showInactive.value = !showInactive.value;
+    filtersAnual.value.activo.value = showInactive.value ? null : 1;
+    filtersTrimestral.value.activo.value = showInactive.value ? null : 1;
+    filtersBimestral.value.activo.value = showInactive.value ? null : 1;
+    filtersMensual.value.activo.value = showInactive.value ? null : 1;
+}
+
 const filtersAnual = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
 });
 
-function toggleShowInactive() {
-    showInactive.value = !showInactive.value;
-    filtersAnual.value.activo.value = showInactive.value ? null : 1;
-}
-
 const filtersTrimestral = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
 });
 
 const filtersBimestral = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
 });
 
 const filtersMensual = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
 });
 
 const submitted = ref(false);
@@ -573,9 +579,20 @@ const showSelector = (periodicity) => {
     showSelectionColumn.value[periodicity] = !showSelectionColumn.value[periodicity];
 };
 
-const inactiveAnnualBillsCount = computed(() => {
-    return annualBills.value.filter((bill) => !bill.activo).length;
-});
+const inactiveBillsCount = (periodicity) => {
+    if (periodicity === 'anual') {
+        return annualBills.value.filter((bill) => !bill.activo).length;
+    } else if (periodicity === 'trimestral') {
+        // Dividido entre 4 porque los trimestrales tienen 4 fechas de cargo, equivalentes a 4 recibos
+        return Math.floor(quarterlyBills.value.filter((bill) => !bill.activo).length / 4);
+    } else if (periodicity === 'bimestral') {
+        // Dividido entre 6 porque los bimestrales tienen 6 fechas de cargo, equivalentes a 6 recibos
+        return Math.floor(bimonthlyBills.value.filter((bill) => !bill.activo).length / 6);
+    } else if (periodicity === 'mensual') {
+        return monthlyBills.value.filter((bill) => !bill.activo).length;
+    }
+    return 0;
+};
 </script>
 
 <template>
@@ -594,7 +611,7 @@ const inactiveAnnualBillsCount = computed(() => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
-                    <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi pi-fw pi-chevron-right' : 'pi pi pi-fw pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
+                    <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>
                 <template #end>
@@ -612,7 +629,7 @@ const inactiveAnnualBillsCount = computed(() => {
                     <div class="flex items-center justify-between mb-0">
                         <div class="font-semibold text-xl mb-4 flex items-center relative">
                             <span>Anuales</span>
-                            <OverlayBadge v-if="inactiveAnnualBillsCount > 0" :value="inactiveAnnualBillsCount" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
+                            <OverlayBadge v-if="inactiveBillsCount('anual') > 0" :value="inactiveBillsCount('anual')" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
                         </div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
@@ -676,7 +693,10 @@ const inactiveAnnualBillsCount = computed(() => {
                 </div>
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
-                        <div class="font-semibold text-xl mb-4">Trimestrales</div>
+                        <div class="font-semibold text-xl mb-4 flex items-center relative">
+                            <span>Trimestrales</span>
+                            <OverlayBadge v-if="inactiveBillsCount('trimestral') > 0" :value="inactiveBillsCount('trimestral')" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
+                        </div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
                                 <InputIcon>
@@ -756,7 +776,10 @@ const inactiveAnnualBillsCount = computed(() => {
             <div class="md:w-1/2 mt-6 md:mt-0">
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
-                        <div class="font-semibold text-xl mb-4">Bimestrales</div>
+                        <div class="font-semibold text-xl mb-4 flex items-center relative">
+                            <span>Bimestrales</span>
+                            <OverlayBadge v-if="inactiveBillsCount('bimestral') > 0" :value="inactiveBillsCount('bimestral')" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
+                        </div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
                                 <InputIcon>
@@ -836,7 +859,10 @@ const inactiveAnnualBillsCount = computed(() => {
 
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
-                        <div class="font-semibold text-xl mb-4">Mensuales</div>
+                        <div class="font-semibold text-xl mb-4 flex items-center relative">
+                            <span>Mensuales</span>
+                            <OverlayBadge v-if="inactiveBillsCount('mensual') > 0" :value="inactiveBillsCount('mensual')" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
+                        </div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
                                 <InputIcon>
