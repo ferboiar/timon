@@ -86,27 +86,26 @@ function toggleCardMenu(event, periodicity) {
         cardMenu.value.push(
             // eslint-disable-next-line prettier/prettier
             { separator: true },
-            { label: 'Expandir todo', icon: 'pi pi-fw pi-chevron-down', command: () => expandirTodo(periodicity) },
-            { label: 'Contraer todo', icon: 'pi pi-fw pi-chevron-right', command: () => contraerTodo(periodicity) }
+            { label: 'Expandir', icon: 'pi pi-fw pi-chevron-down', command: () => expandir(periodicity) },
+            { label: 'Contraer', icon: 'pi pi-fw pi-chevron-right', command: () => contraer(periodicity) }
         );
     }
     menuRef.value.toggle(event);
 }
 
 const isExpanded = ref(false);
-const tableT = ref(false); // Estado de la tabla trimestral
-const tableB = ref(false); // Estado de la tabla bimestral
+const tableT = ref(false); // Estado expansión de la tabla trimestral
+const tableB = ref(false); // Estado expansión de la tabla bimestral
 
 function toggleExpandCollapseAll() {
-    isExpanded.value = !isExpanded.value;
     if (isExpanded.value) {
-        contraerTodo('all');
+        contraer('all');
     } else {
-        expandirTodo('all');
+        expandir('all');
     }
 }
 
-function expandirTodo(periodicity) {
+function expandir(periodicity) {
     if (periodicity === 'trimestral') {
         expandedRowsTrimestral.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
         tableT.value = true;
@@ -122,7 +121,7 @@ function expandirTodo(periodicity) {
     checkGlobalExpandState();
 }
 
-function contraerTodo(periodicity) {
+function contraer(periodicity) {
     if (periodicity === 'trimestral') {
         expandedRowsTrimestral.value = [];
         tableT.value = false;
@@ -579,7 +578,7 @@ const inactiveAnnualBillsCount = computed(() => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
-                    <Button :label="isExpanded.value ? 'Contraer todo' : 'Expandir todo'" icon="pi pi-arrows-v" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
+                    <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi pi-fw pi-chevron-right' : 'pi pi pi-fw pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>
                 <template #end>
