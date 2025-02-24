@@ -533,22 +533,22 @@ const groupedQuarterlyBills = computed(() => {
     const grouped = {};
     quarterlyBills.value.forEach((bill) => {
         if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, bills: [] };
+            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
         }
         grouped[bill.concepto].bills.push(bill);
     });
-    return Object.values(grouped);
+    return Object.values(grouped).filter((group) => showInactive.value || group.activo);
 });
 
 const groupedBimonthlyBills = computed(() => {
     const grouped = {};
     bimonthlyBills.value.forEach((bill) => {
         if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, bills: [] };
+            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
         }
         grouped[bill.concepto].bills.push(bill);
     });
-    return Object.values(grouped);
+    return Object.values(grouped).filter((group) => showInactive.value || group.activo);
 });
 
 // muestra/oculta la columna de selección
