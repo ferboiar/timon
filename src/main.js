@@ -44,15 +44,19 @@ app.use(ConfirmationService);
 /**
  * Formatea una fecha en formato ISO 8601 a dd/mm/yy
  * @param {string} dateString - Fecha en formato 2025-02-11T00:00:00.000Z
+ * @param {string} separator - Separador de fecha, por defecto '/'
  * @returns {string} - Fecha formateada en dd/mm/yy
  * En template se usa como $formatDate(bill.fecha)
  */
-app.config.globalProperties.$formatDate = function (dateString) {
+app.config.globalProperties.$formatDate = function (dateString, separator = '/') {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = String(date.getFullYear()).slice(-2);
-    return `${day}/${month}/${year}`;
+    if (separator === '-') {
+        return `${date.getFullYear()}-${month}-${day}`;
+    }
+    return `${day}${separator}${month}${separator}${year}`;
 };
 
 app.mount('#app');

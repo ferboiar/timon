@@ -1,9 +1,13 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
 import { BillService } from '@/service/BillService';
-import { computed, ref } from 'vue';
+import { computed, getCurrentInstance, ref } from 'vue';
 import VueCal from 'vue-cal';
 import 'vue-cal/dist/vuecal.css';
+
+const { appContext } = getCurrentInstance();
+
+const formatDate = appContext.config.globalProperties.$formatDate; // Obtener la función global
 
 const selectedDate = ref(new Date()); // Initialize with a default date
 const displayedYear = computed(() => selectedDate.value.getFullYear());
@@ -12,17 +16,35 @@ const displayedYear = computed(() => selectedDate.value.getFullYear());
 // esta cache es de memoria y se reinicia con cada recarga de la página
 const cache = new Map();
 
+const events = ref([]);
+
+const updateEvents = (bills) => {
+    const filteredBills = bills.filter((bill) => {
+        return bill.activo === 1 && ['anual', 'trimestral', 'bimestral'].includes(bill.periodicidad);
+    });
+
+    events.value = filteredBills.map((bill) => ({
+        start: formatDate(bill.fecha, '-'),
+        end: formatDate(bill.fecha, '-'),
+        title: bill.concepto
+    }));
+};
+
 const fetchBillsByYear = async (year) => {
     console.log('fetchBillsByYear(). Año solicitado:', year);
     console.log('fetchBillsByYear(). Estado de la caché:', cache);
 
     if (cache.has(year)) {
-        console.log(`Recibos del año ${year} (desde caché):`, cache.get(year));
-        return cache.get(year);
+        const bills = cache.get(year);
+        updateEvents(bills);
+        console.log(`Los recibos del año ${year} ya están cacheados:`, bills);
+        return bills;
     }
     try {
+        // si no están cacheados los descargamos de la BBDD
         const bills = await BillService.getBillsByYear(year);
         cache.set(year, bills);
+        updateEvents(bills);
         console.log(`Recibos del año ${year}:`, bills);
         return bills;
     } catch (error) {
@@ -44,12 +66,6 @@ const getVueCalDate = (monthIndex) => {
 };
 
 const { isDarkTheme } = useLayout();
-
-const events = ref([
-    { start: '2025-01-15', end: '2025-01-15', title: 'Evento 1' },
-    { start: '2025-02-20', end: '2025-02-20', title: 'Evento 2' },
-    { start: '2025-03-05', end: '2025-03-05', title: 'Evento 3' }
-]);
 </script>
 
 <template>
