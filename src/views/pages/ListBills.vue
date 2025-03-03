@@ -86,59 +86,27 @@ function toggleCardMenu(event, periodicity) {
         cardMenu.value.push(
             // eslint-disable-next-line prettier/prettier
             { separator: true },
-            { label: 'Expandir', icon: 'pi pi-fw pi-chevron-down', command: () => expandir(periodicity) },
-            { label: 'Contraer', icon: 'pi pi-fw pi-chevron-right', command: () => contraer(periodicity) }
+            { label: 'Expandir todo', icon: 'pi pi-fw pi-chevron-down', command: () => expandirTodo(periodicity) },
+            { label: 'Contraer todo', icon: 'pi pi-fw pi-chevron-right', command: () => contraerTodo(periodicity) }
         );
     }
     menuRef.value.toggle(event);
 }
 
-const isExpanded = ref(false);
-const tableT = ref(false); // Estado de la tabla trimestral
-const tableB = ref(false); // Estado de la tabla bimestral
-
-function toggleExpandCollapseAll() {
-    if (isExpanded.value) {
-        contraer('all');
-    } else {
-        expandir('all');
-    }
-}
-
-function expandir(periodicity) {
+function expandirTodo(periodicity) {
     if (periodicity === 'trimestral') {
         expandedRowsTrimestral.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-        tableT.value = true;
     } else if (periodicity === 'bimestral') {
         expandedRowsBimestral.value = groupedBimonthlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-        tableB.value = true;
-    } else if (periodicity === 'all') {
-        expandedRowsTrimestral.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-        expandedRowsBimestral.value = groupedBimonthlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-        tableT.value = true;
-        tableB.value = true;
     }
-    checkGlobalExpandState();
 }
 
-function contraer(periodicity) {
+function contraerTodo(periodicity) {
     if (periodicity === 'trimestral') {
         expandedRowsTrimestral.value = [];
-        tableT.value = false;
     } else if (periodicity === 'bimestral') {
         expandedRowsBimestral.value = [];
-        tableB.value = false;
-    } else if (periodicity === 'all') {
-        expandedRowsTrimestral.value = [];
-        expandedRowsBimestral.value = [];
-        tableT.value = false;
-        tableB.value = false;
     }
-    checkGlobalExpandState();
-}
-
-function checkGlobalExpandState() {
-    isExpanded.value = tableT.value && tableB.value;
 }
 
 function updateBills(periodicity) {
@@ -227,32 +195,26 @@ const selectedMonthlyBills = ref();
 
 const showInactive = ref(false);
 
-function toggleShowInactive() {
-    showInactive.value = !showInactive.value;
-    filtersAnual.value.activo.value = showInactive.value ? null : 1;
-    filtersTrimestral.value.activo.value = showInactive.value ? null : 1;
-    filtersBimestral.value.activo.value = showInactive.value ? null : 1;
-    filtersMensual.value.activo.value = showInactive.value ? null : 1;
-}
-
 const filtersAnual = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
 });
 
+function toggleShowInactive() {
+    showInactive.value = !showInactive.value;
+    filtersAnual.value.activo.value = showInactive.value ? null : 1;
+}
+
 const filtersTrimestral = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 
 const filtersBimestral = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 
 const filtersMensual = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    activo: { value: 1, matchMode: FilterMatchMode.EQUALS }
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 
 const submitted = ref(false);
@@ -322,20 +284,10 @@ async function guardarRecibo() {
         }
     }
 
-    //console.log('guardarRecibo(). Recibo a guardar:', bill.value);
+    console.log('guardarRecibo(). Recibo a guardar:', bill.value);
 
     if (bill.value.concepto.trim() && Array.isArray(bill.value.cargo)) {
         try {
-            // Si el recibo es trimestral o bimestral, propagar el valor de activo a todas las fechas de cargo
-            if (bill.value.periodicidad === 'trimestral' || bill.value.periodicidad === 'bimestral') {
-                const activo = bill.value.cargo[0].activo;
-                bill.value.cargo.forEach((c) => {
-                    c.activo = activo;
-                });
-            }
-
-            console.log('guardarRecibo(). Recibo a guardar:', bill.value);
-
             await BillService.saveBill(bill.value);
             toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo guardado!', life: 5000 });
 
@@ -354,9 +306,9 @@ async function guardarRecibo() {
                 cargo: bill.value.cargo.map(() => ({
                     id: null,
                     fecha: null,
-                    activo: 1,
                     estado: 'pendiente',
-                    comentario: ''
+                    comentario: '',
+                    activo: 1
                 }))
             };
         } catch (error) {
@@ -364,16 +316,11 @@ async function guardarRecibo() {
             console.error('guardarRecibo(). Error al guardar el recibo: ', error.response?.data || error.message);
         }
     } else {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array con id, fecha, activo, estado y comentario.', life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array con id, fecha, estado y comentario.', life: 5000 });
     }
 }
 
 function editBill(prod, openFCDialog = false) {
-    //console.log('Datos del recibo obtenidos de la base de datos:', JSON.stringify(prod, null, 2));
-
-    // Verificar que prod.bills está definido y tiene al menos un elemento, si no usar
-    const activo = prod.bills && prod.bills.length > 0 ? prod.bills[0].activo : prod.activo;
-
     // Precargar los datos existentes de prod en bill.value
     bill.value = {
         id: prod.id, // Capturar la id proveniente de la base de datos
@@ -386,7 +333,7 @@ function editBill(prod, openFCDialog = false) {
             {
                 id: prod.fc_id ?? null,
                 fecha: prod.fecha ? new Date(prod.fecha) : null,
-                activo: activo ?? 1,
+                activo: prod.activo ?? 1,
                 estado: prod.estado ?? 'pendiente',
                 comentario: prod.comentario ?? ''
             },
@@ -403,8 +350,7 @@ function editBill(prod, openFCDialog = false) {
         ]
     };
 
-    console.log('Recibo a editar:', JSON.stringify(bill.value, null, 2));
-    //console.log('Recibo a editar: ', bill.value);
+    console.log('Recibo a editar: ', bill.value);
 
     if (openFCDialog) {
         billDialogTB_FC.value = true;
@@ -549,22 +495,22 @@ const groupedQuarterlyBills = computed(() => {
     const grouped = {};
     quarterlyBills.value.forEach((bill) => {
         if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
+            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, bills: [] };
         }
         grouped[bill.concepto].bills.push(bill);
     });
-    return Object.values(grouped).filter((group) => showInactive.value || group.activo);
+    return Object.values(grouped);
 });
 
 const groupedBimonthlyBills = computed(() => {
     const grouped = {};
     bimonthlyBills.value.forEach((bill) => {
         if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
+            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, bills: [] };
         }
         grouped[bill.concepto].bills.push(bill);
     });
-    return Object.values(grouped).filter((group) => showInactive.value || group.activo);
+    return Object.values(grouped);
 });
 
 // muestra/oculta la columna de selección
@@ -579,20 +525,9 @@ const showSelector = (periodicity) => {
     showSelectionColumn.value[periodicity] = !showSelectionColumn.value[periodicity];
 };
 
-const inactiveBillsCount = (periodicity) => {
-    if (periodicity === 'anual') {
-        return annualBills.value.filter((bill) => !bill.activo).length;
-    } else if (periodicity === 'trimestral') {
-        // Dividido entre 4 porque los trimestrales tienen 4 fechas de cargo, equivalentes a 4 recibos
-        return Math.floor(quarterlyBills.value.filter((bill) => !bill.activo).length / 4);
-    } else if (periodicity === 'bimestral') {
-        // Dividido entre 6 porque los bimestrales tienen 6 fechas de cargo, equivalentes a 6 recibos
-        return Math.floor(bimonthlyBills.value.filter((bill) => !bill.activo).length / 6);
-    } else if (periodicity === 'mensual') {
-        return monthlyBills.value.filter((bill) => !bill.activo).length;
-    }
-    return 0;
-};
+const inactiveAnnualBillsCount = computed(() => {
+    return annualBills.value.filter((bill) => !bill.activo).length;
+});
 </script>
 
 <template>
@@ -611,7 +546,6 @@ const inactiveBillsCount = (periodicity) => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
-                    <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>
                 <template #end>
@@ -629,7 +563,7 @@ const inactiveBillsCount = (periodicity) => {
                     <div class="flex items-center justify-between mb-0">
                         <div class="font-semibold text-xl mb-4 flex items-center relative">
                             <span>Anuales</span>
-                            <OverlayBadge v-if="inactiveBillsCount('anual') > 0" :value="inactiveBillsCount('anual')" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
+                            <OverlayBadge v-if="inactiveAnnualBillsCount > 0" :value="inactiveAnnualBillsCount" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
                         </div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
@@ -652,6 +586,7 @@ const inactiveBillsCount = (periodicity) => {
                         :filters="filtersAnual"
                         sortField="fecha"
                         :sortOrder="1"
+                        removableSort
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
@@ -693,10 +628,7 @@ const inactiveBillsCount = (periodicity) => {
                 </div>
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
-                        <div class="font-semibold text-xl mb-4 flex items-center relative">
-                            <span>Trimestrales</span>
-                            <OverlayBadge v-if="inactiveBillsCount('trimestral') > 0" :value="inactiveBillsCount('trimestral')" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
-                        </div>
+                        <div class="font-semibold text-xl mb-4">Trimestrales</div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
                                 <InputIcon>
@@ -722,6 +654,7 @@ const inactiveBillsCount = (periodicity) => {
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                         rowGroupMode="subheader"
                         groupField="concepto"
+                        removableSort
                     >
                         <Column v-if="showSelectionColumn.trimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
@@ -741,7 +674,7 @@ const inactiveBillsCount = (periodicity) => {
                         </Column>
 
                         <template #expansion="trimestralSlotProps">
-                            <DataTable :value="trimestralSlotProps.data.bills" sortField="fecha" :sortOrder="1">
+                            <DataTable :value="trimestralSlotProps.data.bills" sortField="fecha" :sortOrder="1" removableSort>
                                 <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
                                     <template #body="trimestralSlotProps">
                                         {{ $formatDate(trimestralSlotProps.data.fecha) }}
@@ -776,10 +709,7 @@ const inactiveBillsCount = (periodicity) => {
             <div class="md:w-1/2 mt-6 md:mt-0">
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
-                        <div class="font-semibold text-xl mb-4 flex items-center relative">
-                            <span>Bimestrales</span>
-                            <OverlayBadge v-if="inactiveBillsCount('bimestral') > 0" :value="inactiveBillsCount('bimestral')" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
-                        </div>
+                        <div class="font-semibold text-xl mb-4">Bimestrales</div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
                                 <InputIcon>
@@ -806,6 +736,7 @@ const inactiveBillsCount = (periodicity) => {
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                         rowGroupMode="subheader"
                         groupField="concepto"
+                        removableSort
                     >
                         <Column v-if="showSelectionColumn.bimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
@@ -825,7 +756,7 @@ const inactiveBillsCount = (periodicity) => {
                         </Column>
 
                         <template #expansion="bimestralSlotProps">
-                            <DataTable :value="bimestralSlotProps.data.bills" sortField="fecha" :sortOrder="1">
+                            <DataTable :value="bimestralSlotProps.data.bills" sortField="fecha" :sortOrder="1" removableSort>
                                 <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
                                     <template #body="bimestralSlotProps">
                                         {{ $formatDate(bimestralSlotProps.data.fecha) }}
@@ -859,10 +790,7 @@ const inactiveBillsCount = (periodicity) => {
 
                 <div class="card">
                     <div class="flex items-center justify-between mb-0">
-                        <div class="font-semibold text-xl mb-4 flex items-center relative">
-                            <span>Mensuales</span>
-                            <OverlayBadge v-if="inactiveBillsCount('mensual') > 0" :value="inactiveBillsCount('mensual')" class="absolute -top-2 ml-2" v-tooltip="'Recibos desactivados'"></OverlayBadge>
-                        </div>
+                        <div class="font-semibold text-xl mb-4">Mensuales</div>
                         <div class="flex flex-wrap gap-2 items-center justify-between">
                             <IconField>
                                 <InputIcon>
@@ -886,6 +814,7 @@ const inactiveBillsCount = (periodicity) => {
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
+                        removableSort
                     >
                         <Column v-if="showSelectionColumn.mensual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
@@ -1075,12 +1004,11 @@ const inactiveBillsCount = (periodicity) => {
             </template>
         </Dialog>
 
-        <!-- Dialog para los recibos Trimestrales y Bimestrales -->
         <Dialog v-model:visible="billDialogTB" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
                     <div class="flex justify-between items-center mb-3">
-                        <label for="concepto" class="font-bold">Concepto (Recibo: {{ bill.id }}, activo: {{ bill.cargo[0].activo }})</label>
+                        <label for="concepto" class="font-bold">Concepto</label>
                         <ToggleSwitch
                             id="activo"
                             :modelValue="(bill.cargo[0].activo || 0) === 1"

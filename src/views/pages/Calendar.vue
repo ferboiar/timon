@@ -26,8 +26,42 @@ const updateEvents = (bills) => {
     events.value = filteredBills.map((bill) => ({
         start: formatDate(bill.fecha, '-'),
         end: formatDate(bill.fecha, '-'),
-        title: bill.concepto
+        title: `${bill.concepto}: ${bill.importe}€`
     }));
+};
+
+const totales = ref([]);
+const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+const calcularTotales = (bills) => {
+    const totalesPorMes = meses.map((mes, index) => ({
+        mes,
+        mensual: 0,
+        bimestral: 0,
+        trimestral: 0,
+        anual: 0,
+        total: 0
+    }));
+
+    bills.forEach((bill) => {
+        if (bill.activo !== 1) return;
+
+        const fecha = new Date(bill.fecha);
+        const mes = fecha.getMonth();
+        const importe = parseFloat(bill.importe);
+
+        if (bill.periodicidad === 'mensual') totalesPorMes[mes].mensual += importe;
+        else if (bill.periodicidad === 'bimestral') totalesPorMes[mes].bimestral += importe;
+        else if (bill.periodicidad === 'trimestral') totalesPorMes[mes].trimestral += importe;
+        else if (bill.periodicidad === 'anual') totalesPorMes[mes].anual += importe;
+    });
+
+    // Calcular totales por fila
+    totalesPorMes.forEach((mes) => {
+        mes.total = mes.mensual + mes.bimestral + mes.trimestral + mes.anual;
+    });
+
+    totales.value = totalesPorMes;
 };
 
 const fetchBillsByYear = async (year) => {
@@ -37,6 +71,7 @@ const fetchBillsByYear = async (year) => {
     if (cache.has(year)) {
         const bills = cache.get(year);
         updateEvents(bills);
+        calcularTotales(bills);
         console.log(`Los recibos del año ${year} ya están cacheados:`, bills);
         return bills;
     }
@@ -45,6 +80,7 @@ const fetchBillsByYear = async (year) => {
         const bills = await BillService.getBillsByYear(year);
         cache.set(year, bills);
         updateEvents(bills);
+        calcularTotales(bills);
         console.log(`Recibos del año ${year}:`, bills);
         return bills;
     } catch (error) {
@@ -66,6 +102,30 @@ const getVueCalDate = (monthIndex) => {
 };
 
 const { isDarkTheme } = useLayout();
+
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
+};
+
+const footerTotals = computed(() => {
+    const total = {
+        mensual: 0,
+        bimestral: 0,
+        trimestral: 0,
+        anual: 0,
+        total: 0
+    };
+
+    totales.value.forEach((mes) => {
+        total.mensual += mes.mensual;
+        total.bimestral += mes.bimestral;
+        total.trimestral += mes.trimestral;
+        total.anual += mes.anual;
+        total.total += mes.total;
+    });
+
+    return total;
+});
 </script>
 
 <template>
@@ -100,6 +160,52 @@ const { isDarkTheme } = useLayout();
                 </vue-cal>
             </div>
         </div>
+    </div>
+
+    <div class="card">
+        <DataTable :value="totales" dataKey="mes" stripedRows tableStyle="min-width: 50rem">
+            <Column field="mes" header=""></Column>
+            <Column field="mensual" header="Mensual">
+                <template #body="slotProps">
+                    {{ formatCurrency(slotProps.data.mensual) }}
+                </template>
+                <template #footer>
+                    {{ formatCurrency(footerTotals.mensual) }}
+                </template>
+            </Column>
+            <Column field="bimestral" header="Bimestral">
+                <template #body="slotProps">
+                    {{ formatCurrency(slotProps.data.bimestral) }}
+                </template>
+                <template #footer>
+                    {{ formatCurrency(footerTotals.bimestral) }}
+                </template>
+            </Column>
+            <Column field="trimestral" header="Trimestral">
+                <template #body="slotProps">
+                    {{ formatCurrency(slotProps.data.trimestral) }}
+                </template>
+                <template #footer>
+                    {{ formatCurrency(footerTotals.trimestral) }}
+                </template>
+            </Column>
+            <Column field="anual" header="Anual">
+                <template #body="slotProps">
+                    {{ formatCurrency(slotProps.data.anual) }}
+                </template>
+                <template #footer>
+                    {{ formatCurrency(footerTotals.anual) }}
+                </template>
+            </Column>
+            <Column field="total" header="Total">
+                <template #body="slotProps">
+                    {{ formatCurrency(slotProps.data.total) }}
+                </template>
+                <template #footer>
+                    {{ formatCurrency(footerTotals.total) }}
+                </template>
+            </Column>
+        </DataTable>
     </div>
 </template>
 
