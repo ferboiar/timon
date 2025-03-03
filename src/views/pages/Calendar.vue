@@ -34,7 +34,7 @@ const totales = ref([]);
 const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 const calcularTotales = (bills) => {
-    const totalesPorMes = meses.map((mes, index) => ({
+    const totalesPorMes = meses.map((mes) => ({
         mes,
         mensual: 0,
         bimestral: 0,
@@ -43,9 +43,11 @@ const calcularTotales = (bills) => {
         total: 0
     }));
 
-    bills.forEach((bill) => {
-        if (bill.activo !== 1) return;
+    // Filtrar bills activos una sola vez al principio
+    const activeBills = bills.filter((bill) => bill.activo === 1);
 
+    // Procesar solo los recibos activos
+    activeBills.forEach((bill) => {
         const fecha = new Date(bill.fecha);
         const mes = fecha.getMonth();
         const importe = parseFloat(bill.importe);
@@ -163,7 +165,7 @@ const footerTotals = computed(() => {
     </div>
 
     <div class="card">
-        <DataTable :value="totales" dataKey="mes" stripedRows tableStyle="min-width: 50rem">
+        <DataTable ref="dt_totales" :value="totales" dataKey="mes" stripedRows tableStyle="min-width: 50rem">
             <Column field="mes" header=""></Column>
             <Column field="mensual" header="Mensual">
                 <template #body="slotProps">
