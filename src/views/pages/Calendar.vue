@@ -165,9 +165,9 @@ const footerTotals = computed(() => {
     </div>
 
     <div class="card">
-        <DataTable ref="dt_totales" :value="totales" dataKey="mes" stripedRows tableStyle="min-width: 50rem">
+        <DataTable ref="dt_totales" :value="totales" dataKey="mes" stripedRows removableSort sortMode="multiple" selectionMode="multiple" tableStyle="min-width: 50rem">
             <Column field="mes" header=""></Column>
-            <Column field="mensual" header="Mensual">
+            <Column field="mensual" header="Mensual" sortable>
                 <template #body="slotProps">
                     {{ formatCurrency(slotProps.data.mensual) }}
                 </template>
@@ -175,7 +175,7 @@ const footerTotals = computed(() => {
                     {{ formatCurrency(footerTotals.mensual) }}
                 </template>
             </Column>
-            <Column field="bimestral" header="Bimestral">
+            <Column field="bimestral" header="Bimestral" sortable>
                 <template #body="slotProps">
                     {{ formatCurrency(slotProps.data.bimestral) }}
                 </template>
@@ -183,7 +183,7 @@ const footerTotals = computed(() => {
                     {{ formatCurrency(footerTotals.bimestral) }}
                 </template>
             </Column>
-            <Column field="trimestral" header="Trimestral">
+            <Column field="trimestral" header="Trimestral" sortable>
                 <template #body="slotProps">
                     {{ formatCurrency(slotProps.data.trimestral) }}
                 </template>
@@ -191,7 +191,7 @@ const footerTotals = computed(() => {
                     {{ formatCurrency(footerTotals.trimestral) }}
                 </template>
             </Column>
-            <Column field="anual" header="Anual">
+            <Column field="anual" header="Anual" sortable>
                 <template #body="slotProps">
                     {{ formatCurrency(slotProps.data.anual) }}
                 </template>
@@ -199,7 +199,7 @@ const footerTotals = computed(() => {
                     {{ formatCurrency(footerTotals.anual) }}
                 </template>
             </Column>
-            <Column field="total" header="Total">
+            <Column field="total" header="Total" sortable>
                 <template #body="slotProps">
                     {{ formatCurrency(slotProps.data.total) }}
                 </template>
