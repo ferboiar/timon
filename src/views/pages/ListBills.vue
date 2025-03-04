@@ -138,7 +138,34 @@ function contraer(periodicity) {
 }
 
 function checkGlobalExpandState() {
-    isExpanded.value = tableT.value && tableB.value;
+    const trimestralExpandedCount = Object.values(expandedRowsTrimestral.value).filter(Boolean).length;
+    const bimestralExpandedCount = Object.values(expandedRowsBimestral.value).filter(Boolean).length;
+
+    tableT.value = trimestralExpandedCount > 0;
+    tableB.value = bimestralExpandedCount > 0;
+
+    const trimestralTotal = groupedQuarterlyBills.value.length;
+    const bimestralTotal = groupedBimonthlyBills.value.length;
+
+    isExpanded.value = trimestralExpandedCount === trimestralTotal && trimestralTotal > 0 && bimestralExpandedCount === bimestralTotal && bimestralTotal > 0;
+}
+
+function onRowExpand(event, type) {
+    if (type === 'trimestral') {
+        expandedRowsTrimestral.value[event.data.id] = true;
+    } else {
+        expandedRowsBimestral.value[event.data.id] = true;
+    }
+    checkGlobalExpandState();
+}
+
+function onRowCollapse(event, type) {
+    if (type === 'trimestral') {
+        delete expandedRowsTrimestral.value[event.data.id];
+    } else {
+        delete expandedRowsBimestral.value[event.data.id];
+    }
+    checkGlobalExpandState();
 }
 
 function updateBills(periodicity) {
@@ -708,6 +735,8 @@ const inactiveBillsCount = (periodicity) => {
                         rowGroupMode="subheader"
                         groupField="concepto"
                         removableSort
+                        @row-expand="(event) => onRowExpand(event, 'trimestral')"
+                        @row-collapse="(event) => onRowCollapse(event, 'trimestral')"
                     >
                         <Column v-if="showSelectionColumn.trimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
@@ -793,6 +822,8 @@ const inactiveBillsCount = (periodicity) => {
                         rowGroupMode="subheader"
                         groupField="concepto"
                         removableSort
+                        @row-expand="(event) => onRowExpand(event, 'bimestral')"
+                        @row-collapse="(event) => onRowCollapse(event, 'bimestral')"
                     >
                         <Column v-if="showSelectionColumn.bimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
@@ -857,6 +888,61 @@ const inactiveBillsCount = (periodicity) => {
                                 </InputIcon>
                                 <InputText v-model="filtersMensual['global'].value" placeholder="Buscar..." />
                             </IconField>
+                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'mensual')" />
+                            <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
+                        </div>
+                    </div>
+
+                    <DataTable
+                        ref="dt_mensual"
+                        v-model:selection="selectedMonthlyBills"
+                        :value="monthlyBills"
+                        dataKey="id"
+                        :paginator="monthlyBills.length > 8"
+                        :rows="8"
+                        :filters="filtersMensual"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 15, 20]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
+                        removableSort
+                    >
+                        <Column v-if="showSelectionColumn.mensual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column field="importe" header="Importe" sortable style="min-width: 3rem">
+                            <template #body="mensualSlotProps">
+                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(mensualSlotProps.data.importe) }}
+                            </template>
+                        </Column>
+                        <Column field="estado" header="Estado" sortable style="min-width: 2rem">
+                            <template #body="mensualSlotProps">
+                                <i
+                                    :class="mensualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : mensualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
+                                    v-tooltip="mensualSlotProps.data.estado === 'cargado' ? 'Cargado' : mensualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                />
+                            </template>
+                        </Column>
+                        <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
+                            <template #body="mensualSlotProps">
+                                <template v-if="mensualSlotProps.data.comentario">
+                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, mensualSlotProps.data.comentario, 'comment')" v-tooltip="mensualSlotProps.data.comentario" />
+                                </template>
+                            </template>
+                        </Column>
+                        <Column :exportable="false" style="min-width: 12rem">
+                            <template #body="mensualSlotProps">
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(mensualSlotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(mensualSlotProps.data)" />
+                            </template>
+                        </Column>
+                    </DataTable>
+                </div>
+
+                <div class="card">
+                    <div class="flex items-center justify-between mb-0">
+                        <div class="font-semibold text-xl mb-4 flex items-center relative">
+                            <span>Inactivos</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-center justify-between">
                             <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'mensual')" />
                             <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                         </div>
