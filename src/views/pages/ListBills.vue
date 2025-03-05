@@ -185,6 +185,15 @@ function updateBills(periodicity) {
                 toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los recibos: ${error.message}`, life: 5000 });
                 console.error('Error al actualizar los recibos:', error);
             });
+    } else if (periodicity === 'inactivo') {
+        BillService.getInactiveBills()
+            .then((response) => {
+                inactiveBills.value = response;
+            })
+            .catch((error) => {
+                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar la lista de recibos inactivos: ${error.message}`, life: 5000 });
+                console.error('Error al actualizar la lista de recibos inactivos:', error);
+            });
     } else {
         BillService.getBillsByPeriodicity(periodicity)
             .then((response) => {
@@ -354,6 +363,7 @@ async function guardarRecibo() {
 
             // Actualizar la lista de recibos según la periodicidad
             updateBills(bill.value.periodicidad);
+            updateBills('inactivo');
 
             billDialog.value = false;
             billDialogTB.value = false;
@@ -574,6 +584,21 @@ const groupedBimonthlyBills = computed(() => {
     return Object.values(grouped).filter((group) => showInactive.value || group.activo);
 });
 
+const groupedInactiveBills = computed(() => {
+    const grouped = {};
+    inactiveBills.value.forEach((bill) => {
+        if (!grouped[bill.concepto]) {
+            grouped[bill.concepto] = {
+                ...bill,
+                count: 1
+            };
+        } else {
+            grouped[bill.concepto].count++;
+        }
+    });
+    return Object.values(grouped);
+});
+
 // muestra/oculta la columna de selección
 const showSelectionColumn = ref({
     anual: false,
@@ -665,6 +690,9 @@ const inactiveBillsCount = (periodicity) => {
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                     >
+                        <template #empty>
+                            <div class="text-center p-4">No hay recibos anuales a mostrar.</div>
+                        </template>
                         <Column v-if="showSelectionColumn.anual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
@@ -736,6 +764,9 @@ const inactiveBillsCount = (periodicity) => {
                         @row-expand="(event) => onRowExpand(event, 'trimestral')"
                         @row-collapse="(event) => onRowCollapse(event, 'trimestral')"
                     >
+                        <template #empty>
+                            <div class="text-center p-4">No hay recibos trimestrales a mostrar.</div>
+                        </template>
                         <Column v-if="showSelectionColumn.trimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
@@ -824,6 +855,9 @@ const inactiveBillsCount = (periodicity) => {
                         @row-expand="(event) => onRowExpand(event, 'bimestral')"
                         @row-collapse="(event) => onRowCollapse(event, 'bimestral')"
                     >
+                        <template #empty>
+                            <div class="text-center p-4">No hay recibos bimestrales a mostrar.</div>
+                        </template>
                         <Column v-if="showSelectionColumn.bimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
@@ -906,6 +940,9 @@ const inactiveBillsCount = (periodicity) => {
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                         removableSort
                     >
+                        <template #empty>
+                            <div class="text-center p-4">No hay recibos mensuales a mostrar.</div>
+                        </template>
                         <Column v-if="showSelectionColumn.mensual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
@@ -946,9 +983,9 @@ const inactiveBillsCount = (periodicity) => {
 
                     <DataTable
                         ref="dt_inactivo"
-                        :value="inactiveBills"
+                        :value="groupedInactiveBills"
                         dataKey="fc_id"
-                        :paginator="inactiveBills.length > 8"
+                        :paginator="groupedInactiveBills.length > 8"
                         :rows="8"
                         :rowHover="true"
                         removableSort
@@ -956,6 +993,9 @@ const inactiveBillsCount = (periodicity) => {
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
                     >
+                        <template #empty>
+                            <div class="text-center p-4">No hay recibos inactivos a mostrar.</div>
+                        </template>
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="inactiveSlotProps">
