@@ -47,10 +47,10 @@ async function getRecibos(filters) {
                     query += ' AND fc.fecha BETWEEN ? AND ?';
                     params.push(startDate, endDate);
                 } else if (key === 'activo') {
-                    // Convertir el valor a booleano independientemente de si es string o boolean
-                    const boolValue = value === true || value === 'true';
+                    // Convertir el valor a 1 o 0, independientemente de si viene como string, boolean o number
+                    const numericValue = value === true || value === 'true' || value === 1 || value === '1' ? 1 : 0;
                     query += ' AND fc.activo = ?';
-                    params.push(boolValue);
+                    params.push(numericValue);
                 } else if (validFilters.includes(key)) {
                     query += ` AND ${key === 'estado' ? 'fc.' : 'r.'}${key} = ?`;
                     params.push(value);

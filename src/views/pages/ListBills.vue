@@ -8,6 +8,7 @@ const annualBills = ref([]);
 const quarterlyBills = ref([]);
 const bimonthlyBills = ref([]);
 const monthlyBills = ref([]);
+const inactiveBills = ref([]);
 const bill = ref({
     id: null, // Añadir el parámetro id
     concepto: '',
@@ -53,11 +54,12 @@ const periodicidad = ref([
 
 onMounted(async () => {
     try {
-        [annualBills.value, quarterlyBills.value, bimonthlyBills.value, monthlyBills.value] = await Promise.all([
+        [annualBills.value, quarterlyBills.value, bimonthlyBills.value, monthlyBills.value, inactiveBills.value] = await Promise.all([
             BillService.getBillsByPeriodicity('anual'),
             BillService.getBillsByPeriodicity('trimestral'),
             BillService.getBillsByPeriodicity('bimestral'),
-            BillService.getBillsByPeriodicity('mensual')
+            BillService.getBillsByPeriodicity('mensual'),
+            BillService.getInactiveBills() // Nuevo endpoint para obtener recibos inactivos
         ]);
         /*
         console.log('onMounted. BillService. Recibos anuales:', annualBills.value);
@@ -170,25 +172,19 @@ function onRowCollapse(event, type) {
 
 function updateBills(periodicity) {
     if (periodicity === 'all') {
-        ['anual', 'trimestral', 'bimestral', 'mensual'].forEach((period) => {
-            BillService.getBillsByPeriodicity(period)
-                .then((response) => {
-                    if (period === 'anual') {
-                        annualBills.value = response;
-                    } else if (period === 'trimestral') {
-                        quarterlyBills.value = response;
-                    } else if (period === 'bimestral') {
-                        bimonthlyBills.value = response;
-                    } else if (period === 'mensual') {
-                        monthlyBills.value = response;
-                    }
-                })
-                .catch((error) => {
-                    toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar la lista de recibos ${period}: ${error.message}`, life: 5000 });
-                    console.error(`Error al actualizar la lista de recibos ${period}:`, error);
-                });
-        });
-        toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Todos los recibos actualizados.', life: 3000 });
+        Promise.all([BillService.getBillsByPeriodicity('anual'), BillService.getBillsByPeriodicity('trimestral'), BillService.getBillsByPeriodicity('bimestral'), BillService.getBillsByPeriodicity('mensual'), BillService.getInactiveBills()])
+            .then(([anual, trimestral, bimestral, mensual, inactivos]) => {
+                annualBills.value = anual;
+                quarterlyBills.value = trimestral;
+                bimonthlyBills.value = bimestral;
+                monthlyBills.value = mensual;
+                inactiveBills.value = inactivos;
+                toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Todos los recibos actualizados.', life: 3000 });
+            })
+            .catch((error) => {
+                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los recibos: ${error.message}`, life: 5000 });
+                console.error('Error al actualizar los recibos:', error);
+            });
     } else {
         BillService.getBillsByPeriodicity(periodicity)
             .then((response) => {
@@ -664,6 +660,7 @@ const inactiveBillsCount = (periodicity) => {
                         sortField="fecha"
                         :sortOrder="1"
                         removableSort
+                        :rowHover="true"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
@@ -729,6 +726,7 @@ const inactiveBillsCount = (periodicity) => {
                         :paginator="groupedQuarterlyBills.length > 8"
                         :rows="8"
                         :filters="filtersTrimestral"
+                        :rowHover="true"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
@@ -816,6 +814,7 @@ const inactiveBillsCount = (periodicity) => {
                         :paginator="groupedBimonthlyBills.length > 8"
                         :rows="8"
                         :filters="filtersBimestral"
+                        :rowHover="true"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
@@ -901,6 +900,7 @@ const inactiveBillsCount = (periodicity) => {
                         :paginator="monthlyBills.length > 8"
                         :rows="8"
                         :filters="filtersMensual"
+                        :rowHover="true"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
@@ -942,51 +942,31 @@ const inactiveBillsCount = (periodicity) => {
                         <div class="font-semibold text-xl mb-4 flex items-center relative">
                             <span>Inactivos</span>
                         </div>
-                        <div class="flex flex-wrap gap-2 items-center justify-between">
-                            <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'mensual')" />
-                            <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
-                        </div>
                     </div>
 
                     <DataTable
-                        ref="dt_mensual"
-                        v-model:selection="selectedMonthlyBills"
-                        :value="monthlyBills"
-                        dataKey="id"
-                        :paginator="monthlyBills.length > 8"
+                        ref="dt_inactivo"
+                        :value="inactiveBills"
+                        dataKey="fc_id"
+                        :paginator="inactiveBills.length > 8"
                         :rows="8"
-                        :filters="filtersMensual"
+                        :rowHover="true"
+                        removableSort
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
-                        removableSort
                     >
-                        <Column v-if="showSelectionColumn.mensual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
-                            <template #body="mensualSlotProps">
-                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(mensualSlotProps.data.importe) }}
+                            <template #body="inactiveSlotProps">
+                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(inactiveSlotProps.data.importe) }}
                             </template>
                         </Column>
-                        <Column field="estado" header="Estado" sortable style="min-width: 2rem">
-                            <template #body="mensualSlotProps">
-                                <i
-                                    :class="mensualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : mensualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-times-circle text-red-500' : ''"
-                                    v-tooltip="mensualSlotProps.data.estado === 'cargado' ? 'Cargado' : mensualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
-                                />
-                            </template>
-                        </Column>
-                        <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
-                            <template #body="mensualSlotProps">
-                                <template v-if="mensualSlotProps.data.comentario">
-                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, mensualSlotProps.data.comentario, 'comment')" v-tooltip="mensualSlotProps.data.comentario" />
-                                </template>
-                            </template>
-                        </Column>
+                        <Column field="periodicidad" header="Periodicidad" sortable style="min-width: 2rem"> </Column>
                         <Column :exportable="false" style="min-width: 12rem">
-                            <template #body="mensualSlotProps">
-                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(mensualSlotProps.data)" />
-                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(mensualSlotProps.data)" />
+                            <template #body="inactiveSlotProps">
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(inactiveSlotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(inactiveSlotProps.data)" />
                             </template>
                         </Column>
                     </DataTable>

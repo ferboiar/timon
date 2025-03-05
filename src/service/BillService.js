@@ -72,4 +72,15 @@ export class BillService {
             throw error;
         }
     }
+
+    // Obtener recibos inactivos
+    static async getInactiveBills() {
+        try {
+            const response = await axios.get(`${API_URL}?activo=0`);
+            return response.data;
+        } catch (error) {
+            console.error('BillService. Error al obtener los recibos inactivos: ', error);
+            throw error;
+        }
+    }
 }
