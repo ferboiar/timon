@@ -13,7 +13,8 @@ const model = ref([
         label: 'Recibos',
         items: [
             { label: 'Calendario', icon: 'pi pi-fw pi-calendar', to: '/pages/calendar' },
-            { label: 'Listado', icon: 'pi pi-fw pi-receipt', to: '/pages/bills' }
+            { label: 'Listado', icon: 'pi pi-fw pi-receipt', to: '/pages/bills' },
+            { label: 'Préstamos', icon: 'pi pi-fw pi-money-bill', to: '/pages/loans' }
         ]
     },
     {

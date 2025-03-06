@@ -24,6 +24,11 @@ const router = createRouter({
                     component: () => import('@/views/pages/Calendar.vue')
                 },
                 {
+                    path: '/pages/loans',
+                    name: 'prestamos',
+                    component: () => import('@/views/pages/Loans.vue')
+                },
+                {
                     path: '/uikit/formlayout',
                     name: 'formlayout',
                     component: () => import('@/views/uikit/FormLayout.vue')

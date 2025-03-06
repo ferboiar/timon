@@ -165,8 +165,10 @@ const footerTotals = computed(() => {
     </div>
 
     <div class="card">
-        <DataTable ref="dt_totales" :value="totales" dataKey="mes" stripedRows removableSort sortMode="multiple" selectionMode="multiple" tableStyle="min-width: 50rem">
-            <Column field="mes" header=""></Column>
+        <DataTable ref="dt_totales" :value="totales" dataKey="mes" stripedRows removableSort sortMode="multiple" selectionMode="multiple" tableStyle="min-width: 50rem" class="custom-table">
+            <Column field="mes" header="">
+                <template #footer>Total</template>
+            </Column>
             <Column field="mensual" header="Mensual" sortable>
                 <template #body="slotProps">
                     {{ formatCurrency(slotProps.data.mensual) }}
@@ -282,5 +284,41 @@ const footerTotals = computed(() => {
 :deep(.vuecal__cell--selected *),
 :deep(.vuecal__cell--selected) {
     border: none !important;
+}
+/* Estilos para la tabla personalizada */
+:deep(.custom-table) {
+    /* Estilo para la cabecera */
+    .p-datatable-thead > tr > th {
+        font-weight: bold !important;
+    }
+    /* Estilo para el contenido de la cabecera */
+    .p-column-header-content {
+        font-weight: bold !important;
+    }
+    /* Estilo para la primera columna */
+    td:first-child,
+    th:first-child {
+        font-weight: bold !important;
+    }
+    /* Estilo para la última columna (excluyendo el encabezado) */
+    td:last-child {
+        color: var(--primary-color) !important;
+        font-weight: bold !important;
+    }
+    /* Estilo específico para el texto 'Total' en el footer */
+    .p-datatable-tfoot td:first-child {
+        color: var(--text-color) !important; /* Usar el color de texto por defecto */
+        font-weight: bold !important;
+        text-align: center !important;
+    }
+    /* Estilo para los valores numéricos en el footer */
+    .p-datatable-tfoot td:not(:first-child) {
+        color: var(--primary-color) !important;
+        font-weight: bold !important;
+    }
+    /* Énfasis extra para el total final (última celda del footer) */
+    .p-datatable-tfoot td:last-child {
+        font-weight: 900 !important;
+    }
 }
 </style>

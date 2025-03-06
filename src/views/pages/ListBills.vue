@@ -442,6 +442,7 @@ async function deleteBill() {
         const periodicidad = bill.value.periodicidad;
         await BillService.deleteBill(bill.value.id, bill.value.fecha, bill.value.periodicidad);
         updateBills(periodicidad);
+        updateBills('inactivo');
         deleteBillDialog.value = false;
         bill.value = {};
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo eliminado', life: 3000 });
