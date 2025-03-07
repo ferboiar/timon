@@ -6,17 +6,75 @@ import AppMenuItem from './AppMenuItem.vue';
 const model = ref([
     {
         label: 'Inicio',
-        items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }]
+        items: [
+            { label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' },
+            { label: 'Calendario', icon: 'pi pi-fw pi-calendar', to: '/pages/calendar' }
+        ]
     },
 
     {
-        label: 'Recibos',
+        label: 'Control Financiero',
         items: [
-            { label: 'Calendario', icon: 'pi pi-fw pi-calendar', to: '/pages/calendar' },
-            { label: 'Listado', icon: 'pi pi-fw pi-receipt', to: '/pages/bills' },
-            { label: 'Préstamos', icon: 'pi pi-fw pi-money-bill', to: '/pages/loans' }
+            { label: 'Recibos', icon: 'pi pi-fw pi-receipt', to: '/pages/bills' },
+            //partidas de dinero destinadas a cubrir gastos fijos (comida, ocio, peluqueria)
+            { label: 'Presupuestos', icon: 'pi pi-fw pi-money-bill', to: '/pages/budgets' },
+            //dinero que adelanto y luego debo devolver mes a mes (veterinario, ropa niños, dentista, prestamos a elena)
+            { label: 'Anticipos', icon: 'pi pi-fw pi-wallet', to: '/pages/advances' },
+            //partidas de dinero que se guardan para un fin concreto (viaje, coche, reforma
+            { label: 'Ahorros', icon: 'pi pi-fw pi-chart-line', to: '/pages/savings' }
+            //{ label: 'Préstamos', icon: 'pi pi-fw pi-money-bill', to: '/pages/loans' }
         ]
     },
+    {
+        label: 'Contabilidad',
+        items: [
+            { label: 'Transacciones', icon: 'pi pi-fw pi-arrow-right-arrow-left', to: '/pages/transactions' },
+            { label: 'Automatización', icon: 'pi pi-fw pi-cog', to: '/pages/automation' }
+        ]
+    },
+    {
+        label: 'Configuración',
+        items: [
+            { label: 'Categorías', icon: 'pi pi-fw pi-tags', to: '/pages/categories' },
+            { label: 'Cuentas', icon: 'pi pi-fw pi-building-columns', to: '/pages/accounts' }
+        ]
+    },
+
+    {
+        label: 'Ayuda',
+        items: [
+            {
+                label: 'Documentación',
+                icon: 'pi pi-fw pi-book',
+                to: '/documentation'
+            },
+            {
+                label: 'Código',
+                icon: 'pi pi-fw pi-github',
+                items: [
+                    {
+                        label: 'Sakai Vue',
+                        icon: 'pi pi-fw pi-desktop',
+                        url: 'https://github.com/primefaces/sakai-vue',
+                        target: '_blank'
+                    },
+                    {
+                        label: 'Prime Vue',
+                        icon: 'pi pi-fw pi-window-maximize',
+                        url: 'https://primevue.org/introduction/',
+                        target: '_blank'
+                    },
+                    {
+                        label: 'Timón',
+                        icon: 'pi pi-fw pi-github',
+                        url: 'https://github.com/ferboiar/timon',
+                        target: '_blank'
+                    }
+                ]
+            }
+        ]
+    },
+
     {
         label: 'UI Components',
         items: [
@@ -126,22 +184,6 @@ const model = ref([
                         items: [{ label: 'Submenu 2.2.1', icon: 'pi pi-fw pi-bookmark' }]
                     }
                 ]
-            }
-        ]
-    },
-    {
-        label: 'Get Started',
-        items: [
-            {
-                label: 'Documentation',
-                icon: 'pi pi-fw pi-book',
-                to: '/documentation'
-            },
-            {
-                label: 'View Source',
-                icon: 'pi pi-fw pi-github',
-                url: 'https://github.com/primefaces/sakai-vue',
-                target: '_blank'
             }
         ]
     }

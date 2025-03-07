@@ -18,7 +18,7 @@
 
         <div className="card">
             <div class="font-semibold text-xl mb-4">Préstamos y ahorros</div>
-            <p>Use this page to start from scratch and place your custom content.</p>
+            <p></p>
         </div>
     </div>
 </template>
