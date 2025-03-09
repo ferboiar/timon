@@ -29,9 +29,49 @@ const router = createRouter({
                     component: () => import('@/views/pages/Loans.vue')
                 },
                 {
+                    path: '/pages/advances',
+                    name: 'anticipos',
+                    component: () => import('@/views/pages/Advances.vue')
+                },
+                {
+                    path: '/pages/budgets',
+                    name: 'presupuestos',
+                    component: () => import('@/views/pages/Budgets.vue')
+                },
+                {
+                    path: '/pages/savings',
+                    name: 'ahorros',
+                    component: () => import('@/views/pages/Savings.vue')
+                },
+                {
+                    path: '/pages/transactions',
+                    name: 'transacciones',
+                    component: () => import('@/views/pages/Transactions.vue')
+                },
+                {
+                    path: '/pages/automation',
+                    name: 'automatización',
+                    component: () => import('@/views/pages/Automation.vue')
+                },
+                {
+                    path: '/pages/categories',
+                    name: 'categorías',
+                    component: () => import('@/views/pages/Categories.vue')
+                },
+                {
+                    path: '/pages/accounts',
+                    name: 'cuentas',
+                    component: () => import('@/views/pages/Accounts.vue')
+                },
+                {
                     path: '/settings',
                     name: 'ProfileSettings',
                     component: () => import('@/views/pages/ProfileSettings.vue')
+                },
+                {
+                    path: '/documentation',
+                    name: 'documentation',
+                    component: () => import('@/views/pages/Documentation.vue')
                 },
                 {
                     path: '/uikit/formlayout',
@@ -118,11 +158,6 @@ const router = createRouter({
                     path: '/pages/crud',
                     name: 'crud',
                     component: () => import('@/views/pages/Crud.vue')
-                },
-                {
-                    path: '/documentation',
-                    name: 'documentation',
-                    component: () => import('@/views/pages/Documentation.vue')
                 }
             ]
         },
