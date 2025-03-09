@@ -4,7 +4,7 @@ const layoutConfig = reactive({
     preset: 'Aura',
     primary: 'emerald',
     surface: null,
-    darkTheme: false,
+    darkTheme: true, // Cambiar a true para modo oscuro por defecto
     menuMode: 'static'
 });
 
@@ -35,8 +35,13 @@ export function useLayout() {
 
     const executeDarkModeToggle = () => {
         layoutConfig.darkTheme = !layoutConfig.darkTheme;
-        document.documentElement.classList.toggle('app-dark');
+        document.documentElement.classList.toggle('app-dark', layoutConfig.darkTheme);
     };
+
+    // Asegúrate de que la clase 'app-dark' se aplique al cargar la página si darkTheme es true
+    if (layoutConfig.darkTheme) {
+        document.documentElement.classList.add('app-dark');
+    }
 
     const toggleMenu = () => {
         if (layoutConfig.menuMode === 'overlay') {

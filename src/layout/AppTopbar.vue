@@ -1,7 +1,7 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
 import { ref } from 'vue';
-import AppConfigurator from './AppConfigurator.vue';
+//import AppConfigurator from './AppConfigurator.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
 
@@ -22,9 +22,7 @@ const overlayMenuProfileItems = ref([
     {
         label: 'Ajustes',
         icon: 'pi pi-cog',
-        command: () => {
-            console.log('Configuración');
-        }
+        to: '/settings'
     },
     {
         label: 'Salir',
@@ -83,6 +81,7 @@ const overlayMenuProfileItems = ref([
                 <button type="button" class="layout-topbar-action" @click="toggleDarkMode">
                     <i :class="['pi', { 'pi-moon': isDarkTheme, 'pi-sun': !isDarkTheme }]"></i>
                 </button>
+                <!--
                 <div class="relative">
                     <button
                         v-styleclass="{ selector: '@next', enterFromClass: 'hidden', enterActiveClass: 'animate-scalein', leaveToClass: 'hidden', leaveActiveClass: 'animate-fadeout', hideOnOutsideClick: true }"
@@ -93,6 +92,7 @@ const overlayMenuProfileItems = ref([
                     </button>
                     <AppConfigurator />
                 </div>
+                -->
             </div>
 
             <button
@@ -104,13 +104,36 @@ const overlayMenuProfileItems = ref([
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <Menu ref="menu" :model="overlayMenuProfileItems" :popup="true" />
+                    <Menu ref="menu" :model="overlayMenuProfileItems" :popup="true">
+                        <template #item="slotProps">
+                            <router-link v-if="slotProps.item.to" :to="slotProps.item.to" class="layout-menuitem">
+                                <i :class="slotProps.item.icon" class="layout-menuitem-icon"></i>
+                                <span class="layout-menuitem-text">{{ slotProps.item.label }}</span>
+                            </router-link>
+                            <a v-else @click="slotProps.item.command" class="layout-menuitem">
+                                <i :class="slotProps.item.icon" class="layout-menuitem-icon"></i>
+                                <span class="layout-menuitem-text">{{ slotProps.item.label }}</span>
+                            </a>
+                        </template>
+                    </Menu>
                     <button type="button" class="layout-topbar-action" @click="toggleProfile">
-                        <i class="pi pi-user"></i>
-                        <span>Perfil</span>
+                        <i class="pi pi-user layout-menuitem-icon"></i>
+                        <span class="layout-menuitem-text">Perfil</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.layout-menuitem-icon {
+    margin-right: 0.75rem;
+}
+
+.layout-menuitem {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+}
+</style>
