@@ -21,7 +21,7 @@ const overlayMenuProfileItems = ref([
     },
     {
         label: 'Ajustes',
-        icon: 'pi pi-cog',
+        icon: 'pi pi-sliders-h',
         to: '/settings'
     },
     {

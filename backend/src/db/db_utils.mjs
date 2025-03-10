@@ -16,9 +16,10 @@ async function getRecibos(filters) {
     try {
         connection = await getConnection();
         let query = `
-            SELECT r.*, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.activo, fc.comentario
+            SELECT r.*, c.nombre AS categoria, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.activo, fc.comentario
             FROM recibos r
             LEFT JOIN fechas_cargo fc ON r.id = fc.recibo_id
+            LEFT JOIN categorias c ON r.categoria_id = c.id
             WHERE 1=1
         `;
         const params = [];
@@ -76,11 +77,16 @@ async function getValidValues(column, table = 'recibos') {
     let connection;
     try {
         connection = await getConnection();
-        const [rows] = await connection.execute(`SHOW COLUMNS FROM ${table} LIKE '${column}'`);
-        const enumValues = rows[0].Type.match(/enum\((.*)\)/)[1]
-            .replace(/'/g, '')
-            .split(',');
-        return enumValues;
+        if (table === 'categorias') {
+            const [rows] = await connection.execute(`SELECT nombre FROM categorias`);
+            return rows.map((row) => row.nombre);
+        } else {
+            const [rows] = await connection.execute(`SHOW COLUMNS FROM ${table} LIKE '${column}'`);
+            const enumValues = rows[0].Type.match(/enum\((.*)\)/)[1]
+                .replace(/'/g, '')
+                .split(',');
+            return enumValues;
+        }
     } catch (error) {
         console.error(`API. Error al obtener valores válidos para ${column} de la tabla ${table}:`, error);
         throw error;
@@ -118,7 +124,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
     console.log('pushRecibo(). Parámetros filtrados:', { id, concepto, periodicidad, importe, categoria, cargo });
 
     // Obtener valores válidos desde la base de datos
-    const validCategorias = await getValidValues('categoria');
+    const validCategorias = await getValidValues('nombre', 'categorias');
     const validPeriodicidades = await getValidValues('periodicidad');
     const validEstados = await getValidValues('estado', 'fechas_cargo');
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -162,7 +168,13 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
 
             if (existingRecibo.length > 0) {
                 // Actualizar recibo existente
-                const [updateResult] = await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria = ? WHERE id = ?', [concepto, periodicidad, importe, categoria, id]);
+                const [updateResult] = await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?) WHERE id = ?', [
+                    concepto,
+                    periodicidad,
+                    importe,
+                    categoria,
+                    id
+                ]);
 
                 // Traza para comprobar que el update se haya hecho correctamente
                 console.log(`Update realizado correctamente en tabla recibos. Filas afectadas: ${updateResult.affectedRows}`);
@@ -193,7 +205,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
             }
         } else {
             // Insertar nuevo recibo
-            const [result] = await connection.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria) VALUES (?, ?, ?, ?)', [concepto, periodicidad, importe, categoria]);
+            const [result] = await connection.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria_id) VALUES (?, ?, ?, (SELECT id FROM categorias WHERE nombre = ?))', [concepto, periodicidad, importe, categoria]);
             const newReciboId = result.insertId;
 
             // Insertar fechas de cargo
