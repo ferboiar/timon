@@ -44,8 +44,7 @@ async function deleteCategorias(categorias) {
         if (!Array.isArray(categorias)) {
             categorias = [categorias];
         }
-        const placeholders = categorias.map(() => '?').join(',');
-        const [deleteResult] = await connection.execute(`DELETE FROM categorias WHERE nombre IN (${placeholders})`, categorias);
+        const [deleteResult] = await connection.execute('DELETE FROM categorias WHERE nombre IN (?)', [categorias]);
         console.log(`Delete realizado correctamente en tabla categorias. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('Error al eliminar las categorías:', error);

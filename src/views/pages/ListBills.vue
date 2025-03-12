@@ -1,5 +1,6 @@
 <script setup>
 import { BillService } from '@/service/BillService';
+import { CatsService } from '@/service/CatsService'; // Importar CatsService
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
@@ -33,17 +34,7 @@ const billDialogTB_FC = ref(false);
 const expandedRowsTrimestral = ref([]);
 const expandedRowsBimestral = ref([]);
 
-const categorias = ref([
-    { label: 'Ahorros', value: 'ahorros' },
-    { label: 'Comida', value: 'comida' },
-    { label: 'Educación', value: 'educacion' },
-    { label: 'Entretenimiento', value: 'entretenimiento' },
-    { label: 'Seguros', value: 'seguros' },
-    { label: 'Servicios', value: 'servicios' },
-    { label: 'Transporte', value: 'transporte' },
-    { label: 'Vivienda', value: 'vivienda' },
-    { label: 'Otros gastos', value: 'otros' }
-]);
+const categorias = ref([]); // Inicializar como un array vacío
 
 const periodicidad = ref([
     { label: 'Anual', value: 'anual' },
@@ -61,12 +52,13 @@ onMounted(async () => {
             BillService.getBillsByPeriodicity('mensual'),
             BillService.getInactiveBills() // Nuevo endpoint para obtener recibos inactivos
         ]);
-        /*
-        console.log('onMounted. BillService. Recibos anuales:', annualBills.value);
-        console.log('onMounted. BillService. Recibos trimestrales:', quarterlyBills.value);
-        console.log('onMounted. BillService. Recibos bimestrales:', bimonthlyBills.value);
-        console.log('onMounted. BillService. Recibos mensuales:', monthlyBills.value);
-*/
+
+        // Cargar categorías desde la base de datos
+        const categoriasData = await CatsService.getCategorias();
+        categorias.value = categoriasData.map((cat) => ({
+            label: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1),
+            value: cat.nombre
+        }));
     } catch (error) {
         console.error('onMounted. BillService. Error al cargar los recibos:', error);
     }
