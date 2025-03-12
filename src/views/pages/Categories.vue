@@ -101,6 +101,11 @@ async function deleteCategory() {
     }
 }
 
+const onRowReorder = (event) => {
+    const movedItem = categories.value.splice(event.dragIndex, 1)[0];
+    categories.value.splice(event.dropIndex, 0, movedItem);
+};
+
 onMounted(() => {
     fetchCategories();
 });
@@ -124,14 +129,14 @@ onMounted(() => {
 
         <div class="card">
             <div class="font-semibold text-xl mb-4">Categorías</div>
-            <DataTable ref="dt_categorias" v-model:selection="selectedCategories" :value="categories" dataKey="id" responsiveLayout="scroll" selectionMode="multiple" sortMode="multiple" removableSort>
+            <DataTable ref="dt_categorias" v-model:selection="selectedCategories" :value="categories" dataKey="id" responsiveLayout="scroll" selectionMode="multiple" sortMode="multiple" removableSort rowReorder @row-reorder="onRowReorder">
                 <template #empty>
                     <div class="text-center p-4">No hay categorías a mostrar.</div>
                 </template>
-
+                <Column rowReorder headerStyle="width: 3rem" :reorderableColumn="false" />
                 <Column field="nombre" header="Nombre" sortable style="min-width: 4rem"></Column>
-                <Column field="descripcion" header="Descripción" sortable></Column>
-                <Column :exportable="false" style="min-width: 12rem">
+                <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"></Column>
+                <Column :exportable="false">
                     <template #body="categoriesSlotProps">
                         <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editCategory(categoriesSlotProps.data)" />
                         <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteCategory(categoriesSlotProps.data)" />
