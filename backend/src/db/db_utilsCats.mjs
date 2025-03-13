@@ -4,7 +4,13 @@ async function getCategorias() {
     let connection;
     try {
         connection = await getConnection();
-        const [rows] = await connection.execute('SELECT * FROM categorias');
+        const [rows] = await connection.execute('SELECT * FROM categorias ORDER BY nombre ASC');
+        // Mover "Otros" al final del resultado
+        const otrosIndex = rows.findIndex((row) => row.nombre.toLowerCase() === 'otros');
+        if (otrosIndex !== -1) {
+            const otros = rows.splice(otrosIndex, 1)[0];
+            rows.push(otros);
+        }
         return rows;
     } catch (error) {
         console.error('Error al obtener las categorías:', error);
@@ -44,8 +50,8 @@ async function deleteCategorias(categorias) {
         if (!Array.isArray(categorias)) {
             categorias = [categorias];
         }
-        const placeholders = categorias.map(() => '?').join(',');
-        const [deleteResult] = await connection.execute(`DELETE FROM categorias WHERE nombre IN (${placeholders})`, categorias);
+        console.log('Categorías a eliminar:', categorias);
+        const [deleteResult] = await connection.execute('DELETE FROM categorias WHERE nombre IN (?)', [categorias]);
         console.log(`Delete realizado correctamente en tabla categorias. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('Error al eliminar las categorías:', error);
