@@ -26,9 +26,9 @@ export class CatsService {
     }
 
     // Eliminar una o más categorías
-    static async deleteCategorias(categorias) {
+    static async deleteCategorias(categoriaIds) {
         try {
-            const response = await axios.delete(API_URL, { data: { categorias } });
+            const response = await axios.delete(API_URL, { data: { categoriaIds } }); // Cambiar 'categorias' a 'categoriaIds'
             return response.data;
         } catch (error) {
             console.error('Error al eliminar la(s) categoría(s):', error);

@@ -1,7 +1,7 @@
 <script setup>
 import { CatsService } from '@/service/CatsService';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 const categories = ref([]);
 const selectedCategories = ref([]);
@@ -16,6 +16,8 @@ const category = ref({
 const categoryDialog = ref(false);
 const deleteCategoryDialog = ref(false);
 const deleteSelectedCategoriesDialog = ref(false);
+
+const isSaveDisabled = computed(() => !category.value.nombre);
 
 const fetchCategories = async () => {
     try {
@@ -41,8 +43,10 @@ const confirmDeleteSelectedCategories = () => {
 
 const deleteSelectedCategories = async () => {
     try {
-        const categoryNames = selectedCategories.value.map((cat) => cat.nombre);
-        await CatsService.deleteCategorias(categoryNames);
+        const categoriaIds = selectedCategories.value.map((cat) => Number(cat.id));
+        const categoriasInfo = selectedCategories.value.map((cat) => `${cat.nombre} (${cat.id})`).join(', ');
+        console.log('VUE. Categorías a eliminar:', categoriasInfo);
+        await CatsService.deleteCategorias({ categoriaIds });
         fetchCategories(); // Refresh the list after deletion
         toast.add({ severity: 'success', summary: 'Borrada', detail: 'Categorías borradas con exito.', life: 3000 });
         deleteSelectedCategoriesDialog.value = false;
@@ -91,7 +95,7 @@ function confirmDeleteCategory(cat) {
 
 async function deleteCategory() {
     try {
-        await CatsService.deleteCategorias([category.value.nombre]);
+        await CatsService.deleteCategorias({ categoriaIds: [Number(category.value.id)] }); // Asegurarse de que el ID sea un número
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Categoría eliminada', life: 3000 });
         fetchCategories();
         hideDialog();
@@ -145,6 +149,7 @@ onMounted(() => {
             <div>
                 <label for="nombre" class="block font-bold mb-3">Nombre</label>
                 <InputText id="nombre" v-model.trim="category.nombre" required="true" autofocus fluid />
+                <small v-if="!category.nombre" class="text-red-500">El nombre es obligatorio.</small>
             </div>
             <div>
                 <label for="descripcion" class="block font-bold mb-3">Descripción</label>
@@ -155,7 +160,7 @@ onMounted(() => {
 
         <template #footer>
             <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-            <Button label="Save" icon="pi pi-check" @click="saveCategory" />
+            <Button label="Save" icon="pi pi-check" @click="saveCategory" :disabled="isSaveDisabled" />
         </template>
     </Dialog>
 

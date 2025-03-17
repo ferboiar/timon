@@ -14,6 +14,9 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
     const { nombre, descripcion } = req.body;
+    if (!nombre) {
+        return res.status(400).json({ error: 'El nombre de la categoría es obligatorio' });
+    }
     try {
         await pushCategoria(nombre, descripcion);
         res.status(201).json({ message: 'Categoría insertada o actualizada correctamente' });
@@ -23,9 +26,37 @@ router.post('/', async (req, res) => {
 });
 
 router.delete('/', async (req, res) => {
-    const { categorias } = req.body;
+    let { categoriaIds } = req.body;
+    // Si recibimos un objeto con una propiedad categoriaIds, extraemos el array
+    if (categoriaIds && typeof categoriaIds === 'object' && 'categoriaIds' in categoriaIds) {
+        categoriaIds = categoriaIds.categoriaIds;
+    }
+    if (!categoriaIds) {
+        return res.status(400).json({
+            error: 'No se han proporcionado IDs de categorías',
+            received: categoriaIds
+        });
+    }
+
+    if (!Array.isArray(categoriaIds)) {
+        return res.status(400).json({
+            error: 'El parámetro categoriaIds debe ser un array',
+            received: {
+                type: typeof categoriaIds,
+                value: categoriaIds
+            }
+        });
+    }
+
+    if (categoriaIds.length === 0) {
+        return res.status(400).json({
+            error: 'La lista de IDs no puede estar vacía',
+            received: categoriaIds
+        });
+    }
     try {
-        await deleteCategorias(categorias);
+        const numericCategoriaIds = categoriaIds.map(Number); // Asegurarse de que todos los IDs sean números
+        await deleteCategorias(numericCategoriaIds);
         res.status(200).json({ message: 'Categoría(s) eliminada(s) correctamente' });
     } catch (error) {
         res.status(500).json({ error: `Error al eliminar la(s) categoría(s): ${error.message}`, details: error.stack });
