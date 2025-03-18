@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteSavings, getSavings, pushSaving } from '../db/db_utilsSav.mjs';
+import { deleteSavings, getPeriodicidades, getSavings, pushSaving } from '../db/db_utilsSav.mjs';
 
 const router = Router();
 
@@ -29,6 +29,15 @@ router.delete('/', async (req, res) => {
         res.status(200).json({ message: 'Ahorro(s) eliminado(s) correctamente' });
     } catch (error) {
         res.status(500).json({ error: `Error al eliminar el/los ahorro(s): ${error.message}`, details: error.stack });
+    }
+});
+
+router.get('/periodicidades', async (req, res) => {
+    try {
+        const periodicidades = await getPeriodicidades();
+        res.json(periodicidades);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener las periodicidades' });
     }
 });
 

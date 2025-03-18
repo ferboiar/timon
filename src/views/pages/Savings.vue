@@ -1,11 +1,14 @@
 <script setup>
 import { SavService } from '@/service/SavService';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { computed, getCurrentInstance, onMounted, ref } from 'vue';
 
 const savings = ref([]);
 const selectedSavings = ref([]);
 const toast = useToast();
+
+const { appContext } = getCurrentInstance();
+const formatDate = appContext.config.globalProperties.$formatDate; // Obtener la función global
 
 const saving = ref({
     id: null,
@@ -22,6 +25,8 @@ const savingDialog = ref(false);
 const deleteSavingDialog = ref(false);
 const deleteSelectedSavingsDialog = ref(false);
 
+const periodicidades = ref([]); // Inicializar como un array vacío
+
 const fetchSavings = async () => {
     try {
         const data = await SavService.getSavings();
@@ -35,6 +40,23 @@ const fetchSavings = async () => {
         console.error('Error al actualizar los ahorros:', error);
     }
 };
+
+const fetchPeriodicidades = async () => {
+    try {
+        const data = await SavService.getPeriodicidades();
+        periodicidades.value = data.map((periodicidad) => ({
+            label: capitalizeFirstLetter(periodicidad),
+            value: periodicidad
+        }));
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las periodicidades: ${error.message}`, life: 5000 });
+        console.error('Error al obtener las periodicidades:', error);
+    }
+};
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
 function updateSavings() {
     fetchSavings();
@@ -83,7 +105,12 @@ async function saveSaving() {
         // Ajustar la zona horaria para fecha_objetivo si está definida
         if (saving.value.fecha_objetivo) {
             const fechaLocal = new Date(saving.value.fecha_objetivo.getTime() - saving.value.fecha_objetivo.getTimezoneOffset() * 60000);
-            saving.value.fecha_objetivo = fechaLocal;
+            saving.value.fecha_objetivo = formatDate(fechaLocal, '-'); // Convertir fechaLocal al formato YYYY-MM-DD
+        }
+
+        // Verificar si periodicidad no está definida y asignarle null
+        if (!saving.value.periodicidad) {
+            saving.value.periodicidad = null;
         }
 
         await SavService.saveSaving(saving.value);
@@ -128,11 +155,12 @@ async function deleteSaving() {
 }
 
 const isFormValid = computed(() => {
-    return saving.value.concepto.trim() !== '' && saving.value.importe_periodico > 0;
+    return saving.value.concepto.trim() !== '';
 });
 
 onMounted(() => {
     fetchSavings();
+    fetchPeriodicidades(); // Llamar a fetchPeriodicidades para cargar las opciones de periodicidad
 });
 </script>
 
@@ -160,14 +188,22 @@ onMounted(() => {
                 </template>
                 <Column field="concepto" header="Concepto" sortable style="min-width: 4rem"></Column>
                 <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"></Column>
-                <Column field="ahorrado" header="Ahorrado" sortable style="min-width: 4rem"></Column>
+                <Column field="ahorrado" header="Ahorrado" sortable style="min-width: 4rem">
+                    <template #body="savingsSlotProps">
+                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(savingsSlotProps.data.ahorrado) }}
+                    </template>
+                </Column>
                 <Column field="fecha_objetivo" header="Fecha Objetivo" sortable style="min-width: 8rem">
                     <template #body="savingsSlotProps">
                         {{ savingsSlotProps.data.fecha_objetivo ? $formatDate(savingsSlotProps.data.fecha_objetivo) : '' }}
                     </template>
                 </Column>
                 <Column field="periodicidad" header="Periodicidad" sortable style="min-width: 4rem"></Column>
-                <Column field="importe_periodico" header="Importe Periódico" sortable style="min-width: 4rem"></Column>
+                <Column field="importe_periodico" header="Importe Periódico" sortable style="min-width: 4rem">
+                    <template #body="savingsSlotProps">
+                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(savingsSlotProps.data.importe_periodico) }}
+                    </template>
+                </Column>
                 <Column :exportable="false">
                     <template #body="savingsSlotProps">
                         <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editSaving(savingsSlotProps.data)" />
@@ -196,19 +232,19 @@ onMounted(() => {
                     <InputNumber id="ahorrado" v-model="saving.ahorrado" mode="currency" currency="EUR" locale="es-ES" fluid />
                 </div>
                 <div class="flex-1">
-                    <label for="fecha_objetivo" class="block font-bold mb-3">Fecha Objetivo</label>
-                    <Calendar id="fecha_objetivo" v-model="saving.fecha_objetivo" dateFormat="dd/mm/yy" fluid />
+                    <label for="fecha_objetivo" class="block font-bold mb-3">Fecha objetivo</label>
+                    <DatePicker id="fecha_objetivo" v-model="saving.fecha_objetivo" dateFormat="dd/mm/yy" fluid />
                 </div>
             </div>
             <div class="flex gap-6">
                 <div class="flex-1">
                     <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>
-                    <Select id="periodicidad" v-model="saving.periodicidad" :options="['mensual', 'bimestral', 'trimestral', 'anual']" fluid />
+                    <Select id="periodicidad" v-model="saving.periodicidad" :options="periodicidades" optionValue="value" optionLabel="label" fluid />
+                    <small v-if="saving.periodicidad === ''" class="text-red-500">La periodicidad es obligatoria</small>
                 </div>
                 <div class="flex-1">
-                    <label for="importe_periodico" class="block font-bold mb-3">Importe Periódico</label>
+                    <label for="importe_periodico" class="block font-bold mb-3">Importe periódico</label>
                     <InputNumber id="importe_periodico" v-model="saving.importe_periodico" mode="currency" currency="EUR" locale="es-ES" fluid />
-                    <small v-if="saving.importe_periodico <= 0" class="text-red-500">El importe periódico debe ser mayor que 0</small>
                 </div>
             </div>
         </div>

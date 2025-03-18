@@ -72,4 +72,20 @@ async function deleteSavings(savings) {
     }
 }
 
-export { deleteSavings, getSavings, pushSaving };
+async function getPeriodicidades() {
+    let connection;
+    try {
+        connection = await getConnection();
+        const [rows] = await connection.execute("SHOW COLUMNS FROM ahorros LIKE 'periodicidad'");
+        return rows[0].Type.match(/enum\(([^)]+)\)/)[1]
+            .split(',')
+            .map((value) => value.replace(/'/g, ''));
+    } catch (error) {
+        console.error('Error al obtener las periodicidades:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export { deleteSavings, getPeriodicidades, getSavings, pushSaving };

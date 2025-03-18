@@ -35,4 +35,15 @@ export class SavService {
             throw error;
         }
     }
+
+    // Obtener periodicidades
+    static async getPeriodicidades() {
+        try {
+            const response = await axios.get(`${API_URL}/periodicidades`);
+            return response.data;
+        } catch (error) {
+            console.error('Error al obtener las periodicidades:', error);
+            throw error;
+        }
+    }
 }
