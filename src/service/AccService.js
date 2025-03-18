@@ -35,4 +35,15 @@ export class AccService {
             throw error;
         }
     }
+
+    // Obtener tipos de cuenta
+    static async getTipos() {
+        try {
+            const response = await axios.get(`${API_URL}/tipos`);
+            return response.data;
+        } catch (error) {
+            console.error('Error al obtener los tipos:', error);
+            throw error;
+        }
+    }
 }

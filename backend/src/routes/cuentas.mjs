@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteAccounts, getAccounts, pushAccount } from '../db/db_utilsAcc.mjs';
+import { deleteAccounts, getAccounts, getTipos, pushAccount } from '../db/db_utilsAcc.mjs';
 
 const router = Router();
 
@@ -13,9 +13,9 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    const { nombre, tipo, iban, saldo_actual, descripcion, activa } = req.body;
+    const { id, nombre, tipo, iban, saldo_actual, descripcion, activa } = req.body;
     try {
-        await pushAccount(nombre, tipo, iban, saldo_actual, descripcion, activa);
+        await pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa);
         res.status(201).json({ message: 'Cuenta insertada o actualizada correctamente' });
     } catch (error) {
         res.status(400).json({ error: `Error al insertar o actualizar la cuenta: ${error.message}`, details: error.stack });
@@ -29,6 +29,15 @@ router.delete('/', async (req, res) => {
         res.status(200).json({ message: 'Cuenta(s) eliminada(s) correctamente' });
     } catch (error) {
         res.status(500).json({ error: `Error al eliminar la(s) cuenta(s): ${error.message}`, details: error.stack });
+    }
+});
+
+router.get('/tipos', async (req, res) => {
+    try {
+        const tipos = await getTipos();
+        res.json(tipos);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener los tipos' });
     }
 });
 

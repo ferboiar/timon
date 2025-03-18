@@ -16,8 +16,9 @@
             </Toolbar>
         </div>
 
-        <div className="card">
-            <div class="font-semibold text-xl mb-4">Ahorros</div>
+        <div class="card">
+            <div class="font-semibold text-xl mb-4">Ahorros <small class="text-gray-500">(partidas de dinero que se guardan para un fin concreto)</small></div>
+
             <p></p>
         </div>
     </div>

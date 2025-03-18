@@ -1,7 +1,7 @@
 <script setup>
 import { AccService } from '@/service/AccService';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 const accounts = ref([]);
 const selectedAccounts = ref([]);
@@ -21,6 +21,8 @@ const accountDialog = ref(false);
 const deleteAccountDialog = ref(false);
 const deleteSelectedAccountsDialog = ref(false);
 
+const tipos = ref([]); // Inicializar como un array vacío
+
 const fetchAccounts = async () => {
     try {
         const data = await AccService.getAccounts();
@@ -33,6 +35,23 @@ const fetchAccounts = async () => {
         console.error('Error al actualizar las cuentas:', error);
     }
 };
+
+const fetchTipos = async () => {
+    try {
+        const data = await AccService.getTipos();
+        tipos.value = data.map((tipo) => ({
+            label: capitalizeFirstLetter(tipo),
+            value: tipo
+        }));
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los tipos: ${error.message}`, life: 5000 });
+        console.error('Error al obtener los tipos:', error);
+    }
+};
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
 function updateAccounts() {
     fetchAccounts();
@@ -88,8 +107,18 @@ async function saveAccount() {
 }
 
 function editAccount(acc) {
-    account.value = { ...acc, descripcion: acc.descripcion || '' };
+    console.log('editAccount(). Tipo de cuenta inicial:', acc.tipo);
+    account.value = {
+        id: acc.id,
+        nombre: acc.nombre,
+        tipo: acc.tipo,
+        iban: acc.iban,
+        saldo_actual: acc.saldo_actual,
+        descripcion: acc.descripcion || '',
+        activa: acc.activa
+    };
     accountDialog.value = true;
+    console.log('editAccount(). Tipo de cuenta final:', account.value.tipo);
 }
 
 function confirmDeleteAccount(acc) {
@@ -109,8 +138,13 @@ async function deleteAccount() {
     }
 }
 
+const isFormValid = computed(() => {
+    return account.value.nombre.trim() !== '' && account.value.tipo !== '';
+});
+
 onMounted(() => {
     fetchAccounts();
+    fetchTipos(); // Llamar a fetchTipos para cargar las opciones de tipo
 });
 </script>
 
@@ -137,9 +171,13 @@ onMounted(() => {
                     <div class="text-center p-4">No hay cuentas a mostrar.</div>
                 </template>
                 <Column field="nombre" header="Nombre" sortable style="min-width: 4rem"></Column>
-                <Column field="tipo" header="Tipo" sortable style="min-width: 4rem"></Column>
+                <Column field="tipo" header="Tipo" sortable style="min-width: 4rem">
+                    <template #body="slotProps">
+                        {{ capitalizeFirstLetter(slotProps.data.tipo) }}
+                    </template>
+                </Column>
                 <Column field="iban" header="IBAN" sortable style="min-width: 12rem"></Column>
-                <Column field="saldo_actual" header="Saldo Actual" sortable style="min-width: 4rem"></Column>
+                <Column field="saldo_actual" header="Saldo actual" sortable style="min-width: 4rem"></Column>
                 <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"></Column>
                 <Column :exportable="false">
                     <template #body="accountsSlotProps">
@@ -156,29 +194,34 @@ onMounted(() => {
             <div>
                 <label for="nombre" class="block font-bold mb-3">Nombre</label>
                 <InputText id="nombre" v-model.trim="account.nombre" required="true" autofocus fluid />
-            </div>
-            <div>
-                <label for="tipo" class="block font-bold mb-3">Tipo</label>
-                <Select id="tipo" v-model="account.tipo" :options="['corriente', 'ahorro', 'inversión', 'conjunta', 'efectivo', 'tja crédito', 'otros']" fluid />
+                <small v-if="account.nombre.trim() === ''" class="text-red-500">El nombre es obligatorio</small>
             </div>
             <div>
                 <label for="iban" class="block font-bold mb-3">IBAN</label>
                 <InputText id="iban" v-model.trim="account.iban" fluid />
             </div>
-            <div>
-                <label for="saldo_actual" class="block font-bold mb-3">Saldo Actual</label>
-                <InputNumber id="saldo_actual" v-model="account.saldo_actual" mode="currency" currency="EUR" locale="es-ES" fluid />
+            <div class="flex gap-6">
+                <div class="flex-1">
+                    <label for="tipo" class="block font-bold mb-3">Tipo</label>
+                    <Select id="tipo" v-model="account.tipo" :options="tipos" optionValue="value" optionLabel="label" fluid />
+                    <small v-if="account.tipo === ''" class="text-red-500">El tipo es obligatorio</small>
+                </div>
+                <div class="flex-1">
+                    <label for="saldo_actual" class="block font-bold mb-3">Saldo Actual</label>
+                    <InputNumber id="saldo_actual" v-model="account.saldo_actual" mode="currency" currency="EUR" locale="es-ES" fluid />
+                </div>
             </div>
             <div>
                 <label for="descripcion" class="block font-bold mb-3">Descripción</label>
                 <Textarea id="descripcion" v-model="account.descripcion" rows="3" cols="20" :maxlength="255" fluid />
                 <small v-if="account.descripcion.length > 255" class="text-red-500">La descripción no puede tener más de 255 caracteres.</small>
+                <small v-else-if="account.descripcion.length >= 254" class="text-red-500">La descripción no puede tener más de 255 caracteres</small>
             </div>
         </div>
 
         <template #footer>
             <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-            <Button label="Save" icon="pi pi-check" @click="saveAccount" />
+            <Button label="Save" icon="pi pi-check" @click="saveAccount" :disabled="!isFormValid" />
         </template>
     </Dialog>
 

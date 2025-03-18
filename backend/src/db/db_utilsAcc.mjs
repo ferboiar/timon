@@ -14,15 +14,22 @@ async function getAccounts() {
     }
 }
 
-async function pushAccount(nombre, tipo, iban = null, saldo_actual = 0, descripcion = null, activa = 1) {
+async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, descripcion = null, activa = 1) {
     let connection;
     try {
         connection = await getConnection();
-        const [existingAccount] = await connection.execute('SELECT * FROM cuentas WHERE nombre = ?', [nombre]);
 
-        if (existingAccount.length > 0) {
+        if (id) {
             // Actualizar cuenta existente
-            const [updateResult] = await connection.execute('UPDATE cuentas SET tipo = ?, iban = ?, saldo_actual = ?, descripcion = COALESCE(?, descripcion), activa = ? WHERE nombre = ?', [tipo, iban, saldo_actual, descripcion, activa, nombre]);
+            const [updateResult] = await connection.execute('UPDATE cuentas SET nombre = ?, tipo = ?, iban = ?, saldo_actual = ?, descripcion = COALESCE(?, descripcion), activa = ? WHERE id = ?', [
+                nombre,
+                tipo,
+                iban,
+                saldo_actual,
+                descripcion,
+                activa,
+                id
+            ]);
             console.log(`Update realizado correctamente en tabla cuentas. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             // Insertar nueva cuenta
@@ -30,10 +37,17 @@ async function pushAccount(nombre, tipo, iban = null, saldo_actual = 0, descripc
             console.log(`Insert realizado correctamente en tabla cuentas. Filas afectadas: ${insertResult.affectedRows}`);
         }
     } catch (error) {
-        console.error('Error al insertar o actualizar la cuenta:', error);
-        throw error;
+        if (error.code === 'ER_DUP_ENTRY') {
+            console.error('Error: Entrada duplicada para IBAN:', iban);
+            throw new Error(`El IBAN ${iban} ya existe en la base de datos.`);
+        } else {
+            console.error('Error al insertar o actualizar la cuenta:', error);
+            throw error;
+        }
     } finally {
-        if (connection) connection.release();
+        if (connection) {
+            connection.release();
+        }
     }
 }
 
@@ -56,4 +70,20 @@ async function deleteAccounts(accounts) {
     }
 }
 
-export { deleteAccounts, getAccounts, pushAccount };
+async function getTipos() {
+    let connection;
+    try {
+        connection = await getConnection();
+        const [rows] = await connection.execute("SHOW COLUMNS FROM cuentas LIKE 'tipo'");
+        return rows[0].Type.match(/enum\(([^)]+)\)/)[1]
+            .split(',')
+            .map((value) => value.replace(/'/g, ''));
+    } catch (error) {
+        console.error('Error al obtener los tipos:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export { deleteAccounts, getAccounts, getTipos, pushAccount };
