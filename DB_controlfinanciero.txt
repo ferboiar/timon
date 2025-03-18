@@ -1,0 +1,133 @@
+
+            //partidas de dinero destinadas a cubrir gastos fijos (comida, ocio, peluqueria)
+            { label: 'Presupuestos', icon: 'pi pi-fw pi-money-bill', to: '/pages/budgets' },
+
+            //dinero que adelanto y luego debo devolver mes a mes (veterinario, ropa niños, dentista, prestamos a elena)
+            { label: 'Anticipos', icon: 'pi pi-fw pi-wallet', to: '/pages/advances' },
+
+            //partidas de dinero que se guardan para un fin concreto (viaje, coche, reforma
+            { label: 'Ahorros', icon: 'pi pi-fw pi-chart-line', to: '/pages/savings' }
+
+
+
+Ahorros: partidas de dinero que se guardan para un fin concreto (vacaciones, gasolina, luz, inglés niños, reforma, seguro coche)
+
+columnas:
+- concepto
+- aportación (debe permitir ingresar la fecha y el importe para cumplir con el plan de ahorro, o hacer una aportación extraordinaria)
+- ahorrado
+- plan de ahorro (debe permitir especificar la periodicidad y el importe que se quieren ahorrar; por ejemplo, mensualmente 25€.)... ESTO SERÁ CON UNA REGLA en AUTOMATIZACION
+- descripción
+
+
+1. Tabla ahorros
+
+CREATE TABLE ahorros (
+    id INT NOT NULL AUTO_INCREMENT,
+    concepto VARCHAR(30) NOT NULL,
+    descripcion VARCHAR(255) DEFAULT NULL,
+    ahorrado DECIMAL(10,2) DEFAULT NULL,
+    fecha_objetivo DATE DEFAULT NULL,
+    periodicidad ENUM('mensual', 'bimestral', 'trimestral', 'anual') DEFAULT NULL,
+    importe_periodico DECIMAL(10,2) NOT NULL,
+    activo TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+CREATE TABLE ahorros_movimientos (
+    id INT NOT NULL AUTO_INCREMENT,
+    ahorro_id INT NOT NULL,
+    importe DECIMAL(10,2) NOT NULL,
+    fecha DATE NOT NULL,
+    tipo ENUM('regular', 'extraordinario') NOT NULL,
+    descripcion VARCHAR(255) DEFAULT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (ahorro_id) REFERENCES ahorros(id) ON DELETE CASCADE,
+    INDEX idx_ahorro_id (ahorro_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--------
+anticipos: dinero que adelanto y luego debo devolver poco a poco (veterinario, ropa niños, dentista, prestamos a elena)
+
+- concepto
+- aportación (debe permitir ingresar la fecha y el importe. Considerar que también se puedan hacer aportaciones extraordinarias)
+- pendiente de devolver
+- cantidad a devolver (el total)
+- plan de pagos (debe permitir especificar la periodicidad y el importe que se quieren ahorrar; por ejemplo, mensualmente 25€, cada 2 meses, cada 4 meses, semanalmente.)
+- descripción
+
+
+2. Tabla anticipos
+
+anticipos_maestro:
+    id (PK)
+    concepto
+    importe_total
+    fecha_inicio
+    fecha_fin_prevista
+    descripcion
+    estado (activo/cancelado/completado)
+    created_at
+    updated_at
+
+anticipos_pagos:
+    id (PK)
+    anticipo_id (FK)
+    importe
+    fecha
+    tipo (regular/extraordinario)
+    descripcion
+
+Ventajas
+Mejor seguimiento de pagos
+Historial completo de devoluciones
+Facilita reportes y cálculos
+
+
+
+--------
+Presupuestos: partidas de dinero destinadas a cubrir gastos fijos (comida, ocio, peluqueria)
+
+- concepto
+- objetivo (campo que indicará el objetivo del prestamo a modo de descripción, por ejemplo, comida mensual)
+- presupuestado (importe a considerar, por ejemplo 520€ que corresponderían a 130€/semana en un mes de 4 semanas) 
+- gastado (el ya utilizado, debe ser un campo que permita ingresar la fecha y el importe)
+- disponible (debe ser la diferencia entre lo gastado y lo presupuestado)
+- plan de pagos
+
+
+3. Tabla presupuestos
+
+presupuestos:
+    id (PK)
+    concepto
+    objetivo
+    importe_total
+    periodicidad
+    fecha_inicio
+    fecha_fin
+    activo
+    created_at
+    updated_at
+
+presupuestos_periodos:
+    id (PK)
+    presupuesto_id (FK)
+    fecha_inicio
+    fecha_fin
+    importe_asignado
+
+presupuestos_gastos:
+    id (PK)
+    periodo_id (FK)
+    importe
+    fecha
+    descripcion
+
+Ventajas
+Control por períodos
+Mejor seguimiento del gasto
+Facilita comparativas entre períodos
+Permite reasignación de presupuestos
