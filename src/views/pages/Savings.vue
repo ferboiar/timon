@@ -25,7 +25,7 @@ const savingDialog = ref(false);
 const deleteSavingDialog = ref(false);
 const deleteSelectedSavingsDialog = ref(false);
 
-const periodicidades = ref([]); // Inicializar como un array vacío
+const periodicidades = ref([{ label: '', value: '' }]); // Inicializar con una entrada vacía
 
 const fetchSavings = async () => {
     try {
@@ -44,10 +44,13 @@ const fetchSavings = async () => {
 const fetchPeriodicidades = async () => {
     try {
         const data = await SavService.getPeriodicidades();
-        periodicidades.value = data.map((periodicidad) => ({
-            label: capitalizeFirstLetter(periodicidad),
-            value: periodicidad
-        }));
+        periodicidades.value = [
+            { label: '', value: '' },
+            ...data.map((periodicidad) => ({
+                label: capitalizeFirstLetter(periodicidad),
+                value: periodicidad
+            }))
+        ];
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las periodicidades: ${error.message}`, life: 5000 });
         console.error('Error al obtener las periodicidades:', error);
@@ -198,7 +201,11 @@ onMounted(() => {
                         {{ savingsSlotProps.data.fecha_objetivo ? $formatDate(savingsSlotProps.data.fecha_objetivo) : '' }}
                     </template>
                 </Column>
-                <Column field="periodicidad" header="Periodicidad" sortable style="min-width: 4rem"></Column>
+                <Column field="periodicidad" header="Periodicidad" sortable style="min-width: 4rem">
+                    <template #body="savingsSlotProps">
+                        {{ savingsSlotProps.data.periodicidad ? capitalizeFirstLetter(savingsSlotProps.data.periodicidad) : '' }}
+                    </template>
+                </Column>
                 <Column field="importe_periodico" header="Importe Periódico" sortable style="min-width: 4rem">
                     <template #body="savingsSlotProps">
                         {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(savingsSlotProps.data.importe_periodico) }}
@@ -240,7 +247,6 @@ onMounted(() => {
                 <div class="flex-1">
                     <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>
                     <Select id="periodicidad" v-model="saving.periodicidad" :options="periodicidades" optionValue="value" optionLabel="label" fluid />
-                    <small v-if="saving.periodicidad === ''" class="text-red-500">La periodicidad es obligatoria</small>
                 </div>
                 <div class="flex-1">
                     <label for="importe_periodico" class="block font-bold mb-3">Importe periódico</label>
