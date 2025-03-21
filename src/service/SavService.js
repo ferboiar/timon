@@ -46,4 +46,37 @@ export class SavService {
             throw error;
         }
     }
+
+    // Obtener movimientos por ahorro_id
+    static async getMovimientos(ahorroId) {
+        try {
+            const response = await axios.get(`${API_URL}/${ahorroId}/movimientos`);
+            return response.data;
+        } catch (error) {
+            console.error('Error al obtener los movimientos:', error);
+            throw error;
+        }
+    }
+
+    // Guardar un movimiento (crear o actualizar)
+    static async saveMovimiento(movimiento) {
+        try {
+            const response = await axios.post(`${API_URL}/movimientos`, movimiento);
+            return response.data;
+        } catch (error) {
+            console.error('Error al guardar el movimiento:', error);
+            throw error;
+        }
+    }
+
+    // Eliminar un movimiento
+    static async deleteMovimiento(movimientoId) {
+        try {
+            const response = await axios.delete(`${API_URL}/movimientos/${movimientoId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error al eliminar el movimiento:', error);
+            throw error;
+        }
+    }
 }

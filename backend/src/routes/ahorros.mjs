@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteSavings, getPeriodicidades, getSavings, pushSaving } from '../db/db_utilsSav.mjs';
+import { deleteMovimiento, deleteSavings, getMovimientos, getPeriodicidades, getSavings, pushMovimiento, pushSaving } from '../db/db_utilsSav.mjs';
 
 const router = Router();
 
@@ -38,6 +38,36 @@ router.get('/periodicidades', async (req, res) => {
         res.json(periodicidades);
     } catch (error) {
         res.status(500).json({ error: 'Error al obtener las periodicidades' });
+    }
+});
+
+router.get('/:ahorroId/movimientos', async (req, res) => {
+    const { ahorroId } = req.params;
+    try {
+        const movimientos = await getMovimientos(ahorroId);
+        res.json(movimientos);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener los movimientos' });
+    }
+});
+
+router.post('/movimientos', async (req, res) => {
+    const { id, ahorro_id, importe, fecha, tipo, descripcion } = req.body;
+    try {
+        await pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion);
+        res.status(201).json({ message: 'Movimiento insertado o actualizado correctamente' });
+    } catch (error) {
+        res.status(400).json({ error: `Error al insertar o actualizar el movimiento: ${error.message}`, details: error.stack });
+    }
+});
+
+router.delete('/movimientos/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await deleteMovimiento(id);
+        res.status(200).json({ message: 'Movimiento eliminado correctamente' });
+    } catch (error) {
+        res.status(500).json({ error: `Error al eliminar el movimiento: ${error.message}`, details: error.stack });
     }
 });
 

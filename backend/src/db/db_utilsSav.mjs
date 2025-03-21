@@ -88,4 +88,76 @@ async function getPeriodicidades() {
     }
 }
 
-export { deleteSavings, getPeriodicidades, getSavings, pushSaving };
+async function getMovimientos(ahorroId) {
+    let connection;
+    try {
+        connection = await getConnection();
+        const [rows] = await connection.execute('SELECT * FROM ahorros_movimientos WHERE ahorro_id = ? ORDER BY fecha ASC', [ahorroId]);
+        return rows;
+    } catch (error) {
+        console.error('Error al obtener los movimientos:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion = null) {
+    let connection;
+    try {
+        connection = await getConnection();
+
+        if (!fecha || !tipo) {
+            throw new Error('Faltan campos obligatorios: fecha y tipo');
+        }
+
+        if (id) {
+            // Actualizar movimiento existente
+            const [updateResult] = await connection.execute('UPDATE ahorros_movimientos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion) WHERE id = ?', [importe, fecha, tipo, descripcion, id]);
+            console.log(`Update realizado correctamente en tabla ahorros_movimientos. Filas afectadas: ${updateResult.affectedRows}`);
+        } else {
+            // Insertar nuevo movimiento
+            const [insertResult] = await connection.execute('INSERT INTO ahorros_movimientos (ahorro_id, importe, fecha, tipo, descripcion) VALUES (?, ?, ?, ?, ?)', [ahorro_id, importe, fecha, tipo, descripcion]);
+            console.log(`Insert realizado correctamente en tabla ahorros_movimientos. Filas afectadas: ${insertResult.affectedRows}`);
+        }
+
+        // Actualizar el valor de ahorrado en la tabla ahorros
+        const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = ahorrado + ? WHERE id = ?', [importe, ahorro_id]);
+        console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateAhorroResult.affectedRows}`);
+    } catch (error) {
+        console.error('Error al insertar o actualizar el movimiento:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function deleteMovimiento(id) {
+    let connection;
+    try {
+        connection = await getConnection();
+
+        // Obtener el importe del movimiento antes de eliminarlo
+        const [movimiento] = await connection.execute('SELECT ahorro_id, importe FROM ahorros_movimientos WHERE id = ?', [id]);
+        if (movimiento.length === 0) {
+            throw new Error('Movimiento no encontrado');
+        }
+
+        const { ahorro_id, importe } = movimiento[0];
+
+        // Eliminar el movimiento
+        const [deleteResult] = await connection.execute('DELETE FROM ahorros_movimientos WHERE id = ?', [id]);
+        console.log(`Delete realizado correctamente en tabla ahorros_movimientos. Filas afectadas: ${deleteResult.affectedRows}`);
+
+        // Actualizar el valor de ahorrado en la tabla ahorros
+        const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = ahorrado - ? WHERE id = ?', [importe, ahorro_id]);
+        console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateAhorroResult.affectedRows}`);
+    } catch (error) {
+        console.error('Error al eliminar el movimiento:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export { deleteMovimiento, deleteSavings, getMovimientos, getPeriodicidades, getSavings, pushMovimiento, pushSaving };

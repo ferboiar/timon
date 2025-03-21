@@ -151,6 +151,11 @@ async function deleteSaving() {
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Ahorro eliminado', life: 3000 });
         fetchSavings();
         hideDialog();
+        // Actualizar la tabla dt_ahorros
+        const dtAhorros = getCurrentInstance().refs.dt_ahorros;
+        if (dtAhorros) {
+            dtAhorros.reset();
+        }
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el ahorro: ${error.message}`, life: 5000 });
         console.error('Error al eliminar el ahorro:', error);
@@ -161,9 +166,121 @@ const isFormValid = computed(() => {
     return saving.value.concepto.trim() !== '';
 });
 
-onMounted(() => {
-    fetchSavings();
-    fetchPeriodicidades(); // Llamar a fetchPeriodicidades para cargar las opciones de periodicidad
+const expandedRows = ref([]);
+const showInactive = ref(false);
+const savingMovimientoDialog = ref(false);
+const movimiento = ref({
+    id: null,
+    ahorro_id: null,
+    importe: 0,
+    fecha: null,
+    tipo: 'regular',
+    descripcion: ''
+});
+
+const movimientos = ref({});
+
+const fetchMovimientos = async (ahorroId) => {
+    try {
+        const data = await SavService.getMovimientos(ahorroId);
+        movimientos.value[ahorroId] = data;
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los movimientos: ${error.message}`, life: 5000 });
+        console.error('Error al obtener los movimientos:', error);
+        movimientos.value[ahorroId] = [];
+    }
+};
+
+const fetchAllMovimientos = async () => {
+    try {
+        const ahorroIds = savings.value.map((saving) => saving.id);
+        const movimientosPromises = ahorroIds.map((id) => SavService.getMovimientos(id));
+        const movimientosResults = await Promise.all(movimientosPromises);
+        ahorroIds.forEach((id, index) => {
+            movimientos.value[id] = movimientosResults[index];
+        });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los movimientos: ${error.message}`, life: 5000 });
+        console.error('Error al obtener los movimientos:', error);
+    }
+};
+
+const onRowExpand = async (event) => {
+    await fetchMovimientos(event.data.id);
+};
+
+const toggleShowInactive = () => {
+    showInactive.value = !showInactive.value;
+};
+
+const toggleExpandCollapseAll = () => {
+    if (expandedRows.value.length) {
+        expandedRows.value = [];
+    } else {
+        expandedRows.value = savings.value.map((s) => s.id);
+    }
+};
+
+const openNewMovimiento = (ahorroId) => {
+    movimiento.value = {
+        id: null,
+        ahorro_id: ahorroId,
+        importe: 0,
+        fecha: null,
+        tipo: 'regular',
+        descripcion: ''
+    };
+    savingMovimientoDialog.value = true;
+};
+
+const editMovimiento = (mov) => {
+    movimiento.value = { ...mov };
+    savingMovimientoDialog.value = true;
+};
+
+const saveMovimiento = async () => {
+    try {
+        // Ajustar la zona horaria para fecha si está definida
+        if (movimiento.value.fecha) {
+            const fechaLocal = new Date(movimiento.value.fecha.getTime() - movimiento.value.fecha.getTimezoneOffset() * 60000);
+            movimiento.value.fecha = formatDate(fechaLocal, '-'); // Convertir fechaLocal al formato YYYY-MM-DD
+        }
+
+        await SavService.saveMovimiento(movimiento.value);
+        toast.add({ severity: 'success', summary: 'Successful', detail: 'Movimiento guardado!', life: 5000 });
+        fetchSavings();
+        fetchAllMovimientos();
+        savingMovimientoDialog.value = false;
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el movimiento: ${error.message}`, life: 5000 });
+        console.error('Error al guardar el movimiento:', error);
+    }
+};
+
+const deleteMovimiento = async (mov) => {
+    try {
+        await SavService.deleteMovimiento(mov.id);
+        toast.add({ severity: 'success', summary: 'Successful', detail: 'Movimiento eliminado', life: 3000 });
+        fetchSavings();
+        fetchAllMovimientos();
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el movimiento: ${error.message}`, life: 5000 });
+        console.error('Error al eliminar el movimiento:', error);
+    }
+};
+
+const hasInactiveSavings = computed(() => {
+    return savings.value.some((saving) => saving.activo === 0);
+});
+
+const isMovimientoFormValid = computed(() => {
+    return movimiento.value.fecha && movimiento.value.tipo;
+});
+
+onMounted(async () => {
+    await fetchSavings();
+    await fetchPeriodicidades(); // Llamar a fetchPeriodicidades para cargar las opciones de periodicidad
+    await fetchAllMovimientos(); // Precargar todos los movimientos
 });
 </script>
 
@@ -176,6 +293,8 @@ onMounted(() => {
                     <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNewSaving" />
                     <Button label="Borrar" icon="pi pi-trash" severity="secondary" class="mr-2" @click="confirmDeleteSelectedSavings" :disabled="!selectedSavings.length" />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateSavings" />
+                    <Button :label="expandedRows.length ? 'Contraer todo' : 'Expandir todo'" :icon="expandedRows.length ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
+                    <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" :disabled="!hasInactiveSavings" />
                 </template>
                 <template #end>
                     <Button label="Exportar" icon="pi pi-upload" severity="secondary" />
@@ -185,12 +304,25 @@ onMounted(() => {
 
         <div class="card">
             <div class="font-semibold text-xl mb-4">Ahorros <small class="text-gray-500">(partidas de dinero que se guardan para un fin concreto)</small></div>
-            <DataTable ref="dt_ahorros" v-model:selection="selectedSavings" :value="savings" dataKey="id" responsiveLayout="scroll" selectionMode="multiple" sortMode="multiple" removableSort stripedRows>
+            <DataTable
+                ref="dt_ahorros"
+                v-model:selection="selectedSavings"
+                :value="savings"
+                dataKey="id"
+                responsiveLayout="scroll"
+                selectionMode="multiple"
+                sortMode="multiple"
+                removableSort
+                stripedRows
+                v-model:expandedRows="expandedRows"
+                @row-expand="onRowExpand"
+            >
                 <template #empty>
                     <div class="text-center p-4">No hay ahorros a mostrar.</div>
                 </template>
-                <Column field="concepto" header="Concepto" sortable style="min-width: 4rem"></Column>
-                <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"></Column>
+                <Column expander style="width: 5rem" />
+                <Column field="concepto" header="Concepto" sortable style="min-width: 4rem"> </Column>
+                <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"> </Column>
                 <Column field="ahorrado" header="Ahorrado" sortable style="min-width: 4rem">
                     <template #body="savingsSlotProps">
                         {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(savingsSlotProps.data.ahorrado) }}
@@ -214,12 +346,76 @@ onMounted(() => {
                 <Column :exportable="false">
                     <template #body="savingsSlotProps">
                         <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editSaving(savingsSlotProps.data)" />
+                        <Button icon="pi pi-plus" outlined rounded class="mr-2" @click="openNewMovimiento(savingsSlotProps.data.id)" />
                         <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteSaving(savingsSlotProps.data)" />
                     </template>
                 </Column>
+                <template #expansion="savingsSlotProps">
+                    <div class="p-4">
+                        <h5>Movimientos del ahorro {{ savingsSlotProps.data.concepto }}</h5>
+                        <DataTable :value="movimientos[savingsSlotProps.data.id]" sortField="fecha" :sortOrder="1" removableSort>
+                            <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
+                                <template #body="movimientoSlotProps">
+                                    {{ $formatDate(movimientoSlotProps.data.fecha) }}
+                                </template>
+                            </Column>
+                            <Column field="tipo" header="Tipo" sortable style="min-width: 4rem"></Column>
+                            <Column field="importe" header="Importe" sortable style="min-width: 4rem">
+                                <template #body="movimientoSlotProps">
+                                    {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(movimientoSlotProps.data.importe) }}
+                                </template>
+                            </Column>
+                            <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"></Column>
+                            <Column :exportable="false" style="min-width: 12rem">
+                                <template #body="movimientoSlotProps">
+                                    <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editMovimiento(movimientoSlotProps.data)" />
+                                    <Button icon="pi pi-trash" outlined rounded severity="danger" @click="deleteMovimiento(movimientoSlotProps.data)" />
+                                </template>
+                            </Column>
+                        </DataTable>
+                    </div>
+                </template>
             </DataTable>
         </div>
     </div>
+
+    <Dialog v-model:visible="savingMovimientoDialog" :style="{ width: '450px' }" header="Detalle del movimiento" :modal="true">
+        <div class="flex flex-col gap-6">
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-4">
+                    <label for="importe" class="block font-bold mb-3">Importe</label>
+                    <InputNumber id="importe" ref="importe" v-model="movimiento.importe" mode="currency" currency="EUR" locale="es-ES" autofocus fluid />
+                </div>
+                <div class="col-span-4">
+                    <label for="fecha" class="block font-bold mb-3">Fecha</label>
+                    <DatePicker id="fecha" v-model="movimiento.fecha" dateFormat="dd/mm/yy" fluid />
+                </div>
+                <div class="col-span-4">
+                    <label for="tipo" class="block font-bold mb-3">Tipo</label>
+                    <Select
+                        id="tipo"
+                        v-model="movimiento.tipo"
+                        :options="[
+                            { label: 'Regular', value: 'regular' },
+                            { label: 'Extraordinario', value: 'extraordinario' }
+                        ]"
+                        optionValue="value"
+                        optionLabel="label"
+                        fluid
+                    />
+                </div>
+            </div>
+            <div>
+                <label for="descripcion" class="block font-bold mb-3">Descripción</label>
+                <Textarea id="descripcion" v-model="movimiento.descripcion" rows="3" cols="20" :maxlength="255" fluid />
+            </div>
+        </div>
+
+        <template #footer>
+            <Button label="Cancel" icon="pi pi-times" text @click="savingMovimientoDialog = false" />
+            <Button label="Save" icon="pi pi-check" @click="saveMovimiento" :disabled="!isMovimientoFormValid" />
+        </template>
+    </Dialog>
 
     <Dialog v-model:visible="savingDialog" :style="{ width: '450px' }" header="Detalle del ahorro" :modal="true">
         <div class="flex flex-col gap-6">
