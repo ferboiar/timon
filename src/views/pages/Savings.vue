@@ -205,20 +205,30 @@ const fetchAllMovimientos = async () => {
     }
 };
 
-const onRowExpand = async (event) => {
-    await fetchMovimientos(event.data.id);
-};
-
-const toggleShowInactive = () => {
-    showInactive.value = !showInactive.value;
-};
+const isExpanded = ref(false);
 
 const toggleExpandCollapseAll = () => {
-    if (expandedRows.value.length) {
+    if (isExpanded.value) {
         expandedRows.value = [];
     } else {
         expandedRows.value = savings.value.map((s) => s.id);
     }
+    isExpanded.value = !isExpanded.value;
+};
+
+const onRowExpand = async (event) => {
+    await fetchMovimientos(event.data.id);
+};
+
+const onRowCollapse = (event) => {
+    const index = expandedRows.value.indexOf(event.data.id);
+    if (index !== -1) {
+        expandedRows.value.splice(index, 1);
+    }
+};
+
+const toggleShowInactive = () => {
+    showInactive.value = !showInactive.value;
 };
 
 const openNewMovimiento = (ahorroId) => {
@@ -242,6 +252,10 @@ const saveMovimiento = async () => {
     try {
         // Ajustar la zona horaria para fecha si está definida
         if (movimiento.value.fecha) {
+            // Asegurarse de que movimiento.value.fecha sea un objeto Date
+            if (!(movimiento.value.fecha instanceof Date)) {
+                movimiento.value.fecha = new Date(movimiento.value.fecha);
+            }
             const fechaLocal = new Date(movimiento.value.fecha.getTime() - movimiento.value.fecha.getTimezoneOffset() * 60000);
             movimiento.value.fecha = formatDate(fechaLocal, '-'); // Convertir fechaLocal al formato YYYY-MM-DD
         }
@@ -293,7 +307,7 @@ onMounted(async () => {
                     <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNewSaving" />
                     <Button label="Borrar" icon="pi pi-trash" severity="secondary" class="mr-2" @click="confirmDeleteSelectedSavings" :disabled="!selectedSavings.length" />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateSavings" />
-                    <Button :label="expandedRows.length ? 'Contraer todo' : 'Expandir todo'" :icon="expandedRows.length ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
+                    <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" :disabled="!hasInactiveSavings" />
                 </template>
                 <template #end>
@@ -316,6 +330,7 @@ onMounted(async () => {
                 stripedRows
                 v-model:expandedRows="expandedRows"
                 @row-expand="onRowExpand"
+                @row-collapse="onRowCollapse"
             >
                 <template #empty>
                     <div class="text-center p-4">No hay ahorros a mostrar.</div>
@@ -325,7 +340,9 @@ onMounted(async () => {
                 <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"> </Column>
                 <Column field="ahorrado" header="Ahorrado" sortable style="min-width: 4rem">
                     <template #body="savingsSlotProps">
-                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(savingsSlotProps.data.ahorrado) }}
+                        <span :class="{ 'text-green-500': savingsSlotProps.data.ahorrado >= 0, 'text-red-500': savingsSlotProps.data.ahorrado < 0 }">
+                            {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(savingsSlotProps.data.ahorrado) }}
+                        </span>
                     </template>
                 </Column>
                 <Column field="fecha_objetivo" header="Fecha Objetivo" sortable style="min-width: 8rem">
@@ -362,7 +379,9 @@ onMounted(async () => {
                             <Column field="tipo" header="Tipo" sortable style="min-width: 4rem"></Column>
                             <Column field="importe" header="Importe" sortable style="min-width: 4rem">
                                 <template #body="movimientoSlotProps">
-                                    {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(movimientoSlotProps.data.importe) }}
+                                    <span :class="{ 'text-green-500': movimientoSlotProps.data.importe >= 0, 'text-red-500': movimientoSlotProps.data.importe < 0 }">
+                                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(movimientoSlotProps.data.importe) }}
+                                    </span>
                                 </template>
                             </Column>
                             <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"></Column>
@@ -382,13 +401,13 @@ onMounted(async () => {
     <Dialog v-model:visible="savingMovimientoDialog" :style="{ width: '450px' }" header="Detalle del movimiento" :modal="true">
         <div class="flex flex-col gap-6">
             <div class="grid grid-cols-12 gap-4">
-                <div class="col-span-4">
+                <div class="col-span-3">
                     <label for="importe" class="block font-bold mb-3">Importe</label>
                     <InputNumber id="importe" ref="importe" v-model="movimiento.importe" mode="currency" currency="EUR" locale="es-ES" autofocus fluid />
                 </div>
-                <div class="col-span-4">
+                <div class="col-span-5">
                     <label for="fecha" class="block font-bold mb-3">Fecha</label>
-                    <DatePicker id="fecha" v-model="movimiento.fecha" dateFormat="dd/mm/yy" fluid />
+                    <DatePicker id="fecha" v-model="movimiento.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar fluid />
                 </div>
                 <div class="col-span-4">
                     <label for="tipo" class="block font-bold mb-3">Tipo</label>
@@ -436,7 +455,7 @@ onMounted(async () => {
                 </div>
                 <div class="flex-1">
                     <label for="fecha_objetivo" class="block font-bold mb-3">Fecha objetivo</label>
-                    <DatePicker id="fecha_objetivo" v-model="saving.fecha_objetivo" dateFormat="dd/mm/yy" fluid />
+                    <DatePicker id="fecha_objetivo" v-model="saving.fecha_objetivo" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar fluid />
                 </div>
             </div>
             <div class="flex gap-6">
