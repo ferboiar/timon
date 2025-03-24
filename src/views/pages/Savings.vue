@@ -166,7 +166,7 @@ const isFormValid = computed(() => {
     return saving.value.concepto.trim() !== '';
 });
 
-const expandedRows = ref([]);
+const expandedRows = ref({});
 const showInactive = ref(false);
 const savingMovimientoDialog = ref(false);
 const movimiento = ref({
@@ -206,25 +206,38 @@ const fetchAllMovimientos = async () => {
 };
 
 const isExpanded = ref(false);
+const expandedCount = ref(0);
+const savingsWithMovements = computed(() => savings.value.filter((s) => movimientos.value[s.id]?.length > 0).length);
 
 const toggleExpandCollapseAll = () => {
     if (isExpanded.value) {
-        expandedRows.value = [];
+        expandedRows.value = {};
+        expandedCount.value = 0;
     } else {
-        expandedRows.value = savings.value.map((s) => s.id);
+        expandedRows.value = savings.value.reduce((acc, s) => {
+            acc[s.id] = true;
+            return acc;
+        }, {});
+        expandedCount.value = savingsWithMovements.value;
     }
     isExpanded.value = !isExpanded.value;
 };
 
 const onRowExpand = async (event) => {
     await fetchMovimientos(event.data.id);
+    expandedRows.value[event.data.id] = true;
+    expandedCount.value++;
+    checkGlobalExpandState();
 };
 
 const onRowCollapse = (event) => {
-    const index = expandedRows.value.indexOf(event.data.id);
-    if (index !== -1) {
-        expandedRows.value.splice(index, 1);
-    }
+    delete expandedRows.value[event.data.id];
+    expandedCount.value--;
+    checkGlobalExpandState();
+};
+
+const checkGlobalExpandState = () => {
+    isExpanded.value = expandedCount.value >= savingsWithMovements.value;
 };
 
 const toggleShowInactive = () => {
@@ -291,6 +304,44 @@ const isMovimientoFormValid = computed(() => {
     return movimiento.value.fecha && movimiento.value.tipo;
 });
 
+const exportCSV = () => {
+    const exportData = (savings, movimientos, filename, formatDate) => {
+        const csvContent = [
+            ['Concepto', 'Descripción', 'Ahorrado', 'Fecha Objetivo', 'Periodicidad', 'Importe Periódico', 'Fecha Movimiento', 'Tipo Movimiento', 'Importe Movimiento', 'Descripción Movimiento'],
+            ...savings.flatMap((saving) => {
+                const savingData = [
+                    saving.concepto,
+                    saving.descripcion,
+                    parseFloat(saving.ahorrado).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
+                    saving.fecha_objetivo ? formatDate(saving.fecha_objetivo) : '',
+                    saving.periodicidad,
+                    parseFloat(saving.importe_periodico).toFixed(2).replace('.', ',')
+                ];
+                if (movimientos[saving.id] && movimientos[saving.id].length > 0) {
+                    return movimientos[saving.id].map((mov) => [...savingData, formatDate(mov.fecha), mov.tipo, parseFloat(mov.importe).toFixed(2).replace('.', ','), mov.descripcion]);
+                } else {
+                    return [savingData];
+                }
+            })
+        ]
+            .map((e) => e.map((field) => `${field}`).join(';'))
+            .join('\n');
+
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const formatDate = appContext.config.globalProperties.$formatDate; // Obtener la función global
+    exportData(savings.value, movimientos.value, 'savings.csv', formatDate);
+};
+
 onMounted(async () => {
     await fetchSavings();
     await fetchPeriodicidades(); // Llamar a fetchPeriodicidades para cargar las opciones de periodicidad
@@ -311,7 +362,7 @@ onMounted(async () => {
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" :disabled="!hasInactiveSavings" />
                 </template>
                 <template #end>
-                    <Button label="Exportar" icon="pi pi-upload" severity="secondary" />
+                    <Button label="Exportar" icon="pi pi-upload" severity="secondary" @click="exportCSV" />
                 </template>
             </Toolbar>
         </div>
@@ -501,3 +552,9 @@ onMounted(async () => {
         </template>
     </Dialog>
 </template>
+
+<style scoped>
+.expander-green {
+    background-color: green !important;
+}
+</style>
