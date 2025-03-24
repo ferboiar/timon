@@ -338,7 +338,6 @@ const exportCSV = () => {
         document.body.removeChild(link);
     };
 
-    const formatDate = appContext.config.globalProperties.$formatDate; // Obtener la función global
     exportData(savings.value, movimientos.value, 'savings.csv', formatDate);
 };
 
