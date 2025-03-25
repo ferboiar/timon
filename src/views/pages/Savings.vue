@@ -307,7 +307,7 @@ const isMovimientoFormValid = computed(() => {
 const exportCSV = () => {
     const exportData = (savings, movimientos, filename, formatDate) => {
         const csvContent = [
-            ['Concepto', 'Descripción', 'Ahorrado', 'Fecha Objetivo', 'Periodicidad', 'Importe Periódico', 'Fecha Movimiento', 'Tipo Movimiento', 'Importe Movimiento', 'Descripción Movimiento'],
+            ['Concepto', 'Descripción', 'Ahorrado', 'Fecha Objetivo', 'Periodicidad', 'Ahorro sugerido', 'Fecha Movimiento', 'Tipo Movimiento', 'Importe Movimiento', 'Descripción Movimiento'],
             ...savings.flatMap((saving) => {
                 const savingData = [
                     saving.concepto,
@@ -395,7 +395,7 @@ onMounted(async () => {
                         </span>
                     </template>
                 </Column>
-                <Column field="fecha_objetivo" header="Fecha Objetivo" sortable style="min-width: 8rem">
+                <Column field="fecha_objetivo" header="Fecha objetivo" sortable style="min-width: 8rem">
                     <template #body="savingsSlotProps">
                         {{ savingsSlotProps.data.fecha_objetivo ? $formatDate(savingsSlotProps.data.fecha_objetivo) : '' }}
                     </template>
@@ -405,7 +405,7 @@ onMounted(async () => {
                         {{ savingsSlotProps.data.periodicidad ? capitalizeFirstLetter(savingsSlotProps.data.periodicidad) : '' }}
                     </template>
                 </Column>
-                <Column field="importe_periodico" header="Importe Periódico" sortable style="min-width: 4rem">
+                <Column field="importe_periodico" header="Ahorro sugerido" sortable style="min-width: 4rem">
                     <template #body="savingsSlotProps">
                         {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(savingsSlotProps.data.importe_periodico) }}
                     </template>

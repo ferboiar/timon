@@ -64,21 +64,28 @@ anticipos: dinero que adelanto y luego debo devolver poco a poco (veterinario, r
 anticipos_maestro:
     id (PK)
     concepto
-    importe_total
-    fecha_inicio
-    fecha_fin_prevista
+    importe_total -- el total prestado/adelantado
+    pago_sugerido -- el importe periodico considerado para ir devolviendo el importe_total
+    fecha_inicio -- fecha en la que se inicia el plan de pagos
+    fecha_fin_prevista -- el front-end debe calcular, en función del importe_total y el pago_sugerido
+                          la fecha_fin_prevista. Con estos datos se debe insertar en anticipos_pagos
+                          tantas filas como pagos a efectuar
     descripcion
-    estado (activo/cancelado/completado)
+    estado (activo/cancelado/completado) -- añadir pausado
+    cuenta_origen -- define la cuenta de la que se ha sacado el anticipo
     created_at
     updated_at
 
-anticipos_pagos:
+anticipos_pagos: -- define el plan de pagos con el importe y su fecha de pago correspondiente
+                    cuando el pago ha sido efectuado este cambia su estado a "pagado"
     id (PK)
     anticipo_id (FK)
     importe
     fecha
     tipo (regular/extraordinario)
     descripcion
+    estado -- añadir columna para controlar si el pago está pagado o pendiente
+    cuenta_destino -- define la cuenta a la que debe ir el pago
 
 Ventajas
 Mejor seguimiento de pagos

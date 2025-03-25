@@ -17,7 +17,7 @@
         </div>
 
         <div className="card">
-            <div class="font-semibold text-xl mb-4">Anticipos</div>
+            <div class="font-semibold text-xl mb-4">Anticipos <small class="text-gray-500">(dinero adelantado que luego debe devolverse (veterinario, ropa niños, dentista, prestamos a terceros))</small></div>
             <p></p>
         </div>
     </div>
