@@ -61,31 +61,40 @@ anticipos: dinero que adelanto y luego debo devolver poco a poco (veterinario, r
 
 2. Tabla anticipos
 
-anticipos_maestro:
-    id (PK)
-    concepto
-    importe_total -- el total prestado/adelantado
-    pago_sugerido -- el importe periodico considerado para ir devolviendo el importe_total
-    fecha_inicio -- fecha en la que se inicia el plan de pagos
-    fecha_fin_prevista -- el front-end debe calcular, en función del importe_total y el pago_sugerido
-                          la fecha_fin_prevista. Con estos datos se debe insertar en anticipos_pagos
-                          tantas filas como pagos a efectuar
-    descripcion
-    estado (activo/cancelado/completado) -- añadir pausado
-    cuenta_origen -- define la cuenta de la que se ha sacado el anticipo
-    created_at
-    updated_at
+CREATE TABLE anticipos (
+    id INT NOT NULL AUTO_INCREMENT,
+    concepto VARCHAR(30) NOT NULL,
+    importe_total DECIMAL(10,2) NOT NULL, -- el total prestado/adelantado
+    pago_sugerido DECIMAL(10,2) NOT NULL, -- el importe periodico considerado para ir devolviendo el importe_total
+    fecha_inicio DATE NOT NULL, -- fecha en la que se inicia el plan de pagos
+    fecha_fin_prevista DATE, -- el front-end debe calcular, en función del importe_total y el pago_sugerido
+                                la fecha_fin_prevista. Con estos datos se debe insertar en anticipos_pagos
+                                tantas filas como pagos a efectuar
+    descripcion VARCHAR(255),
+    estado ENUM('activo','pausado','cancelado','completado') NOT NULL DEFAULT 'activo',
+    cuenta_origen_id INT NOT NULL, -- define la cuenta de la que se ha sacado el anticipo
+    periodicidad ENUM('mensual','bimestral','trimestral','anual') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (cuenta_origen_id) REFERENCES cuentas(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
-anticipos_pagos: -- define el plan de pagos con el importe y su fecha de pago correspondiente
-                    cuando el pago ha sido efectuado este cambia su estado a "pagado"
-    id (PK)
-    anticipo_id (FK)
-    importe
-    fecha
-    tipo (regular/extraordinario)
-    descripcion
-    estado -- añadir columna para controlar si el pago está pagado o pendiente
-    cuenta_destino -- define la cuenta a la que debe ir el pago
+CREATE TABLE anticipos_pagos ( -- define el plan de pagos con el importe y su fecha de pago correspondiente
+                                  cuando el pago ha sido efectuado este cambia su estado a "pagado"
+    id INT NOT NULL AUTO_INCREMENT,
+    anticipo_id INT NOT NULL,
+    importe DECIMAL(10,2) NOT NULL,
+    fecha DATE NOT NULL,
+    tipo ENUM('regular','extraordinario') NOT NULL DEFAULT 'regular',
+    descripcion VARCHAR(255),
+    estado ENUM('pendiente','pagado','cancelado') NOT NULL DEFAULT 'pendiente', -- columna para controlar si el pago está pagado o pendiente
+    cuenta_destino_id INT NOT NULL, -- define la cuenta a la que debe ir el pago
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (anticipo_id) REFERENCES anticipos(id) ON DELETE CASCADE,
+    FOREIGN KEY (cuenta_destino_id) REFERENCES cuentas(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 Ventajas
 Mejor seguimiento de pagos

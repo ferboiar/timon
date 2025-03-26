@@ -1,0 +1,387 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.2
+-- https://www.phpmyadmin.net/
+--
+-- Host: mysql-fer-particular.b.aivencloud.com:10613
+-- Generation Time: Mar 26, 2025 at 10:11 PM
+-- Server version: 8.0.35
+-- PHP Version: 8.2.28
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `conta_hogar`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ahorros`
+--
+
+CREATE TABLE `ahorros` (
+  `id` int NOT NULL,
+  `concepto` varchar(30) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `ahorrado` decimal(10,2) DEFAULT NULL,
+  `fecha_objetivo` date DEFAULT NULL,
+  `periodicidad` enum('mensual','bimestral','trimestral','anual') COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `importe_periodico` decimal(10,2) DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Dumping data for table `ahorros`
+--
+
+INSERT INTO `ahorros` (`id`, `concepto`, `descripcion`, `ahorrado`, `fecha_objetivo`, `periodicidad`, `importe_periodico`, `activo`, `created_at`, `updated_at`) VALUES
+(1, 'Dsds', 'sdsds', 82.00, '2025-07-01', 'mensual', 25.00, 1, '2025-03-18 22:02:16', '2025-03-22 23:03:32'),
+(5, 'Vacaciones', '', 600.00, '2025-08-09', NULL, 0.00, 1, '2025-03-18 22:42:04', '2025-03-18 22:42:04'),
+(7, 'dssssss', 'sss', 332.00, '2025-04-24', 'anual', 140.00, 1, '2025-03-21 23:07:32', '2025-03-21 23:07:32');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ahorros_movimientos`
+--
+
+CREATE TABLE `ahorros_movimientos` (
+  `id` int NOT NULL,
+  `ahorro_id` int NOT NULL,
+  `importe` decimal(10,2) NOT NULL,
+  `fecha` date NOT NULL,
+  `tipo` enum('regular','extraordinario') COLLATE utf8mb4_spanish_ci NOT NULL,
+  `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Dumping data for table `ahorros_movimientos`
+--
+
+INSERT INTO `ahorros_movimientos` (`id`, `ahorro_id`, `importe`, `fecha`, `tipo`, `descripcion`) VALUES
+(8, 1, 85.00, '2025-03-23', 'extraordinario', ''),
+(9, 1, -3.00, '2025-04-12', 'extraordinario', '');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `anticipos`
+--
+
+CREATE TABLE `anticipos` (
+  `id` int NOT NULL,
+  `concepto` varchar(30) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `importe_total` decimal(10,2) NOT NULL,
+  `pago_sugerido` decimal(10,2) NOT NULL,
+  `fecha_inicio` date NOT NULL,
+  `fecha_fin_prevista` date DEFAULT NULL,
+  `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `estado` enum('activo','pausado','cancelado','completado') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'activo',
+  `cuenta_origen_id` int NOT NULL,
+  `periodicidad` enum('mensual','bimestral','trimestral','anual') COLLATE utf8mb4_spanish_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `anticipos_pagos`
+--
+
+CREATE TABLE `anticipos_pagos` (
+  `id` int NOT NULL,
+  `anticipo_id` int NOT NULL,
+  `importe` decimal(10,2) NOT NULL,
+  `fecha` date NOT NULL,
+  `tipo` enum('regular','extraordinario') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'regular',
+  `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `estado` enum('pendiente','pagado','cancelado') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'pendiente',
+  `cuenta_destino_id` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `categorias`
+--
+
+CREATE TABLE `categorias` (
+  `id` int NOT NULL,
+  `nombre` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Dumping data for table `categorias`
+--
+
+INSERT INTO `categorias` (`id`, `nombre`, `descripcion`) VALUES
+(1, 'vivienda', 'Gastos relacionados con la residencia principal, incluyendo hipoteca o alquiler, impuestos inmobiliarios, comunidad de propietarios y reformas'),
+(2, 'servicios', 'Gastos fijos relacionados con suministros básicos como electricidad, agua, gas, telefonía, internet, y servicios de mantenimiento del hogar'),
+(3, 'seguros', 'Pólizas de seguros periódicas, incluyendo seguros de hogar, vida, salud, vehículos, y otros seguros de protección personal o patrimonial'),
+(4, 'transporte', 'Gastos relacionados con movilidad, incluyendo combustible, transporte público, mantenimiento de vehículos, parking y peajes'),
+(5, 'entretenimiento', 'Gastos destinados al ocio y tiempo libre, como subscripciones a plataformas digitales, eventos culturales, cine, teatro, conciertos y actividades deportivas'),
+(6, 'educacion', 'Gastos en formación y material educativo, incluyendo matrículas, libros, material escolar, extraescolares y cursos de formación'),
+(7, 'comida', 'Gastos relacionados con alimentación, incluyendo compra de supermercado y productos alimenticios'),
+(8, 'ahorros', 'Partidas destinadas a reservas económicas, incluyendo planes de pensiones, fondos de inversión y depósitos a plazo fijo'),
+(9, 'otros', 'Categoría para gastos diversos que no encajan en las categorías anteriores o gastos puntuales no recurrentes');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `cuentas`
+--
+
+CREATE TABLE `cuentas` (
+  `id` int NOT NULL,
+  `nombre` varchar(50) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `tipo` enum('corriente','ahorro','inversión','conjunta','efectivo','tja crédito','otros') COLLATE utf8mb4_spanish_ci NOT NULL,
+  `iban` varchar(34) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `saldo_actual` decimal(12,2) DEFAULT '0.00',
+  `descripcion` text COLLATE utf8mb4_spanish_ci,
+  `activa` tinyint(1) DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Dumping data for table `cuentas`
+--
+
+INSERT INTO `cuentas` (`id`, `nombre`, `tipo`, `iban`, `saldo_actual`, `descripcion`, `activa`) VALUES
+(1, 'Personal Fer', 'corriente', 'ES0500190074314010014080', 0.00, 'Cuenta Nómina DB', 1),
+(2, 'Ahorros Fer', 'ahorro', 'ES9100190074314010037364', 2968.37, 'Cuenta DB Asesora', 1),
+(3, 'Ahorros Marc', 'ahorro', 'ES2800190537634210003821', 750.36, 'Cuenta Junior DB', 1),
+(4, 'Inversión Fer I', 'inversión', '00190537699000044320', 9462.02, 'Fondo de Inversión DB', 1),
+(5, 'Inversión Fer II', 'inversión', '00190109950100125306', 12488.60, 'Cuenta Valores (son 3 inversiones: Nota Global 90% Protegida, Nota Bonus Global y Nota Protección Fondos V', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `fechas_cargo`
+--
+
+CREATE TABLE `fechas_cargo` (
+  `id` int NOT NULL,
+  `recibo_id` int DEFAULT NULL,
+  `fecha` date DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `estado` enum('cargado','pendiente') CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `comentario` text COLLATE utf8mb4_spanish_ci NOT NULL,
+  `cuenta_id` int NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Dumping data for table `fechas_cargo`
+--
+
+INSERT INTO `fechas_cargo` (`id`, `recibo_id`, `fecha`, `activo`, `estado`, `comentario`, `cuenta_id`) VALUES
+(1, 1, '2025-02-11', 1, 'pendiente', 'válido hasta 18/02/2025', 1),
+(2, 86, '2025-10-01', 1, 'pendiente', 'suele llegar el 30 de septiembre por lo que se paga de nómina de octubre', 1),
+(3, 87, '2025-11-09', 1, 'pendiente', '', 1),
+(4, 88, '2025-08-05', 1, 'pendiente', '', 1),
+(5, 89, '2025-08-06', 1, 'pendiente', '', 1),
+(6, 90, '2025-12-29', 1, 'pendiente', '', 1),
+(7, 91, '2025-01-09', 1, 'pendiente', 'cuota 4º trimestre', 1),
+(8, 91, '2025-04-25', 1, 'pendiente', 'cuota 1er trimestre', 1),
+(9, 91, '2025-07-25', 1, 'pendiente', 'cuota 2º trimestre', 1),
+(10, 91, '2025-10-25', 1, 'pendiente', 'cuota 3er trimestre', 1),
+(131, 134, '2025-01-07', 1, 'cargado', '1er cargo', 1),
+(132, 134, '2025-03-07', 1, 'cargado', '', 1),
+(133, 134, '2025-05-07', 1, 'pendiente', '', 1),
+(134, 134, '2025-07-07', 1, 'pendiente', '', 1),
+(135, 134, '2025-09-07', 1, 'pendiente', '', 1),
+(136, 134, '2025-11-07', 1, 'pendiente', 'Último cargo', 1),
+(149, 137, '1970-01-01', 0, 'cargado', 'eeeeddd', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `recibos`
+--
+
+CREATE TABLE `recibos` (
+  `id` int NOT NULL,
+  `concepto` varchar(30) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `importe` decimal(10,2) DEFAULT NULL,
+  `periodicidad` enum('mensual','bimestral','trimestral','anual') COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `categoria_id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Dumping data for table `recibos`
+--
+
+INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_id`) VALUES
+(1, 'Seguro Qualitas', 332.00, 'anual', 3),
+(86, 'Impuesto circulación', 125.49, 'anual', 4),
+(87, 'Amazon prime', 49.90, 'anual', 5),
+(88, 'Seguro vida (Zurich)', 437.12, 'anual', 3),
+(89, 'Seguro continente (Zurich)', 180.34, 'anual', 3),
+(90, 'Seguro contenido (Pelayo)', 121.96, 'anual', 3),
+(91, 'Comunidad garaje', 35.00, 'trimestral', 1),
+(134, 'prueba bimestral', 69.00, 'bimestral', 7),
+(137, 'prueba mensual 22', 11.00, 'mensual', 6);
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `ahorros`
+--
+ALTER TABLE `ahorros`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `ahorros_movimientos`
+--
+ALTER TABLE `ahorros_movimientos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ahorro_id` (`ahorro_id`);
+
+--
+-- Indexes for table `anticipos`
+--
+ALTER TABLE `anticipos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `cuenta_origen_id` (`cuenta_origen_id`);
+
+--
+-- Indexes for table `anticipos_pagos`
+--
+ALTER TABLE `anticipos_pagos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `anticipo_id` (`anticipo_id`),
+  ADD KEY `cuenta_destino_id` (`cuenta_destino_id`);
+
+--
+-- Indexes for table `categorias`
+--
+ALTER TABLE `categorias`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `cuentas`
+--
+ALTER TABLE `cuentas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `iban` (`iban`);
+
+--
+-- Indexes for table `fechas_cargo`
+--
+ALTER TABLE `fechas_cargo`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `recibo_id` (`recibo_id`),
+  ADD KEY `fk_cuenta_id` (`cuenta_id`);
+
+--
+-- Indexes for table `recibos`
+--
+ALTER TABLE `recibos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_categoria_id` (`categoria_id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `ahorros`
+--
+ALTER TABLE `ahorros`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `ahorros_movimientos`
+--
+ALTER TABLE `ahorros_movimientos`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT for table `anticipos`
+--
+ALTER TABLE `anticipos`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `anticipos_pagos`
+--
+ALTER TABLE `anticipos_pagos`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `categorias`
+--
+ALTER TABLE `categorias`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+
+--
+-- AUTO_INCREMENT for table `cuentas`
+--
+ALTER TABLE `cuentas`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
+-- AUTO_INCREMENT for table `fechas_cargo`
+--
+ALTER TABLE `fechas_cargo`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=159;
+
+--
+-- AUTO_INCREMENT for table `recibos`
+--
+ALTER TABLE `recibos`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `ahorros_movimientos`
+--
+ALTER TABLE `ahorros_movimientos`
+  ADD CONSTRAINT `ahorros_movimientos_ibfk_1` FOREIGN KEY (`ahorro_id`) REFERENCES `ahorros` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `anticipos`
+--
+ALTER TABLE `anticipos`
+  ADD CONSTRAINT `anticipos_ibfk_1` FOREIGN KEY (`cuenta_origen_id`) REFERENCES `cuentas` (`id`);
+
+--
+-- Constraints for table `anticipos_pagos`
+--
+ALTER TABLE `anticipos_pagos`
+  ADD CONSTRAINT `anticipos_pagos_ibfk_1` FOREIGN KEY (`anticipo_id`) REFERENCES `anticipos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `anticipos_pagos_ibfk_2` FOREIGN KEY (`cuenta_destino_id`) REFERENCES `cuentas` (`id`);
+
+--
+-- Constraints for table `fechas_cargo`
+--
+ALTER TABLE `fechas_cargo`
+  ADD CONSTRAINT `fechas_cargo_ibfk_1` FOREIGN KEY (`recibo_id`) REFERENCES `recibos` (`id`),
+  ADD CONSTRAINT `fk_cuenta_id` FOREIGN KEY (`cuenta_id`) REFERENCES `cuentas` (`id`);
+
+--
+-- Constraints for table `recibos`
+--
+ALTER TABLE `recibos`
+  ADD CONSTRAINT `fk_categoria_id` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
