@@ -1,4 +1,5 @@
 <script setup>
+import { AccService } from '@/service/AccService'; // Importar AccService
 import { AdvService } from '@/service/AdvService';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref } from 'vue'; // <-- Agregamos computed
@@ -27,6 +28,7 @@ const advanceDialog = ref(false);
 const deleteAdvanceDialog = ref(false);
 const deleteSelectedAdvancesDialog = ref(false);
 const periodicidades = ref([{ label: '', value: '' }]);
+const cuentas = ref([]); // Lista de cuentas para el desplegable
 
 const fetchAdvances = async () => {
     try {
@@ -59,6 +61,19 @@ const fetchPeriodicidades = async () => {
     }
 };
 
+const fetchCuentas = async () => {
+    try {
+        const data = await AccService.getAccounts();
+        cuentas.value = data.map((cuenta) => ({
+            label: cuenta.nombre,
+            value: cuenta.id
+        }));
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las cuentas: ${error.message}`, life: 5000 });
+        console.error('Error en fetchCuentas:', error);
+    }
+};
+
 function updateAdvances() {
     fetchAdvances();
     toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Anticipos actualizados.', life: 3000 });
@@ -70,7 +85,7 @@ function openNewAdvance() {
         concepto: '',
         importe_total: 0,
         pago_sugerido: 0,
-        fecha_inicio: null,
+        fecha_inicio: new Date(), // Establecer la fecha de hoy por defecto
         fecha_fin_prevista: null,
         descripcion: '',
         estado: 'activo',
@@ -266,6 +281,7 @@ onMounted(async () => {
     await fetchAdvances();
     await fetchPeriodicidades();
     await fetchAllPagos();
+    await fetchCuentas(); // Cargar las cuentas al montar el componente
 });
 </script>
 
@@ -286,9 +302,11 @@ onMounted(async () => {
         </div>
 
         <div class="card">
-            <div class="font-semibold text-xl mb-4">Anticipos <small class="text-gray-500">(gestión de anticipos)</small></div>
+            <div class="font-semibold text-xl mb-4">
+                Anticipos <small class="text-gray-500">(dinero adelantado que ha de ser devuelto poco a poco, normalmente por gastos grandes no asumibles desde la cuenta principal (veterinario, ropa niños, dentista))</small>
+            </div>
             <DataTable
-                ref="dt_advances"
+                ref="dt_anticipos"
                 v-model:selection="selectedAdvances"
                 :value="advances"
                 dataKey="id"
@@ -371,63 +389,86 @@ onMounted(async () => {
             </DataTable>
         </div>
 
-        <!-- Diálogo para anticipo -->
         <Dialog v-model:visible="advanceDialog" :style="{ width: '450px' }" header="Detalle del anticipo" :modal="true">
             <div class="flex flex-col gap-6">
-                <!-- ...existing campos de anticipo... -->
                 <div>
-                    <label for="concepto">Concepto</label>
-                    <InputText id="concepto" v-model.trim="advance.concepto" required />
+                    <label for="concepto" class="block font-bold mb-3">Concepto</label>
+                    <InputText id="concepto" v-model.trim="advance.concepto" required autofocus fluid />
+                    <small v-if="advance.concepto.trim() === ''" class="text-red-500">El concepto es obligatorio</small>
                 </div>
                 <div>
-                    <label for="descripcion">Descripción</label>
-                    <Textarea id="descripcion" v-model="advance.descripcion" rows="3" cols="20" maxlength="255" />
+                    <label for="descripcion" class="block font-bold mb-3">Descripción</label>
+                    <Textarea id="descripcion" v-model="advance.descripcion" rows="3" cols="20" maxlength="255" fluid />
+                    <small v-if="advance.descripcion.length > 255" class="text-red-500">La descripción no puede tener más de 255 caracteres.</small>
                 </div>
                 <div class="flex gap-6">
                     <div class="flex-1">
-                        <label for="importe_total">Importe Total</label>
-                        <InputNumber id="importe_total" v-model="advance.importe_total" mode="currency" currency="EUR" locale="es-ES" />
+                        <label for="cuenta_origen_id" class="block font-bold mb-3">Cuenta Origen</label>
+                        <Select id="cuenta_origen_id" v-model="advance.cuenta_origen_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
+                        <small v-if="!advance.cuenta_origen_id" class="text-red-500">La cuenta es obligatoria</small>
                     </div>
                     <div class="flex-1">
-                        <label for="pago_sugerido">Pago Sugerido</label>
-                        <InputNumber id="pago_sugerido" v-model="advance.pago_sugerido" mode="currency" currency="EUR" locale="es-ES" />
+                        <label for="importe_total" class="block font-bold mb-3">Importe Total</label>
+                        <InputNumber id="importe_total" v-model="advance.importe_total" mode="currency" currency="EUR" locale="es-ES" fluid />
+                    </div>
+                    <div class="flex-1">
+                        <label for="pago_sugerido" class="block font-bold mb-3">Pago Sugerido</label>
+                        <InputNumber id="pago_sugerido" v-model="advance.pago_sugerido" mode="currency" currency="EUR" locale="es-ES" fluid />
                     </div>
                 </div>
                 <div class="flex gap-6">
                     <div class="flex-1">
-                        <label for="fecha_inicio">Fecha Inicio</label>
-                        <DatePicker id="fecha_inicio" v-model="advance.fecha_inicio" dateFormat="dd/mm/yy" />
+                        <label for="fecha_inicio" class="block font-bold mb-3">Fecha Inicio</label>
+                        <DatePicker id="fecha_inicio" v-model="advance.fecha_inicio" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar fluid />
+                        <small v-if="!advance.fecha_inicio" class="text-red-500">La fecha es obligatoria</small>
                     </div>
                     <div class="flex-1">
-                        <label for="fecha_fin_prevista">Fecha Fin Prevista</label>
-                        <DatePicker id="fecha_fin_prevista" v-model="advance.fecha_fin_prevista" dateFormat="dd/mm/yy" />
+                        <label for="fecha_fin_prevista" class="block font-bold mb-3">Fecha Fin Prevista</label>
+                        <DatePicker id="fecha_fin_prevista" v-model="advance.fecha_fin_prevista" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar fluid />
                     </div>
                 </div>
-                <div>
-                    <label for="periodicidad">Periodicidad</label>
-                    <Select id="periodicidad" v-model="advance.periodicidad" :options="periodicidades" optionLabel="label" optionValue="value" />
+                <div class="flex gap-6">
+                    <div class="flex-1">
+                        <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>
+                        <Select id="periodicidad" v-model="advance.periodicidad" :options="periodicidades" optionValue="value" optionLabel="label" fluid />
+                    </div>
+                    <div class="flex-1">
+                        <label for="estado" class="block font-bold mb-3">Estado</label>
+                        <Select
+                            id="estado"
+                            v-model="advance.estado"
+                            :options="[
+                                { label: 'Activo', value: 'activo' },
+                                { label: 'Pausado', value: 'pausado' },
+                                { label: 'Cancelado', value: 'cancelado' },
+                                { label: 'Completado', value: 'completado' }
+                            ]"
+                            optionValue="value"
+                            optionLabel="label"
+                            fluid
+                        />
+                    </div>
                 </div>
             </div>
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-                <Button label="Save" icon="pi pi-check" @click="saveAdvance" :disabled="advance.concepto.trim() === ''" />
+                <Button label="Save" icon="pi pi-check" @click="saveAdvance" :disabled="advance.concepto.trim() === '' || !advance.cuenta_origen_id || !advance.fecha_inicio" />
             </template>
         </Dialog>
 
-        <!-- Diálogo para pago -->
         <Dialog v-model:visible="advancePagoDialog" :style="{ width: '450px' }" header="Detalle del pago" :modal="true">
             <div class="flex flex-col gap-6">
                 <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-3">
-                        <label for="pago_importe">Importe</label>
-                        <InputNumber id="pago_importe" v-model="pago.importe" mode="currency" currency="EUR" locale="es-ES" />
+                        <label for="pago_importe" class="block font-bold mb-3">Importe</label>
+                        <InputNumber id="pago_importe" v-model="pago.importe" mode="currency" currency="EUR" locale="es-ES" autofocus fluid />
                     </div>
                     <div class="col-span-5">
-                        <label for="pago_fecha">Fecha</label>
-                        <DatePicker id="pago_fecha" v-model="pago.fecha" dateFormat="dd/mm/yy" />
+                        <label for="pago_fecha" class="block font-bold mb-3">Fecha</label>
+                        <DatePicker id="pago_fecha" v-model="pago.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar fluid />
                     </div>
                     <div class="col-span-4">
-                        <label for="pago_tipo">Tipo</label>
+                        <label for="pago_tipo" class="block font-bold mb-3">Tipo</label>
                         <Select
                             id="pago_tipo"
                             v-model="pago.tipo"
@@ -435,19 +476,27 @@ onMounted(async () => {
                                 { label: 'Regular', value: 'regular' },
                                 { label: 'Extraordinario', value: 'extraordinario' }
                             ]"
-                            optionLabel="label"
                             optionValue="value"
+                            optionLabel="label"
+                            fluid
                         />
                     </div>
                 </div>
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-12">
+                        <label for="cuenta_destino_id" class="block font-bold mb-3">Cuenta Destino</label>
+                        <Select id="cuenta_destino_id" v-model="pago.cuenta_destino_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
+                        <small v-if="!pago.cuenta_destino_id" class="text-red-500">La cuenta destino es obligatoria</small>
+                    </div>
+                </div>
                 <div>
-                    <label for="pago_descripcion">Descripción</label>
-                    <Textarea id="pago_descripcion" v-model="pago.descripcion" rows="3" cols="20" maxlength="255" />
+                    <label for="pago_descripcion" class="block font-bold mb-3">Descripción</label>
+                    <Textarea id="pago_descripcion" v-model="pago.descripcion" rows="3" cols="20" maxlength="255" fluid />
                 </div>
             </div>
             <template #footer>
-                <Button label="Cancel" icon="pi pi-times" text @click="advancePagoDialog = false" />
-                <Button label="Save" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid" />
+                <Button label="Cancelar" icon="pi pi-times" text @click="advancePagoDialog = false" />
+                <Button label="Guardar" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />
             </template>
         </Dialog>
     </div>
