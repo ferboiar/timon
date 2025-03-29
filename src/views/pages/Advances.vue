@@ -495,7 +495,7 @@ onMounted(async () => {
             </div>
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-                <Button label="Save" icon="pi pi-check" @click="saveAdvance" :disabled="advance.concepto.trim() === '' || !advance.cuenta_origen_id || !advance.fecha_inicio" />
+                <Button label="Save" icon="pi pi-check" @click="saveAdvance" :disabled="advance.concepto.trim() === '' || !advance.cuenta_origen_id || !advance.fecha_inicio || (advance.periodicidad && !advance.pago_sugerido)" />
             </template>
         </Dialog>
 

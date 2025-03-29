@@ -1,0 +1,38 @@
+plan de pagos
+
+Al añadir un anticipo, se deben realizar las siguientes acciones:
+
+1. **Cálculo de la Fecha Fin Prevista y Creación del Plan de Pagos**:
+   - Si se especifica una periodicidad (`anual`, `trimestral`, `bimestral`, `mensual`) y un pago sugerido, calcular la fecha fin prevista para que el importe total sea completamente devuelto.
+   - Crear tantos pagos como sean necesarios para cubrir el importe total:
+     - Cada pago debe tener un importe igual al pago sugerido, excepto el último, que debe ajustarse automáticamente para cubrir el saldo restante.
+     - Si el saldo restante es menor al pago sugerido desde el principio, crear un único pago por el importe del saldo restante.
+     - Las fechas de los pagos deben ser acorde a la periodicidad especificada, comenzando el día correspondiente al mes siguiente al mes en que se da de alta el anticipo.
+   - Todos los pagos deben crearse inicialmente con el estado "pendiente".
+   - Si no se especifica una periodicidad al dar de alta un anticipo, no se debe establecer un plan de pagos. En este caso, el pago sugerido no será obligatorio.
+
+2. **Eliminación de Pagos o Anticipos**:
+   - Si se elimina un anticipo, se deben borrar todos los pagos asociados a este anticipo.
+   - Si se elimina un pago, la aplicación debe informar al usuario y permitirle elegir entre:
+     - Recalcular el importe de los pagos restantes pendientes para cubrir el saldo restante.
+     - Dar de alta un nuevo pago a continuación del último con el saldo restante.
+
+3. **Modificación del Plan de Pagos**:
+   - Se debe permitir modificar el plan de pagos después de haber sido creado.
+   - Si se modifica el importe de un pago pendiente, el resto de los pagos pendientes deben recalcularse para ajustar el saldo restante.
+   - Si se añaden pagos extraordinarios:
+     - Se deben eliminar los últimos pagos regulares para compensar el importe del pago extraordinario.
+     - Si no es suficiente, se debe recalcular el importe del último pago pendiente para ajustarlo y compensar el total del extraordinario.
+
+4. **Validaciones**:
+   - El pago sugerido debe ser obligatorio si se especifica una periodicidad.
+   - El cuadro de diálogo debe informar al usuario si falta el pago sugerido y debe impedir guardar el anticipo hasta que se introduzca.
+
+5. **Pagos Pendientes Existentes**:
+   - Si ya existen pagos asociados al anticipo en estado "pendiente", estos deben tenerse en cuenta para calcular y dar de alta el resto de los pagos necesarios a continuación.
+
+6. **Errores y Auditorías**:
+   - No se gestionarán errores más allá de los que ya se gestionan actualmente.
+   - No es necesario implementar auditorías para el plan de pagos.
+
+Con estas especificaciones, implementar la lógica necesaria para gestionar anticipos y sus pagos asociados en el sistema.

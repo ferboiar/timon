@@ -64,8 +64,12 @@ router.post('/pagos', async (req, res) => {
 router.delete('/pagos/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        await deletePago(id);
-        res.status(200).json({ message: 'Pago eliminado correctamente' });
+        const saldoRestante = await deletePago(id); // Modificar deletePago para devolver el saldo restante
+        res.status(200).json({
+            message: 'Pago eliminado correctamente',
+            saldoRestante,
+            options: ['Recalcular pagos restantes', 'Añadir un nuevo pago con el saldo restante']
+        });
     } catch (error) {
         res.status(500).json({ error: `Error al eliminar el pago: ${error.message}` });
     }
