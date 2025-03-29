@@ -4,7 +4,7 @@ async function getAdvances() {
     let connection;
     try {
         connection = await getConnection();
-        const [rows] = await connection.execute('SELECT * FROM anticipos ORDER BY concepto ASC');
+        const [rows] = await connection.execute('SELECT * FROM anticipos ORDER BY fecha_inicio ASC');
         return rows;
     } catch (error) {
         console.error('Error al obtener anticipos:', error);
@@ -100,8 +100,13 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
     let connection;
     try {
         connection = await getConnection();
+
         if (id) {
-            // Actualizar pago existente
+            // Obtener el estado actual del pago antes de actualizarlo
+            const [existingPago] = await connection.execute('SELECT estado FROM anticipos_pagos WHERE id = ?', [id]);
+            const wasPagado = existingPago.length > 0 && existingPago[0].estado === 'pagado';
+
+            // Actualizar el pago existente
             const [result] = await connection.execute('UPDATE anticipos_pagos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_destino_id = ? WHERE id = ?', [
                 importe,
                 fecha,
@@ -112,6 +117,18 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                 id
             ]);
             console.log(`Actualización en anticipos_pagos, filas afectadas: ${result.affectedRows}`);
+
+            // Si el estado cambia a "pagado" y no estaba previamente en "pagado", descontar el importe del anticipo
+            if (estado === 'pagado' && !wasPagado) {
+                const [updateAnticipo] = await connection.execute('UPDATE anticipos SET importe_total = importe_total - ? WHERE id = ?', [importe, anticipo_id]);
+                console.log(`Descuento aplicado al anticipo, filas afectadas: ${updateAnticipo.affectedRows}`);
+            }
+
+            // Si el estado cambia de "pagado" a otro estado, revertir el descuento previamente aplicado
+            if (wasPagado && estado !== 'pagado') {
+                const [updateAnticipo] = await connection.execute('UPDATE anticipos SET importe_total = importe_total + ? WHERE id = ?', [importe, anticipo_id]);
+                console.log(`Reversión del descuento en el anticipo, filas afectadas: ${updateAnticipo.affectedRows}`);
+            }
         } else {
             // Insertar nuevo pago
             const [result] = await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [
@@ -124,6 +141,12 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                 cuenta_destino_id
             ]);
             console.log(`Inserción en anticipos_pagos, filas afectadas: ${result.affectedRows}`);
+
+            // Si el estado es "pagado", descontar el importe del anticipo
+            if (estado === 'pagado') {
+                const [updateAnticipo] = await connection.execute('UPDATE anticipos SET importe_total = importe_total - ? WHERE id = ?', [importe, anticipo_id]);
+                console.log(`Descuento aplicado al anticipo, filas afectadas: ${updateAnticipo.affectedRows}`);
+            }
         }
     } catch (error) {
         console.error('Error en pushPago:', error);
@@ -137,8 +160,24 @@ async function deletePago(id) {
     let connection;
     try {
         connection = await getConnection();
+
+        // Obtener el importe y estado del pago antes de eliminarlo
+        const [pago] = await connection.execute('SELECT anticipo_id, importe, estado FROM anticipos_pagos WHERE id = ?', [id]);
+        if (pago.length === 0) {
+            throw new Error('Pago no encontrado');
+        }
+
+        const { anticipo_id, importe, estado } = pago[0];
+
+        // Eliminar el pago
         const [result] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [id]);
         console.log(`Eliminación en anticipos_pagos, filas afectadas: ${result.affectedRows}`);
+
+        // Si el estado era "pagado", revertir el descuento en el anticipo
+        if (estado === 'pagado') {
+            const [updateAnticipo] = await connection.execute('UPDATE anticipos SET importe_total = importe_total + ? WHERE id = ?', [importe, anticipo_id]);
+            console.log(`Reversión del descuento en el anticipo, filas afectadas: ${updateAnticipo.affectedRows}`);
+        }
     } catch (error) {
         console.error('Error en deletePago:', error);
         throw error;

@@ -332,6 +332,11 @@ onMounted(async () => {
                         </span>
                     </template>
                 </Column>
+                <Column field="cuenta_origen_id" header="Cuenta Origen" sortable style="min-width: 8rem">
+                    <template #body="slotProps">
+                        {{ cuentas.find((cuenta) => cuenta.value === slotProps.data.cuenta_origen_id)?.label || '' }}
+                    </template>
+                </Column>
                 <Column field="fecha_inicio" header="Fecha Inicio" sortable style="min-width: 8rem">
                     <template #body="slotProps">
                         {{ slotProps.data.fecha_inicio ? $formatDate(slotProps.data.fecha_inicio) : '' }}
@@ -342,14 +347,31 @@ onMounted(async () => {
                         {{ slotProps.data.fecha_fin_prevista ? $formatDate(slotProps.data.fecha_fin_prevista) : '' }}
                     </template>
                 </Column>
+                <Column field="pago_sugerido" header="Pago Sugerido" sortable style="min-width: 4rem">
+                    <template #body="slotProps">
+                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.pago_sugerido) }}
+                    </template>
+                </Column>
                 <Column field="periodicidad" header="Periodicidad" sortable style="min-width: 4rem">
                     <template #body="slotProps">
                         {{ slotProps.data.periodicidad || '' }}
                     </template>
                 </Column>
-                <Column field="pago_sugerido" header="Pago Sugerido" sortable style="min-width: 4rem">
+                <Column field="estado" header="Estado" sortable style="min-width: 6rem">
                     <template #body="slotProps">
-                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.pago_sugerido) }}
+                        <i
+                            v-tooltip="{
+                                value: slotProps.data.estado.charAt(0).toUpperCase() + slotProps.data.estado.slice(1),
+                                class: 'tooltip-class'
+                            }"
+                            :class="{
+                                'pi pi-play-circle text-cyan-500': slotProps.data.estado === 'activo',
+                                'pi pi-pause-circle text-orange-500': slotProps.data.estado === 'pausado',
+                                'pi pi-times-circle text-red-500': slotProps.data.estado === 'cancelado',
+                                'pi pi-check-circle text-green-500': slotProps.data.estado === 'completado'
+                            }"
+                            class="text-xl"
+                        ></i>
                     </template>
                 </Column>
                 <Column :exportable="false">
@@ -377,6 +399,27 @@ onMounted(async () => {
                                 </template>
                             </Column>
                             <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem" />
+                            <Column field="cuenta_destino_id" header="Cuenta Destino" sortable style="min-width: 8rem">
+                                <template #body="pagoProps">
+                                    {{ cuentas.find((cuenta) => cuenta.value === pagoProps.data.cuenta_destino_id)?.label || '' }}
+                                </template>
+                            </Column>
+                            <Column field="estado" header="Estado" sortable style="min-width: 6rem">
+                                <template #body="pagoProps">
+                                    <i
+                                        v-tooltip="{
+                                            value: pagoProps.data.estado.charAt(0).toUpperCase() + pagoProps.data.estado.slice(1),
+                                            class: 'tooltip-class'
+                                        }"
+                                        :class="{
+                                            'pi pi-clock text-orange-500': pagoProps.data.estado === 'pendiente',
+                                            'pi pi-check-circle text-green-500': pagoProps.data.estado === 'pagado',
+                                            'pi pi-times-circle text-red-500': pagoProps.data.estado === 'cancelado'
+                                        }"
+                                        class="text-xl"
+                                    ></i>
+                                </template>
+                            </Column>
                             <Column :exportable="false" style="min-width: 12rem">
                                 <template #body="pagoProps">
                                     <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editPago(pagoProps.data)" />
@@ -468,6 +511,23 @@ onMounted(async () => {
                         <DatePicker id="pago_fecha" v-model="pago.fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar fluid />
                     </div>
                     <div class="col-span-4">
+                        <label for="pago_estado" class="block font-bold mb-3">Estado</label>
+                        <Select
+                            id="pago_estado"
+                            v-model="pago.estado"
+                            :options="[
+                                { label: 'Pendiente', value: 'pendiente' },
+                                { label: 'Pagado', value: 'pagado' },
+                                { label: 'Cancelado', value: 'cancelado' }
+                            ]"
+                            optionValue="value"
+                            optionLabel="label"
+                            fluid
+                        />
+                    </div>
+                </div>
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-6">
                         <label for="pago_tipo" class="block font-bold mb-3">Tipo</label>
                         <Select
                             id="pago_tipo"
@@ -481,9 +541,7 @@ onMounted(async () => {
                             fluid
                         />
                     </div>
-                </div>
-                <div class="grid grid-cols-12 gap-4">
-                    <div class="col-span-12">
+                    <div class="col-span-6">
                         <label for="cuenta_destino_id" class="block font-bold mb-3">Cuenta Destino</label>
                         <Select id="cuenta_destino_id" v-model="pago.cuenta_destino_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
                         <small v-if="!pago.cuenta_destino_id" class="text-red-500">La cuenta destino es obligatoria</small>
@@ -495,8 +553,8 @@ onMounted(async () => {
                 </div>
             </div>
             <template #footer>
-                <Button label="Cancelar" icon="pi pi-times" text @click="advancePagoDialog = false" />
-                <Button label="Guardar" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />
+                <Button label="Cancel" icon="pi pi-times" text @click="advancePagoDialog = false" />
+                <Button label="Save" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />
             </template>
         </Dialog>
     </div>
