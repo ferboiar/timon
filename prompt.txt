@@ -36,3 +36,144 @@ Al añadir un anticipo, se deben realizar las siguientes acciones:
    - No es necesario implementar auditorías para el plan de pagos.
 
 Con estas especificaciones, implementar la lógica necesaria para gestionar anticipos y sus pagos asociados en el sistema.
+
+
+pto 2:
+revisa mi espacio de trabajo, comprueba si el código es capaz de cumplir con este prompt: "2. **Eliminación de Pagos**:
+   - Si se elimina un pago, la aplicación debe informar al usuario y permitirle elegir entre:
+     - Recalcular el importe de los pagos restantes pendientes para cubrir el saldo restante.
+     - Dar de alta un nuevo pago a continuación del último con el saldo restante." 
+     
+Si no es capaz, propon todas las modificaciones necesarias, sin romper la funcionalidad actual, para que el código cumpla. Esta es mi propuesta de implementación:
+Dónde Añadir el Código
+Backend:
+   - Añadir una nueva función en db_utilsAdv.mjs para manejar la lógica de recalcular los pagos restantes o dar de alta un nuevo pago. Esto asegura que la lógica de negocio esté centralizada y sea consistente.
+Frontend:
+   - Modificar el componente Advances.vue para:
+     - Mostrar un cuadro de diálogo al usuario cuando se elimine un pago.
+     - Permitir al usuario elegir entre recalcular los pagos restantes o añadir un nuevo pago.
+
+Implementación en el Backend
+1. Backend. Nueva Función handlePaymentDeletion en db_utilsAdv.mjs para manejar la eliminación de un pago y calcular el saldo restante.
+async function handlePaymentDeletion(pagoId, anticipoId) {
+    let connection;
+    try {
+        connection = await getConnection();
+
+        // Obtener el saldo restante
+        const [result] = await connection.execute(
+            `SELECT SUM(importe) AS saldo_restante FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' AND id != ?`,
+            [anticipoId, pagoId]
+        );
+        const saldoRestante = result[0].saldo_restante || 0;
+
+        // Eliminar el pago
+        await connection.execute(`DELETE FROM anticipos_pagos WHERE id = ?`, [pagoId]);
+
+        return saldoRestante;
+    } catch (error) {
+        console.error('Error al manejar la eliminación del pago:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+2. Backend: Nueva Ruta en routes/anticipos.mjs. Añadir una nueva ruta para manejar la eliminación de pagos.
+router.post('/delete-payment', async (req, res) => {
+    const { pagoId, anticipoId } = req.body;
+
+    if (!pagoId || !anticipoId) {
+        return res.status(400).json({ error: 'Pago ID y Anticipo ID son requeridos' });
+    }
+
+    try {
+        const saldoRestante = await handlePaymentDeletion(pagoId, anticipoId);
+        res.status(200).json({ saldoRestante });
+    } catch (error) {
+        console.error('Error al eliminar el pago:', error);
+        res.status(500).json({ error: 'Error al eliminar el pago' });
+    }
+});
+
+3. Frontend: Modificaciones en Advances.vue. 
+Cuadro de Diálogo para Manejar Eliminación de Pagos. Añadir un cuadro de diálogo para permitir al usuario elegir entre recalcular pagos o añadir un nuevo pago.
+<Dialog v-model:visible="deletePaymentDialog" :style="{ width: '450px' }" header="Eliminar Pago" :modal="true">
+    <div class="flex flex-col gap-4">
+        <p>¿Qué deseas hacer tras eliminar este pago?</p>
+        <Button label="Recalcular pagos restantes" icon="pi pi-refresh" @click="recalculatePayments" />
+        <Button label="Añadir un nuevo pago" icon="pi pi-plus" @click="addNewPayment" />
+    </div>
+</Dialog>
+
+Métodos para Manejar la Eliminación de Pagos. Añadir los métodos necesarios para manejar la eliminación de pagos.
+const deletePaymentDialog = ref(false);
+
+const deletePayment = async (pago) => {
+    try {
+        const saldoRestante = await AdvService.handlePaymentDeletion(pago.id, pago.anticipo_id);
+        if (saldoRestante > 0) {
+            deletePaymentDialog.value = true; // Mostrar opciones al usuario
+        } else {
+            toast.add({ severity: 'success', summary: 'Pago eliminado', detail: 'El saldo restante es 0.', life: 3000 });
+        }
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el pago: ${error.message}`, life: 5000 });
+    }
+};
+
+const recalculatePayments = async () => {
+    try {
+        // Lógica para recalcular los pagos restantes
+        console.log('Recalculando pagos restantes...');
+        deletePaymentDialog.value = false;
+        toast.add({ severity: 'success', summary: 'Pagos Recalculados', detail: 'Los pagos restantes han sido recalculados.', life: 3000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al recalcular los pagos: ${error.message}`, life: 5000 });
+    }
+};
+
+const addNewPayment = async () => {
+    try {
+        // Lógica para añadir un nuevo pago
+        console.log('Añadiendo un nuevo pago...');
+        deletePaymentDialog.value = false;
+        toast.add({ severity: 'success', summary: 'Nuevo Pago Añadido', detail: 'Se ha añadido un nuevo pago para cubrir el saldo restante.', life: 3000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al añadir un nuevo pago: ${error.message}`, life: 5000 });
+    }
+};
+
+Botón para Eliminar Pagos
+Añadir un botón para eliminar pagos en la tabla de pagos.
+<template>
+    <Button
+        label="Eliminar Pago"
+        icon="pi pi-trash"
+        class="p-button-danger"
+        @click="deletePayment(selectedPayment)"
+    />
+</template>
+
+4. Servicio: Modificación en AdvService.js
+Añadir la función handlePaymentDeletion en el servicio.
+const API_URL = 'http://localhost:3000/api/anticipos';
+
+export class AdvService {
+    static async handlePaymentDeletion(pagoId, anticipoId) {
+        const response = await fetch(`${API_URL}/delete-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pagoId, anticipoId })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al eliminar el pago');
+        }
+
+        return await response.json();
+    }
+}
+
+Revisa mi propuesta, corrigela si procede, pero sobre todo fíjate en que no se dupliquen funciones ni se machaquen funcionalidades. Es imprescindible que el código sea función pero sobre todo que no se rompa lo que ya  existe. 
