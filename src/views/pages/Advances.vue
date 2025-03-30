@@ -231,15 +231,14 @@ async function savePago() {
     }
 }
 
-async function deletePago(p) {
+async function deletePago(pago) {
     try {
-        await AdvService.deletePago(p.id);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Pago eliminado', life: 3000 });
+        await AdvService.deletePago(pago.id);
+        toast.add({ severity: 'success', summary: 'Pago eliminado', detail: 'El pago ha sido eliminado correctamente.', life: 3000 });
         fetchAdvances();
         fetchAllPagos();
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el pago: ${error.message}`, life: 5000 });
-        console.error('Error en deletePago:', error);
     }
 }
 

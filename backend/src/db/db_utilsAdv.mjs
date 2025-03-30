@@ -78,12 +78,16 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
     try {
         connection = await getConnection();
 
+        console.log(`recalculatePaymentPlan - Recalculando pagos para anticipo ${anticipoId}`);
+
         // Obtener la cuenta_origen_id del anticipo
         const [anticipo] = await connection.execute('SELECT cuenta_origen_id FROM anticipos WHERE id = ?', [anticipoId]);
         if (anticipo.length === 0) {
-            throw new Error('Anticipo no encontrado');
+            throw new Error(`Anticipo con ID ${anticipoId} no encontrado`);
         }
         const cuentaDestinoId = anticipo[0].cuenta_origen_id;
+
+        console.log(`recalculatePaymentPlan - Cuenta origen ID: ${cuentaDestinoId}`);
 
         // Obtener pagos pendientes existentes
         const [existingPagos] = await connection.execute("SELECT * FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' ORDER BY fecha ASC", [anticipoId]);
@@ -98,11 +102,13 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
             fechaPago = new Date(pago.fecha); // Actualizar la fecha al último pago existente
         }
 
+        console.log(`recalculatePaymentPlan - Saldo restante después de pagos existentes: ${saldoRestante}`);
+
         // Crear nuevos pagos si es necesario
         let ultimaFechaPago = null; // Variable para almacenar la fecha del último pago
         while (saldoRestante > 0) {
             const importePago = saldoRestante > pago_sugerido ? pago_sugerido : saldoRestante;
-            await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?)', [
+            const [insertResult] = await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?)', [
                 anticipoId,
                 importePago,
                 fechaPago.toISOString().split('T')[0],
@@ -110,6 +116,7 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
                 'pendiente',
                 cuentaDestinoId
             ]);
+            console.log(`recalculatePaymentPlan - Nuevo pago creado, filas afectadas: ${insertResult.affectedRows}`);
             saldoRestante -= importePago;
             ultimaFechaPago = new Date(fechaPago); // Actualizar la fecha del último pago
             fechaPago.setMonth(fechaPago.getMonth() + getMonthsFromPeriodicidad(periodicidad));
@@ -117,7 +124,8 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
 
         // Actualizar la fecha fin prevista del anticipo con la fecha del último pago
         if (ultimaFechaPago) {
-            await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ? WHERE id = ?', [ultimaFechaPago.toISOString().split('T')[0], anticipoId]);
+            const [updateResult] = await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ? WHERE id = ?', [ultimaFechaPago.toISOString().split('T')[0], anticipoId]);
+            console.log(`recalculatePaymentPlan - Fecha fin prevista actualizada, filas afectadas: ${updateResult.affectedRows}`);
         }
 
         console.log(`Plan de pagos recalculado para anticipo ${anticipoId}`);
@@ -305,10 +313,12 @@ async function deletePago(id) {
     try {
         connection = await getConnection();
 
+        console.log(`deletePago - ID recibido: ${id}`);
+
         // Obtener el importe y estado del pago antes de eliminarlo
         const [pago] = await connection.execute('SELECT anticipo_id, importe, estado FROM anticipos_pagos WHERE id = ?', [id]);
         if (pago.length === 0) {
-            throw new Error('Pago no encontrado');
+            throw new Error(`Pago con ID ${id} no encontrado`);
         }
 
         const { anticipo_id, importe, estado } = pago[0];
