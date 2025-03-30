@@ -131,7 +131,13 @@ function editAdvance(adv) {
 }
 
 function confirmDeleteAdvance(adv) {
-    advance.value = adv;
+    // Verificar si el anticipo tiene un ID válido
+    if (!adv || !adv.id) {
+        console.error('El anticipo seleccionado no tiene un ID válido:', adv);
+        return;
+    }
+    // Convertir el objeto Proxy en un objeto plano
+    advance.value = JSON.parse(JSON.stringify(adv));
     deleteAdvanceDialog.value = true;
 }
 
@@ -143,7 +149,7 @@ async function deleteAdvance() {
         hideDialog();
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el anticipo: ${error.message}`, life: 5000 });
-        console.error('Error en deleteAdvance:', error);
+        console.error('deleteAdvance - Error al eliminar el anticipo:', error);
     }
 }
 
@@ -387,7 +393,7 @@ onMounted(async () => {
                         <DataTable :value="pagos[slotProps.data.id]" sortField="fecha" :sortOrder="1" removableSort>
                             <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
                                 <template #body="pagoProps">
-                                    {{ $formatDate(pagoProps.data.fecha) }}
+                                    {{ new Date(pagoProps.data.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) }}
                                 </template>
                             </Column>
                             <Column field="tipo" header="Tipo" sortable style="min-width: 4rem" />
@@ -457,6 +463,7 @@ onMounted(async () => {
                     <div class="flex-1">
                         <label for="pago_sugerido" class="block font-bold mb-3">Pago Sugerido</label>
                         <InputNumber id="pago_sugerido" v-model="advance.pago_sugerido" mode="currency" currency="EUR" locale="es-ES" fluid />
+                        <small v-if="advance.periodicidad && (!advance.pago_sugerido || advance.pago_sugerido <= 0)" class="text-red-500"> Obligatorio si se especifica periodicidad </small>
                     </div>
                 </div>
                 <div class="flex gap-6">
@@ -474,6 +481,7 @@ onMounted(async () => {
                     <div class="flex-1">
                         <label for="periodicidad" class="block font-bold mb-3">Periodicidad</label>
                         <Select id="periodicidad" v-model="advance.periodicidad" :options="periodicidades" optionValue="value" optionLabel="label" fluid />
+                        <small v-if="advance.pago_sugerido > 0 && !advance.periodicidad" class="text-red-500"> Obligatoria si se especifica un pago sugerido </small>
                     </div>
                     <div class="flex-1">
                         <label for="estado" class="block font-bold mb-3">Estado</label>
@@ -495,7 +503,14 @@ onMounted(async () => {
             </div>
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-                <Button label="Save" icon="pi pi-check" @click="saveAdvance" :disabled="advance.concepto.trim() === '' || !advance.cuenta_origen_id || !advance.fecha_inicio || (advance.periodicidad && !advance.pago_sugerido)" />
+                <Button
+                    label="Save"
+                    icon="pi pi-check"
+                    @click="saveAdvance"
+                    :disabled="
+                        advance.concepto.trim() === '' || !advance.cuenta_origen_id || !advance.fecha_inicio || (advance.periodicidad && (!advance.pago_sugerido || advance.pago_sugerido <= 0)) || (advance.pago_sugerido > 0 && !advance.periodicidad)
+                    "
+                />
             </template>
         </Dialog>
 
@@ -555,6 +570,19 @@ onMounted(async () => {
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" text @click="advancePagoDialog = false" />
                 <Button label="Save" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />
+            </template>
+        </Dialog>
+        <Dialog v-model:visible="deleteAdvanceDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+            <div class="flex items-center gap-4">
+                <i class="pi pi-exclamation-triangle !text-3xl" />
+                <span v-if="advance"
+                    >¿Seguro que quieres borrar el anticipo <b>{{ advance.concepto }}</b
+                    >?</span
+                >
+            </div>
+            <template #footer>
+                <Button label="No" icon="pi pi-times" autofocus text @click="deleteAdvanceDialog = false" />
+                <Button label="Yes" icon="pi pi-check" @click="deleteAdvance" />
             </template>
         </Dialog>
     </div>

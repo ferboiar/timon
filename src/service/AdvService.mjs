@@ -27,11 +27,17 @@ export class AdvService {
 
     // Eliminar uno o más anticipos
     static async deleteAdvances(advances) {
+        console.log('deleteAdvances - IDs de anticipos a eliminar:', advances);
+        if (!Array.isArray(advances) || advances.length === 0) {
+            console.error('deleteAdvances - No se proporcionaron IDs de anticipos para eliminar:', advances);
+            throw new Error('No se proporcionaron IDs de anticipos para eliminar');
+        }
         try {
             const response = await axios.delete(API_URL, { data: { advances } });
+            console.log('deleteAdvances - Respuesta del servidor:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Error al eliminar el/los anticipo(s):', error);
+            console.error('deleteAdvances - Error al eliminar el/los anticipo(s):', error);
             throw error;
         }
     }

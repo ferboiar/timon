@@ -24,10 +24,17 @@ router.post('/', async (req, res) => {
 
 router.delete('/', async (req, res) => {
     const { advances } = req.body;
+    console.log('DELETE /api/anticipos - IDs recibidos para eliminar:', advances);
+    if (!Array.isArray(advances) || advances.length === 0) {
+        console.error('DELETE /api/anticipos - No se proporcionaron IDs de anticipos para eliminar');
+        return res.status(400).json({ error: 'No se proporcionaron IDs de anticipos para eliminar' });
+    }
     try {
         await deleteAdvances(advances);
+        console.log('DELETE /api/anticipos - Anticipos eliminados con éxito');
         res.status(200).json({ message: 'Anticipo(s) eliminado(s) correctamente' });
     } catch (error) {
+        console.error('DELETE /api/anticipos - Error al eliminar el/los anticipo(s):', error);
         res.status(500).json({ error: `Error al eliminar el/los anticipo(s): ${error.message}` });
     }
 });
