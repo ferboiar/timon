@@ -19,6 +19,17 @@ async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_ini
     try {
         connection = await getConnection();
 
+        // Asegurarse de que los valores undefined sean tratados como null
+        concepto = concepto ?? null;
+        importe_total = importe_total ?? null;
+        pago_sugerido = pago_sugerido ?? null;
+        fecha_inicio = fecha_inicio ?? null;
+        fecha_fin_prevista = fecha_fin_prevista ?? null;
+        descripcion = descripcion ?? null;
+        estado = estado ?? null;
+        cuenta_origen_id = cuenta_origen_id ?? null;
+        periodicidad = periodicidad ?? null;
+
         if (id) {
             // Actualizar anticipo existente
             const [result] = await connection.execute(
@@ -340,4 +351,81 @@ async function deletePago(id) {
     }
 }
 
-export { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, pushAdvance, pushPago };
+async function handlePaymentDeletion(pagoId) {
+    let connection;
+    try {
+        connection = await getConnection();
+
+        // Obtener detalles del pago a eliminar
+        const [pago] = await connection.execute('SELECT anticipo_id, importe, estado FROM anticipos_pagos WHERE id = ?', [pagoId]);
+        if (pago.length === 0) {
+            throw new Error(`Pago con ID ${pagoId} no encontrado`);
+        }
+
+        const { anticipo_id, importe, estado } = pago[0];
+
+        // Eliminar el pago
+        const [result] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [pagoId]);
+        console.log(`Pago eliminado, filas afectadas: ${result.affectedRows}`);
+
+        // Si el estado era "pagado", revertir el descuento en el anticipo
+        if (estado === 'pagado') {
+            await connection.execute('UPDATE anticipos SET importe_total = importe_total + ? WHERE id = ?', [importe, anticipo_id]);
+        }
+
+        // Calcular el saldo restante
+        const [saldoResult] = await connection.execute('SELECT importe_total FROM anticipos WHERE id = ?', [anticipo_id]);
+        const saldoRestante = saldoResult[0]?.importe_total || 0;
+
+        return { saldoRestante, anticipoId: anticipo_id };
+    } catch (error) {
+        console.error('Error en handlePaymentDeletion:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function recalculatePendingPayments(anticipoId) {
+    let connection;
+    try {
+        connection = await getConnection();
+
+        // Obtener los pagos pendientes del anticipo
+        const [pendingPayments] = await connection.execute("SELECT id, importe FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' ORDER BY fecha ASC", [anticipoId]);
+
+        if (pendingPayments.length === 0) {
+            console.log(`recalculatePendingPayments - No hay pagos pendientes para el anticipo ${anticipoId}`);
+            return;
+        }
+
+        // Calcular el saldo restante del anticipo
+        const [anticipo] = await connection.execute('SELECT importe_total FROM anticipos WHERE id = ?', [anticipoId]);
+
+        if (anticipo.length === 0) {
+            throw new Error(`Anticipo con ID ${anticipoId} no encontrado`);
+        }
+
+        const saldoRestante = anticipo[0].importe_total;
+
+        // Prorratear el saldo restante entre los pagos pendientes
+        const nuevoImporte = parseFloat((saldoRestante / pendingPayments.length).toFixed(2));
+        let ajuste = saldoRestante - nuevoImporte * pendingPayments.length;
+
+        for (const pago of pendingPayments) {
+            const importeFinal = nuevoImporte + (ajuste > 0 ? 0.01 : ajuste < 0 ? -0.01 : 0);
+            ajuste -= ajuste > 0 ? 0.01 : ajuste < 0 ? -0.01 : 0;
+
+            await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [importeFinal, pago.id]);
+        }
+
+        console.log(`recalculatePendingPayments - Pagos pendientes recalculados para el anticipo ${anticipoId}`);
+    } catch (error) {
+        console.error('Error en recalculatePendingPayments:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePendingPayments };

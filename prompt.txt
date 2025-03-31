@@ -39,13 +39,14 @@ Con estas especificaciones, implementar la lógica necesaria para gestionar anti
 
 
 pto 2:
-revisa mi espacio de trabajo, comprueba si el código es capaz de cumplir con este prompt: "2. **Eliminación de Pagos**:
+revisa mi espacio de trabajo, comprueba si el código es capaz de cumplir con este prompt: 
+"2. **Eliminación de Pagos**:
    - Si se elimina un pago, la aplicación debe informar al usuario y permitirle elegir entre:
      - Recalcular el importe de los pagos restantes pendientes para cubrir el saldo restante.
      - Dar de alta un nuevo pago a continuación del último con el saldo restante." 
      
 Si no es capaz, propon todas las modificaciones necesarias, sin romper la funcionalidad actual, para que el código cumpla. Esta es mi propuesta de implementación:
-Dónde Añadir el Código
+
 Backend:
    - Añadir una nueva función en db_utilsAdv.mjs para manejar la lógica de recalcular los pagos restantes o dar de alta un nuevo pago. Esto asegura que la lógica de negocio esté centralizada y sea consistente.
 Frontend:

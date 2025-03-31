@@ -85,4 +85,26 @@ export class AdvService {
             throw error;
         }
     }
+
+    // Manejar la eliminación de un pago
+    static async handlePaymentDeletion(pagoId) {
+        try {
+            const response = await axios.post(`${API_URL}/delete-payment`, { pagoId });
+            return response.data;
+        } catch (error) {
+            console.error('Error al manejar la eliminación del pago:', error);
+            throw error;
+        }
+    }
+
+    // Recalcular pagos pendientes
+    static async recalculatePayments(anticipoId) {
+        try {
+            const response = await axios.post(`${API_URL}/recalculate-payments`, { anticipoId });
+            return response.data;
+        } catch (error) {
+            console.error('Error al recalcular los pagos pendientes:', error);
+            throw error;
+        }
+    }
 }

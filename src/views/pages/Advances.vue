@@ -117,7 +117,8 @@ async function saveAdvance() {
         }
         await AdvService.saveAdvance(advance.value);
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Anticipo guardado!', life: 5000 });
-        fetchAdvances();
+        await fetchAdvances(); // Actualizar la lista de anticipos
+        await fetchAllPagos(); // Actualizar los pagos relacionados
         hideDialog();
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el anticipo: ${error.message}`, life: 5000 });
@@ -145,7 +146,8 @@ async function deleteAdvance() {
     try {
         await AdvService.deleteAdvances([advance.value.id]);
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Anticipo eliminado', life: 3000 });
-        fetchAdvances();
+        await fetchAdvances(); // Actualizar la lista de anticipos
+        await fetchAllPagos(); // Actualizar los pagos relacionados
         hideDialog();
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el anticipo: ${error.message}`, life: 5000 });
@@ -222,8 +224,8 @@ async function savePago() {
         }
         await AdvService.savePago(pago.value);
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Pago guardado!', life: 5000 });
-        fetchAdvances();
-        fetchAllPagos();
+        await fetchAdvances(); // Actualizar la lista de anticipos
+        await fetchAllPagos(); // Actualizar los pagos relacionados
         advancePagoDialog.value = false;
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el pago: ${error.message}`, life: 5000 });
@@ -231,16 +233,91 @@ async function savePago() {
     }
 }
 
-async function deletePago(pago) {
+const deletePaymentDialog = ref(false);
+const selectedPayment = ref(null);
+const saldoRestante = ref(0);
+const pagosPendientesCount = ref(0); // Contador de pagos pendientes
+const dialogMessage = ref(''); // Mensaje dinámico para el cuadro de diálogo
+
+const deletePago = (pago) => {
+    selectedPayment.value = pago;
+
+    // Obtener el anticipo relacionado
+    const anticipo = advances.value.find((a) => a.id === pago.anticipo_id);
+    console.log('deletePago - Anticipo relacionado:', anticipo);
+
+    // Calcular saldoRestante considerando el pago que se va a eliminar
+    const importeTotal = anticipo?.importe_total || 0;
+    const pagoImporte = pago?.importe || 0;
+    saldoRestante.value = importeTotal - pagoImporte;
+    console.log('deletePago - Importe total del anticipo:', importeTotal);
+    console.log('deletePago - Importe del pago:', pagoImporte);
+    console.log('deletePago - Saldo restante:', saldoRestante.value);
+
+    // Calcular el importe pendiente de planificar
+    const pagosPendientes = pagos.value[pago.anticipo_id]?.filter((p) => p.estado === 'pendiente') || [];
+    console.log('deletePago - Pagos pendientes:', pagosPendientes);
+
+    // Convertir los importes a números antes de sumarlos
+    const sumaPagosPendientes = pagosPendientes.reduce((total, p) => total + parseFloat(p.importe || 0), 0);
+    console.log('deletePago - Suma de importes de pagos pendientes:', sumaPagosPendientes);
+
+    const importePendientePlanificar = Math.max(importeTotal - sumaPagosPendientes - pagoImporte, 0);
+    console.log('deletePago - Importe pendiente de planificar:', importePendientePlanificar);
+
+    pagosPendientesCount.value = pagosPendientes.length; // Contar los pagos pendientes restantes
+    console.log('deletePago - Número de pagos pendientes:', pagosPendientesCount.value);
+
+    deletePaymentDialog.value = true; // Mostrar opciones al usuario
+
+    // Actualizar el mensaje del cuadro de diálogo
+    dialogMessage.value = `Si se borra este pago habrá únicamente ${saldoRestante.value.toFixed(2)}€ en el plan de pagos y ${importePendientePlanificar.toFixed(2)}€ todavía pendientes de planificar. ¿Qué deseas hacer?`;
+    console.log('deletePago - Mensaje del cuadro de diálogo:', dialogMessage.value);
+};
+
+const confirmDeletePago = async () => {
     try {
-        await AdvService.deletePago(pago.id);
-        toast.add({ severity: 'success', summary: 'Pago eliminado', detail: 'El pago ha sido eliminado correctamente.', life: 3000 });
-        fetchAdvances();
-        fetchAllPagos();
+        // Eliminar el pago sin realizar ninguna acción adicional
+        await AdvService.handlePaymentDeletion(selectedPayment.value.id);
+        toast.add({ severity: 'success', summary: 'Pago eliminado', detail: 'El pago ha sido eliminado.', life: 3000 });
+
+        await fetchAdvances(); // Actualizar la lista de anticipos
+        await fetchAllPagos(); // Actualizar los pagos relacionados
+        deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el pago: ${error.message}`, life: 5000 });
     }
-}
+};
+
+const recalculatePayments = async () => {
+    try {
+        // Eliminar el pago y recalcular los pagos restantes
+        await AdvService.handlePaymentDeletion(selectedPayment.value.id);
+        await AdvService.recalculatePayments(selectedPayment.value.anticipo_id);
+
+        toast.add({ severity: 'success', summary: 'Pagos Recalculados', detail: 'Los pagos pendientes han sido recalculados.', life: 3000 });
+        await fetchAdvances(); // Actualizar la lista de anticipos
+        await fetchAllPagos(); // Actualizar los pagos relacionados
+        deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al recalcular los pagos: ${error.message}`, life: 5000 });
+    }
+};
+
+const addNewPayment = async () => {
+    try {
+        // Eliminar el pago y abrir el formulario para añadir un nuevo pago
+        await AdvService.handlePaymentDeletion(selectedPayment.value.id);
+        openNewPago(selectedPayment.value.anticipo_id);
+
+        toast.add({ severity: 'success', summary: 'Pago eliminado', detail: 'El pago ha sido eliminado. Añade un nuevo pago.', life: 3000 });
+        await fetchAdvances(); // Actualizar la lista de anticipos
+        await fetchAllPagos(); // Actualizar los pagos relacionados
+        deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el pago: ${error.message}`, life: 5000 });
+    }
+};
 
 const expandedRows = ref({});
 const isExpanded = ref(false);
@@ -583,6 +660,14 @@ onMounted(async () => {
                 <Button label="No" icon="pi pi-times" autofocus text @click="deleteAdvanceDialog = false" />
                 <Button label="Yes" icon="pi pi-check" @click="deleteAdvance" />
             </template>
+        </Dialog>
+        <Dialog v-model:visible="deletePaymentDialog" :style="{ width: '450px' }" header="Eliminar Pago" :modal="true">
+            <div class="flex flex-col gap-4">
+                <p>{{ dialogMessage }}</p>
+                <Button label="Recalcular pagos restantes" icon="pi pi-refresh" @click="recalculatePayments" :disabled="pagosPendientesCount <= 1" autofocus />
+                <Button label="Añadir un nuevo pago" icon="pi pi-plus" @click="addNewPayment" />
+                <Button label="Confirmar eliminación" icon="pi pi-trash" severity="danger" @click="confirmDeletePago" />
+            </div>
         </Dialog>
     </div>
 </template>

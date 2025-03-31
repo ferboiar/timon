@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, pushAdvance, pushPago } from '../db/db_utilsAdv.mjs';
+import { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePendingPayments } from '../db/db_utilsAdv.mjs';
 
 const router = Router();
 
@@ -79,6 +79,42 @@ router.delete('/pagos/:id', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: `Error al eliminar el pago: ${error.message}` });
+    }
+});
+
+router.post('/delete-payment', async (req, res) => {
+    const { pagoId } = req.body;
+
+    if (!pagoId) {
+        return res.status(400).json({ error: 'Pago ID es requerido' });
+    }
+
+    try {
+        const { saldoRestante, anticipoId } = await handlePaymentDeletion(pagoId);
+        res.status(200).json({
+            message: 'Pago eliminado correctamente',
+            saldoRestante,
+            anticipoId
+        });
+    } catch (error) {
+        console.error('Error al eliminar el pago:', error);
+        res.status(500).json({ error: 'Error al eliminar el pago' });
+    }
+});
+
+router.post('/recalculate-payments', async (req, res) => {
+    const { anticipoId } = req.body;
+
+    if (!anticipoId) {
+        return res.status(400).json({ error: 'Anticipo ID es requerido' });
+    }
+
+    try {
+        await recalculatePendingPayments(anticipoId);
+        res.status(200).json({ message: 'Pagos pendientes recalculados correctamente' });
+    } catch (error) {
+        console.error('Error al recalcular los pagos pendientes:', error);
+        res.status(500).json({ error: 'Error al recalcular los pagos pendientes' });
     }
 });
 
