@@ -213,6 +213,8 @@ function editPago(p) {
     advancePagoDialog.value = true;
 }
 
+const isReplacingPayment = ref(false); // Bandera para indicar si se está reemplazando un pago
+
 async function savePago() {
     try {
         if (pago.value.fecha) {
@@ -222,11 +224,25 @@ async function savePago() {
             const localFecha = new Date(pago.value.fecha.getTime() - pago.value.fecha.getTimezoneOffset() * 60000);
             pago.value.fecha = formatDate(localFecha, '-');
         }
+
+        // Guardar el nuevo pago
         await AdvService.savePago(pago.value);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Pago guardado!', life: 5000 });
-        await fetchAdvances(); // Actualizar la lista de anticipos
-        await fetchAllPagos(); // Actualizar los pagos relacionados
+
+        // Si se está reemplazando un pago, eliminar el pago original
+        if (isReplacingPayment.value) {
+            await AdvService.deletePago(selectedPayment.value.id);
+            toast.add({ severity: 'success', summary: 'Pago reemplazado', detail: 'El pago ha sido reemplazado correctamente.', life: 3000 });
+        } else {
+            toast.add({ severity: 'success', summary: 'Pago guardado', detail: 'El pago ha sido guardado correctamente.', life: 3000 });
+        }
+
+        // Actualizar los anticipos y pagos relacionados
+        await fetchAdvances();
+        await fetchAllPagos();
+
+        // Cerrar el cuadro de diálogo
         advancePagoDialog.value = false;
+        isReplacingPayment.value = false; // Restablecer la bandera
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el pago: ${error.message}`, life: 5000 });
         console.error('Error en savePago:', error);
@@ -246,33 +262,35 @@ const deletePago = (pago) => {
     const anticipo = advances.value.find((a) => a.id === pago.anticipo_id);
     console.log('deletePago - Anticipo relacionado:', anticipo);
 
-    // Calcular saldoRestante considerando el pago que se va a eliminar
-    const importeTotal = anticipo?.importe_total || 0;
-    const pagoImporte = pago?.importe || 0;
-    saldoRestante.value = importeTotal - pagoImporte;
-    console.log('deletePago - Importe total del anticipo:', importeTotal);
-    console.log('deletePago - Importe del pago:', pagoImporte);
-    console.log('deletePago - Saldo restante:', saldoRestante.value);
+    // Obtener todos los pagos del anticipo
+    const pagosAnticipo = pagos.value[pago.anticipo_id] || [];
+
+    // Excluir el pago que se está eliminando de los cálculos
+    const pagosPendientes = pagosAnticipo.filter((p) => p.estado === 'pendiente' && p.id !== pago.id);
+    const pagosPagados = pagosAnticipo.filter((p) => p.estado === 'pagado');
+
+    // Calcular suma de pagos pagados y pendientes (excluyendo el pago a eliminar)
+    const sumaPagosPagados = pagosPagados.reduce((total, p) => total + parseFloat(p.importe || 0), 0);
+    const sumaPagosPendientes = pagosPendientes.reduce((total, p) => total + parseFloat(p.importe || 0), 0);
+
+    // Calcular el importe inicial del anticipo
+    const importeTotal = parseFloat(anticipo?.importe_total || 0); // Convertir a número
+    const importeInicial = (importeTotal + sumaPagosPagados).toFixed(2); // Redondear a 2 decimales
+    console.log('deletePago - Importe inicial del anticipo:', importeInicial);
 
     // Calcular el importe pendiente de planificar
-    const pagosPendientes = pagos.value[pago.anticipo_id]?.filter((p) => p.estado === 'pendiente') || [];
-    console.log('deletePago - Pagos pendientes:', pagosPendientes);
-
-    // Convertir los importes a números antes de sumarlos
-    const sumaPagosPendientes = pagosPendientes.reduce((total, p) => total + parseFloat(p.importe || 0), 0);
-    console.log('deletePago - Suma de importes de pagos pendientes:', sumaPagosPendientes);
-
-    const importePendientePlanificar = Math.max(importeTotal - sumaPagosPendientes - pagoImporte, 0);
+    const importePendientePlanificar = Math.max((importeInicial - sumaPagosPagados - sumaPagosPendientes).toFixed(2), 0);
     console.log('deletePago - Importe pendiente de planificar:', importePendientePlanificar);
 
-    pagosPendientesCount.value = pagosPendientes.length; // Contar los pagos pendientes restantes
-    console.log('deletePago - Número de pagos pendientes:', pagosPendientesCount.value);
-
-    deletePaymentDialog.value = true; // Mostrar opciones al usuario
-
     // Actualizar el mensaje del cuadro de diálogo
-    dialogMessage.value = `Si se borra este pago habrá únicamente ${saldoRestante.value.toFixed(2)}€ en el plan de pagos y ${importePendientePlanificar.toFixed(2)}€ todavía pendientes de planificar. ¿Qué deseas hacer?`;
-    console.log('deletePago - Mensaje del cuadro de diálogo:', dialogMessage.value);
+    dialogMessage.value = `Si se borra este pago habrá únicamente ${sumaPagosPendientes.toFixed(2)}€ en el plan de pagos y ${importePendientePlanificar.toFixed(2)}€ pendientes de planificar. ¿Qué deseas hacer con este importe?`;
+
+    // Actualizar contador de pagos pendientes
+    pagosPendientesCount.value = pagosPendientes.length;
+    console.log('deletePago - Número de pagos pendientes (excluyendo el pago a eliminar):', pagosPendientesCount.value);
+
+    // Mostrar el cuadro de diálogo
+    deletePaymentDialog.value = true;
 };
 
 const confirmDeletePago = async () => {
@@ -306,14 +324,32 @@ const recalculatePayments = async () => {
 
 const addNewPayment = async () => {
     try {
-        // Eliminar el pago y abrir el formulario para añadir un nuevo pago
-        await AdvService.handlePaymentDeletion(selectedPayment.value.id);
-        openNewPago(selectedPayment.value.anticipo_id);
+        // Obtener el anticipo relacionado
+        const anticipoId = selectedPayment.value.anticipo_id;
+        const pagosAnticipo = pagos.value[anticipoId] || [];
 
-        toast.add({ severity: 'success', summary: 'Pago eliminado', detail: 'El pago ha sido eliminado. Añade un nuevo pago.', life: 3000 });
-        await fetchAdvances(); // Actualizar la lista de anticipos
-        await fetchAllPagos(); // Actualizar los pagos relacionados
-        deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
+        // Filtrar el último pago registrado distinto al que se borra
+        const ultimoPago = pagosAnticipo.filter((p) => p.id !== selectedPayment.value.id).sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0];
+
+        // Calcular la fecha del nuevo pago (mes siguiente al último pago)
+        const nuevaFecha = ultimoPago ? new Date(ultimoPago.fecha) : new Date();
+        nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
+
+        // Precargar los datos del nuevo pago
+        pago.value = {
+            id: null,
+            anticipo_id: anticipoId,
+            importe: selectedPayment.value.importe,
+            fecha: nuevaFecha,
+            tipo: selectedPayment.value.tipo,
+            descripcion: selectedPayment.value.descripcion,
+            estado: 'pendiente',
+            cuenta_destino_id: selectedPayment.value.cuenta_destino_id
+        };
+
+        deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo de borrar
+        advancePagoDialog.value = true; // Abrir el cuadro de diálogo para añadir el nuevo pago
+        isReplacingPayment.value = true; // Activar la bandera de reemplazo
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el pago: ${error.message}`, life: 5000 });
     }
@@ -664,9 +700,13 @@ onMounted(async () => {
         <Dialog v-model:visible="deletePaymentDialog" :style="{ width: '450px' }" header="Eliminar Pago" :modal="true">
             <div class="flex flex-col gap-4">
                 <p>{{ dialogMessage }}</p>
-                <Button label="Recalcular pagos restantes" icon="pi pi-refresh" @click="recalculatePayments" :disabled="pagosPendientesCount <= 1" autofocus />
-                <Button label="Añadir un nuevo pago" icon="pi pi-plus" @click="addNewPayment" />
-                <Button label="Confirmar eliminación" icon="pi pi-trash" severity="danger" @click="confirmDeletePago" />
+                <div class="flex gap-4">
+                    <Button label="Recalcular pagos" class="flex-1" v-tooltip="'Reparte el importe entre los pagos ya definidos'" icon="pi pi-refresh" @click="recalculatePayments" :disabled="pagosPendientesCount <= 1" autofocus />
+                    <Button label="Añadirlo en un nuevo" class="flex-1" v-tooltip="'Crea un nuevo pago con el total del importe pendiente'" icon="pi pi-plus" @click="addNewPayment" />
+                </div>
+                <div class="flex justify-center">
+                    <Button label="Nada. Confirmar eliminación" icon="pi pi-trash" severity="danger" class="w-full" @click="confirmDeletePago" />
+                </div>
             </div>
         </Dialog>
     </div>
