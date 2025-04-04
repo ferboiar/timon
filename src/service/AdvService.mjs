@@ -97,13 +97,13 @@ export class AdvService {
         }
     }
 
-    // Recalcular pagos pendientes
-    static async recalculatePayments(anticipoId) {
+    // Recalcular plan de pagos
+    static async recalculatePaymentPlan(anticipoId) {
         try {
-            const response = await axios.post(`${API_URL}/recalculate-payments`, { anticipoId });
+            const response = await axios.post(`${API_URL}/recalculate-payment-plan`, { anticipoId });
             return response.data;
         } catch (error) {
-            console.error('Error al recalcular los pagos pendientes:', error);
+            console.error('Error al recalcular el plan de pagos:', error);
             throw error;
         }
     }

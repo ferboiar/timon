@@ -194,18 +194,52 @@ const fetchAllPagos = async () => {
     }
 };
 
+async function createPaymentPlan(anticipoId) {
+    try {
+        // Obtener el anticipo relacionado
+        const anticipo = advances.value.find((a) => a.id === anticipoId);
+        if (!anticipo) {
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Anticipo no encontrado.', life: 5000 });
+            return;
+        }
+        await AdvService.recalculatePaymentPlan(anticipoId);
+        await fetchAdvances();
+        await fetchAllPagos();
+        toast.add({ severity: 'success', summary: 'Successful', detail: 'Plan de pagos creado correctamente.', life: 3000 });
+    } catch (error) {
+        console.error('Error en createPaymentPlan:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al crear el plan de pagos: ${error.message}`, life: 5000 });
+    }
+}
+
 function openNewPago(anticipoId) {
+    // Obtener el anticipo relacionado
+    const anticipo = advances.value.find((a) => a.id === anticipoId);
+    if (!anticipo) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Anticipo no encontrado.', life: 5000 });
+        return;
+    }
+
+    // Obtener los pagos existentes del anticipo
+    const pagosAnticipo = pagos.value[anticipoId] || [];
+
+    // Calcular la fecha del nuevo pago (siguiente a la última fecha de los pagos existentes)
+    const ultimaFechaPago = pagosAnticipo.length > 0 ? new Date(Math.max(...pagosAnticipo.map((p) => new Date(p.fecha).getTime()))) : new Date();
+    ultimaFechaPago.setMonth(ultimaFechaPago.getMonth() + 1);
+
+    // Precargar los datos del nuevo pago
     pago.value = {
         id: null,
         anticipo_id: anticipoId,
-        importe: 0,
-        fecha: null,
+        importe: anticipo.pago_sugerido,
+        fecha: ultimaFechaPago,
         tipo: 'regular',
         descripcion: '',
         estado: 'pendiente',
-        cuenta_destino_id: null
+        cuenta_destino_id: anticipo.cuenta_origen_id
     };
-    advancePagoDialog.value = true;
+
+    advancePagoDialog.value = true; // Abrir el cuadro de diálogo para añadir el nuevo pago
 }
 
 function editPago(p) {
@@ -219,33 +253,73 @@ async function savePago() {
     try {
         if (pago.value.fecha) {
             if (!(pago.value.fecha instanceof Date)) {
-                pago.value.fecha = new Date(pago.value.fecha);
+                pago.value.fecha = new Date(pago.value.fecha); //Convierte la fecha a un objeto Date
             }
             const localFecha = new Date(pago.value.fecha.getTime() - pago.value.fecha.getTimezoneOffset() * 60000);
             pago.value.fecha = formatDate(localFecha, '-');
         }
 
-        // Guardar el nuevo pago
-        await AdvService.savePago(pago.value);
+        // Verificar si se está editando un pago existente
+        if (pago.value.id) {
+            await AdvService.savePago(pago.value);
+            toast.add({ severity: 'success', summary: 'Pago actualizado', detail: 'El pago ha sido actualizado correctamente.', life: 3000 });
 
-        // Si se está reemplazando un pago, eliminar el pago original
-        if (isReplacingPayment.value) {
-            await AdvService.deletePago(selectedPayment.value.id);
-            toast.add({ severity: 'success', summary: 'Pago reemplazado', detail: 'El pago ha sido reemplazado correctamente.', life: 3000 });
-        } else {
-            toast.add({ severity: 'success', summary: 'Pago guardado', detail: 'El pago ha sido guardado correctamente.', life: 3000 });
+            // Actualizar los anticipos y pagos relacionados
+            await fetchAdvances();
+            await fetchAllPagos();
+            advancePagoDialog.value = false; // Cerrar el cuadro de diálogo y salir
+            return;
         }
 
+        // Obtener el anticipo relacionado
+        const anticipo = advances.value.find((a) => a.id === pago.value.anticipo_id);
+        if (!anticipo) {
+            console.error('savePago - Anticipo no encontrado para el ID:', pago.value.anticipo_id);
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Anticipo no encontrado.', life: 5000 });
+            return;
+        }
+
+        console.log('savePago - Anticipo relacionado encontrado:', anticipo);
+
+        // Calcular la suma de los pagos pendientes
+        const pagosPendientes = pagos.value[pago.value.anticipo_id]?.filter((p) => p.estado === 'pendiente') || [];
+        const sumaPagosPendientes = pagosPendientes.reduce((total, p) => total + parseFloat(p.importe || 0), 0);
+
+        console.log('savePago - Suma de pagos pendientes:', sumaPagosPendientes);
+
+        // Verificar si los pagos pendientes ya cubren el anticipo
+        if (sumaPagosPendientes >= anticipo.importe_total) {
+            console.warn('savePago - Los pagos pendientes ya cubren el anticipo');
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Los pagos pendientes incluidos ya cubren el anticipo.', life: 5000 });
+            advancePagoDialog.value = false; // Cerrar el cuadro de diálogo
+            return;
+        }
+
+        // Ajustar el importe del nuevo pago si excede el importe pendiente
+        const importePendiente = anticipo.importe_total - sumaPagosPendientes;
+        if (pago.value.importe > importePendiente) {
+            console.warn('savePago - Ajustando el importe del pago a:', importePendiente);
+            toast.add({ severity: 'warn', summary: 'Ajuste de Importe', detail: `El importe del pago se ajustó a ${importePendiente.toFixed(2)}€ para cubrir el anticipo.`, life: 5000 });
+            pago.value.importe = importePendiente;
+        }
+
+        // Guardar el nuevo pago
+        console.log('savePago - Guardando el nuevo pago');
+        await AdvService.savePago(pago.value);
+        toast.add({ severity: 'success', summary: 'Pago guardado', detail: 'El pago ha sido guardado correctamente.', life: 3000 });
+
         // Actualizar los anticipos y pagos relacionados
+        console.log('savePago - Actualizando anticipos y pagos relacionados después de guardar el nuevo pago');
         await fetchAdvances();
         await fetchAllPagos();
 
         // Cerrar el cuadro de diálogo
+        console.log('savePago - Cerrando el cuadro de diálogo');
         advancePagoDialog.value = false;
         isReplacingPayment.value = false; // Restablecer la bandera
     } catch (error) {
+        console.error('savePago - Error:', error);
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el pago: ${error.message}`, life: 5000 });
-        console.error('Error en savePago:', error);
     }
 }
 
@@ -311,9 +385,9 @@ const recalculatePayments = async () => {
     try {
         // Eliminar el pago y recalcular los pagos restantes
         await AdvService.handlePaymentDeletion(selectedPayment.value.id);
-        await AdvService.recalculatePayments(selectedPayment.value.anticipo_id);
+        await AdvService.recalculatePaymentPlan(selectedPayment.value.anticipo_id);
 
-        toast.add({ severity: 'success', summary: 'Pagos Recalculados', detail: 'Los pagos pendientes han sido recalculados.', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Successful', detail: 'Pagos pendientes recalculados.', life: 3000 });
         await fetchAdvances(); // Actualizar la lista de anticipos
         await fetchAllPagos(); // Actualizar los pagos relacionados
         deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
@@ -494,8 +568,9 @@ onMounted(async () => {
                 </Column>
                 <Column :exportable="false">
                     <template #body="slotProps">
-                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editAdvance(slotProps.data)" />
-                        <Button icon="pi pi-plus" outlined rounded class="mr-2" @click="openNewPago(slotProps.data.id)" />
+                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" v-tooltip="'Editar el anticipo'" @click="editAdvance(slotProps.data)" />
+                        <Button icon="pi pi-plus" outlined rounded class="mr-2" v-tooltip="'Añadir un pago'" @click="openNewPago(slotProps.data.id)" />
+                        <Button icon="pi pi-calendar" outlined rounded class="mr-2" v-tooltip="'Añadir o completar el plan de pagos'" @click="createPaymentPlan(slotProps.data.id)" />
                         <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteAdvance(slotProps.data)" />
                     </template>
                 </Column>

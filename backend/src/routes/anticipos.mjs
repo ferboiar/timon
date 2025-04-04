@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePendingPayments } from '../db/db_utilsAdv.mjs';
+import { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan } from '../db/db_utilsAdv.mjs';
 
 const router = Router();
 
@@ -102,19 +102,21 @@ router.post('/delete-payment', async (req, res) => {
     }
 });
 
-router.post('/recalculate-payments', async (req, res) => {
+router.post('/recalculate-payment-plan', async (req, res) => {
     const { anticipoId } = req.body;
 
     if (!anticipoId) {
+        console.error('recalculate-payment-plan - Anticipo ID no proporcionado');
         return res.status(400).json({ error: 'Anticipo ID es requerido' });
     }
 
     try {
-        await recalculatePendingPayments(anticipoId);
-        res.status(200).json({ message: 'Pagos pendientes recalculados correctamente' });
+        console.log(`recalculate-payment-plan - Procesando anticipo ID: ${anticipoId}`);
+        await recalculatePaymentPlan(anticipoId); // Los datos faltantes se obtendrán en la función
+        res.status(200).json({ message: 'Plan de pagos recalculado correctamente' });
     } catch (error) {
-        console.error('Error al recalcular los pagos pendientes:', error);
-        res.status(500).json({ error: 'Error al recalcular los pagos pendientes' });
+        console.error('Error al recalcular el plan de pagos:', error);
+        res.status(500).json({ error: 'Error al recalcular el plan de pagos' });
     }
 });
 
