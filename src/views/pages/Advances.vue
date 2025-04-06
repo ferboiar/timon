@@ -202,6 +202,13 @@ async function createPaymentPlan(anticipoId) {
             toast.add({ severity: 'error', summary: 'Error', detail: 'Anticipo no encontrado.', life: 5000 });
             return;
         }
+
+        // Verificar si el pago sugerido es 0
+        if (anticipo.pago_sugerido === 0) {
+            toast.add({ severity: 'error', summary: 'Error', detail: 'Imposible generar plan de pagos mientras pago sugerido sea 0.', life: 5000 });
+            return;
+        }
+
         await AdvService.recalculatePaymentPlan(anticipoId);
         await fetchAdvances();
         await fetchAllPagos();
@@ -475,20 +482,64 @@ onMounted(async () => {
     await fetchAllPagos();
     await fetchCuentas(); // Cargar las cuentas al montar el componente
 });
+
+const exportCSV = () => {
+    const csvContent = [
+        ['Concepto', 'Descripción', 'Importe Total', 'Fecha Inicio', 'Fecha Fin Prevista', 'Estado', 'Cuenta Origen', 'Periodicidad', 'Pago Sugerido'],
+        ...advances.value.map((adv) => [
+            adv.concepto,
+            adv.descripcion || '',
+            parseFloat(adv.importe_total).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
+            formatDate(adv.fecha_inicio),
+            formatDate(adv.fecha_fin_prevista),
+            adv.estado,
+            cuentas.value.find((cuenta) => cuenta.value === adv.cuenta_origen_id)?.label || '',
+            adv.periodicidad || '',
+            parseFloat(adv.pago_sugerido).toFixed(2).replace('.', ',') // Convertir a número con 2 decimales y reemplazar el punto por una coma
+        ])
+    ]
+        .map((row) => row.map((field) => `"${field}"`).join(';')) // Separador de campos: punto y coma
+        .join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'anticipos.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+const confirmPaymentPlanDialog = ref(false); // Estado del cuadro de diálogo de confirmación
+const selectedAdvanceId = ref(null); // ID del anticipo seleccionado para generar el plan de pagos
+
+function confirmCreatePaymentPlan(anticipoId) {
+    selectedAdvanceId.value = anticipoId;
+    confirmPaymentPlanDialog.value = true;
+}
+
+async function handleCreatePaymentPlan() {
+    if (selectedAdvanceId.value) {
+        await createPaymentPlan(selectedAdvanceId.value);
+    }
+    confirmPaymentPlanDialog.value = false;
+}
 </script>
 
 <template>
     <div class="flex flex-col">
         <div class="card">
-            <!-- ...existing Toolbar code... -->
             <Toolbar class="mb-6">
                 <template #start>
                     <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNewAdvance" />
                     <Button label="Borrar" icon="pi pi-trash" severity="secondary" class="mr-2" @click="deleteSelectedAdvancesDialog = true" :disabled="!selectedAdvances.length" />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateAdvances" />
+                    <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                 </template>
                 <template #end>
-                    <Button label="Exportar" icon="pi pi-upload" severity="secondary" />
+                    <Button label="Exportar" icon="pi pi-upload" severity="secondary" @click="exportCSV" />
                 </template>
             </Toolbar>
         </div>
@@ -570,7 +621,7 @@ onMounted(async () => {
                     <template #body="slotProps">
                         <Button icon="pi pi-pencil" outlined rounded class="mr-2" v-tooltip="'Editar el anticipo'" @click="editAdvance(slotProps.data)" />
                         <Button icon="pi pi-plus" outlined rounded class="mr-2" v-tooltip="'Añadir un pago'" @click="openNewPago(slotProps.data.id)" />
-                        <Button icon="pi pi-calendar" outlined rounded class="mr-2" v-tooltip="'Añadir o completar el plan de pagos'" @click="createPaymentPlan(slotProps.data.id)" />
+                        <Button icon="pi pi-calendar" outlined rounded class="mr-2" v-tooltip="'Añadir o completar el plan de pagos'" @click="confirmCreatePaymentPlan(slotProps.data.id)" />
                         <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteAdvance(slotProps.data)" />
                     </template>
                 </Column>
@@ -783,6 +834,18 @@ onMounted(async () => {
                     <Button label="Nada. Confirmar eliminación" icon="pi pi-trash" severity="danger" class="w-full" @click="confirmDeletePago" />
                 </div>
             </div>
+        </Dialog>
+
+        <!-- Diálogo de confirmación para generar el plan de pagos -->
+        <Dialog v-model:visible="confirmPaymentPlanDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
+            <div class="flex items-center gap-4">
+                <i class="pi pi-exclamation-triangle !text-3xl" />
+                <span>¿Seguro que quieres generar o completar el plan de pagos para el anticipo '{{ advances.find((a) => a.id === selectedAdvanceId)?.concepto || '' }}'?</span>
+            </div>
+            <template #footer>
+                <Button label="No" icon="pi pi-times" text @click="confirmPaymentPlanDialog = false" autofocus />
+                <Button label="Sí" icon="pi pi-check" @click="handleCreatePaymentPlan" />
+            </template>
         </Dialog>
     </div>
 </template>

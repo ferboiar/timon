@@ -116,7 +116,16 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
 
         console.log(`recalculatePaymentPlan - Pagos existentes: ${JSON.stringify(existingPagos)}`);
 
+        // Filtrar los pagos pendientes
+        const pagosPendientes = existingPagos.filter((pago) => pago.estado === 'pendiente');
+
+        // Restar los pagos pendientes del saldo restante
         let saldoRestante = importe_total;
+        for (const pago of pagosPendientes) {
+            saldoRestante -= pago.importe;
+        }
+
+        console.log(`recalculatePaymentPlan - Saldo restante después de considerar los pagos pendientes: ${saldoRestante}`);
 
         // Determinar la fecha del próximo pago basándote en el último pago existente
         let fechaPago = new Date(fecha_inicio);
@@ -126,18 +135,11 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
             fechaPago.setMonth(fechaPago.getMonth() + getMonthsFromPeriodicidad(periodicidad));
         }
 
-        // Restar los pagos existentes del saldo restante
-        for (const pago of existingPagos) {
-            saldoRestante -= pago.importe;
-        }
-
-        console.log(`recalculatePaymentPlan - Saldo restante después de considerar los pagos existentes: ${saldoRestante}`);
-
         // Crear nuevos pagos si es necesario
         let ultimaFechaPago = null;
         while (saldoRestante > 0) {
             const importePago = saldoRestante > pago_sugerido ? pago_sugerido : saldoRestante;
-            const [insertResult] = await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?)', [
+            await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?)', [
                 anticipoId,
                 importePago,
                 fechaPago.toISOString().split('T')[0],
@@ -153,7 +155,7 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
 
         // Actualizar la fecha fin prevista del anticipo con la fecha del último pago
         if (ultimaFechaPago) {
-            const [updateResult] = await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ? WHERE id = ?', [ultimaFechaPago.toISOString().split('T')[0], anticipoId]);
+            await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ? WHERE id = ?', [ultimaFechaPago.toISOString().split('T')[0], anticipoId]);
             console.log(`recalculatePaymentPlan - Fecha fin prevista actualizada a: ${ultimaFechaPago.toISOString().split('T')[0]}`);
         }
 
