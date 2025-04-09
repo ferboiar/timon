@@ -246,9 +246,10 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
 
         if (id) {
             // Obtener el estado actual del pago antes de actualizarlo
-            const [existingPago] = await connection.execute('SELECT estado, importe FROM anticipos_pagos WHERE id = ?', [id]);
+            const [existingPago] = await connection.execute('SELECT estado, importe, fecha FROM anticipos_pagos WHERE id = ?', [id]);
             const wasPagado = existingPago.length > 0 && existingPago[0].estado === 'pagado';
             const previousImporte = existingPago[0]?.importe || 0;
+            const previousFecha = existingPago[0]?.fecha;
 
             // Actualizar el pago existente
             const [result] = await connection.execute('UPDATE anticipos_pagos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_destino_id = ? WHERE id = ?', [
@@ -287,16 +288,12 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                     console.log(`Anticipo ${anticipo_id} marcado como activo.`);
                 }
             }
-            /*
-            // Si el importe cambia y el pago está pendiente, recalcular los pagos restantes
+
+            // Si el importe cambia y el pago está pendiente, recalcular los pagos posteriores
             if (estado === 'pendiente' && previousImporte !== importe) {
-                const [anticipo] = await connection.execute('SELECT importe_total, pago_sugerido, fecha_inicio, periodicidad FROM anticipos WHERE id = ?', [anticipo_id]);
-                if (anticipo.length > 0) {
-                    const { importe_total, pago_sugerido, fecha_inicio, periodicidad } = anticipo[0];
-                    await recalculatePaymentPlan(anticipo_id, importe_total, pago_sugerido, fecha_inicio, periodicidad);
-                }
+                console.log(`pushPago - Recalculando pagos pendientes para el anticipo ${anticipo_id} debido a cambio en el importe.`);
+                await recalculatePostEditPayments(anticipo_id, previousImporte, importe, previousFecha);
             }
-*/
         } else {
             // Insertar nuevo pago
             const [result] = await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [
@@ -334,6 +331,77 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
         }
     } catch (error) {
         console.error('Error en pushPago:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function recalculatePostEditPayments(anticipo_id, previousImporte, newImporte, previousFecha) {
+    let connection;
+    try {
+        connection = await getConnection();
+
+        console.log(`recalculatePostEditPayments - Inicio para anticipo_id: ${anticipo_id}`);
+        console.log(`recalculatePostEditPayments - previousImporte: ${previousImporte}, newImporte: ${newImporte}, previousFecha: ${previousFecha}`);
+
+        // Obtener los pagos pendientes posteriores al pago editado
+        const [pendingPayments] = await connection.execute("SELECT id, importe FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' AND fecha > ? ORDER BY importe ASC", [anticipo_id, previousFecha]);
+        console.log(`recalculatePostEditPayments - Pagos pendientes posteriores: ${JSON.stringify(pendingPayments)}`);
+
+        if (pendingPayments.length > 0) {
+            const [anticipo] = await connection.execute('SELECT importe_total, pago_sugerido FROM anticipos WHERE id = ?', [anticipo_id]);
+            const importeTotal = parseFloat(anticipo[0]?.importe_total || 0);
+            const pagoSugerido = parseFloat(anticipo[0]?.pago_sugerido || 0);
+
+            console.log(`recalculatePostEditPayments - Importe total del anticipo: ${importeTotal}`);
+            console.log(`recalculatePostEditPayments - Importe sugerido: ${pagoSugerido}`);
+            console.log(`recalculatePostEditPayments - Número de pagos pendientes: ${pendingPayments.length}`);
+            pendingPayments.forEach((pago, index) => {
+                console.log(`recalculatePostEditPayments - Pago pendiente ${index + 1}: ID=${pago.id}, Importe=${parseFloat(pago.importe)}`);
+            });
+
+            let diferencia = parseFloat(previousImporte) - parseFloat(newImporte); // Diferencia a redistribuir
+            console.log(`recalculatePostEditPayments - Diferencia a redistribuir: ${diferencia}`);
+
+            // Incrementar primero el importe del pago con el importe más bajo hasta el importe sugerido
+            for (const pago of pendingPayments) {
+                if (diferencia <= 0) break;
+
+                const pagoImporte = parseFloat(pago.importe);
+                const maxAjuste = Math.min(diferencia, Math.max(0, pagoSugerido - pagoImporte));
+                console.log(`recalculatePostEditPayments - Ajustando pago ID ${pago.id}: importe actual ${pagoImporte}, maxAjuste: ${maxAjuste}`);
+
+                if (maxAjuste > 0) {
+                    const nuevoImporte = parseFloat((pagoImporte + maxAjuste).toFixed(2));
+                    console.log(`recalculatePostEditPayments - Nuevo importe para pago ID ${pago.id}: ${nuevoImporte}`);
+                    await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [nuevoImporte, pago.id]);
+                    diferencia -= maxAjuste;
+                    console.log(`recalculatePostEditPayments - Diferencia restante: ${diferencia}`);
+                }
+            }
+
+            // Redistribuir el resto proporcionalmente entre los pagos restantes
+            if (diferencia > 0) {
+                const pagosRestantes = pendingPayments.length;
+                const baseDistribucion = Math.floor(diferencia / pagosRestantes);
+                let ajusteRestante = diferencia - baseDistribucion * pagosRestantes;
+
+                for (const pago of pendingPayments) {
+                    const pagoImporte = parseFloat(pago.importe);
+                    const ajuste = baseDistribucion + (ajusteRestante > 0 ? 1 : 0);
+                    ajusteRestante -= ajusteRestante > 0 ? 1 : 0;
+
+                    const nuevoImporte = parseFloat((pagoImporte + ajuste).toFixed(2));
+                    console.log(`recalculatePostEditPayments - Redistribuyendo para pago ID ${pago.id}: ajuste=${ajuste}, nuevo importe=${nuevoImporte}`);
+                    await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [nuevoImporte, pago.id]);
+                }
+            }
+        } else {
+            console.log('recalculatePostEditPayments - No hay pagos pendientes posteriores al pago editado.');
+        }
+    } catch (error) {
+        console.error('Error en recalculatePostEditPayments:', error);
         throw error;
     } finally {
         if (connection) connection.release();
