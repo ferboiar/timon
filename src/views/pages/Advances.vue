@@ -2,7 +2,7 @@
 import { AccService } from '@/service/AccService'; // Importar AccService
 import { AdvService } from '@/service/AdvService';
 import { useToast } from 'primevue/usetoast';
-import { computed, getCurrentInstance, onMounted, ref } from 'vue'; // <-- Agregamos computed
+import { computed, getCurrentInstance, onMounted, ref } from 'vue';
 
 const advances = ref([]);
 const selectedAdvances = ref([]);
@@ -135,7 +135,8 @@ function confirmDeleteAdvance(adv) {
     // Verificar si el anticipo tiene un ID válido
     if (!adv || !adv.id) {
         console.error('El anticipo seleccionado no tiene un ID válido:', adv);
-        return;
+        re; // Convertir el objeto Proxy en un objeto plano
+        turn;
     }
     // Convertir el objeto Proxy en un objeto plano
     advance.value = JSON.parse(JSON.stringify(adv));
@@ -167,6 +168,13 @@ const pago = ref({
     estado: 'pendiente',
     cuenta_destino_id: null
 });
+
+const originalImporte = ref(0); // Almacenar el importe original para comparar
+
+const isImporteModificado = computed(() => {
+    return pago.value.id && Math.abs(pago.value.importe - originalImporte.value) > 0.001;
+});
+
 const pagos = ref({});
 
 const fetchPagos = async (anticipoId) => {
@@ -251,6 +259,7 @@ function openNewPago(anticipoId) {
 
 function editPago(p) {
     pago.value = { ...p };
+    originalImporte.value = parseFloat(p.importe); // Guardar el importe original
     advancePagoDialog.value = true;
 }
 
@@ -806,8 +815,13 @@ async function handleCreatePaymentPlan() {
                 </div>
             </div>
             <template #footer>
-                <Button label="Cancel" icon="pi pi-times" text @click="advancePagoDialog = false" />
-                <Button label="Save" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />
+                <div class="w-full">
+                    <p v-if="isImporteModificado" class="text-red-500 mb-2 font-bold text-sm">¡Atención! Al modificar el importe del pago, el resto de pagos pendientes será recalculado en función del nuevo valor.</p>
+                    <div class="flex justify-end">
+                        <Button label="Cancel" icon="pi pi-times" text @click="advancePagoDialog = false" />
+                        <Button label="Save" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />
+                    </div>
+                </div>
             </template>
         </Dialog>
         <Dialog v-model:visible="deleteAdvanceDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">

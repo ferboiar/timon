@@ -46,7 +46,23 @@ const model = ref([
             {
                 label: 'Documentación',
                 icon: 'pi pi-fw pi-book',
-                to: '/documentation'
+                items: [
+                    {
+                        label: 'Manual de usuario',
+                        icon: 'pi pi-fw pi-book',
+                        to: '/manual'
+                    },
+                    {
+                        label: 'Documentación técnica',
+                        icon: 'pi pi-fw pi-book',
+                        to: '/tech-docs'
+                    },
+                    {
+                        label: 'Guía de la plantilla',
+                        icon: 'pi pi-fw pi-book',
+                        to: '/documentation'
+                    }
+                ]
             },
             {
                 label: 'Código',

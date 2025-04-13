@@ -1,0 +1,133 @@
+# Documentación del Sistema de Anticipos y Cuentas
+
+## Introducción
+
+Timon es una aplicación financiera integral diseñada para la gestión eficiente de recursos económicos personales. Esta plataforma permite a los usuarios administrar sus finanzas a través de tres sistemas interconectados: anticipos, categorías y cuentas.
+
+### Propósito de la aplicación
+
+La aplicación Timon surge como respuesta a la necesidad de contar con una herramienta especializada para:
+- Administrar préstamos y adelantos de dinero a través de planes de pago estructurados
+- Categorizar gastos e ingresos para un mejor análisis financiero
+- Gestionar múltiples cuentas financieras con seguimiento de saldos y movimientos
+
+### Sistemas principales
+
+La plataforma está organizada en tres sistemas interconectados que trabajan conjuntamente:
+
+1. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, seguimiento de avances y generación de reportes.
+
+2. **Sistema de Categorías**: Proporciona una estructura para clasificar los movimientos financieros, permitiendo un análisis detallado de gastos e ingresos según su naturaleza.
+
+3. **Sistema de Cuentas**: Facilita la administración de diferentes tipos de cuentas financieras (corrientes, ahorros, efectivo), mostrando saldos actualizados y registrando todos los movimientos.
+
+### Integración entre sistemas
+
+Los tres sistemas funcionan de manera interconectada:
+- Los **anticipos** se vinculan a **cuentas** específicas para registrar origen y destino de los fondos
+- Las **categorías** se aplican a los movimientos generados por **anticipos** y operaciones de **cuentas**
+- Las **cuentas** reflejan el impacto de los **anticipos** en forma de movimientos categorizados
+
+Esta documentación técnica está dirigida principalmente a desarrolladores y administradores del sistema, proporcionando información detallada sobre la arquitectura, componentes, servicios y APIs que conforman cada uno de estos sistemas.
+
+## Sistema de Anticipos
+
+El sistema de anticipos permite gestionar préstamos o adelantos que se devuelven gradualmente a través de planes de pago configurables.
+
+### Estructura del Sistema de Anticipos
+
+El sistema de anticipos está organizado en tres capas principales:
+
+1. **Interfaz de Usuario** - Componentes Vue que permiten la interacción del usuario
+2. **Servicios Cliente** - Clases que manejan la comunicación entre la UI y el backend
+3. **Backend** - API REST y funciones de acceso a la base de datos
+
+### Documentación de Anticipos
+
+#### Interfaz de Usuario
+
+- [Componente Advances](../components/Advances.md) - Gestión completa de anticipos y pagos
+
+#### Servicios Cliente
+
+- [AdvService](../services/AdvService.md) - Cliente para la API de anticipos
+
+#### Backend
+
+- [API de Anticipos](../routes/anticipos.md) - Rutas REST para anticipos y pagos
+- [Utilidades de Base de Datos](../db/db_utilsAdv.md) - Funciones de acceso y lógica de negocio
+
+## Sistema de Categorías
+
+El sistema de categorías permite gestionar las diferentes categorías utilizadas para clasificar elementos en la aplicación.
+
+### Estructura del Sistema de Categorías
+
+El sistema de categorías sigue la misma arquitectura de tres capas:
+
+1. **Interfaz de Usuario** - Componente Vue para la gestión de categorías
+2. **Servicios Cliente** - Clase que maneja la comunicación con el backend
+3. **Backend** - API REST y funciones de acceso a la base de datos
+
+### Documentación de Categorías
+
+#### Interfaz de Usuario
+
+- [Componente Categories](../components/Categories.md) - Gestión completa de categorías
+
+#### Servicios Cliente
+
+- [CatsService](../services/CatsService.md) - Cliente para la API de categorías
+
+#### Backend
+
+- [API de Categorías](../routes/categorias.md) - Rutas REST para categorías
+- [Utilidades de Base de Datos](../db/db_utilsCats.md) - Funciones de acceso a datos de categorías
+
+## Sistema de Cuentas
+
+El sistema de cuentas permite gestionar diferentes tipos de cuentas financieras con sus saldos y movimientos asociados.
+
+### Estructura del Sistema de Cuentas
+
+El sistema de cuentas sigue la misma arquitectura de tres capas:
+
+1. **Interfaz de Usuario** - Componentes Vue para gestionar cuentas
+2. **Servicios Cliente** - Clases que manejan la comunicación con el backend
+3. **Backend** - API REST y funciones de acceso a la base de datos
+
+### Documentación de Cuentas
+
+#### Interfaz de Usuario
+
+- [Componente Accounts](../components/Accounts.md) - Gestión completa de cuentas financieras
+
+#### Servicios Cliente
+
+- [AccService](../services/AccService.md) - Cliente para la API de cuentas
+
+#### Backend
+
+- [API de Cuentas](../routes/cuentas.md) - Rutas REST para cuentas
+- [Utilidades de Base de Datos](../db/db_utilsAcc.md) - Funciones de acceso a datos de cuentas
+
+## Funcionalidades Clave
+
+### Anticipos
+- Creación y gestión de anticipos
+- Generación automática de planes de pago
+- Recálculo dinámico de pagos al realizar cambios
+- Seguimiento del estado de anticipos y pagos
+- Exportación de datos a CSV
+
+### Categorías
+- Creación y gestión de categorías personalizadas
+- Asignación de categorías a elementos del sistema
+- Organización alfabética con categoría "Otros" siempre al final
+- Operaciones de eliminación individual y múltiple
+
+### Cuentas
+- Creación y gestión de cuentas financieras
+- Soporte para diferentes tipos de cuentas (corriente, ahorro, etc.)
+- Seguimiento de saldos actuales
+- Vinculación con anticipos para origen y destino de pagos
