@@ -21,6 +21,15 @@ const docNavigation = [
         path: 'index',
         children: [
             {
+                title: 'Sistema de Recibos',
+                children: [
+                    { title: 'Componente Recibos', path: 'components/ListBills' },
+                    { title: 'BillService', path: 'services/BillService' },
+                    { title: 'API de Recibos', path: 'routes/recibos' },
+                    { title: 'DB Utils Recibos', path: 'db/db_utilsBill' }
+                ]
+            },
+            {
                 title: 'Sistema de Anticipos',
                 children: [
                     { title: 'Componente Advances', path: 'components/Advances' },
@@ -30,21 +39,21 @@ const docNavigation = [
                 ]
             },
             {
-                title: 'Sistema de Categorías',
-                children: [
-                    { title: 'Componente Categories', path: 'components/Categories' },
-                    { title: 'CatsService', path: 'services/CatsService' },
-                    { title: 'API de Categorías', path: 'routes/categorias' },
-                    { title: 'DB Utils Categorías', path: 'db/db_utilsCats' }
-                ]
-            },
-            {
                 title: 'Sistema de Ahorros',
                 children: [
                     { title: 'Componente Savings', path: 'components/Savings' },
                     { title: 'SavService', path: 'services/SavService' },
                     { title: 'API de Ahorros', path: 'routes/ahorros' },
                     { title: 'DB Utils Ahorros', path: 'db/db_utilsSav' }
+                ]
+            },
+            {
+                title: 'Sistema de Categorías',
+                children: [
+                    { title: 'Componente Categories', path: 'components/Categories' },
+                    { title: 'CatsService', path: 'services/CatsService' },
+                    { title: 'API de Categorías', path: 'routes/categorias' },
+                    { title: 'DB Utils Categorías', path: 'db/db_utilsCats' }
                 ]
             },
             {
@@ -256,6 +265,7 @@ document.addEventListener('navigate-doc', (event) => {
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 1rem;
+    color: var(--primary-color);
 }
 
 .documentation-content h2 {
@@ -263,6 +273,7 @@ document.addEventListener('navigate-doc', (event) => {
     font-weight: 600;
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
+    color: #d45959;
 }
 
 .documentation-content h3 {
@@ -279,7 +290,7 @@ document.addEventListener('navigate-doc', (event) => {
 .documentation-content ul,
 .documentation-content ol {
     margin-bottom: 1rem;
-    padding-left: 1.5rem;
+    padding-left: 3.5rem;
 }
 
 .documentation-content ul {

@@ -2,37 +2,68 @@
 
 ## Introducción
 
-Timon es una aplicación financiera integral diseñada para la gestión eficiente de recursos económicos personales. Esta plataforma permite a los usuarios administrar sus finanzas a través de cuatro sistemas interconectados: anticipos, categorías, cuentas y ahorros.
+Timon es una aplicación financiera integral diseñada para la gestión eficiente de recursos económicos personales. Esta plataforma permite a los usuarios administrar sus finanzas a través de cinco sistemas interconectados: recibos, anticipos, ahorros, categorías y cuentas.
 
 ### Propósito de la aplicación
 
 La aplicación Timon surge como respuesta a la necesidad de contar con una herramienta especializada para:
+- Gestionar recibos periódicos con fechas de cargo y estados de pago
 - Administrar préstamos y adelantos de dinero a través de planes de pago estructurados
+- Planificar y controlar objetivos de ahorro con seguimiento de aportaciones
 - Categorizar gastos e ingresos para un mejor análisis financiero
 - Gestionar múltiples cuentas financieras con seguimiento de saldos y movimientos
-- Planificar y controlar objetivos de ahorro con seguimiento de aportaciones
 
 ### Sistemas principales
 
-La plataforma está organizada en cuatro sistemas interconectados que trabajan conjuntamente:
+La plataforma está organizada en cinco sistemas interconectados que trabajan conjuntamente:
 
-1. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, seguimiento de avances y generación de reportes.
+1. **Sistema de Recibos**: Facilita el control de pagos periódicos (mensuales, bimestrales, trimestrales) con seguimiento detallado de fechas de cargo y estados de pago.
 
-2. **Sistema de Categorías**: Proporciona una estructura para clasificar los movimientos financieros, permitiendo un análisis detallado de gastos e ingresos según su naturaleza.
+2. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, seguimiento de avances y generación de reportes.
 
-3. **Sistema de Cuentas**: Facilita la administración de diferentes tipos de cuentas financieras (corrientes, ahorros, efectivo), mostrando saldos actualizados y registrando todos los movimientos.
+3. **Sistema de Ahorros**: Permite la creación y seguimiento de objetivos de ahorro con fechas objetivo, periodicidades configurables y registro detallado de movimientos de aportación.
 
-4. **Sistema de Ahorros**: Permite la creación y seguimiento de objetivos de ahorro con fechas objetivo, periodicidades configurables y registro detallado de movimientos de aportación.
+4. **Sistema de Categorías**: Proporciona una estructura para clasificar los movimientos financieros, permitiendo un análisis detallado de gastos e ingresos según su naturaleza.
+
+5. **Sistema de Cuentas**: Facilita la administración de diferentes tipos de cuentas financieras (corrientes, ahorros, efectivo), mostrando saldos actualizados y registrando todos los movimientos.
 
 ### Integración entre sistemas
 
-Los cuatro sistemas funcionan de manera interconectada:
+Los cinco sistemas funcionan de manera interconectada:
+- Los **recibos** ayudan a controlar pagos periódicos que afectan a las **cuentas** y se clasifican mediante **categorías**
 - Los **anticipos** se vinculan a **cuentas** específicas para registrar origen y destino de los fondos
-- Las **categorías** se aplican a los movimientos generados por **anticipos**, operaciones de **cuentas** y movimientos de **ahorros**
-- Las **cuentas** reflejan el impacto de los **anticipos** y **ahorros** en forma de movimientos categorizados
 - Los **ahorros** permiten una planificación financiera organizada que complementa la gestión de **cuentas**
+- Las **categorías** se aplican a los movimientos generados por **anticipos**, operaciones de **cuentas**, movimientos de **ahorros** y **recibos**
+- Las **cuentas** reflejan el impacto de los **recibos**, **anticipos** y **ahorros** en forma de movimientos categorizados
 
 Esta documentación técnica está dirigida principalmente a desarrolladores y administradores del sistema, proporcionando información detallada sobre la arquitectura, componentes, servicios y APIs que conforman cada uno de estos sistemas.
+
+## Sistema de Recibos
+
+El sistema de recibos permite gestionar pagos periódicos con sus respectivas fechas de cargo y estados de pago, facilitando el seguimiento y control de gastos recurrentes.
+
+### Estructura del Sistema de Recibos
+
+El sistema de recibos sigue una arquitectura de tres capas:
+
+1. **Interfaz de Usuario** - Componente Vue para la gestión de recibos y sus fechas de cargo
+2. **Servicios Cliente** - Clase que maneja la comunicación con el backend
+3. **Backend** - API REST y funciones de acceso a la base de datos
+
+### Documentación de Recibos
+
+#### Interfaz de Usuario
+
+- [Componente ListBills](../components/ListBills.md) - Gestión completa de recibos y fechas de cargo
+
+#### Servicios Cliente
+
+- [BillService](../services/BillService.md) - Cliente para la API de recibos
+
+#### Backend
+
+- [API de Recibos](../routes/recibos.md) - Rutas REST para recibos y fechas de cargo
+- [Utilidades de Base de Datos](../db/db_utilsBill.md) - Funciones de acceso a datos de recibos
 
 ## Sistema de Anticipos
 
@@ -60,6 +91,33 @@ El sistema de anticipos está organizado en tres capas principales:
 
 - [API de Anticipos](../routes/anticipos.md) - Rutas REST para anticipos y pagos
 - [Utilidades de Base de Datos](../db/db_utilsAdv.md) - Funciones de acceso y lógica de negocio
+
+## Sistema de Ahorros
+
+El sistema de ahorros permite gestionar objetivos de ahorro con sus respectivos movimientos de aportación y consultar el progreso hacia metas financieras específicas.
+
+### Estructura del Sistema de Ahorros
+
+El sistema de ahorros sigue la misma arquitectura de tres capas:
+
+1. **Interfaz de Usuario** - Componente Vue para la gestión de ahorros y sus movimientos
+2. **Servicios Cliente** - Clase que maneja la comunicación con el backend
+3. **Backend** - API REST y funciones de acceso a la base de datos
+
+### Documentación de Ahorros
+
+#### Interfaz de Usuario
+
+- [Componente Savings](../components/Savings.md) - Gestión completa de ahorros y movimientos
+
+#### Servicios Cliente
+
+- [SavService](../services/SavService.md) - Cliente para la API de ahorros
+
+#### Backend
+
+- [API de Ahorros](../routes/ahorros.md) - Rutas REST para ahorros y movimientos
+- [Utilidades de Base de Datos](../db/db_utilsSav.md) - Funciones de acceso a datos de ahorros
 
 ## Sistema de Categorías
 
@@ -115,40 +173,28 @@ El sistema de cuentas sigue la misma arquitectura de tres capas:
 - [API de Cuentas](../routes/cuentas.md) - Rutas REST para cuentas
 - [Utilidades de Base de Datos](../db/db_utilsAcc.md) - Funciones de acceso a datos de cuentas
 
-## Sistema de Ahorros
-
-El sistema de ahorros permite gestionar objetivos de ahorro con sus respectivos movimientos de aportación y consultar el progreso hacia metas financieras específicas.
-
-### Estructura del Sistema de Ahorros
-
-El sistema de ahorros sigue la misma arquitectura de tres capas:
-
-1. **Interfaz de Usuario** - Componente Vue para la gestión de ahorros y sus movimientos
-2. **Servicios Cliente** - Clase que maneja la comunicación con el backend
-3. **Backend** - API REST y funciones de acceso a la base de datos
-
-### Documentación de Ahorros
-
-#### Interfaz de Usuario
-
-- [Componente Savings](../components/Savings.md) - Gestión completa de ahorros y movimientos
-
-#### Servicios Cliente
-
-- [SavService](../services/SavService.md) - Cliente para la API de ahorros
-
-#### Backend
-
-- [API de Ahorros](../routes/ahorros.md) - Rutas REST para ahorros y movimientos
-- [Utilidades de Base de Datos](../db/db_utilsSav.md) - Funciones de acceso a datos de ahorros
-
 ## Funcionalidades Clave
+
+### Recibos
+- Creación y gestión de recibos periódicos
+- Configuración de periodicidades (mensual, bimestral, trimestral, anual)
+- Seguimiento de fechas de cargo y sus estados (pendiente, pagado, rechazado)
+- Filtrado avanzado por periodicidad, año y estado
+- Visualización expandible de fechas de cargo por recibo
+- Exportación de datos a CSV
 
 ### Anticipos
 - Creación y gestión de anticipos
 - Generación automática de planes de pago
 - Recálculo dinámico de pagos al realizar cambios
 - Seguimiento del estado de anticipos y pagos
+- Exportación de datos a CSV
+
+### Ahorros
+- Creación y seguimiento de objetivos de ahorro
+- Configuración de fechas objetivo y periodicidades
+- Registro de movimientos de aportación regulares y extraordinarios
+- Visualización expandible de movimientos por objetivo
 - Exportación de datos a CSV
 
 ### Categorías
@@ -162,10 +208,3 @@ El sistema de ahorros sigue la misma arquitectura de tres capas:
 - Soporte para diferentes tipos de cuentas (corriente, ahorro, etc.)
 - Seguimiento de saldos actuales
 - Vinculación con anticipos para origen y destino de pagos
-
-### Ahorros
-- Creación y seguimiento de objetivos de ahorro
-- Configuración de fechas objetivo y periodicidades
-- Registro de movimientos de aportación regulares y extraordinarios
-- Visualización expandible de movimientos por objetivo
-- Exportación de datos a CSV
