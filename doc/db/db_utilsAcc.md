@@ -4,6 +4,14 @@
 
 Este módulo contiene todas las funciones de acceso a la base de datos relacionadas con cuentas bancarias y financieras. Implementa operaciones CRUD básicas para la gestión completa de cuentas en la aplicación Timon.
 
+## Características Principales
+
+- Gestión completa de operaciones CRUD para cuentas bancarias y financieras
+- Soporte para múltiples tipos de cuentas (corriente, ahorro, efectivo, etc.)
+- Validación de códigos IBAN para prevenir duplicidades
+- Control de estado de cuentas (activas e inactivas)
+- Mantenimiento automático de saldos actualizados
+
 ## Estructura de Datos
 
 ### Tabla `cuentas`
@@ -20,72 +28,36 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 
 ## Funciones Principales
 
-### getAccounts()
+### Gestión de Cuentas
 
-```javascript
-async function getAccounts()
-```
+| Función | Descripción |
+|---------|-------------|
+| `getAccounts()` | Recupera todas las cuentas ordenadas alfabéticamente por nombre |
+| `pushAccount(id, nombre, tipo, ...)` | Crea o actualiza una cuenta con todos sus atributos |
+| `deleteAccounts(accounts)` | Elimina una o más cuentas especificadas por sus IDs |
+| `getTipos()` | Obtiene los tipos de cuenta definidos en el esquema |
 
-Recupera todas las cuentas de la base de datos, ordenadas alfabéticamente por nombre.
+## Características Especiales
 
-**Retorna:** Array de objetos de cuenta.
+### Validación de IBAN
 
-### pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa)
+El módulo implementa una validación especial para códigos IBAN, asegurando que no se puedan crear dos cuentas con el mismo código, lo que podría llevar a problemas de integridad en la gestión financiera.
 
-```javascript
-async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, descripcion = null, activa = 1)
-```
+### Manejo de Estado
 
-Crea o actualiza una cuenta en la base de datos:
-- Si `id` es proporcionado y válido, actualiza la cuenta existente
-- Si `id` es null, crea una nueva cuenta
+Las cuentas pueden marcarse como activas o inactivas, permitiendo a los usuarios mantener un registro histórico sin eliminar información importante.
 
-**Parámetros:**
-- `id` - ID de la cuenta existente o null para crear nueva
-- `nombre` - Nombre de la cuenta (requerido)
-- `tipo` - Tipo de cuenta (requerido)
-- `iban` - Código IBAN (opcional)
-- `saldo_actual` - Saldo actual (por defecto 0)
-- `descripcion` - Descripción detallada (opcional)
-- `activa` - Estado de la cuenta (por defecto 1)
+## Validaciones y Manejo de Errores
 
-**Validaciones:**
-- Verifica duplicidad de IBAN y lanza un error específico si ya existe
+- Verificación de duplicidad de IBAN antes de insertar o actualizar cuentas
+- Validación de campos obligatorios (nombre y tipo de cuenta)
+- Captura y reporte detallado de errores para facilitar la depuración
+- Mensajes específicos para cada tipo de error en las operaciones de base de datos
 
-### deleteAccounts(accounts)
+## Consideraciones de Rendimiento
 
-```javascript
-async function deleteAccounts(accounts)
-```
-
-Elimina una o más cuentas de la base de datos.
-
-**Parámetros:**
-- `accounts` - Un ID único o un array de IDs de cuentas a eliminar
-
-### getTipos()
-
-```javascript
-async function getTipos()
-```
-
-Obtiene los tipos de cuenta válidos definidos en el esquema de la base de datos para el campo `tipo` de la tabla `cuentas`.
-
-**Retorna:** Array de strings con los valores permitidos para el tipo de cuenta.
-
-## Manejo de Conexiones
-
-Todas las funciones implementan un patrón consistente para el manejo de conexiones:
-1. Obtienen una conexión del pool mediante `getConnection()`
-2. Ejecutan operaciones dentro de un bloque try/catch
-3. Liberan la conexión en un bloque finally para garantizar que se devuelve al pool
-
-## Manejo de Errores
-
-Las funciones incluyen un manejo de errores específico para:
-- Detectar y reportar errores de duplicidad de IBAN
-- Capturar y relanzar cualquier otro error con información adicional
-- Registrar mensajes detallados en consola para facilitar la depuración
+- Las operaciones de lectura y escritura están optimizadas mediante el uso de índices en los campos más consultados
+- Se utiliza un pool de conexiones para minimizar el tiempo de establecimiento de conexiones a la base de datos
 
 ## Referencias
 

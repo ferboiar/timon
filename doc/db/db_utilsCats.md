@@ -1,110 +1,62 @@
 # Utilidades de Base de Datos para Categorías
 
-## Descripción
-Este módulo proporciona funciones para interactuar con la tabla de categorías en la base de datos. Incluye operaciones para obtener, insertar, actualizar y eliminar categorías.
+## Descripción General
 
-## Conexión a la base de datos
-Utiliza el módulo `db_connection.mjs` para obtener conexiones a la base de datos:
+Este módulo contiene todas las funciones de acceso a la base de datos relacionadas con categorías. Implementa operaciones CRUD básicas para la gestión completa de categorías en la aplicación Timon.
 
-```javascript
-import { getConnection } from './db_connection.mjs';
-```
+## Características Principales
 
-## Funciones principales
+- Gestión completa de operaciones CRUD para categorías
+- Ordenación alfabética de categorías con "Otros" siempre al final
+- Compatibilidad con operaciones en lote (eliminación múltiple)
+- Validación y transformación de parámetros
+- Manejo eficiente de conexiones a la base de datos
 
-### getCategorias
-Obtiene todas las categorías almacenadas en la base de datos, ordenadas alfabéticamente por nombre.
-Además, asegura que la categoría "Otros" siempre aparezca al final de la lista.
+## Estructura de Datos
 
-```javascript
-async function getCategorias() {
-    let connection;
-    try {
-        connection = await getConnection();
-        const [rows] = await connection.execute('SELECT * FROM categorias ORDER BY nombre ASC');
-        // Mover "Otros" al final del resultado
-        const otrosIndex = rows.findIndex((row) => row.nombre.toLowerCase() === 'otros');
-        if (otrosIndex !== -1) {
-            const otros = rows.splice(otrosIndex, 1)[0];
-            rows.push(otros);
-        }
-        return rows;
-    } catch (error) {
-        console.error('Error al obtener las categorías:', error);
-        throw error;
-    } finally {
-        if (connection) connection.release();
-    }
-}
-```
+### Tabla `categorias`
 
-### pushCategoria
-Inserta una nueva categoría o actualiza una existente si ya existe una con el mismo nombre.
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | INT | Clave primaria |
+| `nombre` | VARCHAR | Nombre de la categoría (único) |
+| `descripcion` | VARCHAR | Descripción detallada (opcional) |
 
-```javascript
-async function pushCategoria(nombre, descripcion = null) {
-    let connection;
-    try {
-        connection = await getConnection();
-        const [existingCategoria] = await connection.execute('SELECT * FROM categorias WHERE nombre = ?', [nombre]);
+## Funciones Principales
 
-        if (existingCategoria.length > 0) {
-            // Actualizar categoría existente
-            const [updateResult] = await connection.execute(
-                'UPDATE categorias SET descripcion = COALESCE(?, descripcion) WHERE nombre = ?', 
-                [descripcion, nombre]
-            );
-            console.log(`Update realizado correctamente en tabla categorias. Filas afectadas: ${updateResult.affectedRows}`);
-        } else {
-            // Insertar nueva categoría
-            const [insertResult] = await connection.execute(
-                'INSERT INTO categorias (nombre, descripcion) VALUES (?, ?)', 
-                [nombre || 'Sin nombre', descripcion]
-            );
-            console.log(`Insert realizado correctamente en tabla categorias. Filas afectadas: ${insertResult.affectedRows}`);
-        }
-    } catch (error) {
-        console.error('Error al insertar o actualizar la categoría:', error);
-        throw error;
-    } finally {
-        if (connection) connection.release();
-    }
-}
-```
+### Gestión de Categorías
 
-### deleteCategorias
-Elimina una o más categorías especificadas por sus IDs.
+| Función | Descripción |
+|---------|-------------|
+| `getCategorias()` | Obtiene todas las categorías ordenadas alfabéticamente, con "Otros" al final |
+| `pushCategoria(nombre, descripcion)` | Crea una nueva categoría o actualiza una existente |
+| `deleteCategorias(categoriaIds)` | Elimina una o más categorías por sus IDs |
 
-```javascript
-async function deleteCategorias(categoriaIds) {
-    let connection;
-    try {
-        connection = await getConnection();
-        if (!Array.isArray(categoriaIds)) {
-            categoriaIds = [categoriaIds];
-        }
-        categoriaIds = categoriaIds.map(Number); // Asegurarse de que todos los IDs sean números
-        console.log('API. Categorías a eliminar:', categoriaIds);
-        const placeholders = categoriaIds.map(() => '?').join(','); // Crear placeholders para cada ID
-        const [deleteResult] = await connection.execute(
-            `DELETE FROM categorias WHERE id IN (${placeholders})`, 
-            categoriaIds
-        );
-        console.log(`API. Delete realizado correctamente en tabla categorias. Filas afectadas: ${deleteResult.affectedRows}`);
-    } catch (error) {
-        console.error('API. Error al eliminar las categorías:', error);
-        throw error;
-    } finally {
-        if (connection) connection.release();
-    }
-}
-```
+## Características Especiales
 
-## Esquema de la tabla
-```sql
-CREATE TABLE categorias (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL UNIQUE,
-    descripcion VARCHAR(255)
-);
-```
+### Ordenamiento de "Otros"
+
+Una característica especial de la función `getCategorias()` es que siempre coloca la categoría "Otros" al final de la lista, independientemente del orden alfabético. Esto facilita la organización lógica de las categorías en la interfaz de usuario.
+
+### Validación de Datos
+
+La función `deleteCategorias()` incluye validación para asegurar que los IDs proporcionados sean numéricos, evitando errores de tipo y facilitando el manejo de entrada desde la API.
+
+## Validaciones y Manejo de Errores
+
+- Verificación de unicidad de nombres de categorías
+- Comprobación de validez de IDs al realizar operaciones de eliminación
+- Transformación automática de tipos de datos para asegurar compatibilidad con la base de datos
+- Manejo detallado de errores con mensajes específicos para facilitar la depuración
+
+## Consideraciones de Rendimiento
+
+- El ordenamiento alfabético se realiza a nivel de base de datos para optimizar el rendimiento
+- Las operaciones de eliminación en lote utilizan una sola consulta SQL para mejorar la eficiencia
+- Se implementa liberación inmediata de conexiones para maximizar la disponibilidad del pool
+
+## Referencias
+
+- [API de Categorías](../routes/categorias.md) - Rutas que utilizan estas funciones
+- [Documentación de CatsService](../services/CatsService.md) - Cliente que eventualmente llama a estas funciones
+- [Componente Categories](../components/Categories.md) - Interfaz de usuario para categorías

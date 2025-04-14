@@ -4,6 +4,15 @@
 
 Este módulo contiene todas las funciones de acceso a la base de datos relacionadas con anticipos y pagos. Implementa la lógica de negocio para operaciones CRUD, así como algoritmos complejos para la gestión de planes de pago y recálculo de importes.
 
+## Características Principales
+
+- Gestión completa de operaciones CRUD para anticipos y sus pagos asociados
+- Cálculo automático de planes de pago basados en periodicidad y monto total
+- Recálculo dinámico de pagos pendientes tras modificaciones
+- Manejo de diferentes periodicidades (mensual, bimestral, trimestral, anual)
+- Manejo de transacciones para garantizar la integridad de datos
+- Validación de datos y manejo de errores robusto
+
 ## Estructura de Datos
 
 ### Tabla `anticipos`

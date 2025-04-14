@@ -1,75 +1,66 @@
 # API de Categorías
 
-## Descripción
-La API de categorías proporciona endpoints REST para gestionar categorías en el sistema. Permite realizar operaciones CRUD (Crear, Leer, Actualizar, Eliminar) sobre las categorías.
+## Descripción General
 
-## Base URL
-```
-/api/categorias
-```
+Este módulo implementa las rutas de la API REST para la gestión de categorías en el sistema. Sirve como capa intermedia entre la interfaz de usuario y las funciones de acceso a la base de datos.
 
-## Endpoints
+## Rutas Implementadas
 
-### GET /
-Obtiene todas las categorías existentes.
+| Método HTTP | Ruta | Descripción |
+|-------------|------|-------------|
+| `GET` | `/api/categorias` | Obtiene todas las categorías |
+| `POST` | `/api/categorias` | Crea o actualiza una categoría |
+| `DELETE` | `/api/categorias` | Elimina una o más categorías |
 
-#### Respuesta
-- **200 OK**: Lista de categorías ordenadas alfabéticamente (con "Otros" siempre al final)
-```json
-[
-  {
-    "id": 1,
-    "nombre": "Alimentación",
-    "descripcion": "Productos alimenticios y comidas"
-  },
-  {
-    "id": 2,
-    "nombre": "Transporte",
-    "descripcion": "Gastos relacionados con transporte"
-  },
-  {
-    "id": 3,
-    "nombre": "Otros",
-    "descripcion": "Categoría para elementos sin clasificación específica"
-  }
-]
-```
-- **500 Error**: Error al obtener las categorías
+## Características Principales
 
-### POST /
-Crea una nueva categoría o actualiza una existente si ya existe una con el mismo nombre.
+- Gestión completa de operaciones CRUD para categorías
+- Ordenación alfabética de categorías con "Otros" siempre al final
+- Validación de parámetros obligatorios
+- Manejo detallado de errores con mensajes descriptivos
+- Soporte para operaciones en lote (eliminación múltiple)
 
-#### Parámetros del cuerpo
-- **nombre** (obligatorio): Nombre de la categoría
-- **descripcion** (opcional): Descripción de la categoría
+## Detalles de Implementación
 
-#### Respuesta
-- **201 Created**: Categoría creada o actualizada correctamente
-```json
-{
-  "message": "Categoría insertada o actualizada correctamente"
-}
-```
-- **400 Bad Request**: Error en la solicitud
-- **500 Error**: Error al procesar la solicitud
+### Obtener todas las categorías (GET /api/categorias)
 
-### DELETE /
-Elimina una o más categorías especificadas por sus IDs.
+Esta ruta devuelve un array con todas las categorías registradas en el sistema. Los datos son obtenidos desde la función `getCategorias()` del módulo de utilidades de base de datos, que asegura que la categoría "Otros" siempre aparezca al final de la lista.
 
-#### Parámetros del cuerpo
-- **categoriaIds**: Array de IDs de las categorías a eliminar
+### Crear o actualizar una categoría (POST /api/categorias)
 
-#### Respuesta
-- **200 OK**: Categorías eliminadas correctamente
-```json
-{
-  "message": "Categoría(s) eliminada(s) correctamente"
-}
-```
-- **400 Bad Request**: Error en la solicitud
-- **500 Error**: Error al procesar la solicitud
+Esta ruta permite crear una nueva categoría o actualizar una existente si ya existe una con el mismo nombre.
+
+#### Campos del cuerpo de la solicitud:
+
+| Campo | Tipo | Descripción | Requerido |
+|-------|------|-------------|-----------|
+| `nombre` | String | Nombre de la categoría | Sí |
+| `descripcion` | String | Descripción de la categoría | No |
+
+### Eliminar categorías (DELETE /api/categorias)
+
+Esta ruta permite eliminar una o más categorías basándose en sus IDs. Acepta un array de IDs en el cuerpo de la petición bajo la propiedad `categoriaIds`.
 
 ## Validaciones
+
+La API implementa las siguientes validaciones:
 - El nombre de la categoría es obligatorio para crear o actualizar
 - Los IDs de categoría deben ser proporcionados como un array para eliminar
 - No se permite enviar un array vacío de IDs para eliminar
+
+## Manejo de Errores
+
+Todas las rutas implementan manejo de errores que:
+1. Capturan excepciones que puedan ocurrir durante el procesamiento
+2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 500)
+3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
+
+## Dependencias
+
+Este módulo depende directamente de las funciones de base de datos definidas en [`db_utilsCats.mjs`](../db/db_utilsCats.md), que manejan todas las operaciones de base de datos relacionadas con categorías.
+
+## Referencias
+
+- [Documentación de CatsService](../services/CatsService.md) - Cliente que consume esta API
+- [Utilidades de Base de Datos para Categorías](../db/db_utilsCats.md) - Implementación de las funciones de base de datos
+- [Componente Categories](../components/Categories.md) - Interfaz de usuario que interactúa con esta API

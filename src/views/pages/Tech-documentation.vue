@@ -39,6 +39,15 @@ const docNavigation = [
                 ]
             },
             {
+                title: 'Sistema de Ahorros',
+                children: [
+                    { title: 'Componente Savings', path: 'components/Savings' },
+                    { title: 'SavService', path: 'services/SavService' },
+                    { title: 'API de Ahorros', path: 'routes/ahorros' },
+                    { title: 'DB Utils Ahorros', path: 'db/db_utilsSav' }
+                ]
+            },
+            {
                 title: 'Sistema de Cuentas',
                 children: [
                     { title: 'Componente Accounts', path: 'components/Accounts' },
@@ -109,6 +118,31 @@ watch(
     { immediate: true }
 );
 
+// Resolver una ruta relativa desde una ruta base
+const resolvePath = (base, relative) => {
+    // Dividir la ruta base en segmentos (sin el archivo)
+    const baseParts = base.split('/').slice(0, -1);
+
+    // Dividir la ruta relativa en segmentos
+    const relativeParts = relative.split('/');
+
+    // Procesar cada segmento de la ruta relativa
+    const resultParts = [...baseParts];
+
+    for (const part of relativeParts) {
+        if (part === '..') {
+            // Subir un nivel
+            resultParts.pop();
+        } else if (part !== '.' && part !== '') {
+            // Añadir segmento (ignorar '.' y segmentos vacíos)
+            resultParts.push(part);
+        }
+    }
+
+    // Unir los segmentos en una ruta
+    return resultParts.join('/');
+};
+
 // Renderizar links dentro del documento navegables
 const handleContentClick = (event) => {
     // Verificar si el clic fue en un enlace
@@ -119,28 +153,14 @@ const handleContentClick = (event) => {
         if (href && href.endsWith('.md')) {
             event.preventDefault();
 
-            // Obtener la ruta base (directorio del documento actual)
-            const currentPathParts = currentPath.value.split('/');
-            const baseDir = currentPathParts.slice(0, -1); // Eliminar el archivo, quedarnos con el directorio
-
-            // Resolver la ruta relativa correctamente
+            // Eliminar la extensión .md
             const hrefWithoutExt = href.replace(/\.md$/, '');
-            const targetParts = hrefWithoutExt.split('/');
 
-            let resultPath = [...baseDir];
+            // Resolver la ruta relativa a partir del documento actual
+            const resolvedPath = resolvePath(currentPath.value, hrefWithoutExt);
 
-            for (const part of targetParts) {
-                if (part === '..') {
-                    // Subir un directorio
-                    resultPath.pop();
-                } else if (part !== '.') {
-                    // Añadir a la ruta (ignorar '.')
-                    resultPath.push(part);
-                }
-            }
-
-            const targetPath = resultPath.join('/');
-            navigateToDoc(targetPath);
+            // Navegar al documento resuelto
+            navigateToDoc(resolvedPath);
         }
     }
 };
