@@ -203,51 +203,74 @@ const toggleDefaultDarkMode = () => {
 
 <template>
     <div className="card">
-        <div class="font-semibold text-xl mb-4">Estilo</div>
-        <div class="flex flex-col gap-4">
-            <div>
-                <span class="text-sm text-muted-color font-semibold">Color primario</span>
-                <div class="pt-2 flex gap-2 flex-wrap">
-                    <button
-                        v-for="primaryColor of primaryColors"
-                        :key="primaryColor.name"
-                        type="button"
-                        :title="primaryColor.name"
-                        @click="updateColors('primary', primaryColor)"
-                        :class="['border-none w-5 h-5 rounded-full p-0 cursor-pointer outline-none outline-offset-1 m-1', { 'outline-primary': layoutConfig.primary === primaryColor.name }]"
-                        :style="{ backgroundColor: `${primaryColor.name === 'noir' ? 'var(--text-color)' : primaryColor.palette['500']}` }"
-                    ></button>
-                </div>
-            </div>
-            <div>
-                <span class="text-sm text-muted-color font-semibold">Superficie</span>
-                <div class="pt-2 flex gap-2 flex-wrap">
-                    <button
-                        v-for="surface of surfaces"
-                        :key="surface.name"
-                        type="button"
-                        :title="surface.name"
-                        @click="updateColors('surface', surface)"
-                        :class="[
-                            'border-none w-5 h-5 rounded-full p-0 cursor-pointer outline-none outline-offset-1 m-1',
-                            { 'outline-primary': layoutConfig.surface ? layoutConfig.surface === surface.name : isDarkTheme ? surface.name === 'zinc' : surface.name === 'slate' }
-                        ]"
-                        :style="{ backgroundColor: `${surface.palette['500']}` }"
-                    ></button>
-                </div>
-            </div>
-            <div class="flex flex-col gap-2">
-                <span class="text-sm text-muted-color font-semibold">Tema</span>
-                <SelectButton v-model="preset" @change="onPresetChange" :options="presetOptions" :allowEmpty="false" />
-            </div>
-            <div class="flex flex-col gap-2">
-                <span class="text-sm text-muted-color font-semibold">Funcionamiento del menú</span>
-                <SelectButton v-model="menuMode" @change="onMenuModeChange" :options="menuModeOptions" :allowEmpty="false" optionLabel="label" optionValue="value" />
-            </div>
-            <div class="flex flex-col gap-2">
-                <span class="text-sm text-muted-color font-semibold">Modo oscuro por defecto</span>
-                <ToggleSwitch v-model="layoutConfig.darkTheme" @change="toggleDefaultDarkMode" />
-            </div>
-        </div>
+        <div class="font-semibold text-xl mb-4">Ajustes</div>
+        <Tabs value="Estilo">
+            <TabList>
+                <Tab value="Estilo">Estilo</Tab>
+                <Tab value="1">Header II</Tab>
+                <Tab value="2">Header III</Tab>
+            </TabList>
+            <TabPanels>
+                <TabPanel value="Estilo">
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <span class="text-sm text-muted-color font-semibold">Color primario</span>
+                            <div class="pt-2 flex gap-2 flex-wrap">
+                                <button
+                                    v-for="primaryColor of primaryColors"
+                                    :key="primaryColor.name"
+                                    type="button"
+                                    :title="primaryColor.name"
+                                    @click="updateColors('primary', primaryColor)"
+                                    :class="['border-none w-5 h-5 rounded-full p-0 cursor-pointer outline-none outline-offset-1 m-1', { 'outline-primary': layoutConfig.primary === primaryColor.name }]"
+                                    :style="{ backgroundColor: `${primaryColor.name === 'noir' ? 'var(--text-color)' : primaryColor.palette['500']}` }"
+                                ></button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-sm text-muted-color font-semibold">Superficie</span>
+                            <div class="pt-2 flex gap-2 flex-wrap">
+                                <button
+                                    v-for="surface of surfaces"
+                                    :key="surface.name"
+                                    type="button"
+                                    :title="surface.name"
+                                    @click="updateColors('surface', surface)"
+                                    :class="[
+                                        'border-none w-5 h-5 rounded-full p-0 cursor-pointer outline-none outline-offset-1 m-1',
+                                        { 'outline-primary': layoutConfig.surface ? layoutConfig.surface === surface.name : isDarkTheme ? surface.name === 'zinc' : surface.name === 'slate' }
+                                    ]"
+                                    :style="{ backgroundColor: `${surface.palette['500']}` }"
+                                ></button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <span class="text-sm text-muted-color font-semibold">Tema</span>
+                            <SelectButton v-model="preset" @change="onPresetChange" :options="presetOptions" :allowEmpty="false" />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <span class="text-sm text-muted-color font-semibold">Funcionamiento del menú</span>
+                            <SelectButton v-model="menuMode" @change="onMenuModeChange" :options="menuModeOptions" :allowEmpty="false" optionLabel="label" optionValue="value" />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <span class="text-sm text-muted-color font-semibold">Modo oscuro por defecto</span>
+                            <ToggleSwitch v-model="layoutConfig.darkTheme" @change="toggleDefaultDarkMode" />
+                        </div>
+                    </div>
+                </TabPanel>
+                <TabPanel value="1">
+                    <p class="m-0">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                        consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                    </p>
+                </TabPanel>
+                <TabPanel value="2">
+                    <p class="m-0">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                        consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                    </p>
+                </TabPanel>
+            </TabPanels>
+        </Tabs>
     </div>
 </template>
