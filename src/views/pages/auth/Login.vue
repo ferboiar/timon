@@ -1,10 +1,128 @@
 <script setup>
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
-import { ref } from 'vue';
+import { API_BASE_URL } from '@/config/api';
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-const email = ref('');
+const username = ref('');
 const password = ref('');
 const checked = ref(false);
+const errorMessage = ref('');
+const isLoading = ref(false);
+const router = useRouter();
+
+// Verificar si hay un username guardado al cargar el componente
+onMounted(() => {
+    const rememberedUser = localStorage.getItem('rememberedUser');
+    if (rememberedUser) {
+        const userData = JSON.parse(rememberedUser);
+        username.value = userData.username;
+        checked.value = true; // Marcamos el checkbox si hay un usuario guardado
+    }
+});
+
+// Función para manejar el inicio de sesión
+const handleLogin = async () => {
+    try {
+        // Validaciones básicas
+        if (!username.value || !password.value) {
+            errorMessage.value = 'Por favor, introduce nombre de usuario y contraseña';
+            return;
+        }
+
+        isLoading.value = true;
+        errorMessage.value = '';
+
+        // Enviar petición al backend usando la URL base centralizada
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username.value,
+                password: password.value
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al iniciar sesión');
+        }
+
+        // Si "Recordarme" está marcado, guardar en localStorage
+        if (checked.value) {
+            // Guardar el token y usuario en localStorage (persistente entre sesiones)
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            // Guardar el nombre de usuario para autocompletarlo en futuros inicios
+            localStorage.setItem('rememberedUser', JSON.stringify({ username: username.value }));
+            // Limpiar sessionStorage para no tener duplicados
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
+        } else {
+            // Guardar el token y usuario en sessionStorage (se elimina al cerrar el navegador)
+            sessionStorage.setItem('token', data.token);
+            sessionStorage.setItem('user', JSON.stringify(data.user));
+            // Eliminar cualquier dato de localStorage si decidió no recordarse
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Mantenemos rememberedUser para facilidad de uso
+        }
+
+        // Redireccionar al dashboard después de iniciar sesión
+        router.push('/dashboard');
+    } catch (error) {
+        errorMessage.value = error.message || 'Error al iniciar sesión';
+        console.error('Error de autenticación:', error);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+// Si hay token en localStorage o sessionStorage, verificar si sigue siendo válido
+const verifySession = async () => {
+    // Primero intentamos obtener el token del localStorage (usuario eligió "Recordarme")
+    let token = localStorage.getItem('token');
+
+    // Si no hay token en localStorage, intentamos en sessionStorage
+    if (!token) {
+        token = sessionStorage.getItem('token');
+    }
+
+    if (token) {
+        try {
+            // Usar la URL base centralizada
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                // Si el token es válido, redirigir al dashboard
+                router.push('/dashboard');
+            } else {
+                // Si el token no es válido, limpiar ambos storages
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user');
+                // No eliminamos rememberedUser para mantener el autocompletado
+            }
+        } catch (error) {
+            console.error('Error al verificar sesión:', error);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
+        }
+    }
+};
+
+// Verificar sesión al cargar el componente
+verifySession();
 </script>
 
 <template>
@@ -31,26 +149,30 @@ const checked = ref(false);
                                 />
                             </g>
                         </svg>
-                        <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Welcome to PrimeLand!</div>
-                        <span class="text-muted-color font-medium">Sign in to continue</span>
+                        <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">¡Bienvenido a Timón!</div>
+                        <span class="text-muted-color font-medium">Inicia sesión para continuar</span>
                     </div>
 
-                    <div>
-                        <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                        <InputText id="email1" type="text" placeholder="Email address" class="w-full md:w-[30rem] mb-8" v-model="email" />
+                    <form @submit.prevent="handleLogin">
+                        <div>
+                            <label for="username" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Usuario</label>
+                            <InputText id="username" type="text" placeholder="Nombre de usuario" class="w-full md:w-[30rem] mb-5" v-model="username" />
 
-                        <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                        <Password id="password1" v-model="password" placeholder="Password" :toggleMask="true" class="mb-4" fluid :feedback="false"></Password>
+                            <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
+                            <Password id="password1" v-model="password" placeholder="Contraseña" :toggleMask="true" class="mb-3" fluid :feedback="false"></Password>
 
-                        <div class="flex items-center justify-between mt-2 mb-8 gap-8">
-                            <div class="flex items-center">
-                                <Checkbox v-model="checked" id="rememberme1" binary class="mr-2"></Checkbox>
-                                <label for="rememberme1">Remember me</label>
+                            <!-- Mensaje de error -->
+                            <div v-if="errorMessage" class="text-red-500 mb-3">{{ errorMessage }}</div>
+
+                            <div class="flex items-center justify-between mt-2 mb-5 gap-8">
+                                <div class="flex items-center">
+                                    <Checkbox v-model="checked" id="rememberme1" binary class="mr-2"></Checkbox>
+                                    <label for="rememberme1">Recordarme</label>
+                                </div>
                             </div>
-                            <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
+                            <Button label="Iniciar Sesión" type="submit" class="w-full" :loading="isLoading"></Button>
                         </div>
-                        <Button label="Sign In" class="w-full" as="router-link" to="/"></Button>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

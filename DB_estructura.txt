@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: mysql-fer-particular.b.aivencloud.com:10613
--- Tiempo de generación: 22-04-2025 a las 08:51:33
+-- Tiempo de generación: 22-04-2025 a las 11:22:41
 -- Versión del servidor: 8.0.35
 -- Versión de PHP: 8.2.28
 
@@ -288,13 +288,21 @@ INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_i
 --
 
 CREATE TABLE `users` (
-  `user_id` int NOT NULL,
+  `id` int NOT NULL,
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `rol` enum('admin','user','limited_user','reader') CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'user',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `users`
+--
+
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `rol`, `created_at`, `updated_at`) VALUES
+(1, 'admin', 'usuario@test.com', '$2b$10$AtFouDzyy4jqLP7tDT5wruPXxc1h0UB/jRWssAPCsm4hUnNH9xI5G', 'admin', '2025-04-22 09:28:57', '2025-04-22 10:54:18');
 
 --
 -- Índices para tablas volcadas
@@ -360,8 +368,9 @@ ALTER TABLE `recibos`
 -- Indices de la tabla `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD UNIQUE KEY `username_UNIQUE` (`username`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -419,7 +428,7 @@ ALTER TABLE `recibos`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Restricciones para tablas volcadas

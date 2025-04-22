@@ -1,13 +1,17 @@
 import cors from 'cors';
 import express from 'express';
+import { config } from './config/env.mjs';
+
 import ahorrosRouter from './routes/ahorros.mjs';
-import anticiposRouter from './routes/anticipos.mjs'; // <-- Agregar esta línea
+import anticiposRouter from './routes/anticipos.mjs';
+import authRouter from './routes/auth.mjs';
 import categoriasRouter from './routes/categorias.mjs';
-import cuentasRouter from './routes/cuentas.mjs'; // Importar cuentasRouter
+import cuentasRouter from './routes/cuentas.mjs';
 import recibosRouter from './routes/recibos.mjs';
+import usersRouter from './routes/users.mjs';
 
 const app = express();
-const port = 3000;
+const port = config.server.port; //ver en ./config/env.mjs
 
 // Usar el middleware cors
 app.use(cors());
@@ -15,9 +19,11 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/recibos', recibosRouter);
 app.use('/api/categorias', categoriasRouter);
-app.use('/api/cuentas', cuentasRouter); // Usar cuentasRouter
+app.use('/api/cuentas', cuentasRouter);
 app.use('/api/ahorros', ahorrosRouter);
-app.use('/api/anticipos', anticiposRouter); // <-- Montar el router de anticipos
+app.use('/api/anticipos', anticiposRouter);
+app.use('/api/auth', authRouter); // Montar el router de autenticación
+app.use('/api/users', usersRouter); // Montar el router de usuarios
 
 app.listen(port, () => {
     console.log(`Servidor escuchando en http://localhost:${port}`);

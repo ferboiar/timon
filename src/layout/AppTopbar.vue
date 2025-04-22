@@ -1,10 +1,11 @@
 <script setup>
+import { useAuth } from '@/composables/useAuth';
 import { useLayout } from '@/layout/composables/layout';
 import { ref } from 'vue';
 //import AppConfigurator from './AppConfigurator.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
-
+const { currentUser, logout } = useAuth();
 const menu = ref(null);
 
 function toggleProfile(event) {
@@ -27,9 +28,7 @@ const overlayMenuProfileItems = ref([
     {
         label: 'Salir',
         icon: 'pi pi-power-off',
-        command: () => {
-            console.log('Salir');
-        }
+        command: logout // Asignamos nuestra función de cierre de sesión
     }
 ]);
 </script>
@@ -135,5 +134,6 @@ const overlayMenuProfileItems = ref([
     display: flex;
     align-items: center;
     padding: 0.25rem 0.75rem;
+    cursor: pointer; /* Esto aplica el cursor de tipo dedo a todos los ítems del menú */
 }
 </style>

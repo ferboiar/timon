@@ -1,3 +1,4 @@
+import { useAuth } from '@/composables/useAuth';
 import AppLayout from '@/layout/AppLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -6,10 +7,14 @@ const router = createRouter({
     routes: [
         {
             path: '/',
+            redirect: '/dashboard' // Redirigir la raíz al dashboard para usuarios autenticados
+        },
+        {
+            path: '/app',
             component: AppLayout,
             children: [
                 {
-                    path: '/',
+                    path: '/dashboard',
                     name: 'dashboard',
                     component: () => import('@/views/Dashboard.vue')
                 },
@@ -118,7 +123,6 @@ const router = createRouter({
                     name: 'panel',
                     component: () => import('@/views/uikit/PanelsDoc.vue')
                 },
-
                 {
                     path: '/uikit/overlay',
                     name: 'overlay',
@@ -171,6 +175,7 @@ const router = createRouter({
                 }
             ]
         },
+        // Rutas que están fuera del layout principal (sin menú lateral, etc.)
         {
             path: '/landing',
             name: 'landing',
@@ -197,6 +202,37 @@ const router = createRouter({
             component: () => import('@/views/pages/auth/Error.vue')
         }
     ]
+});
+
+// Agregar guard de navegación para proteger rutas y redireccionar a login si no hay autenticación
+router.beforeEach((to, from, next) => {
+    // Si la ruta no es login ni alguna ruta pública, verificar autenticación
+    const publicPages = ['/auth/login', '/auth/access', '/auth/error', '/landing', '/pages/notfound'];
+    const authRequired = !publicPages.includes(to.path);
+
+    // Buscar token en localStorage y sessionStorage
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+    // Si requiere autenticación y no hay token, redirigir a login
+    if (authRequired && !token) {
+        return next('/auth/login');
+    }
+
+    // Si va a login y ya está autenticado, redirigir a dashboard
+    if (to.path === '/auth/login' && token) {
+        return next('/dashboard');
+    }
+
+    // Verificar restricciones de rutas por roles
+    if (to.meta.requiresAdmin) {
+        const { isAdmin } = useAuth();
+        if (!isAdmin.value) {
+            return next('/dashboard'); // Redirigir si no es admin
+        }
+    }
+
+    // En cualquier otro caso, continuar normalmente
+    next();
 });
 
 export default router;

@@ -1,12 +1,18 @@
 <script setup>
+import { useAuth } from '@/composables/useAuth';
 import { useLayout } from '@/layout/composables/layout';
+import { UsersService } from '@/service/UsersService';
 import { $t, updatePreset, updateSurfacePalette } from '@primevue/themes';
 import Aura from '@primevue/themes/aura';
 import Lara from '@primevue/themes/lara';
-import { ref } from 'vue';
+import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, ref } from 'vue';
 
 const { layoutConfig, isDarkTheme } = useLayout();
+const { isAdmin, currentUser } = useAuth();
+const toast = useToast();
 
+// Presets configuration
 const presets = {
     Aura,
     Lara
@@ -20,6 +26,33 @@ const menuModeOptions = ref([
     { label: 'Overlay', value: 'overlay' }
 ]);
 
+// Gestión de usuarios
+const users = ref([]);
+const selectedUsers = ref([]);
+const userDialog = ref(false);
+const changePasswordDialog = ref(false);
+const deleteUserDialog = ref(false);
+const deleteSelectedUsersDialog = ref(false);
+
+const user = ref({
+    id: null,
+    username: '',
+    email: '',
+    rol: 'user',
+    password: ''
+});
+
+const passwordData = ref({
+    id: null,
+    username: '',
+    password: '',
+    confirmPassword: ''
+});
+
+const isSaveDisabled = computed(() => !user.value.username || !user.value.email || (user.value.id === null && !user.value.password));
+const isPasswordChangeDisabled = computed(() => !passwordData.value.password || passwordData.value.password !== passwordData.value.confirmPassword);
+
+// Theme configuration colors
 const primaryColors = ref([
     { name: 'noir', palette: {} },
     { name: 'emerald', palette: { 50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b', 950: '#022c22' } },
@@ -199,6 +232,123 @@ const toggleDefaultDarkMode = () => {
     layoutConfig.darkTheme = !layoutConfig.darkTheme;
     document.documentElement.classList.toggle('app-dark', layoutConfig.darkTheme);
 };
+
+// User management functions
+const fetchUsers = async () => {
+    try {
+        const data = await UsersService.getUsers();
+        users.value = data;
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener usuarios: ${error.message}`, life: 5000 });
+        console.error('Error al obtener usuarios:', error);
+    }
+};
+
+function updateUsers() {
+    fetchUsers();
+    toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Lista de usuarios actualizada.', life: 3000 });
+}
+
+function openNewUser() {
+    user.value = {
+        id: null,
+        username: '',
+        email: '',
+        rol: 'user',
+        password: ''
+    };
+    userDialog.value = true;
+}
+
+function editUser(userData) {
+    user.value = { ...userData, password: '' };
+    userDialog.value = true;
+}
+
+function editUserPassword(userData) {
+    passwordData.value = {
+        id: userData.id,
+        username: userData.username,
+        password: '',
+        confirmPassword: ''
+    };
+    changePasswordDialog.value = true;
+}
+
+function confirmDeleteUser(userData) {
+    user.value = userData;
+    deleteUserDialog.value = true;
+}
+
+function confirmDeleteSelectedUsers() {
+    deleteSelectedUsersDialog.value = true;
+}
+
+function hideDialog() {
+    userDialog.value = false;
+    changePasswordDialog.value = false;
+    deleteUserDialog.value = false;
+    deleteSelectedUsersDialog.value = false;
+}
+
+async function saveUser() {
+    try {
+        await UsersService.saveUser(user.value);
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario guardado correctamente', life: 3000 });
+        fetchUsers();
+        hideDialog();
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar usuario: ${error.message}`, life: 5000 });
+        console.error('Error al guardar usuario:', error);
+    }
+}
+
+async function changePassword() {
+    try {
+        await UsersService.changePassword({
+            id: passwordData.value.id,
+            password: passwordData.value.password
+        });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Contraseña actualizada correctamente', life: 3000 });
+        hideDialog();
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al cambiar la contraseña: ${error.message}`, life: 5000 });
+        console.error('Error al cambiar la contraseña:', error);
+    }
+}
+
+async function deleteUser() {
+    try {
+        await UsersService.deleteUsers({ userIds: [user.value.id] });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario eliminado correctamente', life: 3000 });
+        fetchUsers();
+        hideDialog();
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar usuario: ${error.message}`, life: 5000 });
+        console.error('Error al eliminar usuario:', error);
+    }
+}
+
+async function deleteSelectedUsers() {
+    try {
+        const userIds = selectedUsers.value.map((user) => user.id);
+        await UsersService.deleteUsers({ userIds });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Usuarios eliminados correctamente', life: 3000 });
+        fetchUsers();
+        hideDialog();
+        selectedUsers.value = [];
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar usuarios: ${error.message}`, life: 5000 });
+        console.error('Error al eliminar usuarios:', error);
+    }
+}
+
+// Obtener usuarios al montar el componente
+onMounted(() => {
+    if (isAdmin) {
+        fetchUsers();
+    }
+});
 </script>
 
 <template>
@@ -207,7 +357,7 @@ const toggleDefaultDarkMode = () => {
         <Tabs value="Estilo">
             <TabList>
                 <Tab value="Estilo">Estilo</Tab>
-                <Tab value="1">Header II</Tab>
+                <Tab v-if="isAdmin" value="admin">Admin</Tab>
                 <Tab value="2">Header III</Tab>
             </TabList>
             <TabPanels>
@@ -258,11 +408,33 @@ const toggleDefaultDarkMode = () => {
                         </div>
                     </div>
                 </TabPanel>
-                <TabPanel value="1">
-                    <p class="m-0">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-                        consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                    </p>
+                <TabPanel v-if="isAdmin" value="admin">
+                    <div class="font-semibold text-xl mb-4">Gestión de usuarios</div>
+                    <Toolbar class="mb-6">
+                        <template #start>
+                            <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNewUser" />
+                            <Button label="Borrar" icon="pi pi-trash" severity="secondary" class="mr-2" @click="confirmDeleteSelectedUsers" :disabled="!selectedUsers.length" />
+                            <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateUsers" />
+                        </template>
+                        <template #end>
+                            <Button label="Exportar" icon="pi pi-upload" severity="secondary" />
+                        </template>
+                    </Toolbar>
+                    <DataTable ref="dt_users" v-model:selection="selectedUsers" :value="users" dataKey="id" responsiveLayout="scroll" selectionMode="multiple" sortMode="multiple" removableSort stripedRows>
+                        <template #empty>
+                            <div class="text-center p-4">No hay usuarios a mostrar.</div>
+                        </template>
+                        <Column field="username" header="Usuario" sortable style="min-width: 4rem"></Column>
+                        <Column field="email" header="E-Mail" sortable style="min-width: 12rem"></Column>
+                        <Column field="rol" header="Rol" sortable style="min-width: 12rem"></Column>
+                        <Column :exportable="false">
+                            <template #body="usersSlotProps">
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editUser(usersSlotProps.data)" />
+                                <Button icon="pi pi-key" outlined rounded class="mr-2" @click="editUserPassword(usersSlotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteUser(usersSlotProps.data)" />
+                            </template>
+                        </Column>
+                    </DataTable>
                 </TabPanel>
                 <TabPanel value="2">
                     <p class="m-0">
@@ -273,4 +445,85 @@ const toggleDefaultDarkMode = () => {
             </TabPanels>
         </Tabs>
     </div>
+
+    <!-- Diálogo para crear/editar usuario -->
+    <Dialog v-model:visible="userDialog" :style="{ width: '450px' }" header="Detalle del usuario" :modal="true">
+        <div class="flex flex-col gap-6">
+            <div>
+                <label for="username" class="block font-bold mb-3">Usuario</label>
+                <InputText id="username" v-model.trim="user.username" :required="true" autofocus fluid />
+                <small v-if="!user.username" class="text-red-500">El nombre de usuario es obligatorio.</small>
+            </div>
+            <div>
+                <label for="email" class="block font-bold mb-3">Email</label>
+                <InputText id="email" v-model.trim="user.email" :required="true" type="email" fluid />
+                <small v-if="!user.email" class="text-red-500">El email es obligatorio.</small>
+            </div>
+            <div>
+                <label for="rol" class="block font-bold mb-3">Rol</label>
+                <Select id="rol" v-model="user.rol" :options="['user', 'admin']" placeholder="Seleccione un rol" fluid />
+            </div>
+            <div v-if="!user.id">
+                <label for="password" class="block font-bold mb-3">Contraseña</label>
+                <Password id="password" v-model="user.password" :required="true" :feedback="true" fluid toggle-mask />
+                <small v-if="!user.password && !user.id" class="text-red-500">La contraseña es obligatoria para nuevos usuarios.</small>
+            </div>
+        </div>
+
+        <template #footer>
+            <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+            <Button label="Guardar" icon="pi pi-check" @click="saveUser" :disabled="isSaveDisabled" />
+        </template>
+    </Dialog>
+
+    <!-- Diálogo para cambiar contraseña -->
+    <Dialog v-model:visible="changePasswordDialog" :style="{ width: '450px' }" header="Cambiar contraseña" :modal="true">
+        <div class="flex flex-col gap-6">
+            <div>
+                <label class="block font-bold mb-3">Usuario: {{ passwordData.username }}</label>
+            </div>
+            <div>
+                <label for="newPassword" class="block font-bold mb-3">Nueva contraseña</label>
+                <Password id="newPassword" v-model="passwordData.password" :required="true" :feedback="true" fluid toggle-mask />
+                <small v-if="!passwordData.password" class="text-red-500">La contraseña es obligatoria.</small>
+            </div>
+            <div>
+                <label for="confirmPassword" class="block font-bold mb-3">Confirmar contraseña</label>
+                <Password id="confirmPassword" v-model="passwordData.confirmPassword" :required="true" fluid toggle-mask />
+                <small v-if="passwordData.password !== passwordData.confirmPassword" class="text-red-500">Las contraseñas no coinciden.</small>
+            </div>
+        </div>
+
+        <template #footer>
+            <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+            <Button label="Guardar" icon="pi pi-check" @click="changePassword" :disabled="isPasswordChangeDisabled" />
+        </template>
+    </Dialog>
+
+    <!-- Diálogo para confirmar eliminación de un usuario -->
+    <Dialog v-model:visible="deleteUserDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
+        <div class="flex items-center gap-4">
+            <i class="pi pi-exclamation-triangle !text-3xl" />
+            <span v-if="user"
+                >¿Seguro que quieres borrar el usuario <b>{{ user.username }}</b
+                >?</span
+            >
+        </div>
+        <template #footer>
+            <Button label="No" icon="pi pi-times" autofocus text @click="deleteUserDialog = false" />
+            <Button label="Sí" icon="pi pi-check" @click="deleteUser" />
+        </template>
+    </Dialog>
+
+    <!-- Diálogo para confirmar eliminación de varios usuarios -->
+    <Dialog v-model:visible="deleteSelectedUsersDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
+        <div class="flex items-center gap-4">
+            <i class="pi pi-exclamation-triangle !text-3xl" />
+            <span v-if="selectedUsers.length">¿Seguro que quieres borrar los usuarios seleccionados?</span>
+        </div>
+        <template #footer>
+            <Button label="No" icon="pi pi-times" autofocus text @click="deleteSelectedUsersDialog = false" />
+            <Button label="Sí" icon="pi pi-check" text @click="deleteSelectedUsers" />
+        </template>
+    </Dialog>
 </template>
