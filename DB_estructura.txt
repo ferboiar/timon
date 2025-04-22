@@ -2,10 +2,10 @@
 -- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
--- Host: mysql-fer-particular.b.aivencloud.com:10613
--- Generation Time: Mar 26, 2025 at 10:11 PM
--- Server version: 8.0.35
--- PHP Version: 8.2.28
+-- Servidor: mysql-fer-particular.b.aivencloud.com:10613
+-- Tiempo de generación: 22-04-2025 a las 08:51:33
+-- Versión del servidor: 8.0.35
+-- Versión de PHP: 8.2.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,13 +18,13 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `conta_hogar`
+-- Base de datos: `conta_hogar`
 --
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `ahorros`
+-- Estructura de tabla para la tabla `ahorros`
 --
 
 CREATE TABLE `ahorros` (
@@ -41,7 +41,7 @@ CREATE TABLE `ahorros` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
--- Dumping data for table `ahorros`
+-- Volcado de datos para la tabla `ahorros`
 --
 
 INSERT INTO `ahorros` (`id`, `concepto`, `descripcion`, `ahorrado`, `fecha_objetivo`, `periodicidad`, `importe_periodico`, `activo`, `created_at`, `updated_at`) VALUES
@@ -52,7 +52,7 @@ INSERT INTO `ahorros` (`id`, `concepto`, `descripcion`, `ahorrado`, `fecha_objet
 -- --------------------------------------------------------
 
 --
--- Table structure for table `ahorros_movimientos`
+-- Estructura de tabla para la tabla `ahorros_movimientos`
 --
 
 CREATE TABLE `ahorros_movimientos` (
@@ -65,7 +65,7 @@ CREATE TABLE `ahorros_movimientos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
--- Dumping data for table `ahorros_movimientos`
+-- Volcado de datos para la tabla `ahorros_movimientos`
 --
 
 INSERT INTO `ahorros_movimientos` (`id`, `ahorro_id`, `importe`, `fecha`, `tipo`, `descripcion`) VALUES
@@ -75,28 +75,38 @@ INSERT INTO `ahorros_movimientos` (`id`, `ahorro_id`, `importe`, `fecha`, `tipo`
 -- --------------------------------------------------------
 
 --
--- Table structure for table `anticipos`
+-- Estructura de tabla para la tabla `anticipos`
 --
 
 CREATE TABLE `anticipos` (
   `id` int NOT NULL,
   `concepto` varchar(30) COLLATE utf8mb4_spanish_ci NOT NULL,
   `importe_total` decimal(10,2) NOT NULL,
-  `pago_sugerido` decimal(10,2) NOT NULL,
+  `pago_sugerido` decimal(10,2) DEFAULT NULL,
   `fecha_inicio` date NOT NULL,
   `fecha_fin_prevista` date DEFAULT NULL,
   `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
   `estado` enum('activo','pausado','cancelado','completado') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'activo',
   `cuenta_origen_id` int NOT NULL,
-  `periodicidad` enum('mensual','bimestral','trimestral','anual') COLLATE utf8mb4_spanish_ci NOT NULL,
+  `periodicidad` enum('mensual','bimestral','trimestral','anual') CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
+--
+-- Volcado de datos para la tabla `anticipos`
+--
+
+INSERT INTO `anticipos` (`id`, `concepto`, `importe_total`, `pago_sugerido`, `fecha_inicio`, `fecha_fin_prevista`, `descripcion`, `estado`, `cuenta_origen_id`, `periodicidad`, `created_at`, `updated_at`) VALUES
+(18, 'Veterinario', 276.00, 62.00, '2025-01-01', '2025-08-01', 'incineración Hache', 'activo', 2, 'mensual', '2025-04-03 20:27:09', '2025-04-03 20:28:58'),
+(19, 'TV', 385.00, 65.00, '2025-09-01', '2026-04-01', 'TCL 55c765', 'activo', 2, 'mensual', '2025-04-03 20:31:22', '2025-04-13 16:42:39'),
+(20, 'Prueba', 555.00, 45.00, '2026-02-02', '2027-04-02', '', 'activo', 2, 'mensual', '2025-04-03 20:32:31', '2025-04-03 20:34:59'),
+(21, 'Prueba 2', 100.00, 30.00, '2025-04-04', '2025-08-04', '', 'activo', 2, 'mensual', '2025-04-03 20:39:04', '2025-04-09 20:56:01');
+
 -- --------------------------------------------------------
 
 --
--- Table structure for table `anticipos_pagos`
+-- Estructura de tabla para la tabla `anticipos_pagos`
 --
 
 CREATE TABLE `anticipos_pagos` (
@@ -111,10 +121,48 @@ CREATE TABLE `anticipos_pagos` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
+--
+-- Volcado de datos para la tabla `anticipos_pagos`
+--
+
+INSERT INTO `anticipos_pagos` (`id`, `anticipo_id`, `importe`, `fecha`, `tipo`, `descripcion`, `estado`, `cuenta_destino_id`, `created_at`) VALUES
+(51, 18, 62.00, '2025-02-01', 'regular', NULL, 'pagado', 2, '2025-04-03 20:27:10'),
+(52, 18, 62.00, '2025-03-01', 'regular', NULL, 'pagado', 2, '2025-04-03 20:27:10'),
+(53, 18, 62.00, '2025-04-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:27:10'),
+(54, 18, 62.00, '2025-05-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:27:10'),
+(55, 18, 62.00, '2025-06-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:27:10'),
+(56, 18, 62.00, '2025-07-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:27:10'),
+(57, 18, 28.00, '2025-08-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:27:10'),
+(58, 19, 65.00, '2025-10-01', 'regular', NULL, 'pagado', 2, '2025-04-03 20:31:22'),
+(59, 19, 65.00, '2025-11-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:31:22'),
+(60, 19, 65.00, '2025-12-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:31:22'),
+(61, 19, 65.00, '2026-01-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:31:22'),
+(62, 19, 65.00, '2026-02-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:31:22'),
+(63, 19, 65.00, '2026-03-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:31:22'),
+(64, 19, 60.00, '2026-04-01', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:31:22'),
+(65, 20, 45.00, '2026-03-02', 'regular', NULL, 'pagado', 2, '2025-04-03 20:32:31'),
+(66, 20, 45.00, '2026-04-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(67, 20, 45.00, '2026-05-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(68, 20, 45.00, '2026-06-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(69, 20, 45.00, '2026-07-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(70, 20, 45.00, '2026-08-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(71, 20, 45.00, '2026-09-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(72, 20, 45.00, '2026-10-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(73, 20, 45.00, '2026-11-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(74, 20, 45.00, '2026-12-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(75, 20, 45.00, '2027-01-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(76, 20, 45.00, '2027-02-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(77, 20, 45.00, '2027-03-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(78, 20, 15.00, '2027-04-02', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:32:31'),
+(79, 21, 30.00, '2025-05-04', 'regular', NULL, 'pendiente', 2, '2025-04-03 20:39:04'),
+(124, 21, 30.00, '2025-06-04', 'regular', NULL, 'pendiente', 2, '2025-04-06 20:46:33'),
+(5499, 21, 30.00, '2025-07-04', 'regular', NULL, 'pendiente', 2, '2025-04-09 20:55:21'),
+(5500, 21, 10.00, '2025-08-04', 'regular', NULL, 'pendiente', 2, '2025-04-09 20:55:21');
+
 -- --------------------------------------------------------
 
 --
--- Table structure for table `categorias`
+-- Estructura de tabla para la tabla `categorias`
 --
 
 CREATE TABLE `categorias` (
@@ -124,7 +172,7 @@ CREATE TABLE `categorias` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
--- Dumping data for table `categorias`
+-- Volcado de datos para la tabla `categorias`
 --
 
 INSERT INTO `categorias` (`id`, `nombre`, `descripcion`) VALUES
@@ -141,7 +189,7 @@ INSERT INTO `categorias` (`id`, `nombre`, `descripcion`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `cuentas`
+-- Estructura de tabla para la tabla `cuentas`
 --
 
 CREATE TABLE `cuentas` (
@@ -155,7 +203,7 @@ CREATE TABLE `cuentas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
--- Dumping data for table `cuentas`
+-- Volcado de datos para la tabla `cuentas`
 --
 
 INSERT INTO `cuentas` (`id`, `nombre`, `tipo`, `iban`, `saldo_actual`, `descripcion`, `activa`) VALUES
@@ -168,7 +216,7 @@ INSERT INTO `cuentas` (`id`, `nombre`, `tipo`, `iban`, `saldo_actual`, `descripc
 -- --------------------------------------------------------
 
 --
--- Table structure for table `fechas_cargo`
+-- Estructura de tabla para la tabla `fechas_cargo`
 --
 
 CREATE TABLE `fechas_cargo` (
@@ -182,7 +230,7 @@ CREATE TABLE `fechas_cargo` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
--- Dumping data for table `fechas_cargo`
+-- Volcado de datos para la tabla `fechas_cargo`
 --
 
 INSERT INTO `fechas_cargo` (`id`, `recibo_id`, `fecha`, `activo`, `estado`, `comentario`, `cuenta_id`) VALUES
@@ -207,7 +255,7 @@ INSERT INTO `fechas_cargo` (`id`, `recibo_id`, `fecha`, `activo`, `estado`, `com
 -- --------------------------------------------------------
 
 --
--- Table structure for table `recibos`
+-- Estructura de tabla para la tabla `recibos`
 --
 
 CREATE TABLE `recibos` (
@@ -219,7 +267,7 @@ CREATE TABLE `recibos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
--- Dumping data for table `recibos`
+-- Volcado de datos para la tabla `recibos`
 --
 
 INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_id`) VALUES
@@ -233,32 +281,47 @@ INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_i
 (134, 'prueba bimestral', 69.00, 'bimestral', 7),
 (137, 'prueba mensual 22', 11.00, 'mensual', 6);
 
+-- --------------------------------------------------------
+
 --
--- Indexes for dumped tables
+-- Estructura de tabla para la tabla `users`
+--
+
+CREATE TABLE `users` (
+  `user_id` int NOT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `rol` enum('admin','user','limited_user','reader') CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'user',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Índices para tablas volcadas
 --
 
 --
--- Indexes for table `ahorros`
+-- Indices de la tabla `ahorros`
 --
 ALTER TABLE `ahorros`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `ahorros_movimientos`
+-- Indices de la tabla `ahorros_movimientos`
 --
 ALTER TABLE `ahorros_movimientos`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_ahorro_id` (`ahorro_id`);
 
 --
--- Indexes for table `anticipos`
+-- Indices de la tabla `anticipos`
 --
 ALTER TABLE `anticipos`
   ADD PRIMARY KEY (`id`),
   ADD KEY `cuenta_origen_id` (`cuenta_origen_id`);
 
 --
--- Indexes for table `anticipos_pagos`
+-- Indices de la tabla `anticipos_pagos`
 --
 ALTER TABLE `anticipos_pagos`
   ADD PRIMARY KEY (`id`),
@@ -266,20 +329,20 @@ ALTER TABLE `anticipos_pagos`
   ADD KEY `cuenta_destino_id` (`cuenta_destino_id`);
 
 --
--- Indexes for table `categorias`
+-- Indices de la tabla `categorias`
 --
 ALTER TABLE `categorias`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `cuentas`
+-- Indices de la tabla `cuentas`
 --
 ALTER TABLE `cuentas`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `iban` (`iban`);
 
 --
--- Indexes for table `fechas_cargo`
+-- Indices de la tabla `fechas_cargo`
 --
 ALTER TABLE `fechas_cargo`
   ADD PRIMARY KEY (`id`),
@@ -287,96 +350,109 @@ ALTER TABLE `fechas_cargo`
   ADD KEY `fk_cuenta_id` (`cuenta_id`);
 
 --
--- Indexes for table `recibos`
+-- Indices de la tabla `recibos`
 --
 ALTER TABLE `recibos`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_categoria_id` (`categoria_id`);
 
 --
--- AUTO_INCREMENT for dumped tables
+-- Indices de la tabla `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`user_id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
 --
 
 --
--- AUTO_INCREMENT for table `ahorros`
+-- AUTO_INCREMENT de la tabla `ahorros`
 --
 ALTER TABLE `ahorros`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT for table `ahorros_movimientos`
+-- AUTO_INCREMENT de la tabla `ahorros_movimientos`
 --
 ALTER TABLE `ahorros_movimientos`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
--- AUTO_INCREMENT for table `anticipos`
+-- AUTO_INCREMENT de la tabla `anticipos`
 --
 ALTER TABLE `anticipos`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
--- AUTO_INCREMENT for table `anticipos_pagos`
+-- AUTO_INCREMENT de la tabla `anticipos_pagos`
 --
 ALTER TABLE `anticipos_pagos`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5501;
 
 --
--- AUTO_INCREMENT for table `categorias`
+-- AUTO_INCREMENT de la tabla `categorias`
 --
 ALTER TABLE `categorias`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
--- AUTO_INCREMENT for table `cuentas`
+-- AUTO_INCREMENT de la tabla `cuentas`
 --
 ALTER TABLE `cuentas`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
--- AUTO_INCREMENT for table `fechas_cargo`
+-- AUTO_INCREMENT de la tabla `fechas_cargo`
 --
 ALTER TABLE `fechas_cargo`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=159;
 
 --
--- AUTO_INCREMENT for table `recibos`
+-- AUTO_INCREMENT de la tabla `recibos`
 --
 ALTER TABLE `recibos`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
 
 --
--- Constraints for dumped tables
+-- AUTO_INCREMENT de la tabla `users`
+--
+ALTER TABLE `users`
+  MODIFY `user_id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- Restricciones para tablas volcadas
 --
 
 --
--- Constraints for table `ahorros_movimientos`
+-- Filtros para la tabla `ahorros_movimientos`
 --
 ALTER TABLE `ahorros_movimientos`
   ADD CONSTRAINT `ahorros_movimientos_ibfk_1` FOREIGN KEY (`ahorro_id`) REFERENCES `ahorros` (`id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `anticipos`
+-- Filtros para la tabla `anticipos`
 --
 ALTER TABLE `anticipos`
   ADD CONSTRAINT `anticipos_ibfk_1` FOREIGN KEY (`cuenta_origen_id`) REFERENCES `cuentas` (`id`);
 
 --
--- Constraints for table `anticipos_pagos`
+-- Filtros para la tabla `anticipos_pagos`
 --
 ALTER TABLE `anticipos_pagos`
   ADD CONSTRAINT `anticipos_pagos_ibfk_1` FOREIGN KEY (`anticipo_id`) REFERENCES `anticipos` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `anticipos_pagos_ibfk_2` FOREIGN KEY (`cuenta_destino_id`) REFERENCES `cuentas` (`id`);
 
 --
--- Constraints for table `fechas_cargo`
+-- Filtros para la tabla `fechas_cargo`
 --
 ALTER TABLE `fechas_cargo`
   ADD CONSTRAINT `fechas_cargo_ibfk_1` FOREIGN KEY (`recibo_id`) REFERENCES `recibos` (`id`),
   ADD CONSTRAINT `fk_cuenta_id` FOREIGN KEY (`cuenta_id`) REFERENCES `cuentas` (`id`);
 
 --
--- Constraints for table `recibos`
+-- Filtros para la tabla `recibos`
 --
 ALTER TABLE `recibos`
   ADD CONSTRAINT `fk_categoria_id` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`);
