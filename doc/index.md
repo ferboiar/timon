@@ -1,8 +1,8 @@
-# Documentación del Sistema de Anticipos y Cuentas
+# Documentación del Sistema Timon
 
 ## Introducción
 
-Timon es una aplicación financiera integral diseñada para la gestión eficiente de recursos económicos personales. Esta plataforma permite a los usuarios administrar sus finanzas a través de cinco sistemas interconectados: recibos, anticipos, ahorros, categorías y cuentas.
+Timon es una aplicación financiera integral diseñada para la gestión eficiente de recursos económicos personales. Esta plataforma permite a los usuarios administrar sus finanzas a través de seis sistemas interconectados: recibos, anticipos, ahorros, categorías, cuentas y usuarios.
 
 ### Propósito de la aplicación
 
@@ -12,10 +12,11 @@ La aplicación Timon surge como respuesta a la necesidad de contar con una herra
 - Planificar y controlar objetivos de ahorro con seguimiento de aportaciones
 - Categorizar gastos e ingresos para un mejor análisis financiero
 - Gestionar múltiples cuentas financieras con seguimiento de saldos y movimientos
+- Proporcionar control de acceso y seguridad mediante gestión de usuarios y autenticación
 
 ### Sistemas principales
 
-La plataforma está organizada en cinco sistemas interconectados que trabajan conjuntamente:
+La plataforma está organizada en seis sistemas interconectados que trabajan conjuntamente:
 
 1. **Sistema de Recibos**: Facilita el control de pagos periódicos (mensuales, bimestrales, trimestrales) con seguimiento detallado de fechas de cargo y estados de pago.
 
@@ -27,14 +28,17 @@ La plataforma está organizada en cinco sistemas interconectados que trabajan co
 
 5. **Sistema de Cuentas**: Facilita la administración de diferentes tipos de cuentas financieras (corrientes, ahorros, efectivo), mostrando saldos actualizados y registrando todos los movimientos.
 
+6. **Sistema de Usuarios y Autenticación**: Proporciona control de acceso y seguridad para la aplicación, incluyendo gestión de usuarios, autenticación, autorización basada en roles y personalización de la interfaz.
+
 ### Integración entre sistemas
 
-Los cinco sistemas funcionan de manera interconectada:
+Los sistemas funcionan de manera interconectada:
 - Los **recibos** ayudan a controlar pagos periódicos que afectan a las **cuentas** y se clasifican mediante **categorías**
 - Los **anticipos** se vinculan a **cuentas** específicas para registrar origen y destino de los fondos
 - Los **ahorros** permiten una planificación financiera organizada que complementa la gestión de **cuentas**
 - Las **categorías** se aplican a los movimientos generados por **anticipos**, operaciones de **cuentas**, movimientos de **ahorros** y **recibos**
 - Las **cuentas** reflejan el impacto de los **recibos**, **anticipos** y **ahorros** en forma de movimientos categorizados
+- El sistema de **usuarios** controla qué personas pueden acceder a los diferentes recursos según sus roles
 
 Esta documentación técnica está dirigida principalmente a desarrolladores y administradores del sistema, proporcionando información detallada sobre la arquitectura, componentes, servicios y APIs que conforman cada uno de estos sistemas.
 
@@ -173,6 +177,75 @@ El sistema de cuentas sigue la misma arquitectura de tres capas:
 - [API de Cuentas](../routes/cuentas.md) - Rutas REST para cuentas
 - [Utilidades de Base de Datos](../db/db_utilsAcc.md) - Funciones de acceso a datos de cuentas
 
+## Sistema de Usuarios y Autenticación
+
+El sistema de usuarios y autenticación proporciona la capa de seguridad y control de acceso a la aplicación Timon, permitiendo además la gestión de usuarios y personalización de la interfaz.
+
+### Estructura del Sistema de Usuarios y Autenticación
+
+Este sistema sigue una arquitectura multicapa:
+
+1. **Interfaz de Usuario** - Componentes Vue para login y gestión de usuarios
+2. **Composables** - Hooks reutilizables para gestión del estado de autenticación
+3. **Directivas** - Control de acceso declarativo en plantillas
+4. **Router Guards** - Protección de rutas según estado de autenticación y roles
+5. **Servicios Cliente** - Comunicación con los endpoints de API
+6. **Backend** - API REST y middleware de autenticación
+7. **Base de Datos** - Almacenamiento y validación de credenciales
+
+### Documentación de Usuarios y Autenticación
+
+#### Flujo de Autenticación
+- [Flujo Completo de Autenticación](./auth/AuthenticationFlow.md) - Proceso detallado de inicio de sesión y autorización
+
+#### Interfaz de Usuario
+- [Componente Login](./components/Login.md) - Interfaz de inicio de sesión
+- [Componente ProfileSettings](./components/ProfileSettings.md) - Gestión de usuarios y personalización
+
+#### Gestión de Estado y Autorización
+- [Composable useAuth](./composables/useAuth.md) - Hook para gestión del estado de autenticación
+- [Directiva vRole](./directives/vRole.md) - Control de acceso declarativo en plantillas
+
+#### Navegación Segura
+- [Guardias de Rutas](./router/routeGuards.md) - Protección de navegación basada en autenticación y roles
+
+#### Servicios Cliente
+- [UsersService](./services/UsersService.md) - Cliente para la API de usuarios
+
+#### Backend
+- [API de Autenticación](./routes/auth.md) - Endpoints para autenticación
+- [API de Usuarios](./routes/users.md) - Endpoints para gestión de usuarios
+- [Middleware de Autenticación](./middleware/auth.md) - Protección de rutas en el backend
+- [Utilidades de Base de Datos](./db/db_utilsUsers.md) - Funciones de acceso y verificación
+
+### Características Clave
+
+#### Control de Acceso
+- Sistema de roles (admin, user, limited_user, reader)
+- Autorización basada en roles para rutas y componentes
+- Directiva personalizada para control de acceso declarativo
+- Middleware para protección de endpoints de API
+
+#### Autenticación
+- Autenticación basada en tokens JWT
+- Doble persistencia (localStorage/sessionStorage)
+- Opción "Recordarme" para sesiones persistentes
+- Verificación automática de sesiones existentes
+- Manejo de tokens expirados
+
+#### Gestión de Usuarios
+- Creación y edición de usuarios con diferentes roles
+- Cambio de contraseñas con validación de seguridad
+- Eliminación individual y múltiple de usuarios
+- Listado paginado con operaciones en lote
+
+#### Personalización de Interfaz
+- Preferencias de estilo por usuario
+- Temas claros y oscuros
+- Selección de colores primarios y de superficie
+- Configuración del modo de menú
+- Persistencia de preferencias en servidor
+
 ## Funcionalidades Clave
 
 ### Recibos
@@ -208,3 +281,11 @@ El sistema de cuentas sigue la misma arquitectura de tres capas:
 - Soporte para diferentes tipos de cuentas (corriente, ahorro, etc.)
 - Seguimiento de saldos actuales
 - Vinculación con anticipos para origen y destino de pagos
+
+### Usuarios y Autenticación
+- Inicio de sesión seguro con opción para recordar credenciales
+- Protección de rutas basada en autenticación y roles
+- Panel de administración para gestión de usuarios (solo administradores)
+- Creación, edición y eliminación de usuarios con diferentes niveles de acceso
+- Personalización de la interfaz con preferencias por usuario
+- Control de acceso granular a funcionalidades según rol del usuario

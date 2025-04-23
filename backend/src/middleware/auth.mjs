@@ -1,3 +1,14 @@
+/**
+ * Middleware de autenticación y autorización
+ *
+ * Este archivo contiene los middlewares necesarios para la autenticación y autorización de usuarios:
+ * - verifyToken: Valida que el token JWT sea válido y no haya expirado
+ * - verifyAdmin: Verifica que el usuario tenga rol de administrador
+ * - checkRole: Verifica que el usuario tenga alguno de los roles especificados
+ *
+ * Estos middlewares se utilizan en las rutas para proteger el acceso a recursos según
+ * los permisos del usuario autenticado.
+ */
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env.mjs';
 

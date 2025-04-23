@@ -91,7 +91,13 @@ const passwordData = ref({
     confirmPassword: ''
 });
 
-const isSaveDisabled = computed(() => !user.value.username || !user.value.email || (user.value.id === null && !user.value.password));
+// Validación de email (comprueba si contiene @)
+const isEmailValid = computed(() => {
+    return !user.value.email || user.value.email.includes('@');
+});
+
+const isSaveDisabled = computed(() => !user.value.username || !user.value.email || !isEmailValid.value || (user.value.id === null && !user.value.password));
+
 const isPasswordChangeDisabled = computed(() => !passwordData.value.password || passwordData.value.password !== passwordData.value.confirmPassword);
 
 // Guarda las preferencias de estilo actuales en el servidor
@@ -421,7 +427,8 @@ onMounted(() => {
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-8">
                     <label for="email" class="block font-bold mb-3">Email</label>
-                    <InputText id="email" v-model.trim="user.email" :required="true" type="email" class="w-full" />
+                    <InputText id="email" v-model.trim="user.email" :required="true" type="email" class="w-full" :class="{ 'p-invalid': user.email && !isEmailValid }" />
+                    <small v-if="user.email && !isEmailValid" class="text-red-500">Indica un e-mail válido</small>
                 </div>
                 <div class="col-span-4">
                     <label for="rol" class="block font-bold mb-3">Rol</label>

@@ -66,6 +66,28 @@ const docNavigation = [
                 ]
             }
         ]
+    },
+    {
+        title: 'Gestión de Usuarios',
+        children: [
+            {
+                title: 'Componentes y Servicios',
+                children: [
+                    { title: 'Componente ProfileSettings', path: 'components/ProfileSettings' },
+                    { title: 'UsersService', path: 'services/UsersService' },
+                    { title: 'Directiva vRole', path: 'directives/vRole' }
+                ]
+            },
+            {
+                title: 'Autenticación y Autorización',
+                children: [
+                    { title: 'Composable useAuth', path: 'composables/useAuth' },
+                    { title: 'API de Autenticación', path: 'routes/auth' },
+                    { title: 'API de Usuarios', path: 'routes/users' },
+                    { title: 'DB Utils Usuarios', path: 'db/db_utilsUsers' }
+                ]
+            }
+        ]
     }
 ];
 
