@@ -9,7 +9,7 @@ import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
 const { layoutConfig, isDarkTheme } = useLayout();
-const { isAdmin, currentUser, ROLES } = useAuth();
+const { isAdmin, ROLES } = useAuth();
 const toast = useToast();
 
 // Convertir el objeto ROLES a un array para el dropdown
