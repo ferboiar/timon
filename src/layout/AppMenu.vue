@@ -1,4 +1,21 @@
 <script setup>
+/**
+ * Componente AppMenu
+ * ==================
+ *
+ * Este componente implementa el menú principal de navegación de la aplicación Timon.
+ * Su responsabilidad principal es:
+ *
+ * 1. Definir la estructura de navegación de la aplicación
+ * 2. Implementar el control de acceso basado en roles para elementos del menú
+ * 3. Renderizar dinámicamente los elementos según los permisos del usuario actual
+ * 4. Proporcionar navegación entre las diferentes secciones de la aplicación
+ *
+ * La implementación utiliza un modelo de datos reactivo que se filtra según
+ * los roles del usuario antes de ser renderizado, garantizando que cada usuario
+ * solo ve las opciones para las que tiene permisos.
+ */
+
 import { useAuth } from '@/composables/useAuth';
 import { computed, ref } from 'vue';
 import AppMenuItem from './AppMenuItem.vue';
