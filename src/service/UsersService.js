@@ -92,5 +92,53 @@ export const UsersService = {
         }
 
         return await response.json();
+    },
+
+    /**
+     * Guardar preferencias de estilo del usuario
+     * @param {Object} stylePrefs - Preferencias de estilo (preset, menuMode, darkTheme, primary, surface)
+     * @returns {Promise<Object>} Resultado de la operación
+     */
+    async saveStylePreferences(stylePrefs) {
+        const url = `${API_BASE_URL}/api/users/style-preferences`;
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(stylePrefs)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al guardar preferencias de estilo');
+        }
+
+        return await response.json();
+    },
+
+    /**
+     * Obtener preferencias de estilo del usuario actual
+     * @returns {Promise<Object>} Preferencias de estilo del usuario
+     */
+    async getStylePreferences() {
+        const url = `${API_BASE_URL}/api/users/style-preferences`;
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        const response = await fetch(url, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al obtener preferencias de estilo');
+        }
+
+        return await response.json();
     }
 };

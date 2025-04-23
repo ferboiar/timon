@@ -7,7 +7,7 @@ import { useAuth } from '@/composables/useAuth';
 
 export const vRole = {
     beforeMount(el, binding) {
-        const { hasRole, hasAnyRole } = useAuth();
+        const { hasAnyRole } = useAuth();
 
         // Si no hay valor de binding, no hacer nada
         if (!binding.value) return;
@@ -23,7 +23,7 @@ export const vRole = {
 
     // Actualizar cuando cambien los datos de binding
     updated(el, binding) {
-        const { hasRole, hasAnyRole } = useAuth();
+        const { hasAnyRole } = useAuth();
 
         if (!binding.value) return;
 

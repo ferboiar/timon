@@ -6,10 +6,10 @@ import { $t, updatePreset, updateSurfacePalette } from '@primevue/themes';
 import Aura from '@primevue/themes/aura';
 import Lara from '@primevue/themes/lara';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
-const { layoutConfig, isDarkTheme } = useLayout();
-const { isAdmin, ROLES } = useAuth();
+const { layoutConfig } = useLayout();
+const { isAdmin, ROLES, currentUser, updateStylePreferences } = useAuth();
 const toast = useToast();
 
 // Convertir el objeto ROLES a un array para el dropdown
@@ -28,6 +28,38 @@ const menuModeOptions = ref([
     { label: 'Static', value: 'static' },
     { label: 'Overlay', value: 'overlay' }
 ]);
+
+// Valores temporales para configuración (sin aplicar hasta guardar)
+const tempLayoutConfig = ref({
+    preset: layoutConfig.preset,
+    menuMode: layoutConfig.menuMode,
+    darkTheme: layoutConfig.darkTheme,
+    primary: layoutConfig.primary,
+    surface: layoutConfig.surface
+});
+
+// Valores predeterminados
+const defaultConfig = {
+    preset: 'Aura',
+    primary: 'emerald',
+    surface: 'zinc',
+    menuMode: 'static',
+    darkTheme: true
+};
+
+// Bandera para detectar si hay cambios sin guardar
+const hasUnsavedChanges = computed(() => {
+    return (
+        tempLayoutConfig.value.preset !== layoutConfig.preset ||
+        tempLayoutConfig.value.menuMode !== layoutConfig.menuMode ||
+        tempLayoutConfig.value.darkTheme !== layoutConfig.darkTheme ||
+        tempLayoutConfig.value.primary !== layoutConfig.primary ||
+        tempLayoutConfig.value.surface !== layoutConfig.surface
+    );
+});
+
+// Bandera para evitar guardar cambios durante la carga inicial
+const isInitializing = ref(true);
 
 // Gestión de usuarios
 const users = ref([]);
@@ -201,16 +233,40 @@ function getPresetExt() {
     }
 }
 
-function updateColors(type, color) {
-    if (type === 'primary') {
-        layoutConfig.primary = color.name;
-    } else if (type === 'surface') {
-        layoutConfig.surface = color.name;
-    }
+// Guarda las preferencias de estilo actuales en el servidor
+async function saveStylePreferences() {
+    if (isInitializing.value) return;
 
-    applyTheme(type, color);
+    try {
+        // Crear objeto con las preferencias actuales
+        const stylePrefs = {
+            preset: layoutConfig.preset,
+            menuMode: layoutConfig.menuMode,
+            darkTheme: layoutConfig.darkTheme,
+            primary: layoutConfig.primary,
+            surface: layoutConfig.surface
+        };
+
+        // Guardar en el servidor
+        await updateStylePreferences(stylePrefs);
+
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Preferencias de estilo guardadas correctamente', life: 3000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `No se pudieron guardar las preferencias: ${error.message}`, life: 5000 });
+        console.error('Error al guardar preferencias de estilo:', error);
+    }
 }
 
+// Actualiza los colores en el estado temporal
+function updateColors(type, color) {
+    if (type === 'primary') {
+        tempLayoutConfig.value.primary = color.name;
+    } else if (type === 'surface') {
+        tempLayoutConfig.value.surface = color.name;
+    }
+}
+
+// Aplica los cambios de tema
 function applyTheme(type, color) {
     if (type === 'primary') {
         updatePreset(getPresetExt());
@@ -219,22 +275,126 @@ function applyTheme(type, color) {
     }
 }
 
+// Actualiza la selección de preset en el estado temporal
 function onPresetChange() {
-    layoutConfig.preset = preset.value;
-    const presetValue = presets[preset.value];
+    tempLayoutConfig.value.preset = preset.value;
+}
+
+// Actualiza el modo de menú en el estado temporal
+function onMenuModeChange() {
+    tempLayoutConfig.value.menuMode = menuMode.value;
+}
+
+// Actualiza el modo oscuro en el estado temporal
+const toggleDefaultDarkMode = () => {
+    tempLayoutConfig.value.darkTheme = !tempLayoutConfig.value.darkTheme;
+};
+
+// Aplica y guarda todas las preferencias de estilo
+async function applyAndSaveStyles() {
+    // Actualizar valores del layoutConfig con los temporales
+    layoutConfig.primary = tempLayoutConfig.value.primary;
+    layoutConfig.surface = tempLayoutConfig.value.surface;
+    layoutConfig.preset = tempLayoutConfig.value.preset;
+    preset.value = tempLayoutConfig.value.preset;
+    layoutConfig.menuMode = tempLayoutConfig.value.menuMode;
+    menuMode.value = tempLayoutConfig.value.menuMode;
+    layoutConfig.darkTheme = tempLayoutConfig.value.darkTheme;
+
+    // Aplicar tema oscuro
+    document.documentElement.classList.toggle('app-dark', layoutConfig.darkTheme);
+
+    // Aplicar cambios de tema
+    const primaryColor = primaryColors.value.find((c) => c.name === layoutConfig.primary);
+    const surfaceColor = surfaces.value.find((s) => s.name === layoutConfig.surface);
+    if (primaryColor) {
+        applyTheme('primary', primaryColor);
+    }
+    if (surfaceColor) {
+        applyTheme('surface', surfaceColor);
+    }
+
+    // Aplicar todos los cambios con una sola llamada
+    const presetValue = presets[layoutConfig.preset];
     const surfacePalette = surfaces.value.find((s) => s.name === layoutConfig.surface)?.palette;
+    $t().preset(presetValue).preset(getPresetExt()).surfacePalette(surfacePalette).use({ useDefaultOptions: true });
+
+    // Guardar preferencias en el servidor
+    await saveStylePreferences();
+}
+
+// Resetea a los valores por defecto
+async function resetToDefaults() {
+    // Actualizar valores temporales con los predeterminados
+    tempLayoutConfig.value = { ...defaultConfig };
+
+    // Actualizar componentes UI
+    preset.value = defaultConfig.preset;
+    menuMode.value = defaultConfig.menuMode;
+
+    // Aplicar y guardar inmediatamente
+    await applyAndSaveStyles();
+
+    toast.add({ severity: 'info', summary: 'Valores restablecidos', detail: 'Se han restaurado los valores por defecto de estilo', life: 3000 });
+}
+
+// Actualiza las variables temporales con los valores actuales
+function syncTempConfig() {
+    tempLayoutConfig.value = {
+        preset: layoutConfig.preset,
+        menuMode: layoutConfig.menuMode,
+        darkTheme: layoutConfig.darkTheme,
+        primary: layoutConfig.primary,
+        surface: layoutConfig.surface
+    };
+    preset.value = layoutConfig.preset;
+    menuMode.value = layoutConfig.menuMode;
+}
+
+// Aplicar las preferencias guardadas del usuario
+function applyUserPreferences() {
+    if (!currentUser.value || !currentUser.value.stylePreferences) return;
+
+    const prefs = currentUser.value.stylePreferences;
+
+    // Aplicar preset
+    if (prefs.preset && presetOptions.value.includes(prefs.preset)) {
+        layoutConfig.preset = prefs.preset;
+        preset.value = prefs.preset;
+    }
+
+    // Aplicar menuMode
+    if (prefs.menuMode && ['static', 'overlay'].includes(prefs.menuMode)) {
+        layoutConfig.menuMode = prefs.menuMode;
+        menuMode.value = prefs.menuMode;
+    }
+
+    // Aplicar tema oscuro
+    if (typeof prefs.darkTheme === 'boolean') {
+        layoutConfig.darkTheme = prefs.darkTheme;
+        document.documentElement.classList.toggle('app-dark', prefs.darkTheme);
+    }
+
+    // Aplicar color primario
+    if (prefs.primary && primaryColors.value.some((c) => c.name === prefs.primary)) {
+        layoutConfig.primary = prefs.primary;
+        const primaryColor = primaryColors.value.find((c) => c.name === prefs.primary);
+        applyTheme('primary', primaryColor);
+    }
+
+    // Aplicar color de superficie
+    if (prefs.surface && surfaces.value.some((s) => s.name === prefs.surface)) {
+        layoutConfig.surface = prefs.surface;
+        const surfaceColor = surfaces.value.find((s) => s.name === prefs.surface);
+        applyTheme('surface', surfaceColor);
+    }
+
+    // Aplicar todos los cambios con una sola llamada
+    const presetValue = presets[layoutConfig.preset];
+    const surfacePalette = surfaces.value.find((s) => s.name === prefs.surface)?.palette;
 
     $t().preset(presetValue).preset(getPresetExt()).surfacePalette(surfacePalette).use({ useDefaultOptions: true });
 }
-
-function onMenuModeChange() {
-    layoutConfig.menuMode = menuMode.value;
-}
-
-const toggleDefaultDarkMode = () => {
-    layoutConfig.darkTheme = !layoutConfig.darkTheme;
-    document.documentElement.classList.toggle('app-dark', layoutConfig.darkTheme);
-};
 
 // User management functions
 const fetchUsers = async () => {
@@ -346,11 +506,33 @@ async function deleteSelectedUsers() {
     }
 }
 
-// Obtener usuarios al montar el componente
+// Observar cambios en el usuario actual para aplicar preferencias
+watch(
+    () => currentUser.value,
+    (newUser) => {
+        if (newUser && newUser.stylePreferences) {
+            applyUserPreferences();
+        }
+    },
+    { immediate: true, deep: true }
+);
+
+// Obtener usuarios y aplicar preferencias al montar el componente
 onMounted(() => {
     if (isAdmin.value) {
         fetchUsers();
     }
+
+    // Aplicar preferencias del usuario si están disponibles
+    applyUserPreferences();
+
+    // Inicializar configuración temporal con los valores actuales
+    syncTempConfig();
+
+    // Permitir guardar después de la inicialización
+    setTimeout(() => {
+        isInitializing.value = false;
+    }, 1000);
 });
 </script>
 
@@ -375,7 +557,7 @@ onMounted(() => {
                                     type="button"
                                     :title="primaryColor.name"
                                     @click="updateColors('primary', primaryColor)"
-                                    :class="['border-none w-5 h-5 rounded-full p-0 cursor-pointer outline-none outline-offset-1 m-1', { 'outline-primary': layoutConfig.primary === primaryColor.name }]"
+                                    :class="['border-none w-5 h-5 rounded-full p-0 cursor-pointer outline-none outline-offset-1 m-1', { 'outline-primary': tempLayoutConfig.primary === primaryColor.name }]"
                                     :style="{ backgroundColor: `${primaryColor.name === 'noir' ? 'var(--text-color)' : primaryColor.palette['500']}` }"
                                 ></button>
                             </div>
@@ -389,25 +571,26 @@ onMounted(() => {
                                     type="button"
                                     :title="surface.name"
                                     @click="updateColors('surface', surface)"
-                                    :class="[
-                                        'border-none w-5 h-5 rounded-full p-0 cursor-pointer outline-none outline-offset-1 m-1',
-                                        { 'outline-primary': layoutConfig.surface ? layoutConfig.surface === surface.name : isDarkTheme ? surface.name === 'zinc' : surface.name === 'slate' }
-                                    ]"
+                                    :class="['border-none w-5 h-5 rounded-full p-0 cursor-pointer outline-none outline-offset-1 m-1', { 'outline-primary': tempLayoutConfig.surface === surface.name }]"
                                     :style="{ backgroundColor: `${surface.palette['500']}` }"
                                 ></button>
                             </div>
                         </div>
                         <div class="flex flex-col gap-2">
                             <span class="text-sm text-muted-color font-semibold">Tema</span>
-                            <SelectButton v-model="preset" @change="onPresetChange" :options="presetOptions" :allowEmpty="false" />
+                            <SelectButton v-model="tempLayoutConfig.preset" :options="presetOptions" :allowEmpty="false" />
                         </div>
                         <div class="flex flex-col gap-2">
                             <span class="text-sm text-muted-color font-semibold">Funcionamiento del menú</span>
-                            <SelectButton v-model="menuMode" @change="onMenuModeChange" :options="menuModeOptions" :allowEmpty="false" optionLabel="label" optionValue="value" />
+                            <SelectButton v-model="tempLayoutConfig.menuMode" :options="menuModeOptions" :allowEmpty="false" optionLabel="label" optionValue="value" />
                         </div>
                         <div class="flex flex-col gap-2">
                             <span class="text-sm text-muted-color font-semibold">Modo oscuro por defecto</span>
-                            <ToggleSwitch v-model="layoutConfig.darkTheme" @change="toggleDefaultDarkMode" />
+                            <ToggleSwitch v-model="tempLayoutConfig.darkTheme" />
+                        </div>
+                        <div class="mt-6 flex flex-wrap gap-3">
+                            <Button label="Reset" v-tooltip="'Restablece los ajustes de estilo'" icon="pi pi-refresh" severity="secondary" @click="resetToDefaults" />
+                            <Button label="Guardar" icon="pi pi-check" @click="applyAndSaveStyles" :disabled="!hasUnsavedChanges" />
                         </div>
                     </div>
                 </TabPanel>

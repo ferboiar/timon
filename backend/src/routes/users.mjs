@@ -3,7 +3,7 @@
  *
  * Este módulo proporciona endpoints para administrar usuarios en la aplicación.
  * Permite obtener la lista de usuarios, crear nuevos usuarios, actualizar usuarios existentes,
- * cambiar contraseñas y eliminar usuarios. Todas las rutas requieren autenticación
+ * cambiar contraseñas, eliminar usuarios y gestionar preferencias de estilo. Todas las rutas requieren autenticación
  * como administrador para garantizar la seguridad de las operaciones.
  *
  * @module routes/users
@@ -11,236 +11,173 @@
 
 import bcrypt from 'bcrypt';
 import express from 'express';
-import { getConnection } from '../db/db_connection.mjs';
-import { verifyAdmin } from '../middleware/auth.mjs';
+import * as dbUsers from '../db/db_utilsUsers.mjs';
+import { verifyToken } from '../middleware/auth.mjs';
 
 const router = express.Router();
 
-// Middleware para verificar que el usuario sea administrador
-router.use(verifyAdmin);
-
-// Obtener todos los usuarios
-router.get('/', async (req, res) => {
+/**
+ * Obtener la lista de todos los usuarios
+ * @route GET /api/users
+ * @access Privado - Requiere autenticación
+ */
+router.get('/', verifyToken, async (req, res) => {
     try {
-        const connection = await getConnection();
-        const [rows] = await connection.execute('SELECT id, username, email, rol, created_at, updated_at FROM users');
-        connection.release();
-
-        res.json(rows);
+        const users = await dbUsers.getUsers();
+        res.json(users);
     } catch (error) {
-        console.error('Error al obtener usuarios:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al obtener usuarios',
-            error: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-// Crear un nuevo usuario
-router.post('/', async (req, res) => {
+/**
+ * Crear un nuevo usuario
+ * @route POST /api/users
+ * @access Privado - Requiere autenticación
+ */
+router.post('/', verifyToken, async (req, res) => {
     try {
         const { username, email, password, rol } = req.body;
 
-        // Validar datos requeridos
-        if (!username || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Se requieren username, email y password'
-            });
-        }
-
-        const connection = await getConnection();
-
-        // Verificar si el usuario ya existe
-        const [existingUsers] = await connection.execute('SELECT * FROM users WHERE username = ? OR email = ?', [username, email]);
-
-        if (existingUsers.length > 0) {
-            connection.release();
-            return res.status(400).json({
-                success: false,
-                message: 'El nombre de usuario o email ya está en uso'
-            });
+        // Validar que se proporcionan todos los campos requeridos
+        if (!username || !email || !password || !rol) {
+            return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
 
         // Generar hash de la contraseña
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Insertar nuevo usuario
-        const [result] = await connection.execute('INSERT INTO users (username, email, password, rol) VALUES (?, ?, ?, ?)', [username, email, hashedPassword, rol || 'user']);
-
-        connection.release();
-
-        res.status(201).json({
-            success: true,
-            message: 'Usuario creado correctamente',
-            userId: result.insertId,
+        // Crear el nuevo usuario
+        const result = await dbUsers.createUser({
             username,
             email,
-            rol: rol || 'user'
+            password: hashedPassword,
+            rol
         });
+
+        res.status(201).json(result);
     } catch (error) {
-        console.error('Error al crear usuario:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al crear usuario',
-            error: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-// Actualizar un usuario existente
-router.put('/', async (req, res) => {
+/**
+ * Actualizar un usuario existente
+ * @route PUT /api/users
+ * @access Privado - Requiere autenticación
+ */
+router.put('/', verifyToken, async (req, res) => {
     try {
         const { id, username, email, rol } = req.body;
 
-        // Validar datos requeridos
+        // Validar que se proporcionan todos los campos requeridos
         if (!id || !username || !email || !rol) {
-            return res.status(400).json({
-                success: false,
-                message: 'Se requieren id, username, email y rol'
-            });
+            return res.status(400).json({ message: 'Todos los campos son obligatorios' });
         }
 
-        const connection = await getConnection();
+        // Actualizar el usuario
+        const result = await dbUsers.updateUser(id, { username, email, rol });
 
-        // Verificar si el usuario existe
-        const [existingUser] = await connection.execute('SELECT * FROM users WHERE id = ?', [id]);
-
-        if (existingUser.length === 0) {
-            connection.release();
-            return res.status(404).json({
-                success: false,
-                message: 'Usuario no encontrado'
-            });
-        }
-
-        // Verificar si otro usuario ya tiene el mismo username o email
-        const [duplicates] = await connection.execute('SELECT * FROM users WHERE (username = ? OR email = ?) AND id != ?', [username, email, id]);
-
-        if (duplicates.length > 0) {
-            connection.release();
-            return res.status(400).json({
-                success: false,
-                message: 'El nombre de usuario o email ya está en uso por otro usuario'
-            });
-        }
-
-        // Actualizar usuario
-        await connection.execute('UPDATE users SET username = ?, email = ?, rol = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [username, email, rol, id]);
-
-        connection.release();
-
-        res.json({
-            success: true,
-            message: 'Usuario actualizado correctamente',
-            id,
-            username,
-            email,
-            rol
-        });
+        res.json(result);
     } catch (error) {
-        console.error('Error al actualizar usuario:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al actualizar usuario',
-            error: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-// Cambiar contraseña de usuario
-router.put('/password', async (req, res) => {
+/**
+ * Cambiar la contraseña de un usuario
+ * @route PUT /api/users/password
+ * @access Privado - Requiere autenticación
+ */
+router.put('/password', verifyToken, async (req, res) => {
     try {
         const { id, password } = req.body;
 
-        // Validar datos requeridos
+        // Validar que se proporcionan todos los campos requeridos
         if (!id || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Se requieren id y password'
-            });
-        }
-
-        const connection = await getConnection();
-
-        // Verificar si el usuario existe
-        const [existingUser] = await connection.execute('SELECT * FROM users WHERE id = ?', [id]);
-
-        if (existingUser.length === 0) {
-            connection.release();
-            return res.status(404).json({
-                success: false,
-                message: 'Usuario no encontrado'
-            });
+            return res.status(400).json({ message: 'ID y contraseña son obligatorios' });
         }
 
         // Generar hash de la nueva contraseña
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Actualizar contraseña
-        await connection.execute('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [hashedPassword, id]);
+        // Cambiar la contraseña
+        await dbUsers.changePassword(id, hashedPassword);
 
-        connection.release();
-
-        res.json({
-            success: true,
-            message: 'Contraseña actualizada correctamente',
-            id
-        });
+        res.json({ message: 'Contraseña actualizada correctamente' });
     } catch (error) {
-        console.error('Error al cambiar contraseña:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al cambiar contraseña',
-            error: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-// Eliminar usuarios
-router.delete('/', async (req, res) => {
+/**
+ * Eliminar usuarios
+ * @route DELETE /api/users
+ * @access Privado - Requiere autenticación
+ */
+router.delete('/', verifyToken, async (req, res) => {
     try {
         const { userIds } = req.body;
 
-        // Validar datos requeridos
+        // Validar que se proporciona al menos un ID
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Se requiere un array de IDs de usuarios'
-            });
-        }
-
-        const connection = await getConnection();
-
-        // Verificar que no se está intentando eliminar el usuario que hace la petición
-        if (userIds.includes(req.user.id)) {
-            connection.release();
-            return res.status(400).json({
-                success: false,
-                message: 'No puedes eliminar tu propio usuario'
-            });
+            return res.status(400).json({ message: 'Se requiere al menos un ID de usuario' });
         }
 
         // Eliminar usuarios
-        const [result] = await connection.execute(`DELETE FROM users WHERE id IN (${userIds.map(() => '?').join(',')})`, [...userIds]);
+        await dbUsers.deleteUsers(userIds);
 
-        connection.release();
-
-        res.json({
-            success: true,
-            message: `Se han eliminado ${result.affectedRows} usuarios`,
-            deletedCount: result.affectedRows
-        });
+        res.json({ message: 'Usuarios eliminados correctamente' });
     } catch (error) {
-        console.error('Error al eliminar usuarios:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al eliminar usuarios',
-            error: error.message
-        });
+        res.status(500).json({ message: error.message });
+    }
+});
+
+/**
+ * Guardar preferencias de estilo del usuario
+ * @route PUT /api/users/style-preferences
+ * @access Privado - Requiere autenticación
+ */
+router.put('/style-preferences', verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id; // ID del usuario autenticado
+        const stylePrefs = req.body; // Objeto con preferencias de estilo
+
+        // Validar que hay preferencias de estilo
+        if (!stylePrefs || Object.keys(stylePrefs).length === 0) {
+            return res.status(400).json({ message: 'No se proporcionaron preferencias de estilo' });
+        }
+
+        // Guardar las preferencias
+        await dbUsers.saveStylePreferences(userId, stylePrefs);
+
+        res.json({ message: 'Preferencias de estilo guardadas correctamente' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+/**
+ * Obtener preferencias de estilo del usuario
+ * @route GET /api/users/style-preferences
+ * @access Privado - Requiere autenticación
+ */
+router.get('/style-preferences', verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id; // ID del usuario autenticado
+
+        // Obtener las preferencias de estilo
+        const stylePrefs = await dbUsers.getStylePreferences(userId);
+
+        if (!stylePrefs) {
+            return res.json({}); // Si no hay preferencias, devolver un objeto vacío
+        }
+
+        res.json(stylePrefs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
 
