@@ -1,5 +1,16 @@
-import mysql from 'mysql2/promise';
+/**
+ * Módulo de conexión a la base de datos
+ *
+ * Este módulo proporciona funcionalidades para establecer y gestionar conexiones
+ * a la base de datos MySQL. Implementa un pool de conexiones para optimizar
+ * el rendimiento y la gestión de recursos. Lee la contraseña de la base de
+ * datos desde un archivo externo por seguridad.
+ *
+ * @module db_connection
+ */
+
 import fs from 'fs/promises';
+import mysql from 'mysql2/promise';
 import path from 'path';
 import { fileURLToPath } from 'url';
 

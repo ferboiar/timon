@@ -1,7 +1,7 @@
 <script setup>
 import { useAuth } from '@/composables/useAuth';
 import { useLayout } from '@/layout/composables/layout';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 //import AppConfigurator from './AppConfigurator.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
@@ -14,7 +14,7 @@ function toggleProfile(event) {
 
 const overlayMenuProfileItems = ref([
     {
-        label: 'Perfil',
+        label: computed(() => currentUser.value?.username || 'Perfil'),
         icon: 'pi pi-user',
         command: () => {
             console.log('Perfil');

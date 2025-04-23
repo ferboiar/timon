@@ -1,3 +1,14 @@
+/**
+ * Utilidades para la gestión de cuentas bancarias en la base de datos
+ *
+ * Este módulo proporciona funciones para interactuar con la tabla 'cuentas' de la base de datos.
+ * Incluye operaciones como obtener todas las cuentas, crear o actualizar cuentas,
+ * eliminar cuentas y obtener los tipos de cuentas válidos desde la definición de la tabla.
+ * Gestiona cuentas bancarias con atributos como nombre, tipo, IBAN, saldo y estado activo.
+ *
+ * @module db_utilsAcc
+ */
+
 import { getConnection } from './db_connection.mjs';
 
 async function getAccounts() {

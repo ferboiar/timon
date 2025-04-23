@@ -1,3 +1,14 @@
+/**
+ * Servidor principal de la API para la aplicación Timón
+ *
+ * Este archivo configura el servidor Express, registra los middlewares necesarios
+ * como CORS y manejo de JSON, y establece las rutas para los diferentes módulos
+ * de la API. Actúa como punto de entrada principal para todas las solicitudes HTTP
+ * y coordina la comunicación entre los clientes y las funcionalidades del backend.
+ *
+ * @module server
+ */
+
 import cors from 'cors';
 import express from 'express';
 import { config } from './config/env.mjs';

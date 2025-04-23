@@ -1,3 +1,14 @@
+/**
+ * API para la gestión de ahorros
+ *
+ * Este módulo proporciona endpoints para administrar objetivos de ahorro en la aplicación.
+ * Permite obtener todos los ahorros existentes, crear o actualizar objetivos de ahorro,
+ * eliminar ahorros, gestionar los movimientos (depósitos o retiros) asociados a cada ahorro,
+ * y obtener las periodicidades disponibles para planes de ahorro.
+ *
+ * @module routes/ahorros
+ */
+
 import { Router } from 'express';
 import { deleteMovimiento, deleteSavings, getMovimientos, getPeriodicidades, getSavings, pushMovimiento, pushSaving } from '../db/db_utilsSav.mjs';
 

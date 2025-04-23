@@ -1,3 +1,14 @@
+/**
+ * API para la gestión de usuarios
+ *
+ * Este módulo proporciona endpoints para administrar usuarios en la aplicación.
+ * Permite obtener la lista de usuarios, crear nuevos usuarios, actualizar usuarios existentes,
+ * cambiar contraseñas y eliminar usuarios. Todas las rutas requieren autenticación
+ * como administrador para garantizar la seguridad de las operaciones.
+ *
+ * @module routes/users
+ */
+
 import bcrypt from 'bcrypt';
 import express from 'express';
 import { getConnection } from '../db/db_connection.mjs';

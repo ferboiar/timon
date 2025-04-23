@@ -1,3 +1,14 @@
+/**
+ * API para la gestión de categorías
+ *
+ * Este módulo proporciona endpoints para administrar las categorías utilizadas en la aplicación.
+ * Las categorías sirven para clasificar recibos, gastos y otros elementos financieros.
+ * Permite obtener todas las categorías existentes, crear nuevas categorías,
+ * actualizar categorías existentes y eliminar categorías por ID o en lote.
+ *
+ * @module routes/categorias
+ */
+
 import { Router } from 'express';
 import { deleteCategorias, getCategorias, pushCategoria } from '../db/db_utilsCats.mjs';
 

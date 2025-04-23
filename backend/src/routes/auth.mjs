@@ -1,3 +1,14 @@
+/**
+ * API para la autenticación de usuarios
+ *
+ * Este módulo proporciona endpoints para gestionar la autenticación de usuarios.
+ * Incluye funcionalidad para iniciar sesión mediante credenciales (username/password)
+ * y verificar la validez de tokens JWT. Al autenticarse exitosamente, devuelve un
+ * token JWT con información del usuario y sus permisos asociados.
+ *
+ * @module routes/auth
+ */
+
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env.mjs';

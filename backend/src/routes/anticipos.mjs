@@ -1,3 +1,14 @@
+/**
+ * API para la gestión de anticipos y préstamos
+ *
+ * Este módulo proporciona endpoints para administrar anticipos o préstamos en la aplicación.
+ * Permite obtener todos los anticipos, crear o actualizar anticipos con sus planes de pago,
+ * eliminar anticipos, gestionar pagos individuales, y recalcular planes de pago cuando
+ * es necesario. Incluye funcionalidades para manejar diferentes periodicidades de pago.
+ *
+ * @module routes/anticipos
+ */
+
 import { Router } from 'express';
 import { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan } from '../db/db_utilsAdv.mjs';
 

@@ -1,3 +1,15 @@
+/**
+ * Utilidades para la gestión de anticipos en la base de datos
+ *
+ * Este módulo proporciona funciones para interactuar con las tablas 'anticipos' y 'anticipos_pagos'.
+ * Permite gestionar préstamos o anticipos con un plan de pagos asociado, incluyendo operaciones
+ * como obtener todos los anticipos, crear o actualizar anticipos y sus pagos asociados,
+ * eliminar anticipos, y gestionar el plan de pagos de forma automatizada según la periodicidad.
+ * También incluye funcionalidad para recalcular pagos cuando se modifica un anticipo.
+ *
+ * @module db_utilsAdv
+ */
+
 import { getConnection } from './db_connection.mjs';
 
 async function getAdvances() {

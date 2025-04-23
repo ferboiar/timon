@@ -9,8 +9,11 @@ import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
 const { layoutConfig, isDarkTheme } = useLayout();
-const { isAdmin, currentUser } = useAuth();
+const { isAdmin, currentUser, ROLES } = useAuth();
 const toast = useToast();
+
+// Convertir el objeto ROLES a un array para el dropdown
+const rolesArray = ref(Object.values(ROLES));
 
 // Presets configuration
 const presets = {
@@ -345,7 +348,7 @@ async function deleteSelectedUsers() {
 
 // Obtener usuarios al montar el componente
 onMounted(() => {
-    if (isAdmin) {
+    if (isAdmin.value) {
         fetchUsers();
     }
 });
@@ -416,9 +419,6 @@ onMounted(() => {
                             <Button label="Borrar" icon="pi pi-trash" severity="secondary" class="mr-2" @click="confirmDeleteSelectedUsers" :disabled="!selectedUsers.length" />
                             <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateUsers" />
                         </template>
-                        <template #end>
-                            <Button label="Exportar" icon="pi pi-upload" severity="secondary" />
-                        </template>
                     </Toolbar>
                     <DataTable ref="dt_users" v-model:selection="selectedUsers" :value="users" dataKey="id" responsiveLayout="scroll" selectionMode="multiple" sortMode="multiple" removableSort stripedRows>
                         <template #empty>
@@ -449,24 +449,29 @@ onMounted(() => {
     <!-- Diálogo para crear/editar usuario -->
     <Dialog v-model:visible="userDialog" :style="{ width: '450px' }" header="Detalle del usuario" :modal="true">
         <div class="flex flex-col gap-6">
-            <div>
-                <label for="username" class="block font-bold mb-3">Usuario</label>
-                <InputText id="username" v-model.trim="user.username" :required="true" autofocus fluid />
-                <small v-if="!user.username" class="text-red-500">El nombre de usuario es obligatorio.</small>
+            <small v-if="!user.username || !user.email || (!user.password && !user.id)" class="text-red-500">Todos los campos son obligatorios</small>
+
+            <!-- Si el usuario existe, username ocupa todo el ancho. Si es nuevo, se muestran username y password en dos columnas -->
+            <div class="grid" :class="{ 'grid-cols-1': user.id, 'grid-cols-2': !user.id, 'gap-4': !user.id }">
+                <div :class="{ 'col-span-2': user.id }">
+                    <label for="username" class="block font-bold mb-3">Usuario</label>
+                    <InputText id="username" v-model.trim="user.username" :required="true" autofocus class="w-full" />
+                </div>
+                <div v-if="!user.id">
+                    <label for="password" class="block font-bold mb-3">Contraseña</label>
+                    <Password id="password" v-model="user.password" :required="true" :feedback="true" class="w-full" toggle-mask promptLabel="Elige contraseña" weakLabel="Débil" mediumLabel="Media" strongLabel="Fuerte" />
+                </div>
             </div>
-            <div>
-                <label for="email" class="block font-bold mb-3">Email</label>
-                <InputText id="email" v-model.trim="user.email" :required="true" type="email" fluid />
-                <small v-if="!user.email" class="text-red-500">El email es obligatorio.</small>
-            </div>
-            <div>
-                <label for="rol" class="block font-bold mb-3">Rol</label>
-                <Select id="rol" v-model="user.rol" :options="['user', 'admin']" placeholder="Seleccione un rol" fluid />
-            </div>
-            <div v-if="!user.id">
-                <label for="password" class="block font-bold mb-3">Contraseña</label>
-                <Password id="password" v-model="user.password" :required="true" :feedback="true" fluid toggle-mask />
-                <small v-if="!user.password && !user.id" class="text-red-500">La contraseña es obligatoria para nuevos usuarios.</small>
+
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-8">
+                    <label for="email" class="block font-bold mb-3">Email</label>
+                    <InputText id="email" v-model.trim="user.email" :required="true" type="email" class="w-full" />
+                </div>
+                <div class="col-span-4">
+                    <label for="rol" class="block font-bold mb-3">Rol</label>
+                    <Select id="rol" v-model="user.rol" :options="rolesArray" placeholder="Seleccione un rol" class="w-full" />
+                </div>
             </div>
         </div>
 
@@ -477,20 +482,18 @@ onMounted(() => {
     </Dialog>
 
     <!-- Diálogo para cambiar contraseña -->
-    <Dialog v-model:visible="changePasswordDialog" :style="{ width: '450px' }" header="Cambiar contraseña" :modal="true">
+    <Dialog v-model:visible="changePasswordDialog" :style="{ width: '450px' }" :header="`Cambiar contraseña (${passwordData.username})`" :modal="true">
         <div class="flex flex-col gap-6">
-            <div>
-                <label class="block font-bold mb-3">Usuario: {{ passwordData.username }}</label>
-            </div>
-            <div>
-                <label for="newPassword" class="block font-bold mb-3">Nueva contraseña</label>
-                <Password id="newPassword" v-model="passwordData.password" :required="true" :feedback="true" fluid toggle-mask />
-                <small v-if="!passwordData.password" class="text-red-500">La contraseña es obligatoria.</small>
-            </div>
-            <div>
-                <label for="confirmPassword" class="block font-bold mb-3">Confirmar contraseña</label>
-                <Password id="confirmPassword" v-model="passwordData.confirmPassword" :required="true" fluid toggle-mask />
-                <small v-if="passwordData.password !== passwordData.confirmPassword" class="text-red-500">Las contraseñas no coinciden.</small>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="newPassword" class="block font-bold mb-3">Nueva contraseña</label>
+                    <Password id="newPassword" v-model="passwordData.password" :required="true" :feedback="true" class="w-full" toggle-mask promptLabel=" " weakLabel="Débil" mediumLabel="Media" strongLabel="Fuerte" />
+                </div>
+                <div>
+                    <label for="confirmPassword" class="block font-bold mb-3">Confirmar contraseña</label>
+                    <Password id="confirmPassword" v-model="passwordData.confirmPassword" :required="true" class="w-full" toggle-mask promptLabel=" " weakLabel="Débil" mediumLabel="Media" strongLabel="Fuerte" />
+                    <small v-if="passwordData.password !== passwordData.confirmPassword" class="text-red-500">Las contraseñas no coinciden</small>
+                </div>
             </div>
         </div>
 

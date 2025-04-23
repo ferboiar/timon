@@ -1,3 +1,14 @@
+/**
+ * Utilidades para la gestión de ahorros en la base de datos
+ *
+ * Este módulo proporciona funciones para interactuar con las tablas 'ahorros' y 'ahorros_movimientos'.
+ * Incluye operaciones como obtener todos los ahorros, gestionar sus movimientos asociados,
+ * crear o actualizar objetivos de ahorro, eliminar ahorros, y obtener las periodicidades disponibles.
+ * Permite un seguimiento detallado del progreso de ahorro con registros de depósitos y retiros.
+ *
+ * @module db_utilsSav
+ */
+
 import { getConnection } from './db_connection.mjs';
 
 async function getSavings() {

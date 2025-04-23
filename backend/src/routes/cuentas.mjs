@@ -1,3 +1,14 @@
+/**
+ * API para la gestión de cuentas bancarias
+ *
+ * Este módulo proporciona endpoints para administrar cuentas bancarias en la aplicación.
+ * Permite obtener la lista completa de cuentas, crear o actualizar cuentas existentes,
+ * eliminar cuentas individuales o múltiples, y consultar los tipos de cuentas disponibles
+ * (como corriente, ahorro, etc.) definidos en la estructura de la base de datos.
+ *
+ * @module routes/cuentas
+ */
+
 import { Router } from 'express';
 import { deleteAccounts, getAccounts, getTipos, pushAccount } from '../db/db_utilsAcc.mjs';
 

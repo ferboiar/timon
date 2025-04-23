@@ -1,3 +1,14 @@
+/**
+ * Utilidades para la gestión de recibos en la base de datos
+ *
+ * Este módulo proporciona funciones para interactuar con las tablas 'recibos' y 'fechas_cargo'.
+ * Incluye operaciones como obtener, crear, actualizar y eliminar recibos,
+ * así como gestionar los filtros de búsqueda y validar valores permitidos.
+ * Soporta filtrado por múltiples criterios como periodicidad, fecha, año, etc.
+ *
+ * @module db_utils
+ */
+
 import { getConnection } from './db_connection.mjs';
 
 const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 'estado', 'activo'];

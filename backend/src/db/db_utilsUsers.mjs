@@ -1,3 +1,14 @@
+/**
+ * Utilidades para la gestión de usuarios en la base de datos
+ *
+ * Este módulo proporciona funciones para interactuar con la tabla 'users' de la base de datos.
+ * Incluye operaciones como obtener usuarios por nombre o email, verificar credenciales,
+ * crear nuevos usuarios, y otras operaciones relacionadas con la autenticación y
+ * gestión de cuentas de usuario.
+ *
+ * @module db_utilsUsers
+ */
+
 import bcrypt from 'bcrypt';
 import { getConnection } from './db_connection.mjs';
 

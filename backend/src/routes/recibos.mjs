@@ -1,3 +1,14 @@
+/**
+ * API para la gestión de recibos
+ *
+ * Este módulo proporciona endpoints para administrar recibos o facturas periódicas.
+ * Permite obtener recibos con diversos filtros (periodicidad, fecha, año, etc.),
+ * crear o actualizar recibos y eliminar recibos individuales o en masa.
+ * Cada recibo puede tener fechas de cargo asociadas y estados específicos.
+ *
+ * @module routes/recibos
+ */
+
 // Importamos Router de express para crear rutas
 import { Router } from 'express';
 // Importamos las funciones getRecibos y pushRecibo desde el módulo db_utils.mjs

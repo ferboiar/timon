@@ -1,3 +1,14 @@
+/**
+ * Utilidades para la gestión de categorías en la base de datos
+ *
+ * Este módulo proporciona funciones para interactuar con la tabla 'categorias' de la base de datos.
+ * Incluye operaciones como obtener todas las categorías (con gestión especial para la categoría "Otros"),
+ * crear o actualizar categorías, y eliminar categorías mediante sus identificadores.
+ * Las categorías se utilizan para clasificar los recibos y otros elementos del sistema.
+ *
+ * @module db_utilsCats
+ */
+
 import { getConnection } from './db_connection.mjs';
 
 async function getCategorias() {
