@@ -1,9 +1,13 @@
 <script setup>
-import { ref } from 'vue';
-
+import { useAuth } from '@/composables/useAuth';
+import { computed, ref } from 'vue';
 import AppMenuItem from './AppMenuItem.vue';
 
-const model = ref([
+// Importar el composable de autenticación
+const { hasRole } = useAuth();
+
+// Modelo completo del menú con información de roles requeridos
+const fullModel = ref([
     {
         label: 'Inicio',
         items: [
@@ -55,12 +59,14 @@ const model = ref([
                     {
                         label: 'Documentación técnica',
                         icon: 'pi pi-fw pi-book',
-                        to: '/tech-docs'
+                        to: '/tech-docs',
+                        requiredRole: 'admin' // Solo visible para administradores
                     },
                     {
                         label: 'Guía de la plantilla',
                         icon: 'pi pi-fw pi-book',
-                        to: '/documentation'
+                        to: '/documentation',
+                        requiredRole: 'admin' // Solo visible para administradores
                     }
                 ]
             },
@@ -204,12 +210,50 @@ const model = ref([
         ]
     }
 ]);
+
+// Modelo filtrado según los roles de usuario
+const model = computed(() => {
+    // Función para filtrar elementos según roles
+    const filterItemsByRole = (items) => {
+        if (!items) return [];
+
+        return (
+            items
+                .filter((item) => !item.requiredRole || hasRole(item.requiredRole))
+                .map((item) => {
+                    // Si el elemento tiene subelementos, aplicar filtrado recursivamente
+                    if (item.items && item.items.length > 0) {
+                        const filteredSubItems = filterItemsByRole(item.items);
+                        return {
+                            ...item,
+                            items: filteredSubItems.length > 0 ? filteredSubItems : undefined
+                        };
+                    }
+                    return item;
+                })
+                // Eliminar secciones que quedaron sin elementos
+                .filter((item) => !item.items || item.items.length > 0)
+        );
+    };
+
+    // Aplicar el filtrado a cada sección del menú
+    return fullModel.value.map((section) => {
+        if (section.items) {
+            const filteredItems = filterItemsByRole(section.items);
+            return {
+                ...section,
+                items: filteredItems
+            };
+        }
+        return section;
+    });
+});
 </script>
 
 <template>
     <ul class="layout-menu">
         <template v-for="(item, i) in model" :key="i">
-            <app-menu-item v-if="!item.separator" :item="item" :index="i"></app-menu-item>
+            <app-menu-item v-if="!item.separator && item.items && item.items.length > 0" :item="item" :index="i"></app-menu-item>
             <li v-if="item.separator" class="menu-separator"></li>
         </template>
     </ul>
