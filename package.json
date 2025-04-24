@@ -2,6 +2,10 @@
   "name": "timon",
   "version": "0.1.0",
   "description": "Aplicación de contabilidad doméstica",
+  "type": "module",
+  "imports": {
+    "#backend/*": "./backend/src/*"
+  },
   "scripts": {
     "start:backend": "NODE_ENV=production node backend/src/server.mjs",
     "dev:backend": "NODE_ENV=development nodemon backend/src/server.mjs",

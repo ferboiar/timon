@@ -24,8 +24,8 @@
  */
 
 import bcrypt from 'bcrypt';
-import '../config/env.mjs'; // Importar configuración sin asignar a una variable
-import { getConnection } from '../db/db_connection.mjs';
+import '#backend/config/env.mjs'; // Importar configuración sin asignar a una variable
+import { getConnection } from '#backend/db/db_connection.mjs';
 
 // Función para crear un usuario de prueba
 async function createTestUser() {

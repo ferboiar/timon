@@ -11,15 +11,16 @@
 
 import cors from 'cors';
 import express from 'express';
-import { config } from './config/env.mjs';
 
-import ahorrosRouter from './routes/ahorros.mjs';
-import anticiposRouter from './routes/anticipos.mjs';
-import authRouter from './routes/auth.mjs';
-import categoriasRouter from './routes/categorias.mjs';
-import cuentasRouter from './routes/cuentas.mjs';
-import recibosRouter from './routes/recibos.mjs';
-import usersRouter from './routes/users.mjs';
+// Importaciones usando los subpath imports configurados en package.json
+import { config } from '#backend/config/env.mjs';
+import ahorrosRouter from '#backend/routes/ahorros.mjs';
+import anticiposRouter from '#backend/routes/anticipos.mjs';
+import authRouter from '#backend/routes/auth.mjs';
+import categoriasRouter from '#backend/routes/categorias.mjs';
+import cuentasRouter from '#backend/routes/cuentas.mjs';
+import recibosRouter from '#backend/routes/recibos.mjs';
+import usersRouter from '#backend/routes/users.mjs';
 
 const app = express();
 const port = config.server.port; //ver en ./config/env.mjs

@@ -117,11 +117,7 @@ Si el usuario ya existe en la base de datos, el script restablecerá su contrase
 7. **Ejecutar la aplicación**:
 
 ```bash
-# Para el backend
-cd backend
-node src/server.mjs
-
-# Para el frontend (desde la raíz del proyecto)
+# Para el entorno de desarrollo (desde la raíz del proyecto)
 npm run dev
 ```
 

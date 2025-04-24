@@ -9,8 +9,9 @@
  * Estos middlewares se utilizan en las rutas para proteger el acceso a recursos según
  * los permisos del usuario autenticado.
  */
+
 import jwt from 'jsonwebtoken';
-import { config } from '../config/env.mjs';
+import { config } from '#backend/config/env.mjs';
 
 // Middleware para verificar token JWT
 export const verifyToken = (req, res, next) => {

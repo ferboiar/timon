@@ -9,12 +9,12 @@
  * @module routes/auth
  */
 
-import express from 'express';
+import { config } from '#backend/config/env.mjs';
+import { verifyCredentials } from '#backend/db/db_utilsUsers.mjs';
+import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../config/env.mjs';
-import { verifyCredentials } from '../db/db_utilsUsers.mjs';
 
-const router = express.Router();
+const router = Router();
 
 // Endpoint para iniciar sesión
 router.post('/login', async (req, res) => {

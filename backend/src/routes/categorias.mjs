@@ -9,8 +9,8 @@
  * @module routes/categorias
  */
 
+import { deleteCategorias, getCategorias, pushCategoria } from '#backend/db/db_utilsCats.mjs';
 import { Router } from 'express';
-import { deleteCategorias, getCategorias, pushCategoria } from '../db/db_utilsCats.mjs';
 
 const router = Router();
 

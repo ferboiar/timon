@@ -9,10 +9,10 @@
  * @module routes/users
  */
 
+import * as dbUsers from '#backend/db/db_utilsUsers.mjs';
+import { verifyToken } from '#backend/middleware/auth.mjs';
 import bcrypt from 'bcrypt';
 import express from 'express';
-import * as dbUsers from '../db/db_utilsUsers.mjs';
-import { verifyToken } from '../middleware/auth.mjs';
 
 const router = express.Router();
 

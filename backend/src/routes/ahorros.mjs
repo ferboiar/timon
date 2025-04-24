@@ -9,8 +9,8 @@
  * @module routes/ahorros
  */
 
+import { deleteMovimiento, deleteSavings, getMovimientos, getPeriodicidades, getSavings, pushMovimiento, pushSaving } from '#backend/db/db_utilsSav.mjs';
 import { Router } from 'express';
-import { deleteMovimiento, deleteSavings, getMovimientos, getPeriodicidades, getSavings, pushMovimiento, pushSaving } from '../db/db_utilsSav.mjs';
 
 const router = Router();
 

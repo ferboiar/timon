@@ -10,9 +10,8 @@
  */
 
 // Importamos Router de express para crear rutas
+import { deleteRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
 import { Router } from 'express';
-// Importamos las funciones getRecibos y pushRecibo desde el módulo db_utils.mjs
-import { deleteRecibo, getRecibos, pushRecibo } from '../db/db_utils.mjs';
 
 // Creamos una instancia de Router
 const router = Router();

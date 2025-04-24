@@ -9,8 +9,8 @@
  * @module routes/anticipos
  */
 
+import { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan } from '#backend/db/db_utilsAdv.mjs';
 import { Router } from 'express';
-import { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan } from '../db/db_utilsAdv.mjs';
 
 const router = Router();
 

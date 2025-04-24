@@ -9,8 +9,8 @@
  * @module routes/cuentas
  */
 
+import { deleteAccounts, getAccounts, getTipos, pushAccount } from '#backend/db/db_utilsAcc.mjs';
 import { Router } from 'express';
-import { deleteAccounts, getAccounts, getTipos, pushAccount } from '../db/db_utilsAcc.mjs';
 
 const router = Router();
 
