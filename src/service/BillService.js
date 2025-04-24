@@ -1,8 +1,9 @@
+import { API_BASE_URL } from '@/config/api';
 import axios from 'axios';
 
 // Operaciones CRUD (Crear, Leer, Actualizar, Eliminar) sobre los datos de los recibos
 
-const API_URL = 'http://localhost:3000/api/recibos';
+const API_URL = `${API_BASE_URL}/api/recibos`;
 
 export class BillService {
     // Obtener todos los recibos

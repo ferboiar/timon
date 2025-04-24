@@ -6,7 +6,7 @@ import Aura from '@primevue/themes/aura';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
-import { vRole } from './directives/vRole'; // Importar la directiva personalizada
+import { vRole } from './directives/vRole'; // Importar directiva personalizada. Ver src/directives/vRole.js
 
 import '@/assets/styles.scss';
 import '@/assets/tailwind.css';
@@ -42,7 +42,7 @@ app.use(ToastService);
 app.use(ConfirmationService);
 
 // Registrar directivas
-app.directive('role', vRole); // Registrar nuestra directiva de control de acceso
+app.directive('role', vRole); // Registrar nuestra directiva de control de acceso. Ver src/directives/vRole.js
 
 // Funciones globales
 /**

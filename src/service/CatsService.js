@@ -1,6 +1,7 @@
+import { API_BASE_URL } from '@/config/api';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api/categorias';
+const API_URL = `${API_BASE_URL}/api/categorias`;
 
 export class CatsService {
     // Obtener todas las categorías
