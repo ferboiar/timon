@@ -47,16 +47,20 @@ async function createTestUser() {
         const [existingUsers] = await connection.execute('SELECT * FROM users WHERE username = ? OR email = ?', [username, email]);
 
         if (existingUsers.length > 0) {
-            console.log('El usuario de prueba ya existe:');
+            // Si el usuario existe, restablecer su contraseña
+            const existingUser = existingUsers[0];
+            await connection.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, existingUser.id]);
+
+            console.log('Usuario de prueba ya existe. Contraseña restablecida:');
             console.log(`- Usuario: ${username}`);
-            console.log(`- Email: ${email}`);
+            console.log(`- Nueva contraseña: ${password}`);
             return;
         }
 
         // Insertar el usuario de prueba
         const [result] = await connection.execute('INSERT INTO users (username, email, password, rol) VALUES (?, ?, ?, ?)', [username, email, hashedPassword, rol]);
 
-        console.log('Usuario de prueba creado exitosamente:');
+        console.log('Usuario de prueba creado con éxito:');
         console.log(`- Usuario: ${username}`);
         console.log(`- Email: ${email}`);
         console.log(`- Contraseña: ${password}`);

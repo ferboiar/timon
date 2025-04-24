@@ -302,9 +302,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `rol`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'admin@oyemirugido.net', '$2b$10$o98mBuKI8/NsEai4/GgLp.5VjFuQMSA6dkS/YS3cbzIrAmeU6A6Ju', 'admin', '2025-04-22 09:28:57', '2025-04-23 12:41:46'),
-(2, 'ferboiar', 'fernando.boix@hotmail.com', '$2b$10$zxqPrQRy/LIpzDFJNMJWMO.C5QFTuKLlXapq/KTvYqjkFQqwKL50q', 'admin', '2025-04-23 12:25:45', '2025-04-23 12:41:26'),
-(3, 'gelenpc', 'elena.pesquera@gmail.com', '$2b$10$VNbel6jzPvsXNU.JLughI.aAY2nORzrzCXrJNJQ3qLrbeWqLeUef2', 'limited_user', '2025-04-23 12:38:45', '2025-04-23 12:38:45');
+(1, 'admin', 'admin@admin', '$3b$32$o89mBuKI8/NxEai8/GgLp.3ZjFuQMSA6dkS/YS4cbzIrAmeU1A5Ju', 'admin', '2025-04-22 09:28:57', '2025-04-23 12:41:46');
 
 -- --------------------------------------------------------
 
@@ -325,9 +323,7 @@ CREATE TABLE `users_style_preferences` (
 --
 
 INSERT INTO `users_style_preferences` (`id`, `user_id`, `preferences`, `created_at`, `updated_at`) VALUES
-(1, 1, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:04:57', '2025-04-24 07:15:14'),
-(2, 2, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:19:51', '2025-04-23 19:32:49'),
-(3, 3, '{\"preset\": \"Aura\", \"primary\": \"purple\", \"surface\": \"soho\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 22:14:41', '2025-04-23 22:15:37');
+(1, 1, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:04:57', '2025-04-24 07:15:14');
 
 --
 -- Índices para tablas volcadas

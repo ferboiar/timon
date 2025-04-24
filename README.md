@@ -97,7 +97,24 @@ DB_PASSWORD=tu_password
 DB_DATABASE=conta_hogar
 ```
 
-6. **Ejecutar la aplicación**:
+6. **Crear usuario administrador de prueba**:
+
+Para poder acceder a la aplicación, necesitarás crear un usuario administrador inicial. El proyecto incluye un script que crea automáticamente un usuario con privilegios de administrador:
+
+```bash
+# Desde la raíz del proyecto
+node backend/src/scripts/createTestUser.mjs
+```
+
+Este script creará un usuario administrador con las siguientes credenciales:
+- Usuario: admin
+- Contraseña: password123
+
+Si el usuario ya existe en la base de datos, el script restablecerá su contraseña a "password123", lo que resulta útil si olvidaste la contraseña del administrador.
+
+> **IMPORTANTE**: Este usuario es únicamente para entornos de desarrollo o pruebas. En un entorno de producción, debes cambiar inmediatamente estas credenciales o crear un nuevo usuario administrador con credenciales seguras.
+
+7. **Ejecutar la aplicación**:
 
 ```bash
 # Para el backend
