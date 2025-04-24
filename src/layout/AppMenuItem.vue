@@ -1,4 +1,20 @@
 <script setup>
+/**
+ * Componente AppMenuItem
+ * ======================
+ *
+ * Este componente es responsable de renderizar un ítem individual del menú de navegación.
+ * Trabaja en conjunto con AppMenu.vue, que define la estructura completa del menú.
+ *
+ * Sus responsabilidades principales son:
+ * 1. Renderizar elementos del menú (tanto principales como anidados)
+ * 2. Gestionar el estado activo de los ítems de navegación
+ * 3. Manejar la navegación y las interacciones del usuario
+ * 4. Gestionar la visualización recursiva de submenús anidados
+ *
+ * AppMenu.vue proporciona la estructura de datos del menú y este componente
+ * se encarga de la representación visual y el comportamiento de cada ítem.
+ */
 import { useLayout } from '@/layout/composables/layout';
 import { onBeforeMount, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';

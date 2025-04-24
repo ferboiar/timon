@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: mysql-fer-particular.b.aivencloud.com:10613
--- Tiempo de generación: 22-04-2025 a las 11:22:41
+-- Tiempo de generación: 24-04-2025 a las 07:36:44
 -- Versión del servidor: 8.0.35
 -- Versión de PHP: 8.2.28
 
@@ -302,7 +302,32 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `rol`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'usuario@test.com', '$2b$10$AtFouDzyy4jqLP7tDT5wruPXxc1h0UB/jRWssAPCsm4hUnNH9xI5G', 'admin', '2025-04-22 09:28:57', '2025-04-22 10:54:18');
+(1, 'admin', 'admin@oyemirugido.net', '$2b$10$o98mBuKI8/NsEai4/GgLp.5VjFuQMSA6dkS/YS3cbzIrAmeU6A6Ju', 'admin', '2025-04-22 09:28:57', '2025-04-23 12:41:46'),
+(2, 'ferboiar', 'fernando.boix@hotmail.com', '$2b$10$zxqPrQRy/LIpzDFJNMJWMO.C5QFTuKLlXapq/KTvYqjkFQqwKL50q', 'admin', '2025-04-23 12:25:45', '2025-04-23 12:41:26'),
+(3, 'gelenpc', 'elena.pesquera@gmail.com', '$2b$10$VNbel6jzPvsXNU.JLughI.aAY2nORzrzCXrJNJQ3qLrbeWqLeUef2', 'limited_user', '2025-04-23 12:38:45', '2025-04-23 12:38:45');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `users_style_preferences`
+--
+
+CREATE TABLE `users_style_preferences` (
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `preferences` json DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `users_style_preferences`
+--
+
+INSERT INTO `users_style_preferences` (`id`, `user_id`, `preferences`, `created_at`, `updated_at`) VALUES
+(1, 1, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:04:57', '2025-04-24 07:15:14'),
+(2, 2, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:19:51', '2025-04-23 19:32:49'),
+(3, 3, '{\"preset\": \"Aura\", \"primary\": \"purple\", \"surface\": \"soho\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 22:14:41', '2025-04-23 22:15:37');
 
 --
 -- Índices para tablas volcadas
@@ -373,6 +398,13 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `username_UNIQUE` (`username`);
 
 --
+-- Indices de la tabla `users_style_preferences`
+--
+ALTER TABLE `users_style_preferences`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id_UNIQUE` (`user_id`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
@@ -428,7 +460,13 @@ ALTER TABLE `recibos`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT de la tabla `users_style_preferences`
+--
+ALTER TABLE `users_style_preferences`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Restricciones para tablas volcadas
@@ -465,6 +503,12 @@ ALTER TABLE `fechas_cargo`
 --
 ALTER TABLE `recibos`
   ADD CONSTRAINT `fk_categoria_id` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`);
+
+--
+-- Filtros para la tabla `users_style_preferences`
+--
+ALTER TABLE `users_style_preferences`
+  ADD CONSTRAINT `fk_user_id_preferences` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

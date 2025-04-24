@@ -1,3 +1,25 @@
+/**
+ * Configuración de rutas de la aplicación Timón
+ * =============================================
+ *
+ * Este archivo define la estructura de navegación de la aplicación,
+ * incluyendo:
+ *
+ * 1. Definición de todas las rutas de la aplicación organizadas por:
+ *    - Rutas dentro del layout principal (con menú lateral)
+ *    - Rutas independientes (sin layout común)
+ *
+ * 2. Sistema de protección de rutas mediante guardas de navegación que:
+ *    - Verifica la autenticación del usuario antes de permitir acceso
+ *    - Redirige a usuarios no autenticados hacia el login
+ *    - Gestiona permisos de rutas basados en roles de usuario
+ *    - Previene acceso al login si ya hay una sesión activa
+ *
+ * La configuración trabaja en conjunto con AppMenu.vue y AppMenuItem.vue
+ * para mostrar solo las opciones de navegación permitidas según el rol
+ * del usuario autenticado.
+ */
+
 import { useAuth } from '@/composables/useAuth';
 import AppLayout from '@/layout/AppLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
