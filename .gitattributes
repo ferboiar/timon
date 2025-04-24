@@ -1,0 +1,3 @@
+# Archivos a cifrar con git-crypt
+backend/.env filter=git-crypt diff=git-crypt
+backend/src/db/.db_connection filter=git-crypt diff=git-crypt
