@@ -11,6 +11,7 @@
 
 import cors from 'cors';
 import express from 'express';
+import helmet from 'helmet';
 
 // Importaciones usando los subpath imports configurados en package.json
 import { config } from '#backend/config/env.mjs';
@@ -24,6 +25,9 @@ import usersRouter from '#backend/routes/users.mjs';
 
 const app = express();
 const port = config.server.port; //ver en ./config/env.mjs
+
+// Implementar Helmet para seguridad (incluye desactivar x-powered-by)
+app.use(helmet());
 
 // Usar el middleware cors
 app.use(cors());

@@ -1,16 +1,16 @@
 /**
  * Resolvedor de rutas para ESM
- * 
+ *
  * Este módulo proporciona funciones para resolver rutas de alias en un entorno
  * de módulos ES (ESM). Permite utilizar rutas personalizadas como '@backend/'
  * en lugar de rutas relativas.
- * 
+ *
  * @module utils/path-resolver
  */
 
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
 import { createRequire } from 'module';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 // Obtener información del módulo actual
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +24,7 @@ const packageJson = require('../../../package.json');
 export function resolveAlias(path) {
     // Obtener los alias definidos en package.json
     const aliases = packageJson._moduleAliases || {};
-    
+
     // Comprobar si la ruta empieza por alguno de los alias
     for (const [alias, target] of Object.entries(aliases)) {
         if (path.startsWith(alias)) {
@@ -34,7 +34,7 @@ export function resolveAlias(path) {
             return resolve(process.cwd(), replacedPath);
         }
     }
-    
+
     // Si no es un alias, devolver la ruta sin cambios
     return path;
 }
