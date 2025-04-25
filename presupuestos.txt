@@ -1,0 +1,39 @@
+necesito una nueva tabla en la bbdd MySQL para gestionar los presupuestos. Considero un presupuesto como una partida de dinero destinada a cubrir un gasto fijo y normalmente conocido (por ejemplo, dinero destinado a la comida mensual, dinero destinado a las vacaciones, dinero destinado a ocio un mes, dinero destinado a los recibos de un mes en concreto)
+
+la tabla presupuesto debe guardar información sobre:
+- concepto: indicará el objetivo del presupuesto, por ejemplo "comida mensual"
+- descripción: permitirá incluir algún comentario adicional a tener en cuenta sobre el presupuesto
+- importe: Cantidad del presupuesto. Por ejemplo 520€/mes de presupuesto en comida. Es un valor que se establece en cada periodo (ver periodo a continuación), esto se debe hacer manual o automáticamente.
+- Periodo (diario, semanal, mensual, bimestral, trimestral, semestral, anual o sin definir): Permite establecer cuando el presupuesto se aplica. Un presupuesto mensual para la comida mensual, o un presupuesto anual para las facturas anuales, o un periodo sin definir para aquellos presupuestos que no quiero atar a un periodo concreto.
+
+- estado: especifica si el presupuesto está activo, pausado, cancelado o completado, por defecto activo.
+
+Más adelante definiré las transacciones como una nueva función de mi aplicación, ahora no quiero que las tengas en cuenta, solo te lo contaré para darte contexto que te ayude a crear la lógica adecuada para el presupuesto. Una transacción contra un presupuesto definido en un periodo concreto restará su importe hasta agotarlo. Por ejemplo, establezco la cantidad de 530€ para un presuouesto "Comida" para el periodo 1 a 31 de enero, cualquier transacción en ese rango de fechas en particular reducirá esa cantidad. Aún a 0 se pueden seguir generando transacciones contra el presupuesto, pero esto lo pondrá en negativo y habrá que hacerle un ingreso para compensarlo.
+
+
+Como quiero verlo en la aplicación web: dos desplegables arriba del todo. Uno de mes que por defecto se situa sobre el mes en curso, y otro para el año que por defecto se situa en el año en curso (como se hace en la vista calendario para el año). Esa vista del mes muestra una tabla que contiene:
+
+Concepto --- Presupuestado ---- Gastado (por día) --- Disponible (por día)
+
+Deben existir un presupuesto especial "recibos" para los recibos que deban llegar el mes seleccionado, cuyo importe se ajustará automáticamente al importe que le corresponda de los recibos de ese mes. Este presupuesto será expandible mostrando una entrada por cada recibo. Estas entradas mostrararán:
+   - concepto del recibo -- importe esperado --- importe recibido --- diferencia. Donde diferencia es esperado - recibido. Y un botón recepcionar que solo será pinchable cuando importe recibido <> 0.
+
+Ejemplos:   
+   esperado 50
+   recibido 40
+   diferencia 10
+   
+   esperado 10
+   recibido 40
+   diferencia -30
+
+Si diferencia > 0, significa que hay que quitarle la diferencia al valor del Presupuestado del mes en cuestión. Ha llegado menos de lo esperado por lo que tiene que haber más disponible para el mes. Por ejemplo, presupuestado de 500€ y diferencia de 10. Entonces presupuestado debe ser 490.
+Si difernecia = 0, no hacemos nada
+Si diferencia < 0, significa que tengo que añadir la diferencia al Presupuestado (por ejemplo, si tengo un presupuestado de 500€ y una diferencia de -30, significa que mi presupuestado deberá ser 530 pq han llegado 30 más de lo esperado)
+
+si en el cambio de mes algún recibo queda por recepcionar estos recibos pasan al mes siguiente donde posiblemente lleguen
+
+
+para una FASE II:
+cada concepto de la vista es pinchable y abrirá una nueva página que mostrará las transacciones registradas para ese presupuesto en ese periodo
+
