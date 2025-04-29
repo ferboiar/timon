@@ -14,6 +14,7 @@
  *    - Redirige a usuarios no autenticados hacia el login
  *    - Gestiona permisos de rutas basados en roles de usuario
  *    - Previene acceso al login si ya hay una sesión activa
+ *    - Detecta y maneja tokens JWT expirados
  *
  * La configuración trabaja en conjunto con AppMenu.vue y AppMenuItem.vue
  * para mostrar solo las opciones de navegación permitidas según el rol
@@ -21,6 +22,7 @@
  */
 
 import { useAuth } from '@/composables/useAuth';
+import { API_BASE_URL } from '@/config/api';
 import AppLayout from '@/layout/AppLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -227,7 +229,7 @@ const router = createRouter({
 });
 
 // Agregar guard de navegación para proteger rutas y redireccionar a login si no hay autenticación
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     // Si la ruta no es login ni alguna ruta pública, verificar autenticación
     const publicPages = ['/auth/login', '/auth/access', '/auth/error', '/landing', '/pages/notfound'];
     const authRequired = !publicPages.includes(to.path);
@@ -242,14 +244,60 @@ router.beforeEach((to, from, next) => {
 
     // Si va a login y ya está autenticado, redirigir a dashboard
     if (to.path === '/auth/login' && token) {
-        return next('/dashboard');
+        // Verificar si el token es válido antes de redirigir
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                // Token inválido o expirado, limpiar datos de usuario y permitir acceso a login
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user');
+                return next();
+            }
+
+            return next('/dashboard');
+        } catch (error) {
+            console.error('Error verificando token en guard de navegación:', error);
+            return next();
+        }
+    }
+
+    // Si requiere autenticación y hay un token, verificar que sigue siendo válido
+    if (authRequired && token) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                // Token inválido o expirado, limpiar datos y redirigir a login
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user');
+
+                console.warn('Sesión expirada detectada en navegación. Redirigiendo a login...');
+                return next('/auth/login');
+            }
+        } catch (error) {
+            console.error('Error verificando token en guard de navegación:', error);
+            // En caso de error de red, permitir continuar para no bloquear la navegación
+        }
     }
 
     // Verificar restricciones de rutas por roles
     if (to.meta.requiresAdmin) {
         const { isAdmin } = useAuth();
         if (!isAdmin.value) {
-            return next('/dashboard'); // Redirigir si no es admin
+            return next('/auth/access'); // Redirigir a página de acceso denegado
         }
     }
 

@@ -1,11 +1,14 @@
 <script setup>
+import { useAuth } from '@/composables/useAuth';
 import { useLayout } from '@/layout/composables/layout';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import AppConfigurator from './AppConfigurator.vue';
 import AppFooter from './AppFooter.vue';
 import AppSidebar from './AppSidebar.vue';
 import AppTopbar from './AppTopbar.vue';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
+const { verifySessionValidity } = useAuth();
 
 const outsideClickListener = ref(null);
 
@@ -53,6 +56,16 @@ function isOutsideClicked(event) {
 
     return !(sidebarEl.isSameNode(event.target) || sidebarEl.contains(event.target) || topbarEl.isSameNode(event.target) || topbarEl.contains(event.target));
 }
+
+// Verificar la validez de la sesión al cargar el layout principal
+onMounted(async () => {
+    try {
+        await verifySessionValidity();
+    } catch (error) {
+        console.error('Error al verificar la sesión en AppLayout:', error);
+        // El método verifySessionValidity ya maneja el logout si el token es inválido
+    }
+});
 </script>
 
 <template>
@@ -65,6 +78,7 @@ function isOutsideClicked(event) {
             </div>
             <app-footer></app-footer>
         </div>
+        <app-configurator></app-configurator>
         <div class="layout-mask animate-fadein"></div>
     </div>
     <Toast />

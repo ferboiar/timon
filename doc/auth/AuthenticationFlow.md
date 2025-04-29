@@ -88,6 +88,7 @@ Cuando el usuario navega por la aplicación:
    - Proporciona propiedades computadas como `isAuthenticated`, `isAdmin`, etc.
    - Carga las preferencias de estilo del usuario desde el servidor
    - Aplica las preferencias visuales a la interfaz
+   - Inicia la verificación periódica del token
 
 ### 5. Protección de Rutas
 
@@ -98,11 +99,13 @@ Para cada navegación dentro de la aplicación:
    - Si la ruta requiere autenticación
    - Si el usuario está autenticado (usando `useAuth`)
    - Si la ruta requiere roles específicos
+   - Si el token del usuario sigue siendo válido haciendo una petición al servidor
 3. Según el resultado:
    - Permite la navegación si los requisitos se cumplen
    - Redirecciona a login si se requiere autenticación y el usuario no está autenticado
    - Redirecciona a una página de acceso denegado si el usuario no tiene los roles necesarios
    - Redirecciona al dashboard si un usuario autenticado intenta acceder a páginas de login
+   - Redirecciona a login si el token JWT ha expirado o es inválido
 
 ### 6. Control de Acceso a Nivel de Componente
 
@@ -144,6 +147,7 @@ Cuando el usuario decide cerrar sesión:
 
 1. Se llama a la función `logout()` del composable `useAuth`
 2. Esta función:
+   - Detiene la verificación periódica del token
    - Elimina el token JWT y los datos de usuario de `localStorage` y `sessionStorage`
    - Mantiene `rememberedUser` para facilitar futuros inicios de sesión
    - Actualiza el estado reactivo `currentUser` a null
@@ -151,13 +155,58 @@ Cuando el usuario decide cerrar sesión:
 
 ## Manejo de Sesiones Inactivas o Expiradas
 
-Para tokens expirados o invalidados:
+El sistema implementa un mecanismo completo de detección y manejo de tokens expirados a través de múltiples capas:
 
-1. Cuando se realiza una solicitud con un token expirado:
-   - El servidor responde con un error 401
-   - El interceptor de axios captura este error
-   - Limpia los datos de sesión local
-   - Redirecciona al usuario a la página de login con un mensaje apropiado
+1. **Interceptor de Respuestas API**: Un interceptor centralizado en `api.js` captura errores 401/403:
+   ```javascript
+   apiClient.interceptors.response.use(
+     response => response,
+     error => {
+       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+         // Verificar si es por token expirado y ejecutar logout
+         const { logout } = useAuth();
+         logout(); // Cierra la sesión y redirige al login
+       }
+       return Promise.reject(error);
+     }
+   );
+   ```
+
+2. **Verificación Periódica**: El composable `useAuth` ejecuta comprobaciones periódicas:
+   ```javascript
+   // Cada 5 minutos verifica proactivamente la validez del token
+   tokenVerificationInterval = setInterval(() => {
+     verifySessionValidity();
+   }, TOKEN_VERIFICATION_INTERVAL);
+   ```
+
+3. **Verificación en Carga del Layout**: Al cargar cualquier página dentro del layout principal:
+   ```javascript
+   // En AppLayout.vue
+   onMounted(async () => {
+     await verifySessionValidity(); // Verifica la sesión al cargar el layout
+   });
+   ```
+
+4. **Guards de Navegación**: Al navegar entre rutas protegidas:
+   ```javascript
+   // En el router
+   if (authRequired && token) {
+     const response = await fetch(`${API_BASE_URL}/api/auth/verify`...);
+     if (!response.ok) {
+       // Token inválido, redirigir a login
+       return next('/auth/login');
+     }
+   }
+   ```
+
+Este enfoque multicapa garantiza que:
+- Los tokens expirados se detecten rápidamente desde múltiples puntos
+- El usuario sea redirigido automáticamente a la página de login
+- Se mantengan almacenadas las preferencias para facilitar el nuevo inicio de sesión
+- Se muestre información clara sobre por qué la sesión ha finalizado
+
+> [Para más detalles sobre la gestión de tokens expirados, consulta la documentación específica](./TokenExpiration.md)
 
 ## Seguridad del Sistema
 
@@ -167,6 +216,7 @@ El sistema implementa varias capas de seguridad:
    - Tokens almacenados en localStorage/sessionStorage solo cuando es necesario
    - Control de acceso a nivel de rutas y componentes
    - No expone información sensible en el estado de la aplicación
+   - Verificación proactiva de validez del token
 
 2. **En el backend**:
    - Contraseñas encriptadas con bcrypt (no se almacenan en texto plano)
@@ -188,3 +238,4 @@ El sistema implementa varias capas de seguridad:
 - [Directiva vRole](../directives/vRole.md) - Control de acceso en componentes
 - [API de Autenticación](../routes/auth.md) - Endpoints de autenticación
 - [Utilidades de Base de Datos](../db/db_utilsUsers.md) - Funciones de verificación de credenciales
+- [Gestión de Tokens Expirados](./TokenExpiration.md) - Manejo detallado de expiración de tokens

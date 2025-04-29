@@ -11,6 +11,7 @@
  * - Sistema de verificación de roles y permisos basado en jerarquía
  * - Métodos para comprobar permisos específicos (isAdmin, isUser, canRead)
  * - Gestión del cierre de sesión con redirección automática
+ * - Verificación periódica de la validez del token
  *
  * Valores y métodos exportados:
  * -------------------------------------
@@ -39,6 +40,7 @@
  * @method refreshUser() - Actualiza los datos del usuario desde el almacenamiento local
  * @method updateStylePreferences(stylePrefs) - Actualiza las preferencias de estilo del usuario
  * @method applyUserPreferences(prefs) - Aplica las preferencias de estilo del usuario
+ * @method verifySessionValidity() - Verifica si el token actual sigue siendo válido
  *
  * Uso típico:
  * ```js
@@ -61,9 +63,10 @@
  * @returns {Object} Conjunto de propiedades y métodos para gestionar la autenticación
  */
 import { useTheme } from '@/composables/useTheme';
+import { API_BASE_URL } from '@/config/api';
 import { useLayout } from '@/layout/composables/layout';
 import { UsersService } from '@/service/UsersService';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 /**
@@ -77,6 +80,11 @@ export function useAuth() {
     const router = useRouter();
     const { layoutConfig } = useLayout();
     const { applyFullTheme } = useTheme();
+
+    // Intervalo para verificación periódica del token
+    let tokenVerificationInterval = null;
+    // Tiempo entre verificaciones (5 minutos)
+    const TOKEN_VERIFICATION_INTERVAL = 5 * 60 * 1000;
 
     // Roles disponibles en la aplicación según la estructura de la base de datos
     const ROLES = {
@@ -134,11 +142,74 @@ export function useAuth() {
                 // Cargar preferencias de estilo si el usuario está autenticado
                 if (currentUser.value && currentUser.value.id) {
                     loadStylePreferences();
+                    // Iniciar verificación periódica del token
+                    startTokenVerification();
                 }
             } catch (error) {
                 console.error('Error al parsear los datos del usuario:', error);
                 currentUser.value = null;
             }
+        }
+    };
+
+    /**
+     * Inicia la verificación periódica del token JWT
+     */
+    const startTokenVerification = () => {
+        // Limpiar cualquier intervalo existente
+        if (tokenVerificationInterval) {
+            clearInterval(tokenVerificationInterval);
+        }
+
+        // Configurar un nuevo intervalo para verificar el token
+        tokenVerificationInterval = setInterval(() => {
+            verifySessionValidity();
+        }, TOKEN_VERIFICATION_INTERVAL);
+    };
+
+    /**
+     * Verifica si el token actual sigue siendo válido haciendo una petición al endpoint de verificación
+     * @returns {Promise<boolean>} Resultado de la verificación
+     */
+    const verifySessionValidity = async () => {
+        // Primero intentamos obtener el token del localStorage
+        let token = localStorage.getItem('token');
+
+        // Si no hay token en localStorage, intentamos en sessionStorage
+        if (!token) {
+            token = sessionStorage.getItem('token');
+        }
+
+        // Si no hay token, consideramos la sesión como inválida
+        if (!token) {
+            if (isAuthenticated.value) {
+                console.warn('No se encontró token pero el usuario aparece como autenticado. Cerrando sesión...');
+                logout();
+            }
+            return false;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            // Si la respuesta es exitosa, el token es válido
+            if (response.ok) {
+                return true;
+            }
+
+            // Si la respuesta no es exitosa, el token ha expirado o es inválido
+            console.warn('Token expirado o inválido detectado durante verificación periódica');
+            logout();
+            return false;
+        } catch (error) {
+            console.error('Error al verificar la validez del token:', error);
+            // En caso de error de red, mantenemos la sesión activa para evitar interrupciones
+            return true;
         }
     };
 
@@ -235,6 +306,12 @@ export function useAuth() {
     // Función para cerrar sesión
     const logout = () => {
         try {
+            // Detener la verificación periódica del token
+            if (tokenVerificationInterval) {
+                clearInterval(tokenVerificationInterval);
+                tokenVerificationInterval = null;
+            }
+
             // Eliminar tokens y datos de usuario
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -264,6 +341,14 @@ export function useAuth() {
         loadUser();
     });
 
+    // Detener el intervalo de verificación al desmontar el componente
+    onUnmounted(() => {
+        if (tokenVerificationInterval) {
+            clearInterval(tokenVerificationInterval);
+            tokenVerificationInterval = null;
+        }
+    });
+
     // Refrescar el usuario (útil después de cambios de rol o datos)
     const refreshUser = () => {
         loadUser();
@@ -282,6 +367,7 @@ export function useAuth() {
         refreshUser,
         updateStylePreferences,
         applyUserPreferences,
+        verifySessionValidity,
         ROLES
     };
 }
