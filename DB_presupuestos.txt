@@ -1,0 +1,59 @@
+-- ==================================================
+-- Tabla: presupuestos
+-- Propósito: Almacena la configuración base de los presupuestos
+-- Relaciones:
+--   - categorias (categoria_id)
+--   - cuentas (cuenta_id)
+--   - users (user_id)
+-- ==================================================
+CREATE TABLE `presupuestos` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador único autoincremental',
+  `concepto` VARCHAR(50) NOT NULL COMMENT 'Nombre descriptivo del presupuesto (ej: "Comida mensual")',
+  `comentario` TEXT COMMENT 'Notas adicionales u observaciones',
+  `importe_base` DECIMAL(12,2) NOT NULL COMMENT 'Cantidad de referencia para nuevos periodos',
+  `periodicidad` ENUM(
+    'diario',
+    'semanal',
+    'mensual',
+    'bimestral',
+    'trimestral',
+    'semestral',
+    'anual',
+    'puntual'
+  ) NOT NULL DEFAULT 'mensual' COMMENT 'Frecuencia de aplicación del presupuesto',
+  `es_recibo` BOOLEAN DEFAULT 0 COMMENT 'Indica si es un presupuesto especial para gestión de recibos',
+  `cuenta_id` INT NOT NULL COMMENT 'Cuenta asociada para operaciones financieras',
+  `categoria_id` INT NOT NULL COMMENT 'Categoría de gasto asociada',
+  `user_id` INT NOT NULL COMMENT 'Usuario responsable del presupuesto',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de creación del registro',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Última actualización',
+  PRIMARY KEY (`id`),
+  KEY `idx_categoria` (`categoria_id`),
+  KEY `idx_cuenta` (`cuenta_id`),
+  KEY `idx_usuario` (`user_id`),
+  CONSTRAINT `fk_presupuesto_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`),
+  CONSTRAINT `fk_presupuesto_cuenta` FOREIGN KEY (`cuenta_id`) REFERENCES `cuentas` (`id`),
+  CONSTRAINT `fk_presupuesto_usuario` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+-- ==================================================
+-- Tabla: periodos_presupuesto
+-- Propósito: Gestiona la ejecución concreta de cada periodo
+-- Relaciones:
+--   - presupuestos (presupuesto_id)
+-- ==================================================
+CREATE TABLE `periodos_presupuesto` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador único autoincremental',
+  `presupuesto_id` INT NOT NULL COMMENT 'Presupuesto al que pertenece el periodo',
+  `fecha_inicio` DATE NOT NULL COMMENT 'Fecha de inicio del periodo',
+  `fecha_fin` DATE NOT NULL COMMENT 'Fecha de finalización del periodo',
+  `importe_ajustado` DECIMAL(12,2) NOT NULL COMMENT 'Importe ajustado para este periodo específico',
+  `diferencia_acumulada` DECIMAL(12,2) DEFAULT 0 COMMENT 'Saldo acumulado de periodos anteriores',
+  `estado` ENUM('pendiente','activo','cerrado') DEFAULT 'pendiente' COMMENT 'Estado actual del periodo',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de creación del registro',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Última actualización',
+  PRIMARY KEY (`id`),
+  KEY `idx_presupuesto` (`presupuesto_id`),
+  KEY `idx_fechas` (`fecha_inicio`,`fecha_fin`),
+  CONSTRAINT `fk_periodo_presupuesto` FOREIGN KEY (`presupuesto_id`) REFERENCES `presupuestos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;

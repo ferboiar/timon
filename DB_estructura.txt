@@ -2,7 +2,6 @@
 -- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
--- Servidor: mysql-fer-particular.b.aivencloud.com:10613
 -- Tiempo de generación: 24-04-2025 a las 07:36:44
 -- Versión del servidor: 8.0.35
 -- Versión de PHP: 8.2.28

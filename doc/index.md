@@ -48,11 +48,12 @@ El sistema de recibos permite gestionar pagos periódicos con sus respectivas fe
 
 ### Estructura del Sistema de Recibos
 
-El sistema de recibos sigue una arquitectura de tres capas:
+El sistema de recibos sigue una arquitectura de cuatro capas:
 
 1. **Interfaz de Usuario** - Componente Vue para la gestión de recibos y sus fechas de cargo
 2. **Servicios Cliente** - Clase que maneja la comunicación con el backend
 3. **Backend** - API REST y funciones de acceso a la base de datos
+4. **Persistencia de datos** - Base de datos ([SGBD](../db/schema/index.md))
 
 ### Documentación de Recibos
 
