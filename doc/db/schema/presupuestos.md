@@ -395,35 +395,42 @@ ORDER BY fecha_inicio DESC;
 El siguiente diagrama muestra las principales relaciones entre las tablas del sistema:
 
 ```nomnoml
-#direction: down
-#spacing: 50
+#direction: right
+#spacing: 70
 #fontSize: 14
 #font: Calibri
 #lineWidth: 1.5
 #background: transparent
 #edges: rounded
-#fill:rgb(204, 198, 179); rgb(204, 198, 179)
+#gravity: 1.3
+#ranker: network-simplex
 
-[presupuestos]
-[periodos_presupuesto]
-[recibos_periodos]
-[recibos]
-[categorias]
-[cuentas]
-[users]
+// Definición de las entidades
+[<table>presupuestos]
+[<table>periodos_presupuesto]
+[<table>recibos_periodos]
+[<table>recibos]
+[<table>categorias]
+[<table>cuentas]
+[<table>users]
   
-// Relaciones "1 a muchos" (||--o{)
-[presupuestos] +-> 1..* [periodos_presupuesto]
-[presupuestos] +-> 1..* [recibos_periodos]
-  
-// Relaciones "0 a muchos" (}o--||)
-[periodos_presupuesto] o-> 0..* [recibos]
-  
-// Relaciones simples (}|--|)
-[presupuestos] --> usa [categorias]
-[presupuestos] --> asociado a [cuentas]
-[presupuestos] --> pertenece a [users]
+// Relaciones principales
+[presupuestos] +-> 1:N [periodos_presupuesto]
+[periodos_presupuesto] +-> 1:N [recibos_periodos]
+[recibos] o-> 1:N [recibos_periodos]
+
+// Relaciones de clave foránea (con posiciones ajustadas)
+[categorias] <-o 1:N [presupuestos]
+[cuentas] <-o 1:N [presupuestos]
+[users] <-o 1:N [presupuestos]
 ```
+Cada **presupuesto** está asociado a una única categoría, una única cuenta bancaria y un único usuario responsable. Esto se representa en el diagrama con las flechas que van desde categorías, cuentas y usuarios hacia presupuestos con la notación "1:N".
+
+Un presupuesto puede generar múltiples **periodos presupuestarios**. Por ejemplo, un presupuesto mensual para alimentación generará un periodo para enero, otro para febrero, y así sucesivamente. Esta es una relación "1 a muchos".
+
+Cada **periodo presupuestario** puede tener asociados varios **recibos periódicos** a través de la tabla de unión recibos_periodos. Esto permite vincular recibos específicos a periodos concretos para su seguimiento.
+
+Un **recibo** puede estar vinculado a varios periodos presupuestarios diferentes, como ocurriría con un seguro anual que se distribuye en varios meses. Esta relación es de tipo "1 a muchos" y usa una notación ligeramente diferente para indicar que es opcional.
 
 ### Integración con el Sistema Existente
 

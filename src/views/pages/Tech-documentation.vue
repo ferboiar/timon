@@ -150,10 +150,11 @@ const renderPendingDiagrams = async () => {
                 const svgString = window.nomnoml.renderSvg(diagram.source);
                 container.innerHTML = svgString;
 
-                // NUEVO: Identificar y marcar las etiquetas de relaciones
-                // Las etiquetas de relaciones son elementos text que están fuera de las cajas y normalmente cerca de paths
+                // NUEVO: Identificar y marcar las etiquetas de relaciones basándonos en la estructura del SVG
                 const svg = container.querySelector('svg');
                 if (svg) {
+                    console.log(`SVG encontrado en el contenedor ${diagram.id}`);
+
                     // Identificar primero qué textos son nombres de entidades
                     const entityNames = [];
                     const entityTexts = Array.from(diagram.source.matchAll(/\[(.*?)\]/g));
@@ -163,30 +164,50 @@ const renderPendingDiagrams = async () => {
                         }
                     });
 
+                    console.log('Nombres de entidades detectados:', entityNames);
+
                     // Buscar todos los textos SVG
                     const texts = svg.querySelectorAll('text');
-                    texts.forEach((text) => {
+                    console.log(`Elementos text encontrados en el SVG: ${texts.length}`);
+
+                    texts.forEach((text, index) => {
                         const content = text.textContent.trim();
 
-                        // Verificar si es un nombre de entidad (no queremos marcar estos como etiquetas)
+                        // Verificar si es un nombre de entidad
                         const isEntityName = entityNames.includes(content);
 
-                        // Si no es un nombre de entidad y parece una etiqueta de relación
-                        const isRelationshipLabel =
-                            !isEntityName &&
-                            (content.includes(':') ||
-                                content.includes('a muchos') ||
-                                content.includes('usa') ||
-                                content.includes('asociado') ||
-                                content.includes('pertenece') ||
-                                content.match(/^\d+\.\.\d+$/) || // Para patrones como "1..*"
-                                content.match(/^\d+\.\.\*$/)); // Para patrones como "0..*"
+                        console.log(`Texto ${index}: "${content}" - Es nombre de entidad: ${isEntityName}`);
 
-                        if (isRelationshipLabel) {
-                            // Marcar este texto como etiqueta de relación
-                            text.setAttribute('data-relation-label', 'true');
+                        if (!isEntityName) {
+                            // Si no es un nombre de entidad, verificamos si está asociado a una relación
+                            // Para esto, comprobamos si está cerca de una línea o path o marker
+                            const parent = text.parentNode;
+
+                            if (parent && parent.tagName === 'g') {
+                                // Buscar elementos hermanos que sean líneas, paths o markers
+                                const siblings = Array.from(parent.childNodes);
+                                const hasPathOrLine = siblings.some(
+                                    (node) =>
+                                        node.nodeType === 1 && // Es un elemento
+                                        (node.tagName === 'path' || node.tagName === 'line')
+                                );
+
+                                // También verificamos si el grupo padre tiene algún atributo transform
+                                // Esto es común en textos de etiquetas de relación que están posicionados
+                                const hasTransform = parent.hasAttribute('transform');
+
+                                if (hasPathOrLine || hasTransform) {
+                                    // Es texto asociado a una línea/path o está transformado, probablemente una etiqueta
+                                    text.setAttribute('data-relation-label', 'true');
+                                    console.log(`  ✅ MARCADO como etiqueta de relación: "${content}"`);
+                                }
+                            }
                         }
                     });
+
+                    // Verificar después de aplicar los atributos
+                    const markedElements = svg.querySelectorAll('[data-relation-label="true"]');
+                    console.log(`Elementos marcados como etiquetas de relación: ${markedElements.length}`);
                 } else {
                     console.error(`No se encontró el elemento SVG en el contenedor ${diagram.id}`);
                 }
