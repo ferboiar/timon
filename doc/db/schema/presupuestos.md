@@ -394,14 +394,36 @@ ORDER BY fecha_inicio DESC;
 
 El siguiente diagrama muestra las principales relaciones entre las tablas del sistema:
 
-erDiagram
-    presupuestos ||--o{ periodos_presupuesto : "genera periodos"
-    presupuestos }|--|| categorias : "se clasifica en"
-    presupuestos }|--|| cuentas : "se asocia con"
-    presupuestos }|--|| users : "pertenece a"
-    periodos_presupuesto ||--o{ recibos_periodos : "puede incluir" 
-    recibos_periodos }o--|| recibos : "referencia a"
-    periodos_presupuesto ||--o{ transacciones : "registra gastos en"
+```nomnoml
+#direction: down
+#spacing: 50
+#fontSize: 14
+#font: Calibri
+#lineWidth: 1.5
+#background: transparent
+#edges: rounded
+#fill:rgb(204, 198, 179); rgb(204, 198, 179)
+
+[presupuestos]
+[periodos_presupuesto]
+[recibos_periodos]
+[recibos]
+[categorias]
+[cuentas]
+[users]
+  
+// Relaciones "1 a muchos" (||--o{)
+[presupuestos] +-> 1..* [periodos_presupuesto]
+[presupuestos] +-> 1..* [recibos_periodos]
+  
+// Relaciones "0 a muchos" (}o--||)
+[periodos_presupuesto] o-> 0..* [recibos]
+  
+// Relaciones simples (}|--|)
+[presupuestos] --> usa [categorias]
+[presupuestos] --> asociado a [cuentas]
+[presupuestos] --> pertenece a [users]
+```
 
 ### Integración con el Sistema Existente
 
