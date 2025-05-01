@@ -2,7 +2,8 @@
 -- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
--- Tiempo de generación: 24-04-2025 a las 07:36:44
+-- Servidor: mysql-fer-particular.b.aivencloud.com:10613
+-- Tiempo de generación: 01-05-2025 a las 18:15:59
 -- Versión del servidor: 8.0.35
 -- Versión de PHP: 8.2.28
 
@@ -20,6 +21,48 @@ SET time_zone = "+00:00";
 -- Base de datos: `conta_hogar`
 --
 
+DELIMITER $$
+--
+-- Procedimientos
+--
+CREATE DEFINER="avnadmin"@"%" PROCEDURE "realizar_mantenimiento_indices" ()   BEGIN
+    DECLARE inicio DATETIME;
+    DECLARE fin DATETIME;
+    DECLARE duracion INT;
+    
+    -- Registrar tiempo de inicio
+    SET inicio = NOW();
+    
+    -- Análisis de tablas (actualiza estadísticas)
+    ANALYZE TABLE presupuestos;
+    ANALYZE TABLE recibos;
+    ANALYZE TABLE ahorros;
+    ANALYZE TABLE anticipos;
+    ANALYZE TABLE categorias;
+    ANALYZE TABLE cuentas;
+    
+    -- Optimización de tablas (reorganiza índices y recupera espacio)
+    OPTIMIZE TABLE presupuestos;
+    OPTIMIZE TABLE recibos;
+    OPTIMIZE TABLE ahorros;
+    OPTIMIZE TABLE anticipos;
+    OPTIMIZE TABLE categorias;
+    OPTIMIZE TABLE cuentas;
+    
+    -- Calcular duración
+    SET fin = NOW();
+    SET duracion = TIMESTAMPDIFF(MICROSECOND, inicio, fin) / 1000;
+    
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO mantenimiento_logs (operacion, detalles, fecha, duracion_ms)
+    VALUES ('Mantenimiento índices', 
+            'Tablas: presupuestos, recibos, ahorros, anticipos, categorias, cuentas', 
+            NOW(), 
+            duracion);
+END$$
+
+DELIMITER ;
+
 -- --------------------------------------------------------
 
 --
@@ -36,17 +79,19 @@ CREATE TABLE `ahorros` (
   `importe_periodico` decimal(10,2) DEFAULT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `propietario_id` int NOT NULL,
+  `es_privado` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si es privado, solo visible al propietario'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `ahorros`
 --
 
-INSERT INTO `ahorros` (`id`, `concepto`, `descripcion`, `ahorrado`, `fecha_objetivo`, `periodicidad`, `importe_periodico`, `activo`, `created_at`, `updated_at`) VALUES
-(1, 'Dsds', 'sdsds', 82.00, '2025-07-01', 'mensual', 25.00, 1, '2025-03-18 22:02:16', '2025-03-22 23:03:32'),
-(5, 'Vacaciones', '', 600.00, '2025-08-09', NULL, 0.00, 1, '2025-03-18 22:42:04', '2025-03-18 22:42:04'),
-(7, 'dssssss', 'sss', 332.00, '2025-04-24', 'anual', 140.00, 1, '2025-03-21 23:07:32', '2025-03-21 23:07:32');
+INSERT INTO `ahorros` (`id`, `concepto`, `descripcion`, `ahorrado`, `fecha_objetivo`, `periodicidad`, `importe_periodico`, `activo`, `created_at`, `updated_at`, `propietario_id`, `es_privado`) VALUES
+(1, 'Dsds', 'sdsds', 82.00, '2025-07-01', 'mensual', 25.00, 1, '2025-03-18 22:02:16', '2025-05-01 12:13:37', 2, 0),
+(5, 'Vacaciones', '', 600.00, '2025-08-09', NULL, 0.00, 1, '2025-03-18 22:42:04', '2025-05-01 12:13:37', 2, 0),
+(7, 'dssssss', 'sss', 332.00, '2025-04-24', 'anual', 140.00, 1, '2025-03-21 23:07:32', '2025-05-01 12:13:37', 2, 0);
 
 -- --------------------------------------------------------
 
@@ -89,18 +134,20 @@ CREATE TABLE `anticipos` (
   `cuenta_origen_id` int NOT NULL,
   `periodicidad` enum('mensual','bimestral','trimestral','anual') CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `propietario_id` int NOT NULL,
+  `es_privado` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si es privado, solo visible al propietario'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `anticipos`
 --
 
-INSERT INTO `anticipos` (`id`, `concepto`, `importe_total`, `pago_sugerido`, `fecha_inicio`, `fecha_fin_prevista`, `descripcion`, `estado`, `cuenta_origen_id`, `periodicidad`, `created_at`, `updated_at`) VALUES
-(18, 'Veterinario', 276.00, 62.00, '2025-01-01', '2025-08-01', 'incineración Hache', 'activo', 2, 'mensual', '2025-04-03 20:27:09', '2025-04-03 20:28:58'),
-(19, 'TV', 385.00, 65.00, '2025-09-01', '2026-04-01', 'TCL 55c765', 'activo', 2, 'mensual', '2025-04-03 20:31:22', '2025-04-13 16:42:39'),
-(20, 'Prueba', 555.00, 45.00, '2026-02-02', '2027-04-02', '', 'activo', 2, 'mensual', '2025-04-03 20:32:31', '2025-04-03 20:34:59'),
-(21, 'Prueba 2', 100.00, 30.00, '2025-04-04', '2025-08-04', '', 'activo', 2, 'mensual', '2025-04-03 20:39:04', '2025-04-09 20:56:01');
+INSERT INTO `anticipos` (`id`, `concepto`, `importe_total`, `pago_sugerido`, `fecha_inicio`, `fecha_fin_prevista`, `descripcion`, `estado`, `cuenta_origen_id`, `periodicidad`, `created_at`, `updated_at`, `propietario_id`, `es_privado`) VALUES
+(18, 'Veterinario', 276.00, 62.00, '2025-01-01', '2025-08-01', 'incineración Hache', 'activo', 2, 'mensual', '2025-04-03 20:27:09', '2025-05-01 12:13:38', 2, 0),
+(19, 'TV', 385.00, 65.00, '2025-09-01', '2026-04-01', 'TCL 55c765', 'activo', 2, 'mensual', '2025-04-03 20:31:22', '2025-05-01 12:13:38', 2, 0),
+(20, 'Prueba', 555.00, 45.00, '2026-02-02', '2027-04-02', '', 'activo', 2, 'mensual', '2025-04-03 20:32:31', '2025-05-01 12:13:38', 2, 0),
+(21, 'Prueba 2', 100.00, 30.00, '2025-04-04', '2025-08-04', '', 'activo', 2, 'mensual', '2025-04-03 20:39:04', '2025-05-01 12:13:38', 2, 0);
 
 -- --------------------------------------------------------
 
@@ -167,23 +214,25 @@ INSERT INTO `anticipos_pagos` (`id`, `anticipo_id`, `importe`, `fecha`, `tipo`, 
 CREATE TABLE `categorias` (
   `id` int NOT NULL,
   `nombre` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
-  `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL
+  `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `propietario_id` int NOT NULL,
+  `es_privado` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si es privado, solo visible al propietario'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `categorias`
 --
 
-INSERT INTO `categorias` (`id`, `nombre`, `descripcion`) VALUES
-(1, 'vivienda', 'Gastos relacionados con la residencia principal, incluyendo hipoteca o alquiler, impuestos inmobiliarios, comunidad de propietarios y reformas'),
-(2, 'servicios', 'Gastos fijos relacionados con suministros básicos como electricidad, agua, gas, telefonía, internet, y servicios de mantenimiento del hogar'),
-(3, 'seguros', 'Pólizas de seguros periódicas, incluyendo seguros de hogar, vida, salud, vehículos, y otros seguros de protección personal o patrimonial'),
-(4, 'transporte', 'Gastos relacionados con movilidad, incluyendo combustible, transporte público, mantenimiento de vehículos, parking y peajes'),
-(5, 'entretenimiento', 'Gastos destinados al ocio y tiempo libre, como subscripciones a plataformas digitales, eventos culturales, cine, teatro, conciertos y actividades deportivas'),
-(6, 'educacion', 'Gastos en formación y material educativo, incluyendo matrículas, libros, material escolar, extraescolares y cursos de formación'),
-(7, 'comida', 'Gastos relacionados con alimentación, incluyendo compra de supermercado y productos alimenticios'),
-(8, 'ahorros', 'Partidas destinadas a reservas económicas, incluyendo planes de pensiones, fondos de inversión y depósitos a plazo fijo'),
-(9, 'otros', 'Categoría para gastos diversos que no encajan en las categorías anteriores o gastos puntuales no recurrentes');
+INSERT INTO `categorias` (`id`, `nombre`, `descripcion`, `propietario_id`, `es_privado`) VALUES
+(1, 'vivienda', 'Gastos relacionados con la residencia principal, incluyendo hipoteca o alquiler, impuestos inmobiliarios, comunidad de propietarios y reformas', 2, 0),
+(2, 'servicios', 'Gastos fijos relacionados con suministros básicos como electricidad, agua, gas, telefonía, internet, y servicios de mantenimiento del hogar', 2, 0),
+(3, 'seguros', 'Pólizas de seguros periódicas, incluyendo seguros de hogar, vida, salud, vehículos, y otros seguros de protección personal o patrimonial', 2, 0),
+(4, 'transporte', 'Gastos relacionados con movilidad, incluyendo combustible, transporte público, mantenimiento de vehículos, parking y peajes', 2, 0),
+(5, 'entretenimiento', 'Gastos destinados al ocio y tiempo libre, como subscripciones a plataformas digitales, eventos culturales, cine, teatro, conciertos y actividades deportivas', 2, 0),
+(6, 'educacion', 'Gastos en formación y material educativo, incluyendo matrículas, libros, material escolar, extraescolares y cursos de formación', 2, 0),
+(7, 'comida', 'Gastos relacionados con alimentación, incluyendo compra de supermercado y productos alimenticios', 2, 0),
+(8, 'ahorros', 'Partidas destinadas a reservas económicas, incluyendo planes de pensiones, fondos de inversión y depósitos a plazo fijo', 2, 0),
+(9, 'otros', 'Categoría para gastos diversos que no encajan en las categorías anteriores o gastos puntuales no recurrentes', 2, 0);
 
 -- --------------------------------------------------------
 
@@ -198,19 +247,21 @@ CREATE TABLE `cuentas` (
   `iban` varchar(34) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
   `saldo_actual` decimal(12,2) DEFAULT '0.00',
   `descripcion` text COLLATE utf8mb4_spanish_ci,
-  `activa` tinyint(1) DEFAULT '1'
+  `activa` tinyint(1) DEFAULT '1',
+  `propietario_id` int NOT NULL,
+  `es_privado` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si es privada, solo visible al propietario'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `cuentas`
 --
 
-INSERT INTO `cuentas` (`id`, `nombre`, `tipo`, `iban`, `saldo_actual`, `descripcion`, `activa`) VALUES
-(1, 'Personal Fer', 'corriente', 'ES0500190074314010014080', 0.00, 'Cuenta Nómina DB', 1),
-(2, 'Ahorros Fer', 'ahorro', 'ES9100190074314010037364', 2968.37, 'Cuenta DB Asesora', 1),
-(3, 'Ahorros Marc', 'ahorro', 'ES2800190537634210003821', 750.36, 'Cuenta Junior DB', 1),
-(4, 'Inversión Fer I', 'inversión', '00190537699000044320', 9462.02, 'Fondo de Inversión DB', 1),
-(5, 'Inversión Fer II', 'inversión', '00190109950100125306', 12488.60, 'Cuenta Valores (son 3 inversiones: Nota Global 90% Protegida, Nota Bonus Global y Nota Protección Fondos V', 1);
+INSERT INTO `cuentas` (`id`, `nombre`, `tipo`, `iban`, `saldo_actual`, `descripcion`, `activa`, `propietario_id`, `es_privado`) VALUES
+(1, 'Personal Fer', 'corriente', 'ES0500190074314010014080', 0.00, 'Cuenta Nómina DB', 1, 2, 0),
+(2, 'Ahorros Fer', 'ahorro', 'ES9100190074314010037364', 2968.37, 'Cuenta DB Asesora', 1, 2, 0),
+(3, 'Ahorros Marc', 'ahorro', 'ES2800190537634210003821', 750.36, 'Cuenta Junior DB', 1, 2, 0),
+(4, 'Inversión Fer I', 'inversión', '00190537699000044320', 9462.02, 'Fondo de Inversión DB', 1, 2, 0),
+(5, 'Inversión Fer II', 'inversión', '00190109950100125306', 12488.60, 'Cuenta Valores (son 3 inversiones: Nota Global 90% Protegida, Nota Bonus Global y Nota Protección Fondos V', 1, 2, 0);
 
 -- --------------------------------------------------------
 
@@ -254,6 +305,59 @@ INSERT INTO `fechas_cargo` (`id`, `recibo_id`, `fecha`, `activo`, `estado`, `com
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `mantenimiento_logs`
+--
+
+CREATE TABLE `mantenimiento_logs` (
+  `id` int NOT NULL,
+  `operacion` varchar(100) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `detalles` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `fecha` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `duracion_ms` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `presupuestos`
+--
+
+CREATE TABLE `presupuestos` (
+  `id` int NOT NULL COMMENT 'Identificador único autoincremental',
+  `concepto` varchar(50) COLLATE utf8mb4_spanish_ci NOT NULL COMMENT 'Nombre descriptivo del presupuesto (ej: "Comida mensual")',
+  `comentario` text COLLATE utf8mb4_spanish_ci COMMENT 'Notas adicionales u observaciones',
+  `importe_base` decimal(12,2) NOT NULL COMMENT 'Cantidad de referencia para nuevos periodos',
+  `periodicidad` enum('diario','semanal','mensual','bimestral','trimestral','semestral','anual','puntual') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'mensual' COMMENT 'Frecuencia de aplicación del presupuesto',
+  `es_recibo` tinyint(1) DEFAULT '0' COMMENT 'Indica si es un presupuesto especial para gestión de recibos',
+  `cuenta_id` int NOT NULL COMMENT 'Cuenta asociada para operaciones financieras',
+  `categoria_id` int NOT NULL COMMENT 'Categoría de gasto asociada',
+  `propietario_id` int NOT NULL COMMENT 'Usuario propietario del presupuesto',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de creación del registro',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Última actualización',
+  `es_privado` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si es privado, solo visible al propietario'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `presupuesto_periodos`
+--
+
+CREATE TABLE `presupuesto_periodos` (
+  `id` int NOT NULL COMMENT 'Identificador único autoincremental',
+  `presupuesto_id` int NOT NULL COMMENT 'Presupuesto al que pertenece el periodo',
+  `fecha_inicio` date NOT NULL COMMENT 'Fecha de inicio del periodo',
+  `fecha_fin` date NOT NULL COMMENT 'Fecha de finalización del periodo',
+  `importe_ajustado` decimal(12,2) NOT NULL COMMENT 'Importe ajustado para este periodo específico',
+  `diferencia_acumulada` decimal(12,2) DEFAULT '0.00' COMMENT 'Saldo acumulado de periodos anteriores',
+  `estado` enum('pendiente','activo','cerrado') COLLATE utf8mb4_spanish_ci DEFAULT 'pendiente' COMMENT 'Estado actual del periodo',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de creación del registro',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Última actualización'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `recibos`
 --
 
@@ -262,23 +366,25 @@ CREATE TABLE `recibos` (
   `concepto` varchar(30) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
   `importe` decimal(10,2) DEFAULT NULL,
   `periodicidad` enum('mensual','bimestral','trimestral','anual') COLLATE utf8mb4_spanish_ci DEFAULT NULL,
-  `categoria_id` int DEFAULT NULL
+  `categoria_id` int DEFAULT NULL,
+  `propietario_id` int NOT NULL,
+  `es_privado` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si es privado, solo visible al propietario'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `recibos`
 --
 
-INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_id`) VALUES
-(1, 'Seguro Qualitas', 332.00, 'anual', 3),
-(86, 'Impuesto circulación', 125.49, 'anual', 4),
-(87, 'Amazon prime', 49.90, 'anual', 5),
-(88, 'Seguro vida (Zurich)', 437.12, 'anual', 3),
-(89, 'Seguro continente (Zurich)', 180.34, 'anual', 3),
-(90, 'Seguro contenido (Pelayo)', 121.96, 'anual', 3),
-(91, 'Comunidad garaje', 35.00, 'trimestral', 1),
-(134, 'prueba bimestral', 69.00, 'bimestral', 7),
-(137, 'prueba mensual 22', 11.00, 'mensual', 6);
+INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_id`, `propietario_id`, `es_privado`) VALUES
+(1, 'Seguro Qualitas', 332.00, 'anual', 3, 2, 0),
+(86, 'Impuesto circulación', 125.49, 'anual', 4, 2, 0),
+(87, 'Amazon prime', 49.90, 'anual', 5, 2, 0),
+(88, 'Seguro vida (Zurich)', 437.12, 'anual', 3, 2, 0),
+(89, 'Seguro continente (Zurich)', 180.34, 'anual', 3, 2, 0),
+(90, 'Seguro contenido (Pelayo)', 121.96, 'anual', 3, 2, 0),
+(91, 'Comunidad garaje', 35.00, 'trimestral', 1, 2, 0),
+(134, 'prueba bimestral', 69.00, 'bimestral', 7, 2, 0),
+(137, 'prueba mensual 22', 11.00, 'mensual', 6, 2, 0);
 
 -- --------------------------------------------------------
 
@@ -293,15 +399,24 @@ CREATE TABLE `users` (
   `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
   `rol` enum('admin','user','limited_user','reader') CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'user',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `perm_recibos` enum('no','lectura','escritura') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'escritura',
+  `perm_presupuestos` enum('no','lectura','escritura') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'escritura',
+  `perm_ahorros` enum('no','lectura','escritura') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'escritura',
+  `perm_anticipos` enum('no','lectura','escritura') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'escritura',
+  `perm_transacciones` enum('no','lectura','escritura') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'escritura',
+  `perm_categorias` enum('no','lectura','escritura') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'escritura',
+  `perm_cuentas` enum('no','lectura','escritura') COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'escritura'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `email`, `password`, `rol`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'admin@admin', '$3b$32$o89mBuKI8/NxEai8/GgLp.3ZjFuQMSA6dkS/YS4cbzIrAmeU1A5Ju', 'admin', '2025-04-22 09:28:57', '2025-04-23 12:41:46');
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `rol`, `created_at`, `updated_at`, `perm_recibos`, `perm_presupuestos`, `perm_ahorros`, `perm_anticipos`, `perm_transacciones`, `perm_categorias`, `perm_cuentas`) VALUES
+(1, 'admin', 'admin@timon.net', '$2b$10$o98mBuKI8/NsEai4/GgLp.5VjFuQMSA6dkS/YS3cbzIrAmeU6A6Ju', 'admin', '2025-04-22 09:28:57', '2025-04-24 13:15:20', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura'),
+(2, 'ferboiar', 'ferboiar@timon.net', '$1b$21$zvqPrQRy/LIpzDFJNMJWNO.C3QFTuKLlXapq/KTvYqjkFQqwKL61q', 'admin', '2025-04-23 12:25:45', '2025-04-24 13:15:30', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura'),
+(3, 'gelenpc', 'gelenpc@timon.net', '$2b$12$VNbel6jzPvsXNU.JLughI.aAY3nORzrzCXrJNJQ1qLrbeWqLeUeg4', 'limited_user', '2025-04-23 12:38:45', '2025-04-24 13:15:40', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura');
 
 -- --------------------------------------------------------
 
@@ -322,7 +437,9 @@ CREATE TABLE `users_style_preferences` (
 --
 
 INSERT INTO `users_style_preferences` (`id`, `user_id`, `preferences`, `created_at`, `updated_at`) VALUES
-(1, 1, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:04:57', '2025-04-24 07:15:14');
+(1, 1, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:04:57', '2025-04-24 07:15:14'),
+(2, 2, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:19:51', '2025-04-23 19:32:49'),
+(3, 3, '{\"preset\": \"Aura\", \"primary\": \"purple\", \"surface\": \"soho\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 22:14:41', '2025-04-23 22:15:37');
 
 --
 -- Índices para tablas volcadas
@@ -332,7 +449,8 @@ INSERT INTO `users_style_preferences` (`id`, `user_id`, `preferences`, `created_
 -- Indices de la tabla `ahorros`
 --
 ALTER TABLE `ahorros`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ahorros_visibilidad` (`propietario_id`,`es_privado`);
 
 --
 -- Indices de la tabla `ahorros_movimientos`
@@ -346,7 +464,8 @@ ALTER TABLE `ahorros_movimientos`
 --
 ALTER TABLE `anticipos`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `cuenta_origen_id` (`cuenta_origen_id`);
+  ADD KEY `cuenta_origen_id` (`cuenta_origen_id`),
+  ADD KEY `idx_anticipos_visibilidad` (`propietario_id`,`es_privado`);
 
 --
 -- Indices de la tabla `anticipos_pagos`
@@ -360,14 +479,16 @@ ALTER TABLE `anticipos_pagos`
 -- Indices de la tabla `categorias`
 --
 ALTER TABLE `categorias`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_categorias_visibilidad` (`propietario_id`,`es_privado`);
 
 --
 -- Indices de la tabla `cuentas`
 --
 ALTER TABLE `cuentas`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `iban` (`iban`);
+  ADD UNIQUE KEY `iban` (`iban`),
+  ADD KEY `idx_cuentas_visibilidad` (`propietario_id`,`es_privado`);
 
 --
 -- Indices de la tabla `fechas_cargo`
@@ -378,11 +499,36 @@ ALTER TABLE `fechas_cargo`
   ADD KEY `fk_cuenta_id` (`cuenta_id`);
 
 --
+-- Indices de la tabla `mantenimiento_logs`
+--
+ALTER TABLE `mantenimiento_logs`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `presupuestos`
+--
+ALTER TABLE `presupuestos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_categoria` (`categoria_id`),
+  ADD KEY `idx_cuenta` (`cuenta_id`),
+  ADD KEY `idx_usuario` (`propietario_id`),
+  ADD KEY `idx_presupuestos_visibilidad` (`propietario_id`,`es_privado`);
+
+--
+-- Indices de la tabla `presupuesto_periodos`
+--
+ALTER TABLE `presupuesto_periodos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_presupuesto` (`presupuesto_id`),
+  ADD KEY `idx_fechas` (`fecha_inicio`,`fecha_fin`);
+
+--
 -- Indices de la tabla `recibos`
 --
 ALTER TABLE `recibos`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_categoria_id` (`categoria_id`);
+  ADD KEY `fk_categoria_id` (`categoria_id`),
+  ADD KEY `idx_recibos_visibilidad` (`propietario_id`,`es_privado`);
 
 --
 -- Indices de la tabla `users`
@@ -446,6 +592,24 @@ ALTER TABLE `fechas_cargo`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=159;
 
 --
+-- AUTO_INCREMENT de la tabla `mantenimiento_logs`
+--
+ALTER TABLE `mantenimiento_logs`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `presupuestos`
+--
+ALTER TABLE `presupuestos`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT COMMENT 'Identificador único autoincremental';
+
+--
+-- AUTO_INCREMENT de la tabla `presupuesto_periodos`
+--
+ALTER TABLE `presupuesto_periodos`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT COMMENT 'Identificador único autoincremental';
+
+--
 -- AUTO_INCREMENT de la tabla `recibos`
 --
 ALTER TABLE `recibos`
@@ -468,6 +632,12 @@ ALTER TABLE `users_style_preferences`
 --
 
 --
+-- Filtros para la tabla `ahorros`
+--
+ALTER TABLE `ahorros`
+  ADD CONSTRAINT `fk_ahorros_propietario` FOREIGN KEY (`propietario_id`) REFERENCES `users` (`id`);
+
+--
 -- Filtros para la tabla `ahorros_movimientos`
 --
 ALTER TABLE `ahorros_movimientos`
@@ -477,7 +647,8 @@ ALTER TABLE `ahorros_movimientos`
 -- Filtros para la tabla `anticipos`
 --
 ALTER TABLE `anticipos`
-  ADD CONSTRAINT `anticipos_ibfk_1` FOREIGN KEY (`cuenta_origen_id`) REFERENCES `cuentas` (`id`);
+  ADD CONSTRAINT `anticipos_ibfk_1` FOREIGN KEY (`cuenta_origen_id`) REFERENCES `cuentas` (`id`),
+  ADD CONSTRAINT `fk_anticipos_propietario` FOREIGN KEY (`propietario_id`) REFERENCES `users` (`id`);
 
 --
 -- Filtros para la tabla `anticipos_pagos`
@@ -487,6 +658,18 @@ ALTER TABLE `anticipos_pagos`
   ADD CONSTRAINT `anticipos_pagos_ibfk_2` FOREIGN KEY (`cuenta_destino_id`) REFERENCES `cuentas` (`id`);
 
 --
+-- Filtros para la tabla `categorias`
+--
+ALTER TABLE `categorias`
+  ADD CONSTRAINT `fk_categorias_propietario` FOREIGN KEY (`propietario_id`) REFERENCES `users` (`id`);
+
+--
+-- Filtros para la tabla `cuentas`
+--
+ALTER TABLE `cuentas`
+  ADD CONSTRAINT `fk_cuentas_propietario` FOREIGN KEY (`propietario_id`) REFERENCES `users` (`id`);
+
+--
 -- Filtros para la tabla `fechas_cargo`
 --
 ALTER TABLE `fechas_cargo`
@@ -494,16 +677,39 @@ ALTER TABLE `fechas_cargo`
   ADD CONSTRAINT `fk_cuenta_id` FOREIGN KEY (`cuenta_id`) REFERENCES `cuentas` (`id`);
 
 --
+-- Filtros para la tabla `presupuestos`
+--
+ALTER TABLE `presupuestos`
+  ADD CONSTRAINT `fk_presupuesto_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`),
+  ADD CONSTRAINT `fk_presupuesto_cuenta` FOREIGN KEY (`cuenta_id`) REFERENCES `cuentas` (`id`),
+  ADD CONSTRAINT `fk_presupuesto_usuario` FOREIGN KEY (`propietario_id`) REFERENCES `users` (`id`);
+
+--
+-- Filtros para la tabla `presupuesto_periodos`
+--
+ALTER TABLE `presupuesto_periodos`
+  ADD CONSTRAINT `fk_presupuesto_periodo` FOREIGN KEY (`presupuesto_id`) REFERENCES `presupuestos` (`id`) ON DELETE CASCADE;
+
+--
 -- Filtros para la tabla `recibos`
 --
 ALTER TABLE `recibos`
-  ADD CONSTRAINT `fk_categoria_id` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`);
+  ADD CONSTRAINT `fk_categoria_id` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`),
+  ADD CONSTRAINT `fk_recibos_propietario` FOREIGN KEY (`propietario_id`) REFERENCES `users` (`id`);
 
 --
 -- Filtros para la tabla `users_style_preferences`
 --
 ALTER TABLE `users_style_preferences`
   ADD CONSTRAINT `fk_user_id_preferences` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+DELIMITER $$
+--
+-- Eventos
+--
+CREATE DEFINER=`avnadmin`@`%` EVENT `indice_mantenimiento_mensual` ON SCHEDULE EVERY 1 MONTH STARTS '2025-06-01 03:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Mantenimiento mensual de índices (día 1 a las 3:00 AM)' DO CALL realizar_mantenimiento_indices()$$
+
+DELIMITER ;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

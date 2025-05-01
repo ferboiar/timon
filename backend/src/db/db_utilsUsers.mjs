@@ -20,7 +20,12 @@ export const getUsers = async () => {
     let connection;
     try {
         connection = await getConnection();
-        const [rows] = await connection.query('SELECT id, username, email, rol, created_at, updated_at FROM users');
+        const [rows] = await connection.query(`
+            SELECT id, username, email, rol, created_at, updated_at,
+                   perm_recibos, perm_presupuestos, perm_ahorros, 
+                   perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas
+            FROM users
+        `);
         return rows;
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
@@ -39,7 +44,16 @@ export const getUserById = async (userId) => {
     let connection;
     try {
         connection = await getConnection();
-        const [rows] = await connection.query('SELECT id, username, email, rol, created_at, updated_at FROM users WHERE id = ?', [userId]);
+        const [rows] = await connection.query(
+            `
+            SELECT id, username, email, rol, created_at, updated_at,
+                   perm_recibos, perm_presupuestos, perm_ahorros, 
+                   perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas
+            FROM users 
+            WHERE id = ?
+        `,
+            [userId]
+        );
         if (rows.length === 0) {
             throw new Error('Usuario no encontrado');
         }
@@ -61,9 +75,42 @@ export const createUser = async (userData) => {
     let connection;
     try {
         connection = await getConnection();
-        const { username, email, password, rol } = userData;
-        const [result] = await connection.query('INSERT INTO users (username, email, password, rol) VALUES (?, ?, ?, ?)', [username, email, password, rol]);
-        return { id: result.insertId, username, email, rol };
+        const {
+            username,
+            email,
+            password,
+            rol,
+            perm_recibos = 'escritura',
+            perm_presupuestos = 'escritura',
+            perm_ahorros = 'escritura',
+            perm_anticipos = 'escritura',
+            perm_transacciones = 'escritura',
+            perm_categorias = 'escritura',
+            perm_cuentas = 'escritura'
+        } = userData;
+
+        const [result] = await connection.query(
+            `INSERT INTO users (
+                username, email, password, rol,
+                perm_recibos, perm_presupuestos, perm_ahorros, 
+                perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [username, email, password, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas]
+        );
+
+        return {
+            id: result.insertId,
+            username,
+            email,
+            rol,
+            perm_recibos,
+            perm_presupuestos,
+            perm_ahorros,
+            perm_anticipos,
+            perm_transacciones,
+            perm_categorias,
+            perm_cuentas
+        };
     } catch (error) {
         console.error('Error al crear usuario:', error);
         if (error.code === 'ER_DUP_ENTRY') {
@@ -90,9 +137,49 @@ export const updateUser = async (userId, userData) => {
     let connection;
     try {
         connection = await getConnection();
-        const { username, email, rol } = userData;
-        await connection.query('UPDATE users SET username = ?, email = ?, rol = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [username, email, rol, userId]);
-        return { id: userId, username, email, rol };
+        const { username, email, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = userData;
+
+        let query = 'UPDATE users SET username = ?, email = ?, rol = ?';
+        let params = [username, email, rol];
+
+        // Añadir los permisos al query solo si están definidos
+        if (perm_recibos !== undefined) {
+            query += ', perm_recibos = ?';
+            params.push(perm_recibos);
+        }
+        if (perm_presupuestos !== undefined) {
+            query += ', perm_presupuestos = ?';
+            params.push(perm_presupuestos);
+        }
+        if (perm_ahorros !== undefined) {
+            query += ', perm_ahorros = ?';
+            params.push(perm_ahorros);
+        }
+        if (perm_anticipos !== undefined) {
+            query += ', perm_anticipos = ?';
+            params.push(perm_anticipos);
+        }
+        if (perm_transacciones !== undefined) {
+            query += ', perm_transacciones = ?';
+            params.push(perm_transacciones);
+        }
+        if (perm_categorias !== undefined) {
+            query += ', perm_categorias = ?';
+            params.push(perm_categorias);
+        }
+        if (perm_cuentas !== undefined) {
+            query += ', perm_cuentas = ?';
+            params.push(perm_cuentas);
+        }
+
+        query += ', updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+        params.push(userId);
+
+        await connection.query(query, params);
+
+        // Obtener los datos actualizados para devolverlos
+        const updatedUser = await getUserById(userId);
+        return updatedUser;
     } catch (error) {
         console.error(`Error al actualizar usuario con ID ${userId}:`, error);
         if (error.code === 'ER_DUP_ENTRY') {

@@ -26,31 +26,69 @@ SET time_zone = "+00:00";
 5. [Sistema de Cuentas](./cuentas.md) - Administración de diferentes tipos de cuentas financieras
 6. [Sistema de Usuarios](./usuarios.md) - Control de acceso y personalización
 7. [Sistema de Presupuestos](./presupuestos.md) - Gestión de presupuestos y periodos
+8. [Sistema de Permisos](./permisos.md) - Control de acceso y visibilidad de datos
+
+## Optimizaciones de la Base de Datos
+
+1. [Configuraciones y Optimizaciones](./optimizaciones.md) - Zona horaria, índices y mantenimiento automático
 
 ## Diagrama de Relaciones Principales
 
 ```
-+------------+       +---------------+       +------------+
-| categorias |<------| recibos       |------>| fechas_    |
-+------------+       +---------------+       | cargo      |
-      ^                                      +------------+
-      |                                            |
-      v                                            v
-+------------+       +---------------+       +------------+
-| presupuest |<------| periodos_     |       | cuentas    |
-| os         |       | presupuesto   |       +------------+
-+------------+       +---------------+             ^
-      ^                     |                      |
-      |                     v                      |
-      |              +---------------+       +------------+
-      +--------------| recibos_      |       | anticipos  |
-                     | periodos      |       +------------+
-                     +---------------+             |
-                                                   v
-                                            +------------+
-                                            | anticipos_ |
-                                            | pagos      |
-                                            +------------+
++------------+       +--------------+          +-------------+
+| users      |<------| recibos      |--------->| fechas_     |
++------------+       +--------------+          | cargo       |
+      |              |propietario_id|          +-------------+
+      |              |es_privado    |                  |
+      |              +--------------+                  |
+      |                     |                          |
+      |                     |                          |
+      |                     v                          v
+      |              +--------------+          +--------------+
+      +------------->| categorias   |          | cuentas      |
+      |              +--------------+          +--------------+
+      |              |propietario_id|          |propietario_id|
+      |              |es_privado    |          |es_privado    |
+      |              +--------------+          +--------------+
+      |                     |                         |
+      |                     |                         |
+      |                     v                         |
+      |              +--------------+                 |
+      +------------->| presupuestos |<----------------+
+      |              +--------------+
+      |              |propietario_id|
+      |              |es_privado    |
+      |              +--------------+
+      |                      |
+      |                      |
+      |                      v
+      |              +--------------+
+      |              | presupuesto_ |
+      |              | periodos     |
+      |              +--------------+
+      |                      |
+      |                      |
+      |                      v
+      |              +--------------+
+      |              | recibos_     |
+      |              | periodos     |
+      |              +--------------+
+      |
+      |
+      |              +--------------+          +-------------+
+      +------------->| ahorros      |--------->| ahorros_    |
+      |              +--------------+          | movimientos |
+      |              |propietario_id|          +-------------+
+      |              |es_privado    |
+      |              +--------------+
+      |
+      |
+      |              +--------------+          +-------------+
+      +------------->| anticipos    |--------->| anticipos_  |
+                     +--------------+          | pagos       |
+                     |propietario_id|          +-------------+
+                     |es_privado    |
+                     +--------------+
 ```
 
 ## Convenciones del Esquema
@@ -60,3 +98,5 @@ SET time_zone = "+00:00";
 - Los importes monetarios usan `DECIMAL(10,2)` o `DECIMAL(12,2)`
 - Se usan enumeraciones (`ENUM`) para estados y tipos predefinidos
 - Los campos de auditoría incluyen `created_at` y `updated_at`
+- El sistema de permisos utiliza el campo `propietario_id` y `es_privado` en las tablas principales para control de visibilidad
+- Los permisos a nivel de módulo funcional se definen en la tabla `users` mediante campos `perm_[modulo]`

@@ -1,0 +1,10 @@
+TODO
+- revisar en recibos que el offset que añadí para gestionar la diferencia horaria entre el servidor y
+mi local no se ha ido a la mierda al fijar el uso horario en Aiven
+- revisar en los ficheros markdown como dar colores a la sintaxis en bloques code (sql, php, vue, etc)
+- añadir nueva funcionalidad de permisos y visibilidad al proyecto
+
+
+implentado:
+- funcionalidad de nuevos permisos:
+--- modificado en el backend users.mjs y db_utilsUsers.mjs para soportar nuevas columnas perm_ en tabla users

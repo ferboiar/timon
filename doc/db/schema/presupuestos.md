@@ -3,7 +3,7 @@
 ## Tabla de Contenidos
 1. [Estructura de la Base de Datos](#estructura-de-la-base-de-datos)  
    1.1 [Tabla: presupuestos](#tabla-presupuestos)  
-   1.2 [Tabla: periodos_presupuesto](#tabla-periodos_presupuesto)  
+   1.2 [Tabla: presupuesto_periodos](#tabla-presupuesto_periodos)  
    1.3 [Tabla: recibos_periodos](#tabla-recibos_periodos)  
 2. [Flujo de Trabajo](#flujo-de-trabajo)  
    2.1 [Creación de Presupuestos](#creación-de-presupuestos)  
@@ -14,6 +14,7 @@
    3.2 [Gestión de Recibos Especiales](#gestión-de-recibos-especiales)  
 4. [Consultas Comunes](#consultas-comunes)  
 5. [Diagrama de Relaciones](#diagrama-de-relaciones)  
+6. [Integración con Sistema de Permisos](#integración-con-sistema-de-permisos)
 
 ---
 
@@ -37,6 +38,8 @@ El Sistema de Gestión de Presupuestos permite a los usuarios planificar sus gas
   - `importe_base`: Valor de referencia que se asignará por defecto a cada nuevo periodo
   - `periodicidad`: Define la frecuencia con que se generan automáticamente los periodos
   - `es_recibo`: Marca presupuestos especiales para gestión de recibos periódicos
+  - `propietario_id`: Usuario propietario del presupuesto
+  - `es_privado`: Controla la visibilidad del presupuesto para otros usuarios
 
 | Campo           | Tipo                          | Descripción                                                                 |
 |-----------------|-------------------------------|-----------------------------------------------------------------------------|
@@ -48,7 +51,8 @@ El Sistema de Gestión de Presupuestos permite a los usuarios planificar sus gas
 | es_recibo       | BOOLEAN                       | True = Presupuesto especial para gestión de recibos                        |
 | cuenta_id       | INT                           | Cuenta bancaria asociada (FK a cuentas.id) donde se registrarán los gastos |
 | categoria_id    | INT                           | Categoría de gasto asociada (FK a categorias.id) para clasificación        |
-| user_id         | INT                           | Usuario responsable del presupuesto (FK a users.id)                        |
+| propietario_id  | INT                           | Usuario propietario del presupuesto (FK a users.id)                        |
+| es_privado      | BOOLEAN                       | Si es TRUE, solo visible al propietario; si es FALSE, visible a todos los usuarios con acceso |
 | created_at      | TIMESTAMP                     | Fecha de creación automática del registro                                  |
 | updated_at      | TIMESTAMP                     | Fecha de última actualización automática                                   |
 
@@ -60,11 +64,11 @@ El Sistema de Gestión de Presupuestos permite a los usuarios planificar sus gas
 **Relaciones**:
 - `presupuestos.categoria_id` → `categorias.id`: Vincula con el catálogo de categorías de gastos
 - `presupuestos.cuenta_id` → `cuentas.id`: Asocia con la cuenta bancaria donde se registran los movimientos
-- `presupuestos.user_id` → `users.id`: Identifica al usuario responsable del presupuesto
+- `presupuestos.propietario_id` → `users.id`: Identifica al usuario propietario del presupuesto
 
 ---
 
-### Tabla: periodos_presupuesto
+### Tabla: presupuesto_periodos
 - **Descripción**: Gestiona la ejecución concreta de cada periodo presupuestario
 - **Propósito**: Materializa el presupuesto maestro en períodos específicos (meses, trimestres, etc.)
 - **Campos clave**:
@@ -89,11 +93,11 @@ El Sistema de Gestión de Presupuestos permite a los usuarios planificar sus gas
 - `idx_fechas`: Mejora consultas por rangos de fechas
 
 **Relaciones**:
-- `periodos_presupuesto.presupuesto_id` → `presupuestos.id`: Vincula con el presupuesto maestro (ON DELETE CASCADE)
+- `presupuesto_periodos.presupuesto_id` → `presupuestos.id`: Vincula con el presupuesto maestro (ON DELETE CASCADE)
 
 **Ejemplo de Datos**:
 ```sql
-INSERT INTO periodos_presupuesto 
+INSERT INTO presupuesto_periodos 
   (presupuesto_id, fecha_inicio, fecha_fin, importe_ajustado, estado)
 VALUES
   (1, '2025-05-01', '2025-05-31', 600.00, 'activo');
@@ -108,16 +112,16 @@ VALUES
 
 | Campo                   | Tipo             | Descripción                                                   |
 |-------------------------|------------------|---------------------------------------------------------------|
-| periodo_presupuesto_id  | INT              | Periodo asociado (FK a periodos_presupuesto.id)               |
+| presupuesto_periodo_id  | INT              | Periodo asociado (FK a presupuesto_periodos.id)               |
 | recibo_id               | INT              | Recibo vinculado (FK a recibos.id) de la tabla existente      |
 | importe_esperado        | DECIMAL(12,2)    | Importe teórico que se espera del recibo para este periodo    |
 | importe_recibido        | DECIMAL(12,2)    | Importe real efectivamente recibido/pagado (0 por defecto)    |
 
 **Índices**:
-- Clave primaria compuesta sobre (`periodo_presupuesto_id`, `recibo_id`)
+- Clave primaria compuesta sobre (`presupuesto_periodo_id`, `recibo_id`)
 
 **Relaciones**:
-- `recibos_periodos.periodo_presupuesto_id` → `periodos_presupuesto.id`: Vincula con el período específico
+- `recibos_periodos.presupuesto_periodo_id` → `presupuesto_periodos.id`: Vincula con el período específico
 - `recibos_periodos.recibo_id` → `recibos.id`: Asocia con el recibo existente en el sistema
 
 **Particularidades**:
@@ -144,14 +148,16 @@ INSERT INTO presupuestos (
   periodicidad, 
   cuenta_id, 
   categoria_id, 
-  user_id
+  propietario_id,
+  es_privado
 ) VALUES (
   'Comida', 
   600.00, 
   'mensual', 
   2,  -- ID de cuenta principal
   7,  -- ID de categoría "comida"
-  1   -- ID del usuario administrador
+  1,  -- ID del usuario propietario
+  FALSE -- Visible para todos los usuarios con acceso
 );
 ```
 
@@ -166,7 +172,8 @@ INSERT INTO presupuestos (
   periodicidad,
   cuenta_id,
   categoria_id,
-  user_id
+  propietario_id,
+  es_privado
 ) VALUES (
   'Recibos servicios',
   1,               -- Marcado como presupuesto de recibos
@@ -174,7 +181,8 @@ INSERT INTO presupuestos (
   'mensual',
   1,               -- ID de cuenta corriente principal
   2,               -- ID de categoría "servicios"
-  1                -- ID del usuario administrador
+  1,               -- ID del usuario propietario
+  FALSE            -- Visible para todos los usuarios con acceso
 );
 ```
 
@@ -236,7 +244,7 @@ Por ejemplo, ajustar un presupuesto mensual que requiere un incremento temporal:
 
 ```sql
 -- Ejemplo: Aumentar presupuesto de comida para un mes con eventos especiales
-UPDATE periodos_presupuesto
+UPDATE presupuesto_periodos
 SET importe_ajustado = 750.00
 WHERE id = 45;
 ```
@@ -246,7 +254,7 @@ Para situaciones particulares como meses con más semanas o presupuestos extraor
 
 ```sql
 -- Ejemplo: Diciembre con 5 semanas requiere un presupuesto ajustado
-INSERT INTO periodos_presupuesto (
+INSERT INTO presupuesto_periodos (
   presupuesto_id,
   fecha_inicio,
   fecha_fin,
@@ -287,7 +295,7 @@ El mes de diciembre tiene 5 semanas en lugar de 4, así que se ajusta manualment
 ```sql
 -- Presupuesto base: 130€/semana
 -- Ajuste para diciembre: 130€ x 5 = 650€
-UPDATE periodos_presupuesto 
+UPDATE presupuesto_periodos 
 SET importe_ajustado = 650.00
 WHERE fecha_inicio = '2025-12-01';
 ```
@@ -304,7 +312,7 @@ WHERE fecha_inicio = '2025-12-01';
 ```sql
 -- Asociar dos recibos de seguro a sus respectivos periodos
 INSERT INTO recibos_periodos 
-  (periodo_presupuesto_id, recibo_id, importe_esperado)
+  (presupuesto_periodo_id, recibo_id, importe_esperado)
 VALUES
   (101, 15, 300.00),  -- Primer semestre
   (102, 16, 300.00);  -- Segundo semestre
@@ -332,7 +340,7 @@ WHERE id = 3;
 
 -- Vincular un recibo existente (ej: factura de internet) al periodo actual
 INSERT INTO recibos_periodos (
-  periodo_presupuesto_id,
+  presupuesto_periodo_id,
   recibo_id,
   importe_esperado
 ) VALUES (
@@ -362,7 +370,7 @@ SELECT
     THEN ROUND((COALESCE(SUM(t.importe), 0) / pp.importe_ajustado) * 100, 1)
     ELSE 0
   END AS PorcentajeUsado
-FROM periodos_presupuesto pp
+FROM presupuesto_periodos pp
 JOIN presupuestos p ON pp.presupuesto_id = p.id
 LEFT JOIN transacciones t ON pp.id = t.periodo_id
 WHERE pp.estado = 'activo'
@@ -385,7 +393,7 @@ SELECT
    WHERE periodo_id = pp.id) AS Gastado,
   diferencia_acumulada AS SaldoAcumulado,
   estado
-FROM periodos_presupuesto pp
+FROM presupuesto_periodos pp
 WHERE presupuesto_id = 2  -- ID del presupuesto a analizar
 ORDER BY fecha_inicio DESC;
 ```
@@ -407,7 +415,7 @@ El siguiente diagrama muestra las principales relaciones entre las tablas del si
 
 // Definición de las entidades
 [<table>presupuestos]
-[<table>periodos_presupuesto]
+[<table>presupuesto_periodos]
 [<table>recibos_periodos]
 [<table>recibos]
 [<table>categorias]
@@ -415,8 +423,8 @@ El siguiente diagrama muestra las principales relaciones entre las tablas del si
 [<table>users]
   
 // Relaciones principales
-[presupuestos] +-> 1:N [periodos_presupuesto]
-[periodos_presupuesto] +-> 1:N [recibos_periodos]
+[presupuestos] +-> 1:N [presupuesto_periodos]
+[presupuesto_periodos] +-> 1:N [recibos_periodos]
 [recibos] o-> 1:N [recibos_periodos]
 
 // Relaciones de clave foránea (con posiciones ajustadas)
@@ -442,3 +450,40 @@ El Sistema de Presupuestos se integra con los módulos existentes de Timón:
 4. **Con Sistema de Usuarios**: Asigna responsables a cada presupuesto
 
 Esta integración permite una gestión financiera holística, conectando la planificación presupuestaria con la ejecución real de gastos y la gestión de recibos periódicos.
+
+---
+
+## Integración con Sistema de Permisos
+
+El sistema de presupuestos está integrado con el [sistema de permisos](./permisos.md) de la aplicación, permitiendo un control granular del acceso tanto a nivel de módulo como a nivel de registros individuales.
+
+### Control de Acceso a Nivel de Módulo
+
+Los usuarios pueden tener diferentes niveles de acceso al módulo de presupuestos:
+
+- **Sin acceso (`no`)**: El usuario no podrá acceder a ninguna funcionalidad relacionada con presupuestos.
+- **Lectura (`lectura`)**: El usuario podrá ver presupuestos pero no crearlos ni modificarlos.
+- **Escritura (`escritura`)**: El usuario podrá ver, crear, modificar y eliminar presupuestos.
+
+Estos permisos se definen en la tabla `users` a través del campo `perm_presupuestos`.
+
+### Control de Visibilidad a Nivel de Registro
+
+Cada presupuesto tiene asociados dos campos que controlan su visibilidad:
+
+- **`propietario_id`**: Define quién es el propietario del presupuesto.
+- **`es_privado`**: Si se establece como `TRUE`, el presupuesto solo será visible para su propietario, independientemente de los permisos de módulo que tengan otros usuarios.
+
+### Consultas con Filtrado por Permisos
+
+Un ejemplo típico de consulta que respeta los permisos y visibilidad:
+
+```sql
+-- Obtener presupuestos respetando visibilidad
+SELECT p.* 
+FROM presupuestos p 
+WHERE (p.es_privado = FALSE OR p.propietario_id = [id_usuario_actual])
+ORDER BY p.created_at DESC;
+```
+
+Para más detalles sobre el sistema de permisos y su implementación, consulte la [documentación específica de permisos](./permisos.md).

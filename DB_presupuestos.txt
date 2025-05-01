@@ -37,12 +37,12 @@ CREATE TABLE `presupuestos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 -- ==================================================
--- Tabla: periodos_presupuesto
+-- Tabla: presupuesto_periodos
 -- Propósito: Gestiona la ejecución concreta de cada periodo
 -- Relaciones:
 --   - presupuestos (presupuesto_id)
 -- ==================================================
-CREATE TABLE `periodos_presupuesto` (
+CREATE TABLE `presupuesto_periodos` (
   `id` INT NOT NULL AUTO_INCREMENT COMMENT 'Identificador único autoincremental',
   `presupuesto_id` INT NOT NULL COMMENT 'Presupuesto al que pertenece el periodo',
   `fecha_inicio` DATE NOT NULL COMMENT 'Fecha de inicio del periodo',
@@ -55,5 +55,5 @@ CREATE TABLE `periodos_presupuesto` (
   PRIMARY KEY (`id`),
   KEY `idx_presupuesto` (`presupuesto_id`),
   KEY `idx_fechas` (`fecha_inicio`,`fecha_fin`),
-  CONSTRAINT `fk_periodo_presupuesto` FOREIGN KEY (`presupuesto_id`) REFERENCES `presupuestos` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_presupuesto_periodo` FOREIGN KEY (`presupuesto_id`) REFERENCES `presupuestos` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;

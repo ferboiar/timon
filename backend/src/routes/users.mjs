@@ -37,7 +37,7 @@ router.get('/', verifyToken, async (req, res) => {
  */
 router.post('/', verifyToken, async (req, res) => {
     try {
-        const { username, email, password, rol } = req.body;
+        const { username, email, password, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = req.body;
 
         // Validar que se proporcionan todos los campos requeridos
         if (!username || !email || !password || !rol) {
@@ -53,7 +53,14 @@ router.post('/', verifyToken, async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            rol
+            rol,
+            perm_recibos,
+            perm_presupuestos,
+            perm_ahorros,
+            perm_anticipos,
+            perm_transacciones,
+            perm_categorias,
+            perm_cuentas
         });
 
         res.status(201).json(result);
@@ -69,15 +76,26 @@ router.post('/', verifyToken, async (req, res) => {
  */
 router.put('/', verifyToken, async (req, res) => {
     try {
-        const { id, username, email, rol } = req.body;
+        const { id, username, email, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = req.body;
 
         // Validar que se proporcionan todos los campos requeridos
         if (!id || !username || !email || !rol) {
-            return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+            return res.status(400).json({ message: 'Los campos id, username, email y rol son obligatorios' });
         }
 
         // Actualizar el usuario
-        const result = await dbUsers.updateUser(id, { username, email, rol });
+        const result = await dbUsers.updateUser(id, {
+            username,
+            email,
+            rol,
+            perm_recibos,
+            perm_presupuestos,
+            perm_ahorros,
+            perm_anticipos,
+            perm_transacciones,
+            perm_categorias,
+            perm_cuentas
+        });
 
         res.json(result);
     } catch (error) {
