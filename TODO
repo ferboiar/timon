@@ -4,6 +4,7 @@ mi local no se ha ido a la mierda al fijar el uso horario en Aiven
 - revisar en los ficheros markdown como dar colores a la sintaxis en bloques code (sql, php, vue, etc)
 - añadir nueva funcionalidad de permisos y visibilidad al proyecto
 
+- actualizar la documentación para lo implementado (ver abajo)
 
 implentado:
 - funcionalidad de nuevos permisos:
