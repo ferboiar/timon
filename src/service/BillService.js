@@ -5,11 +5,27 @@ import axios from 'axios';
 
 const API_URL = `${API_BASE_URL}/api/recibos`;
 
+// Función para obtener el token de autenticación
+const getAuthToken = () => {
+    // Primero intenta obtener el token del localStorage
+    let token = localStorage.getItem('token');
+
+    // Si no hay token en localStorage, intenta en sessionStorage
+    if (!token) {
+        token = sessionStorage.getItem('token');
+    }
+
+    return token;
+};
+
 export class BillService {
     // Obtener todos los recibos
     static async getBills() {
         try {
-            const response = await axios.get(API_URL);
+            const token = getAuthToken();
+            const response = await axios.get(API_URL, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             return response.data;
         } catch (error) {
             console.error('Error al obtener los recibos:', error);
@@ -20,7 +36,10 @@ export class BillService {
     // Obtener un recibo por ID
     static async getBillById(id) {
         try {
-            const response = await axios.get(`${API_URL}/${id}`);
+            const token = getAuthToken();
+            const response = await axios.get(`${API_URL}/${id}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             return response.data;
         } catch (error) {
             console.error(`Error al obtener el recibo con ID ${id}:`, error);
@@ -31,7 +50,10 @@ export class BillService {
     // Guardar un recibo (crear o actualizar)
     static async saveBill(bill) {
         try {
-            const response = await axios.post(API_URL, bill);
+            const token = getAuthToken();
+            const response = await axios.post(API_URL, bill, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             return response.data;
         } catch (error) {
             console.error('BillService. Error al guardar el recibo: ', error);
@@ -42,8 +64,10 @@ export class BillService {
     // Eliminar un recibo
     static async deleteBill(id, fecha, periodicidad) {
         try {
+            const token = getAuthToken();
             const response = await axios.delete(`${API_URL}/${id}`, {
-                params: { fecha, periodicidad }
+                params: { fecha, periodicidad },
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
             return response.data;
         } catch (error) {
@@ -55,7 +79,10 @@ export class BillService {
     // Obtener recibos por periodicidad
     static async getBillsByPeriodicity(periodicity) {
         try {
-            const response = await axios.get(`${API_URL}?periodicidad=${periodicity}`);
+            const token = getAuthToken();
+            const response = await axios.get(`${API_URL}?periodicidad=${periodicity}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             return response.data;
         } catch (error) {
             console.error(`BillService. Error al obtener los recibos con periodicidad ${periodicity}: `, error);
@@ -66,7 +93,10 @@ export class BillService {
     // Obtener recibos por año
     static async getBillsByYear(year) {
         try {
-            const response = await axios.get(`${API_URL}?año=${year}`);
+            const token = getAuthToken();
+            const response = await axios.get(`${API_URL}?año=${year}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             return response.data;
         } catch (error) {
             console.error(`BillService. Error al obtener los recibos del año ${year}: `, error);
@@ -77,7 +107,10 @@ export class BillService {
     // Obtener recibos inactivos
     static async getInactiveBills() {
         try {
-            const response = await axios.get(`${API_URL}?activo=0`);
+            const token = getAuthToken();
+            const response = await axios.get(`${API_URL}?activo=0`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             return response.data;
         } catch (error) {
             console.error('BillService. Error al obtener los recibos inactivos: ', error);

@@ -9,6 +9,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 - Gestión completa de operaciones CRUD para usuarios
 - Autenticación y verificación de credenciales
 - Encriptación segura de contraseñas utilizando bcrypt
+- Gestión de permisos granulares por módulo (recibos, presupuestos, ahorros, etc.)
 - Gestión de preferencias de estilo personalizadas
 - Manejo eficiente de conexiones a la base de datos
 - Validación y transformación de parámetros
@@ -25,6 +26,13 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `email` | VARCHAR(100) | Correo electrónico único |
 | `password` | VARCHAR(255) | Contraseña encriptada |
 | `rol` | ENUM | Rol del usuario ('admin', 'user', 'limited_user', 'reader') |
+| `perm_recibos` | ENUM | Nivel de permiso para recibos ('escritura', 'lectura', 'ninguno') |
+| `perm_presupuestos` | ENUM | Nivel de permiso para presupuestos ('escritura', 'lectura', 'ninguno') |
+| `perm_ahorros` | ENUM | Nivel de permiso para ahorros ('escritura', 'lectura', 'ninguno') |
+| `perm_anticipos` | ENUM | Nivel de permiso para anticipos ('escritura', 'lectura', 'ninguno') |
+| `perm_transacciones` | ENUM | Nivel de permiso para transacciones ('escritura', 'lectura', 'ninguno') |
+| `perm_categorias` | ENUM | Nivel de permiso para categorías ('escritura', 'lectura', 'ninguno') |
+| `perm_cuentas` | ENUM | Nivel de permiso para cuentas ('escritura', 'lectura', 'ninguno') |
 | `created_at` | TIMESTAMP | Fecha de creación |
 | `updated_at` | TIMESTAMP | Fecha de última actualización |
 
@@ -44,12 +52,12 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 
 | Función | Descripción |
 |---------|-------------|
-| `getUsers()` | Obtiene todos los usuarios registrados (sin devolver contraseñas) |
-| `getUserById(userId)` | Obtiene un usuario específico por su ID |
+| `getUsers()` | Obtiene todos los usuarios registrados con sus permisos (sin devolver contraseñas) |
+| `getUserById(userId)` | Obtiene un usuario específico por su ID, incluyendo sus permisos |
 | `getUserByUsername(username)` | Obtiene un usuario por su nombre de usuario |
 | `getUserByEmail(email)` | Obtiene un usuario por su correo electrónico |
-| `createUser(userData)` | Crea un nuevo usuario |
-| `updateUser(userId, userData)` | Actualiza los datos de un usuario existente |
+| `createUser(userData)` | Crea un nuevo usuario con permisos específicos para cada módulo |
+| `updateUser(userId, userData)` | Actualiza los datos de un usuario existente, incluyendo sus permisos granulares |
 | `changePassword(userId, hashedPassword)` | Cambia la contraseña de un usuario |
 | `deleteUsers(userIds)` | Elimina uno o más usuarios por sus IDs |
 | `verifyCredentials(username, password)` | Verifica las credenciales de un usuario para autenticación |

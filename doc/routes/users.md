@@ -20,6 +20,7 @@ Este módulo implementa las rutas de la API REST para la gestión de usuarios en
 
 - Gestión completa de usuarios (administradores, usuarios estándar, usuarios limitados)
 - Control de acceso mediante autenticación JWT
+- Permisos granulares por módulo (recibos, presupuestos, ahorros, anticipos, etc.)
 - Validación de datos de entrada con mensajes de error descriptivos
 - Encriptación de contraseñas mediante bcrypt
 - Soporte para operaciones en lote (eliminación múltiple)
@@ -42,6 +43,13 @@ Para crear un nuevo usuario se requieren los siguientes campos:
 - `email`: Correo electrónico único
 - `password`: Contraseña (será encriptada)
 - `rol`: Rol del usuario (admin, user, limited_user, reader)
+- `perm_recibos`: Nivel de permiso para recibos ('escritura', 'lectura', 'no')
+- `perm_presupuestos`: Nivel de permiso para presupuestos ('escritura', 'lectura', 'no')
+- `perm_ahorros`: Nivel de permiso para ahorros ('escritura', 'lectura', 'no')
+- `perm_anticipos`: Nivel de permiso para anticipos ('escritura', 'lectura', 'no')
+- `perm_transacciones`: Nivel de permiso para transacciones ('escritura', 'lectura', 'no')
+- `perm_categorias`: Nivel de permiso para categorías ('escritura', 'lectura', 'no')
+- `perm_cuentas`: Nivel de permiso para cuentas ('escritura', 'lectura', 'no')
 
 La API verifica que no existan usuarios con el mismo nombre o correo electrónico y encripta la contraseña antes de almacenarla.
 
@@ -51,6 +59,14 @@ La actualización de usuarios permite modificar:
 - Nombre de usuario
 - Correo electrónico
 - Rol
+- Permisos granulares para cada módulo:
+  - `perm_recibos`
+  - `perm_presupuestos`
+  - `perm_ahorros`
+  - `perm_anticipos`
+  - `perm_transacciones`
+  - `perm_categorias`
+  - `perm_cuentas`
 
 La operación de cambio de contraseña se maneja por separado para mayor seguridad.
 

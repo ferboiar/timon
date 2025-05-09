@@ -23,6 +23,8 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `periodicidad` | ENUM | Frecuencia del recibo: 'mensual', 'bimestral', 'trimestral' |
 | `importe` | DECIMAL | Cantidad del recibo |
 | `categoria_id` | INT | Referencia a la categoría asociada |
+| `cuenta_id` | INT | ID de la cuenta bancaria asociada al recibo |
+| `propietario_id` | INT | ID del usuario propietario del recibo |
 
 ### Tabla `fechas_cargo`
 
@@ -35,6 +37,22 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `comentario` | VARCHAR | Comentario opcional sobre el cargo |
 | `activo` | TINYINT | Estado del cargo (1 activo, 0 inactivo) |
 
+## Relaciones Estructurales
+
+### Asociación con Cuentas
+
+- Cada recibo está asociado a una única cuenta bancaria a través del campo `cuenta_id`
+- La asociación a nivel de recibo (no de fecha de cargo) garantiza coherencia en todos los pagos
+- Este diseño permite gestionar eficientemente qué cuenta se utiliza para cada recibo
+- La relación se implementa como una clave foránea de `recibos.cuenta_id` hacia `cuentas.id`
+
+### Sistema de Propiedad
+
+- Cada recibo pertenece a un usuario específico indicado por `propietario_id`
+- El campo `propietario_id` se asigna automáticamente a partir del token JWT del usuario autenticado
+- Esta relación permite implementar control de acceso a nivel de registro
+- Se utiliza una clave foránea de `recibos.propietario_id` hacia `users.id`
+
 ## Funciones Principales
 
 ### Gestión de Recibos
@@ -42,7 +60,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getRecibos(filters)` | Obtiene recibos aplicando filtros opcionales (periodicidad, fecha, año, etc.) |
-| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)` | Crea o actualiza un recibo con sus fechas de cargo |
+| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id)` | Crea o actualiza un recibo con sus fechas de cargo |
 | `deleteRecibo(id, fecha, periodicidad)` | Elimina un recibo completo o solo una fecha de cargo específica |
 | `getValidValues(column, table)` | Obtiene valores válidos para campos ENUM o categorías |
 
@@ -75,6 +93,7 @@ El sistema implementa validaciones específicas según el contexto:
 - Comprobación de periodicidades permitidas
 - Validación de estados conforme a los valores definidos en el esquema
 - Validación de formato de fechas (YYYY-MM-DD)
+- Verificación de que la cuenta bancaria (`cuenta_id`) exista y sea válida
 
 ### Transacciones Atómicas
 
@@ -82,9 +101,23 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 - La eliminación de fechas de cargo y recibos se realice de manera atómica
 - Se revierte automáticamente cualquier operación parcial en caso de error
 
+## Control de Acceso
+
+### Asignación automática de propietario
+
+- Al crear un nuevo recibo, el sistema asigna automáticamente el `propietario_id` a partir del token JWT
+- El usuario no necesita especificar manualmente el propietario, garantizando integridad y seguridad
+- El frontend no necesita manejar este campo, siendo responsabilidad completa del backend
+
+### Filtrado por propietario
+
+- Las consultas de recibos respetan automáticamente los permisos del usuario
+- El sistema filtra los recibos según el propietario cuando corresponde
+- Se aplican reglas adicionales de visibilidad según el campo `es_privado` cuando está presente
+
 ## Validaciones y Manejo de Errores
 
-- Verificación de presencia de campos obligatorios (concepto, periodicidad, importe, categoría)
+- Verificación de presencia de campos obligatorios (concepto, periodicidad, importe, categoría, cuenta_id)
 - Validación de tipos y rangos (importe positivo, longitud máxima para concepto)
 - Comprobación de valores permitidos (categorías existentes, periodicidades válidas)
 - Verificación de formato de fechas
@@ -101,4 +134,4 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 
 - [API de Recibos](../routes/recibos.md) - Rutas que utilizan estas funciones
 - [Documentación de BillService](../services/BillService.md) - Cliente que eventualmente llama a estas funciones
-- [Componente Recibos](../components/Recibos.md) - Interfaz de usuario para recibos
+- [Componente ListBills](../components/ListBills.md) - Interfaz de usuario para recibos

@@ -115,13 +115,15 @@ async function getValidValues(column, table = 'recibos') {
  * @param {number} importe - El importe del recibo.
  * @param {string} categoria - La categoría del recibo.
  * @param {Array} cargo - Un array de objetos que contiene fecha, estado y comentario.
+ * @param {number} propietarioId - El ID del usuario propietario del recibo.
+ * @param {number} cuenta_id - El ID de la cuenta asociada al recibo.
  * @throws {Error} - Si falta algún parámetro obligatorio o si algún parámetro no es válido.
  */
-async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo) {
-    console.log('pushRecibo(). Parámetros recibidos:', { id, concepto, periodicidad, importe, categoria, cargo });
+async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id) {
+    console.log('pushRecibo(). Parámetros recibidos:', { id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id });
     // Verificar que todos los parámetros obligatorios estén presentes
-    if (!concepto || !periodicidad || !importe || !categoria || !cargo || !Array.isArray(cargo)) {
-        throw new Error('API. Los campos concepto, periodicidad, importe, categoria y cargo son obligatorios.');
+    if (!concepto || !periodicidad || !importe || !categoria || !cargo || !Array.isArray(cargo) || !propietarioId || !cuenta_id) {
+        throw new Error('API. Los campos concepto, periodicidad, importe, categoria, cargo, propietarioId y cuenta_id son obligatorios.');
     }
 
     const activo = cargo[0].activo; //guardo el valor de activo para luego actualizar todas las fechas de cargo, no sea que se borre al procesar el array
@@ -132,7 +134,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
         // si es mensual, solo se debe insertar el primer array de cargo
         cargo = [cargo[0]];
     }
-    console.log('pushRecibo(). Parámetros filtrados:', { id, concepto, periodicidad, importe, categoria, cargo });
+    console.log('pushRecibo(). Parámetros filtrados:', { id, concepto, periodicidad, importe, categoria, cargo, propietarioId });
 
     // Obtener valores válidos desde la base de datos
     const validCategorias = await getValidValues('nombre', 'categorias');
@@ -179,11 +181,13 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
 
             if (existingRecibo.length > 0) {
                 // Actualizar recibo existente
-                const [updateResult] = await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?) WHERE id = ?', [
+                const [updateResult] = await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), propietario_id = ?, cuenta_id = ? WHERE id = ?', [
                     concepto,
                     periodicidad,
                     importe,
                     categoria,
+                    propietarioId,
+                    cuenta_id,
                     id
                 ]);
 
@@ -216,7 +220,14 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo)
             }
         } else {
             // Insertar nuevo recibo
-            const [result] = await connection.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria_id) VALUES (?, ?, ?, (SELECT id FROM categorias WHERE nombre = ?))', [concepto, periodicidad, importe, categoria]);
+            const [result] = await connection.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, propietario_id, cuenta_id) VALUES (?, ?, ?, (SELECT id FROM categorias WHERE nombre = ?), ?, ?)', [
+                concepto,
+                periodicidad,
+                importe,
+                categoria,
+                propietarioId,
+                cuenta_id
+            ]);
             const newReciboId = result.insertId;
 
             // Insertar fechas de cargo

@@ -17,6 +17,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 - Visualización expandible de fechas de cargo asociadas a cada recibo trimestral o bimestral
 - Filtrado por periodicidad y estado de actividad
 - Gestión diferenciada según la periodicidad del recibo (anual, trimestral, bimestral, mensual)
+- Selección de cuenta bancaria asociada al recibo
 - Exportación de datos a formato CSV
 
 ## Datos y Propiedades
@@ -32,6 +33,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `inactiveBills` | `ref([])` | Lista de recibos inactivos recuperados de la base de datos |
 | `bill` | `ref({})` | Objeto que almacena los datos del recibo en edición |
 | `categorias` | `ref([])` | Lista de categorías disponibles para asignar a los recibos |
+| `cuentas` | `ref([])` | Lista de cuentas bancarias disponibles para asociar a los recibos |
 
 ### Estados de Diálogos
 
@@ -43,25 +45,16 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `deleteBillDialog` | `ref(false)` | Controla la visibilidad del diálogo de confirmación para eliminar recibos |
 | `deleteSelectedBillsDialog` | `ref(false)` | Controla la visibilidad del diálogo para eliminar recibos seleccionados |
 
-### Estados de Expansión y Selección
+### Propiedades Principales del Objeto Recibo
 
 | Propiedad | Tipo | Descripción |
 |-----------|------|-------------|
-| `expandedRowsTrimestral` | `ref([])` | Controla qué filas de recibos trimestrales están expandidas |
-| `expandedRowsBimestral` | `ref([])` | Controla qué filas de recibos bimestrales están expandidas |
-| `isExpanded` | `ref(false)` | Estado global de expansión para todas las tablas |
-| `selectedAnualBills` | `ref()` | Recibos anuales seleccionados |
-| `selectedQuarterlyBills` | `ref()` | Recibos trimestrales seleccionados |
-| `selectedBimonthlyBills` | `ref()` | Recibos bimestrales seleccionados |
-| `selectedMonthlyBills` | `ref()` | Recibos mensuales seleccionados |
-
-### Propiedades Computadas
-
-| Propiedad | Descripción |
-|-----------|-------------|
-| `groupedQuarterlyBills` | Agrupa los recibos trimestrales por concepto para visualización en tabla |
-| `groupedBimonthlyBills` | Agrupa los recibos bimestrales por concepto para visualización en tabla |
-| `groupedInactiveBills` | Agrupa los recibos inactivos para visualización en tabla |
+| `concepto` | String | Nombre o descripción del recibo |
+| `periodicidad` | String | Frecuencia del recibo (mensual, bimestral, trimestral) |
+| `importe` | Number | Importe del recibo |
+| `categoria_id` | Number | ID de la categoría asignada al recibo |
+| `cuenta_id` | Number | ID de la cuenta bancaria asociada al recibo |
+| `cargo` | Array | Lista de fechas de cargo asociadas al recibo |
 
 ## Funciones Principales
 
@@ -78,84 +71,72 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `confirmDeleteSelected()` | Prepara la eliminación de recibos seleccionados |
 | `deleteSelectedBills()` | Elimina los recibos seleccionados |
 
-### Gestión de Expansión de Filas
+### Carga de Datos Relacionados
 
 | Función | Descripción |
 |---------|-------------|
-| `toggleExpandCollapseAll()` | Expande o contrae todas las filas de recibos |
-| `expandir(periodicity)` | Expande las filas de la periodicidad especificada |
-| `contraer(periodicity)` | Contrae las filas de la periodicidad especificada |
-| `checkGlobalExpandState()` | Verifica el estado global de expansión de las tablas |
-| `onRowExpand(event, type)` | Maneja la expansión de una fila |
-| `onRowCollapse(event, type)` | Maneja el colapso de una fila |
+| `fetchCategories()` | Obtiene la lista de categorías disponibles |
+| `fetchAccounts()` | Obtiene la lista de cuentas bancarias disponibles |
 
-### Gestión de Comentarios
+## Asociación con Cuentas Bancarias
 
-| Función | Descripción |
-|---------|-------------|
-| `toggleComment(event, specificComment, index, popoverType)` | Muestra/oculta el popover de comentarios |
-| `saveComment()` | Guarda el comentario editado |
-| `hideComment()` | Oculta los popovers de comentarios |
+El componente permite asociar cada recibo a una cuenta bancaria específica mediante el campo `cuenta_id`:
 
-### Otras Funciones
+1. **Selección de cuenta**: En los formularios de creación y edición de recibos, se muestra un desplegable que permite seleccionar una cuenta de la lista de cuentas disponibles.
 
-| Función | Descripción |
-|---------|-------------|
-| `toggleShowInactive()` | Muestra u oculta los recibos inactivos |
-| `toggleCardMenu(event, periodicity)` | Controla el menú contextual de la tarjeta |
-| `showSelector(periodicity)` | Muestra/oculta la columna de selección |
-| `inactiveBillsCount(periodicity)` | Calcula el número de recibos inactivos por periodicidad |
-| `exportCSV(periodicity)` | Exporta los recibos a formato CSV |
+2. **Carga de cuentas**: Al montar el componente, se ejecuta `fetchAccounts()` para obtener todas las cuentas bancarias disponibles del usuario.
+
+3. **Persistencia**: El campo `cuenta_id` se incluye al guardar recibos nuevos o actualizarlos:
+
+```javascript
+// Extracto de la función guardarRecibo()
+await BillService.saveBill({
+  id: this.bill.id || null,
+  concepto: this.bill.concepto,
+  periodicidad: this.bill.periodicidad,
+  importe: this.bill.importe,
+  categoria: this.bill.categoria_id,
+  cuenta_id: this.bill.cuenta_id, // Campo cuenta_id enviado al backend
+  cargo: this.bill.cargo
+});
+```
+
+## Gestión de Propiedad de Recibos
+
+La propiedad de los recibos se maneja automáticamente a través del sistema de autenticación:
+
+1. **Asignación automática**: El campo `propietario_id` no se maneja explícitamente en el frontend, sino que se asigna automáticamente en el backend basándose en el token JWT del usuario autenticado.
+
+2. **Filtrado automático**: El componente solo muestra los recibos que pertenecen al usuario actual o que están marcados como no privados y el usuario tiene permisos para verlos.
+
+3. **Transparencia para el usuario**: El sistema de propiedad funciona de manera transparente para el usuario final, quien solo ve y gestiona los recibos a los que tiene acceso.
 
 ## Eventos y Estados
 
 - **Expansión/contracción**: El componente permite expandir filas individuales o todas las filas para mostrar las fechas de cargo
 - **Filtrado**: Implementa filtrado dinámico por periodicidad y estado de actividad
 - **Selección**: Permite seleccionar múltiples recibos para operaciones en lote
-- **Comentarios**: Sistema de visualización y edición de comentarios mediante popovers
-- **Menú contextual**: Menú específico por periodicidad con opciones adapadas
 
-## Ciclo de Vida
+## Ciclo de vida
 
 En el evento `onMounted`, el componente:
-1. Carga la lista de recibos por periodicidad mediante llamadas paralelas a `BillService`
-2. Carga la lista de categorías mediante `CatsService`
+1. Carga los recibos de todas las periodicidades
+2. Obtiene la lista de categorías disponibles 
+3. Carga la lista de cuentas bancarias disponibles
+4. Configura el estado inicial de filtros y expansión
 
 ## Estructura del Template
 
 El template está estructurado en varias secciones:
 
-1. **Barra de herramientas superior**: Con botones para crear, filtrar, actualizar y exportar recibos
-2. **Sección de tarjetas**: Distribución en columnas con tarjetas separadas para cada periodicidad
-3. **Tablas específicas por periodicidad**: Cada tipo de recibo se muestra en su propia tabla
-4. **Diálogos**:
-   - Diálogo principal para recibos (billDialog)
-   - Diálogo para recibos trimestrales/bimestrales (billDialogTB)
-   - Diálogo para fechas de cargo (billDialogTB_FC)
-   - Diálogos de confirmación para eliminar recibos
-5. **Popovers para comentarios**: Para visualizar y editar comentarios de recibos
+1. **Pestañas de periodicidad**: Permiten cambiar entre las diferentes vistas de recibos (mensuales, bimestrales, trimestrales, anuales)
+2. **Tarjetas por periodicidad**: Cada periodicidad se muestra en una tarjeta independiente con su propia barra de herramientas
+3. **Tablas de recibos**: Muestran los recibos con sus datos principales, con la opción de expandir para ver las fechas de cargo
+4. **Diálogos de edición**: Varios diálogos específicos según la periodicidad y operación (crear, editar, eliminar)
+5. **Selectores de cuenta**: En los diálogos de creación/edición para asociar el recibo a una cuenta bancaria
 
-## Características especiales
+## Referencias
 
-- **Gestión por periodicidad**: El componente adapta su comportamiento según la periodicidad del recibo:
-  - Recibos anuales: Una única fecha de cargo anual
-  - Recibos trimestrales: Cuatro fechas de cargo anuales
-  - Recibos bimestrales: Seis fechas de cargo anuales
-  - Recibos mensuales: Una fecha de cargo mensual
-- **Agrupación inteligente**: Los recibos trimestrales y bimestrales se agrupan por concepto para facilitar su visualización
-- **Estados visuales**: Diferentes estados (pendiente, pagado, rechazado) se representan con colores distintivos
-- **Interfaz adaptativa**: Los campos y opciones mostradas se adaptan según la periodicidad del recibo
-
-## Validaciones
-
-- Validación de campos obligatorios en formularios de recibos
-- Validación de fechas de cargo duplicadas para recibos trimestrales o bimestrales
-- Validación de formatos de fecha
-- Validación de importes positivos
-
-## Dependencias
-
-El componente depende de:
-- `BillService`: Para realizar operaciones CRUD con recibos
-- `CatsService`: Para obtener las categorías disponibles
-- Componentes de PrimeVue para la interfaz de usuario
+- [BillService](../services/BillService.md) - Servicio que gestiona la comunicación con la API de recibos
+- [API de Recibos](../routes/recibos.md) - Endpoints del backend para la gestión de recibos
+- [Utilidades de Base de Datos](../db/db_utilsBill.md) - Funciones de acceso a datos de recibos
