@@ -6,9 +6,13 @@ mi local no se ha ido a la mierda al fijar el uso horario en Aiven
 
 - revisar fechas_Cargoo, cuando se mete un recibo hay que asociarle una cuenta_id, para ello
 hay que modificar la función de crear recibo y añadir un nuevo campo en el formulario de recibo
-- revisar cuenta_id, tiene más sentido en la tabla recibos q en la tabla fechas_cargo, modificarlo
+
 
 
 implentado:
 - funcionalidad de nuevos permisos:
 --- modificado en el backend users.mjs y db_utilsUsers.mjs para soportar nuevas columnas perm_ en tabla users, actualizada su documentación
+- revisar cuenta_id, tiene más sentido en la tabla recibos q en la tabla fechas_cargo, modificarlo
+
+
+git pull origin feature/cuenta-id-improvements
