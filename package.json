@@ -29,7 +29,7 @@
     "author": "Fer",
     "license": "MIT",
     "dependencies": {
-        "@primevue/themes": "^4.2.4",
+        "@primevue/themes": "^4.3.5",
         "axios": "^1.7.9",
         "bcrypt": "^5.1.1",
         "chart.js": "3.9.1",
