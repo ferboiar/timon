@@ -30,7 +30,7 @@
     "license": "MIT",
     "dependencies": {
         "@primevue/themes": "^4.2.4",
-        "axios": "^1.7.9",
+        "axios": "^1.10.0",
         "bcrypt": "^5.1.1",
         "chart.js": "3.9.1",
         "cors": "^2.8.5",
