@@ -2,6 +2,7 @@
 import { useAuth } from '@/composables/useAuth';
 import { useTheme } from '@/composables/useTheme';
 import { useLayout } from '@/layout/composables/layout';
+import { DbConfigService } from '@/service/DbConfigService';
 import { UsersService } from '@/service/UsersService';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
@@ -100,6 +101,16 @@ const isSaveDisabled = computed(() => !user.value.username || !user.value.email 
 
 const isPasswordChangeDisabled = computed(() => !passwordData.value.password || passwordData.value.password !== passwordData.value.confirmPassword);
 
+const isDbConfigChanged = computed(() => {
+    return (
+        dbConfig.value.DB_HOST !== dbConfigOriginal.value.DB_HOST ||
+        dbConfig.value.DB_PORT !== dbConfigOriginal.value.DB_PORT ||
+        dbConfig.value.DB_USER !== dbConfigOriginal.value.DB_USER ||
+        dbConfig.value.DB_DATABASE !== dbConfigOriginal.value.DB_DATABASE ||
+        !!dbConfig.value.DB_PASSWORD // Si se ha introducido una nueva contraseña
+    );
+});
+
 // Guarda las preferencias de estilo actuales en el servidor
 async function saveStylePreferences() {
     if (isInitializing.value) return;
@@ -176,6 +187,59 @@ function syncTempConfig() {
     preset.value = layoutConfig.preset;
     menuMode.value = layoutConfig.menuMode;
 }
+
+// DB Config State
+const dbConfig = ref({
+    DB_HOST: '',
+    DB_PORT: '',
+    DB_USER: '',
+    DB_DATABASE: '',
+    DB_PASSWORD: '' // Solo para el formulario, no se recibe del servidor
+});
+const backupExists = ref(false);
+const dbConfigOriginal = ref({});
+
+// DB Config Functions
+const fetchDbConfig = async () => {
+    try {
+        const { config, backupExists: hasBackup } = await DbConfigService.getDbConfig();
+        dbConfig.value = { ...config, DB_PASSWORD: '' };
+        dbConfigOriginal.value = { ...config };
+        backupExists.value = hasBackup;
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la configuración de la base de datos.', life: 3000 });
+        console.error('Error al cargar la configuración de la base de datos:', error);
+    }
+};
+
+const testDbConnection = async () => {
+    try {
+        await DbConfigService.testDbConnection(dbConfig.value);
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'La prueba de conexión fue exitosa.', life: 3000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error en la conexión', detail: error.message || 'No se pudo conectar a la base de datos.', life: 5000 });
+    }
+};
+
+const saveDbConfig = async () => {
+    try {
+        await DbConfigService.saveDbConfig(dbConfig.value);
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Configuración de la base de datos guardada.', life: 3000 });
+        await fetchDbConfig(); // Recargar la configuración
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error al guardar', detail: error.message || 'No se pudo guardar la configuración.', life: 5000 });
+    }
+};
+
+const restoreDbConfig = async () => {
+    try {
+        await DbConfigService.restoreDbConfig();
+        toast.add({ severity: 'info', summary: 'Restaurado', detail: 'Configuración restaurada desde la copia de seguridad.', life: 3000 });
+        await fetchDbConfig(); // Recargar la configuración
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error al restaurar', detail: error.message || 'No se pudo restaurar la configuración.', life: 5000 });
+    }
+};
 
 // User management functions
 const fetchUsers = async () => {
@@ -302,6 +366,7 @@ watch(
 onMounted(() => {
     if (isAdmin.value) {
         fetchUsers();
+        fetchDbConfig();
     }
 
     // Inicializar configuración temporal con los valores actuales
@@ -320,11 +385,13 @@ onMounted(() => {
         <Tabs value="Estilo">
             <TabList>
                 <Tab value="Estilo">Estilo</Tab>
-                <Tab v-if="isAdmin" value="admin">Admin</Tab>
+                <Tab v-if="isAdmin" value="usuarios">Usuarios</Tab>
+                <Tab v-if="isAdmin" value="db"> Conexión a BD</Tab>
                 <Tab value="2">Header III</Tab>
             </TabList>
             <TabPanels>
                 <TabPanel value="Estilo">
+                    <div class="font-semibold text-xl mb-4">Configuración del estilo</div>
                     <div class="flex flex-col gap-4">
                         <div>
                             <span class="text-sm text-muted-color font-semibold">Color primario</span>
@@ -372,7 +439,7 @@ onMounted(() => {
                         </div>
                     </div>
                 </TabPanel>
-                <TabPanel v-if="isAdmin" value="admin">
+                <TabPanel v-if="isAdmin" value="usuarios">
                     <div class="font-semibold text-xl mb-4">Gestión de usuarios</div>
                     <Toolbar class="mb-6">
                         <template #start>
@@ -396,6 +463,20 @@ onMounted(() => {
                             </template>
                         </Column>
                     </DataTable>
+                </TabPanel>
+                <TabPanel v-if="isAdmin" value="db">
+                    <div class="font-semibold text-xl mb-4">Gestión de la base de datos</div>
+                    Exportar / importar el contenido completo de la base de datos.
+                    <Button label="Respaldar" icon="pi pi-download" severity="secondary" class="mr-2" @click="backupDatabase" />
+                    <Button label="Restaurar" icon="pi pi-upload" severity="secondary" class="mr-2" @click="restoreDatabase" />
+                    <div class="mb-4">
+                        <label for="db_host" class="block font-bold mb-2">Host</label>
+                        <InputText id="db_host" />
+                    </div>
+                    <div class="mb-4">
+                        <label for="db_port" class="block font-bold mb-2">Puerto</label>
+                        <InputText id="db_port" />
+                    </div>
                 </TabPanel>
                 <TabPanel value="2">
                     <p class="m-0">

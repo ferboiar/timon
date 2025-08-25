@@ -19,6 +19,7 @@ import ahorrosRouter from '#backend/routes/ahorros.mjs';
 import anticiposRouter from '#backend/routes/anticipos.mjs';
 import authRouter from '#backend/routes/auth.mjs';
 import categoriasRouter from '#backend/routes/categorias.mjs';
+import dbConfigRouter from '#backend/routes/conexionDB.mjs';
 import cuentasRouter from '#backend/routes/cuentas.mjs';
 import recibosRouter from '#backend/routes/recibos.mjs';
 import usersRouter from '#backend/routes/users.mjs';
@@ -39,6 +40,7 @@ app.use('/api/cuentas', cuentasRouter);
 app.use('/api/ahorros', ahorrosRouter);
 app.use('/api/anticipos', anticiposRouter);
 app.use('/api/auth', authRouter); // Montar el router de autenticación
+app.use('/api/db-config', dbConfigRouter);
 app.use('/api/users', usersRouter); // Montar el router de usuarios
 
 app.listen(port, () => {
