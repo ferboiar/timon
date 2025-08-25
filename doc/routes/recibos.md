@@ -49,6 +49,7 @@ Esta ruta permite crear un nuevo recibo o actualizar uno existente si se proporc
 | `periodicidad` | String | Frecuencia del recibo | Sí |
 | `importe` | Number | Cantidad del recibo | Sí |
 | `categoria` | String | Categoría a la que pertenece el recibo | Sí |
+| `cuenta_id` | Number | ID de la cuenta bancaria asociada al recibo | Sí |
 | `cargo` | Array | Lista de fechas de cargo con sus estados | Sí |
 
 Cada elemento del array `cargo` debe contener:
@@ -77,11 +78,41 @@ Esta ruta permite eliminar un recibo completo o solo una fecha de cargo específ
 | `fecha` | String | Fecha del cargo a eliminar | No |
 | `periodicidad` | String | Periodicidad del recibo | No |
 
+## Sistema de Propiedad y Acceso
+
+### Asignación Automática de Propietario
+
+Cuando se crea un nuevo recibo a través del endpoint POST, el sistema:
+
+1. Obtiene el ID del usuario desde el token JWT presente en la cabecera de autenticación
+2. Asigna automáticamente este ID como `propietario_id` del recibo
+3. No permite modificar manualmente el propietario, asegurando la integridad del sistema de permisos
+
+```javascript
+// Extracto del código que maneja la asignación del propietario
+const propietarioId = req.user.id; // Obtenemos el ID del usuario del token JWT
+await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id);
+```
+
+### Validación de Cuenta Bancaria
+
+El endpoint POST valida que se proporcione un `cuenta_id` válido:
+
+```javascript
+if (!cuenta_id) {
+    return res.status(400).json({ error: 'El campo cuenta_id es obligatorio.' });
+}
+```
+
+Este campo asocia el recibo con una cuenta bancaria específica, lo que permite el seguimiento financiero adecuado de todos los cargos asociados.
+
 ## Validaciones
 
 La API implementa las siguientes validaciones:
 - El campo `cargo` debe ser un array
-- Los campos concepto, periodicidad, importe, categoría y cargo son obligatorios
+- Los campos concepto, periodicidad, importe, categoría, cuenta_id y cargo son obligatorios
+- El campo `cuenta_id` debe hacer referencia a una cuenta existente 
+- El campo `propietario_id` se obtiene automáticamente del token JWT del usuario autenticado
 - Validaciones adicionales de tipos y formatos se realizan en las funciones de base de datos
 
 ## Manejo de Errores
@@ -99,4 +130,4 @@ Este módulo depende directamente de las funciones de base de datos definidas en
 
 - [Documentación de BillService](../services/BillService.md) - Cliente que consume esta API
 - [Utilidades de Base de Datos para Recibos](../db/db_utilsBill.md) - Implementación de las funciones de base de datos
-- [Componente Recibos](../components/Recibos.md) - Interfaz de usuario que interactúa con esta API
+- [Componente ListBills](../components/ListBills.md) - Interfaz de usuario que interactúa con esta API

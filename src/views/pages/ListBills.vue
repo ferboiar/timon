@@ -1,4 +1,5 @@
 <script setup>
+import { AccService } from '@/service/AccService'; // Importar el servicio de cuentas
 import { BillService } from '@/service/BillService';
 import { CatsService } from '@/service/CatsService'; // Importar CatsService
 import { FilterMatchMode } from '@primevue/core/api';
@@ -14,6 +15,7 @@ const bill = ref({
     id: null, // Añadir el parámetro id
     concepto: '',
     categoria: '',
+    cuenta_id: null, // Añadir el parámetro cuenta_id
     importe: 0,
     periodicidad: '',
     cargo: Array(6)
@@ -35,6 +37,7 @@ const expandedRowsTrimestral = ref([]);
 const expandedRowsBimestral = ref([]);
 
 const categorias = ref([]); // Inicializar como un array vacío
+const cuentas = ref([]); // Lista de cuentas disponibles
 
 const periodicidad = ref([
     { label: 'Anual', value: 'anual' },
@@ -59,8 +62,15 @@ onMounted(async () => {
             label: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1),
             value: cat.nombre
         }));
+
+        // Obtener cuentas disponibles
+        const cuentasData = await AccService.getAccounts();
+        cuentas.value = cuentasData.map((cuenta) => ({
+            label: cuenta.nombre,
+            value: cuenta.id
+        }));
     } catch (error) {
-        console.error('onMounted. BillService. Error al cargar los recibos:', error);
+        console.error('onMounted. Error al cargar los datos:', error);
     }
 });
 
@@ -286,6 +296,7 @@ function openNew(periodicity) {
         id: null,
         concepto: '',
         categoria: '',
+        cuenta_id: null,
         importe: 0,
         periodicidad: periodicity,
         cargo: Array(6)
@@ -319,6 +330,7 @@ async function guardarRecibo() {
         periodicidad: bill.value.periodicidad || '',
         importe: parseFloat(bill.value.importe) || 0, // Asegura que importe sea número y no string
         categoria: bill.value.categoria || '',
+        cuenta_id: bill.value.cuenta_id || null,
         cargo: bill.value.cargo.map((c) => ({
             id: c.id ?? null,
             fecha: c.fecha ? new Date(c.fecha) : null,
@@ -364,6 +376,7 @@ async function guardarRecibo() {
                 id: null, // Reiniciar id a null
                 concepto: '',
                 categoria: '',
+                cuenta_id: null,
                 importe: 0,
                 periodicidad: '',
                 cargo: bill.value.cargo.map(() => ({
@@ -389,6 +402,7 @@ function editBill(prod, openFCDialog = false) {
         id: prod.id, // Capturar la id proveniente de la base de datos
         concepto: prod.concepto,
         categoria: prod.categoria,
+        cuenta_id: prod.cuenta_id,
         importe: prod.importe,
         periodicidad: prod.periodicidad,
         cargo: [
@@ -559,7 +573,7 @@ const groupedQuarterlyBills = computed(() => {
     const grouped = {};
     quarterlyBills.value.forEach((bill) => {
         if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
+            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, cuenta_id: bill.cuenta_id, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
         }
         grouped[bill.concepto].bills.push(bill);
     });
@@ -570,7 +584,7 @@ const groupedBimonthlyBills = computed(() => {
     const grouped = {};
     bimonthlyBills.value.forEach((bill) => {
         if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
+            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, cuenta_id: bill.cuenta_id, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
         }
         grouped[bill.concepto].bills.push(bill);
     });
@@ -1009,19 +1023,28 @@ const inactiveBillsCount = (periodicity) => {
 
         <Dialog v-model:visible="billDialog" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
-                <div>
-                    <div class="flex justify-between items-center mb-3">
-                        <label for="concepto" class="font-bold">Concepto</label>
-                        <ToggleSwitch
-                            id="activo"
-                            :modelValue="(bill.cargo[0].activo || 0) === 1"
-                            @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
-                            :binary="true"
-                            v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
-                        />
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-7">
+                        <div class="flex justify-between items-center mb-3">
+                            <label for="concepto" class="font-bold">Concepto</label>
+                        </div>
+                        <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
+                        <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                     </div>
-                    <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
-                    <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
+                    <div class="col-span-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <label for="cuenta" class="font-bold">Cuenta</label>
+                            <ToggleSwitch
+                                id="activo"
+                                :modelValue="(bill.cargo[0].activo || 0) === 1"
+                                @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
+                                :binary="true"
+                                v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
+                            />
+                        </div>
+                        <Select id="cuenta" v-model="bill.cuenta_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
+                        <small v-if="submitted && !bill.cuenta_id" class="text-red-500">La cuenta es obligatoria.</small>
+                    </div>
                 </div>
                 <div v-if="showFields.commentBox">
                     <label for="comentario" class="block font-bold mb-3">Comentario</label>
@@ -1164,19 +1187,28 @@ const inactiveBillsCount = (periodicity) => {
 
         <Dialog v-model:visible="billDialogTB" :style="{ width: '450px' }" header="Detalle del recibo" :modal="true">
             <div class="flex flex-col gap-6">
-                <div>
-                    <div class="flex justify-between items-center mb-3">
-                        <label for="concepto" class="font-bold">Concepto</label>
-                        <ToggleSwitch
-                            id="activo"
-                            :modelValue="(bill.cargo[0].activo || 0) === 1"
-                            @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
-                            :binary="true"
-                            v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
-                        />
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-7">
+                        <div class="flex justify-between items-center mb-3">
+                            <label for="concepto" class="font-bold">Concepto</label>
+                        </div>
+                        <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
+                        <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
                     </div>
-                    <InputText id="concepto" v-model.trim="bill.concepto" required="true" autofocus :invalid="submitted && !bill.concepto" fluid />
-                    <small v-if="submitted && !bill.concepto" class="text-red-500">El concepto es obligatorio.</small>
+                    <div class="col-span-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <label for="cuenta" class="font-bold">Cuenta</label>
+                            <ToggleSwitch
+                                id="activo"
+                                :modelValue="(bill.cargo[0].activo || 0) === 1"
+                                @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
+                                :binary="true"
+                                v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
+                            />
+                        </div>
+                        <Select id="cuenta" v-model="bill.cuenta_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
+                        <small v-if="submitted && !bill.cuenta_id" class="text-red-500">La cuenta es obligatoria.</small>
+                    </div>
                 </div>
                 <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-5">

@@ -57,6 +57,7 @@ const newBill = {
   periodicidad: 'mensual',
   importe: 95.50,
   categoria: 'Suministros',
+  cuenta_id: 1, // ID de la cuenta bancaria asociada
   cargo: [
     {
       fecha: '2025-05-01',
