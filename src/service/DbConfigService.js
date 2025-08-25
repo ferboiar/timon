@@ -1,5 +1,4 @@
 import { API_BASE_URL } from '@/config/api';
-import axios from 'axios';
 
 const API_URL = `${API_BASE_URL}/api/db-config`;
 
@@ -9,13 +8,17 @@ export class DbConfigService {
      * @returns {Promise<Object>}
      */
     static async getDbConfig() {
-        try {
-            const response = await axios.get(API_URL);
-            return response.data;
-        } catch (error) {
-            console.error('Error al obtener la configuración de la base de datos:', error);
-            throw error;
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const response = await fetch(API_URL, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al obtener la configuración de la base de datos');
         }
+        return await response.json();
     }
 
     /**
@@ -24,13 +27,20 @@ export class DbConfigService {
      * @returns {Promise<Object>}
      */
     static async testDbConnection(config) {
-        try {
-            const response = await axios.post(`${API_URL}/test`, config);
-            return response.data;
-        } catch (error) {
-            console.error('Error al probar la conexión a la base de datos:', error);
-            throw error;
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const response = await fetch(`${API_URL}/test`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(config)
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al probar la conexión a la base de datos');
         }
+        return await response.json();
     }
 
     /**
@@ -39,13 +49,20 @@ export class DbConfigService {
      * @returns {Promise<Object>}
      */
     static async saveDbConfig(config) {
-        try {
-            const response = await axios.put(API_URL, config);
-            return response.data;
-        } catch (error) {
-            console.error('Error al guardar la configuración de la base de datos:', error);
-            throw error;
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const response = await fetch(API_URL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(config)
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al guardar la configuración de la base de datos');
         }
+        return await response.json();
     }
 
     /**
@@ -53,12 +70,17 @@ export class DbConfigService {
      * @returns {Promise<Object>}
      */
     static async restoreDbConfig() {
-        try {
-            const response = await axios.post(`${API_URL}/restore`);
-            return response.data;
-        } catch (error) {
-            console.error('Error al restaurar la configuración de la base de datos:', error);
-            throw error;
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const response = await fetch(`${API_URL}/restore`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Error al restaurar la configuración de la base de datos');
         }
+        return await response.json();
     }
 }

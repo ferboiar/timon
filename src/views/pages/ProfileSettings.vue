@@ -466,17 +466,51 @@ onMounted(() => {
                 </TabPanel>
                 <TabPanel v-if="isAdmin" value="db">
                     <div class="font-semibold text-xl mb-4">Gestión de la base de datos</div>
-                    Exportar / importar el contenido completo de la base de datos.
+
+                    <div class="grid">
+                        <div class="col-12">
+                            <p>
+                                Modifica los parámetros de conexión a la base de datos.<br />
+                                <b>¡Atención!</b> Una configuración incorrecta puede dejar la aplicación inoperativa.
+                            </p>
+                        </div>
+
+                        <div class="col-12 md:col-6">
+                            <div class="p-fluid">
+                                <div class="field">
+                                    <label for="db-host">Host</label>
+                                    <InputText id="db-host" v-model="dbConfig.DB_HOST" />
+                                </div>
+                                <div class="field">
+                                    <label for="db-port">Puerto</label>
+                                    <InputText id="db-port" v-model="dbConfig.DB_PORT" />
+                                </div>
+                                <div class="field">
+                                    <label for="db-user">Usuario</label>
+                                    <InputText id="db-user" v-model="dbConfig.DB_USER" />
+                                </div>
+                                <div class="field">
+                                    <label for="db-password">Contraseña</label>
+                                    <Password id="db-password" v-model="dbConfig.DB_PASSWORD" :feedback="false" toggleMask placeholder="Dejar en blanco para no cambiar" />
+                                </div>
+                                <div class="field">
+                                    <label for="db-database">Base de Datos</label>
+                                    <InputText id="db-database" v-model="dbConfig.DB_DATABASE" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="flex flex-wrap gap-2">
+                                <Button @click="testDbConnection" label="Probar Conexión" icon="pi pi-bolt" class="p-button-secondary" :disabled="!isDbConfigChanged" />
+                                <Button @click="saveDbConfig" label="Guardar Cambios" icon="pi pi-save" :disabled="!isDbConfigChanged" />
+                                <Button @click="restoreDbConfig" label="Restaurar Configuración" icon="pi pi-history" class="p-button-danger" :disabled="!backupExists" />
+                            </div>
+                        </div>
+                    </div>
+
+                    Respaldar / restaurar el contenido completo de la base de datos:
                     <Button label="Respaldar" icon="pi pi-download" severity="secondary" class="mr-2" @click="backupDatabase" />
                     <Button label="Restaurar" icon="pi pi-upload" severity="secondary" class="mr-2" @click="restoreDatabase" />
-                    <div class="mb-4">
-                        <label for="db_host" class="block font-bold mb-2">Host</label>
-                        <InputText id="db_host" />
-                    </div>
-                    <div class="mb-4">
-                        <label for="db_port" class="block font-bold mb-2">Puerto</label>
-                        <InputText id="db_port" />
-                    </div>
                 </TabPanel>
                 <TabPanel value="2">
                     <p class="m-0">
