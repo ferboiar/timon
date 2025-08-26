@@ -3,6 +3,7 @@ import { useAuth } from '@/composables/useAuth';
 import { useTheme } from '@/composables/useTheme';
 import { useLayout } from '@/layout/composables/layout';
 import { DbConfigService } from '@/service/DbConfigService';
+import { MtoDBService } from '@/service/MaintenanceDBService';
 import { UsersService } from '@/service/UsersService';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
@@ -264,6 +265,25 @@ const restoreDbConfig = async () => {
         toast.add({ severity: 'error', summary: 'Error al restaurar', detail: error.message || 'No se pudo restaurar la configuración.', life: 5000 });
     } finally {
         restoreDbConfigDialog.value = false;
+    }
+};
+
+const backupDatabase = async () => {
+    try {
+        const response = await MtoDBService.backupDatabase();
+        const blob = new Blob([response.data], { type: 'application/sql' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'backup.sql';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Copia de seguridad de la base de datos descargada.', life: 3000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar la copia de seguridad.', life: 5000 });
+        console.error('Error al descargar la copia de seguridad:', error);
     }
 };
 

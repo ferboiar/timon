@@ -23,6 +23,7 @@ import dbConfigRouter from '#backend/routes/conexionDB.mjs';
 import cuentasRouter from '#backend/routes/cuentas.mjs';
 import recibosRouter from '#backend/routes/recibos.mjs';
 import usersRouter from '#backend/routes/users.mjs';
+import mtoDBRoutes from '#backend/routes/mantenimientoDB.mjs';
 
 const app = express();
 const port = config.server.port; //ver en ./config/env.mjs
@@ -42,6 +43,7 @@ app.use('/api/anticipos', anticiposRouter);
 app.use('/api/auth', authRouter); // Montar el router de autenticación
 app.use('/api/db-config', dbConfigRouter);
 app.use('/api/users', usersRouter); // Montar el router de usuarios
+app.use('/api/db', mtoDBRoutes); // Montar el router de mantenimiento de base de datos
 
 app.listen(port, () => {
     console.log(`Servidor escuchando en http://localhost:${port}`);
