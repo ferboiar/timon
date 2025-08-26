@@ -49,16 +49,6 @@ export class DbConfigService {
      * Prueba una nueva configuración de conexión a la base de datos.
      * @param {Object} config - Datos de conexión a probar.
      * @returns {Promise<Object>}
-+                throw new Error(`Server returned non-JSON response: ${errorText}`);
-+            }
-         }
-        return await response.json();
-    }
-
-    /**
-     * Prueba una nueva configuración de conexión a la base de datos.
-     * @param {Object} config - Datos de conexión a probar.
-     * @returns {Promise<Object>}
      */
     static async testDbConnection(config) {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');

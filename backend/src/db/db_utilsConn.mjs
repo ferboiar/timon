@@ -42,8 +42,8 @@ export const getDbConfig = async () => {
 
         return { config, backupExists };
     } catch (error) {
-        console.error('Error al leer la configuración de la base de datos:', error);
-        throw new Error('No se pudo leer la configuración de la base de datos.');
+        console.error('API. Error al leer la configuración de la base de datos:', error);
+        throw new Error('API. No se pudo leer la configuración de la base de datos.');
     }
 };
 
@@ -65,8 +65,8 @@ export const getDbPassword = async () => {
         const config = dotenv.parse(fileContent);
         return config.DB_PASSWORD || '';
     } catch (error) {
-        console.error('Error al leer la contraseña de la base de datos:', error);
-        throw new Error('No se pudo leer la contraseña.');
+        console.error('API. Error al leer la contraseña de la base de datos:', error);
+        throw new Error('API. No se pudo leer la contraseña.');
     }
 };
 
@@ -92,8 +92,8 @@ export const testDbConnection = async (config) => {
         await connection.connect();
         return true;
     } catch (error) {
-        console.error('Error al probar la conexión a la base de datos:', error.message);
-        throw new Error(`Falló la prueba de conexión: ${error.message}`);
+        console.error('API. Error al probar la conexión a la base de datos:', error.message);
+        throw new Error(`API. Falló la prueba de conexión: ${error.message}`);
     } finally {
         if (connection) await connection.end();
     }
@@ -123,8 +123,8 @@ export const saveDbConfig = async (config) => {
 
         await fs.writeFile(dbConfigPath, configString, 'utf-8');
     } catch (error) {
-        console.error('Error al guardar la configuración de la base de datos:', error);
-        throw new Error('No se pudo guardar la configuración de la base de datos.');
+        console.error('API. Error al guardar la configuración de la base de datos:', error);
+        throw new Error('API. No se pudo guardar la configuración de la base de datos.');
     }
 };
 
@@ -140,11 +140,12 @@ export const restoreDbConfig = async () => {
                 .then(() => true)
                 .catch(() => false))
         ) {
-            throw new Error('No existe un archivo de copia de seguridad para restaurar.');
+            throw new Error('API. No existe un archivo de copia de seguridad para restaurar.');
         }
         await fs.copyFile(dbBackupPath, dbConfigPath);
+        await fs.unlink(dbBackupPath); // Eliminar el backup después de restaurar
     } catch (error) {
-        console.error('Error al restaurar la configuración de la base de datos:', error);
-        throw new Error('No se pudo restaurar la configuración de la base de datos.');
+        console.error('API. Error al restaurar la configuración de la base de datos:', error);
+        throw new Error('API. No se pudo restaurar la configuración de la base de datos.');
     }
 };

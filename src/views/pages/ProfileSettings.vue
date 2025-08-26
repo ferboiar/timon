@@ -77,6 +77,9 @@ const changePasswordDialog = ref(false);
 const deleteUserDialog = ref(false);
 const deleteSelectedUsersDialog = ref(false);
 
+const saveDbConfigDialog = ref(false);
+const restoreDbConfigDialog = ref(false);
+
 const user = ref({
     id: null,
     username: '',
@@ -226,19 +229,29 @@ const fetchDbConfig = async () => {
 const testDbConnection = async () => {
     try {
         await DbConfigService.testDbConnection(dbConfig.value);
-        toast.add({ severity: 'success', summary: 'Éxito', detail: 'La prueba de conexión fue exitosa.', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'La prueba de conexión fue bien.', life: 3000 });
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error en la conexión', detail: error.message || 'No se pudo conectar a la base de datos.', life: 5000 });
     }
 };
 
+const confirmSaveDbConfig = () => {
+    saveDbConfigDialog.value = true;
+};
+
+const confirmRestoreDbConfig = () => {
+    restoreDbConfigDialog.value = true;
+};
+
 const saveDbConfig = async () => {
     try {
         await DbConfigService.saveDbConfig(dbConfig.value);
-        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Configuración de la base de datos guardada.', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Configuración de la conexión con base de datos guardada.', life: 3000 });
         await fetchDbConfig(); // Recargar la configuración
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error al guardar', detail: error.message || 'No se pudo guardar la configuración.', life: 5000 });
+    } finally {
+        saveDbConfigDialog.value = false;
     }
 };
 
@@ -249,6 +262,8 @@ const restoreDbConfig = async () => {
         await fetchDbConfig(); // Recargar la configuración
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error al restaurar', detail: error.message || 'No se pudo restaurar la configuración.', life: 5000 });
+    } finally {
+        restoreDbConfigDialog.value = false;
     }
 };
 
@@ -498,17 +513,17 @@ onMounted(() => {
 
                                     <label for="db-password" style="justify-self: end; padding-right: 0.75rem">Contraseña</label>
                                     <div class="p-inputgroup">
-                                        <Password id="db-password" v-model="dbConfig.DB_PASSWORD" :feedback="false" toggleMask placeholder="Dejar en blanco para no cambiar" inputClass="w-full" />
-                                        <Button icon="pi pi-eye" severity="secondary" @click="fetchAndShowPassword" v-tooltip.bottom="'Mostrar contraseña actual'" />
+                                        <Password id="db-password" v-model="dbConfig.DB_PASSWORD" :feedback="false" toggleMask placeholder="En blanco para no cambiarla" inputClass="w-full" />
+                                        <Button icon="pi pi-refresh" severity="secondary" @click="fetchAndShowPassword" v-tooltip.bottom="'Mostrar contraseña actual'" />
                                     </div>
 
                                     <label for="db-database" style="justify-self: end; padding-right: 0.75rem">Base de Datos</label>
                                     <InputText id="db-database" v-model="dbConfig.DB_DATABASE" class="w-full" />
                                 </div>
                                 <div class="flex flex-wrap gap-2 mt-4 justify-content-end">
-                                    <Button @click="testDbConnection" label="Probar Conexión" icon="pi pi-bolt" severity="secondary" />
-                                    <Button @click="saveDbConfig" label="Guardar Cambios" icon="pi pi-save" :disabled="!isDbConfigChanged" />
-                                    <Button @click="restoreDbConfig" label="Restaurar Valores" icon="pi pi-history" severity="danger" :disabled="!backupExists" />
+                                    <Button @click="testDbConnection" label="Probar" icon="pi pi-bolt" severity="secondary" v-tooltip="'Prueba la conexión con los valores introducidos'" />
+                                    <Button @click="confirmSaveDbConfig" label="Guardar" icon="pi pi-save" v-tooltip="'Guarda los cambios'" :disabled="!isDbConfigChanged" />
+                                    <Button @click="confirmRestoreDbConfig" label="Restaurar" icon="pi pi-history" severity="danger" v-tooltip="'Restablece los valores anteriores'" :disabled="!backupExists" />
                                 </div>
                             </div>
                         </div>
@@ -617,6 +632,36 @@ onMounted(() => {
         <template #footer>
             <Button label="No" icon="pi pi-times" autofocus text @click="deleteSelectedUsersDialog = false" />
             <Button label="Sí" icon="pi pi-check" text @click="deleteSelectedUsers" />
+        </template>
+    </Dialog>
+
+    <!-- Diálogo para confirmar guardar configuración de BD -->
+    <Dialog v-model:visible="saveDbConfigDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
+        <div class="flex items-center gap-4">
+            <i class="pi pi-exclamation-triangle !text-3xl" />
+            <span
+                >¿Seguro que quieres guardar la nueva configuración de la conexión con la base de datos? <br /><br />Si aceptas se comprobará la conexión con los nuevos valores, se guardará los nuevos ajustes y se hará copia de seguridad de la
+                configuración actual por si decides recuperarla. Una vez restaurada el fichero de backup se eliminará.</span
+            >
+        </div>
+        <template #footer>
+            <Button label="No" icon="pi pi-times" autofocus text @click="saveDbConfigDialog = false" />
+            <Button label="Sí" icon="pi pi-check" @click="saveDbConfig" />
+        </template>
+    </Dialog>
+
+    <!-- Diálogo para confirmar restaurar configuración de BD -->
+    <Dialog v-model:visible="restoreDbConfigDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
+        <div class="flex items-center gap-4">
+            <i class="pi pi-exclamation-triangle !text-3xl" />
+            <span
+                >¿Seguro que quieres restaurar la configuración desde la copia de seguridad? <br /><br />Se puede restaurar únicamente la configuración previa a la última modificación. Esta no es comprobada antes de su restauración por lo que debes
+                estar seguro que la configuración será funcional. El fichero de backup se eliminará después de su restauración.</span
+            >
+        </div>
+        <template #footer>
+            <Button label="No" icon="pi pi-times" autofocus text @click="restoreDbConfigDialog = false" />
+            <Button label="Sí" icon="pi pi-check" @click="restoreDbConfig" />
         </template>
     </Dialog>
 </template>
