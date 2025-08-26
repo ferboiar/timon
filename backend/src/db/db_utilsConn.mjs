@@ -48,6 +48,29 @@ export const getDbConfig = async () => {
 };
 
 /**
+ * Lee y devuelve únicamente la contraseña de la base de datos.
+ * @returns {Promise<string>} - La contraseña de la base de datos.
+ */
+export const getDbPassword = async () => {
+    try {
+        if (
+            !(await fs
+                .access(dbConfigPath)
+                .then(() => true)
+                .catch(() => false))
+        ) {
+            return ''; // Si no hay fichero, no hay contraseña
+        }
+        const fileContent = await fs.readFile(dbConfigPath, 'utf-8');
+        const config = dotenv.parse(fileContent);
+        return config.DB_PASSWORD || '';
+    } catch (error) {
+        console.error('Error al leer la contraseña de la base de datos:', error);
+        throw new Error('No se pudo leer la contraseña.');
+    }
+};
+
+/**
  * Prueba una nueva configuración de conexión a la base de datos.
  * @param {Object} config - Datos de conexión a probar.
  * @returns {Promise<boolean>} - True si la conexión es exitosa.

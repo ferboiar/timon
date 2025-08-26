@@ -199,6 +199,17 @@ const dbConfig = ref({
 const backupExists = ref(false);
 const dbConfigOriginal = ref({});
 
+// Función para mostrar la contraseña actual
+const fetchAndShowPassword = async () => {
+    try {
+        const { password } = await DbConfigService.getDbPassword();
+        dbConfig.value.DB_PASSWORD = password;
+        toast.add({ severity: 'info', summary: 'Contraseña mostrada', detail: 'Se ha cargado la contraseña actual.', life: 3000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo obtener la contraseña.', life: 5000 });
+    }
+};
+
 // DB Config Functions
 const fetchDbConfig = async () => {
     try {
@@ -465,52 +476,54 @@ onMounted(() => {
                     </DataTable>
                 </TabPanel>
                 <TabPanel v-if="isAdmin" value="db">
-                    <div class="font-semibold text-xl mb-4">Gestión de la base de datos</div>
+                    <div class="text-xl font-semibold mb-4">Gestión de la base de datos</div>
 
                     <div class="grid">
                         <div class="col-12">
-                            <p>
-                                Modifica los parámetros de conexión a la base de datos.<br />
-                                <b>¡Atención!</b> Una configuración incorrecta puede dejar la aplicación inoperativa.
-                            </p>
-                        </div>
+                            <div class="card">
+                                <div class="text-lg font-semibold">Parámetros de Conexión</div>
+                                <p>
+                                    Modifica los parámetros para conectar con la base de datos.<br />
+                                    <b>¡Atención!</b> Una configuración incorrecta puede dejar la aplicación inoperativa.
+                                </p>
+                                <div class="mt-4" style="display: grid; grid-template-columns: 10rem 20rem; align-items: center; row-gap: 0.75rem">
+                                    <label for="db-host" style="justify-self: end; padding-right: 0.75rem">Host</label>
+                                    <InputText id="db-host" v-model="dbConfig.DB_HOST" class="w-full" />
 
-                        <div class="col-12 md:col-6">
-                            <div class="p-fluid">
-                                <div class="field">
-                                    <label for="db-host">Host</label>
-                                    <InputText id="db-host" v-model="dbConfig.DB_HOST" />
+                                    <label for="db-port" style="justify-self: end; padding-right: 0.75rem">Puerto</label>
+                                    <InputText id="db-port" v-model="dbConfig.DB_PORT" class="w-full" />
+
+                                    <label for="db-user" style="justify-self: end; padding-right: 0.75rem">Usuario</label>
+                                    <InputText id="db-user" v-model="dbConfig.DB_USER" class="w-full" />
+
+                                    <label for="db-password" style="justify-self: end; padding-right: 0.75rem">Contraseña</label>
+                                    <div class="p-inputgroup">
+                                        <Password id="db-password" v-model="dbConfig.DB_PASSWORD" :feedback="false" toggleMask placeholder="Dejar en blanco para no cambiar" inputClass="w-full" />
+                                        <Button icon="pi pi-eye" severity="secondary" @click="fetchAndShowPassword" v-tooltip.bottom="'Mostrar contraseña actual'" />
+                                    </div>
+
+                                    <label for="db-database" style="justify-self: end; padding-right: 0.75rem">Base de Datos</label>
+                                    <InputText id="db-database" v-model="dbConfig.DB_DATABASE" class="w-full" />
                                 </div>
-                                <div class="field">
-                                    <label for="db-port">Puerto</label>
-                                    <InputText id="db-port" v-model="dbConfig.DB_PORT" />
-                                </div>
-                                <div class="field">
-                                    <label for="db-user">Usuario</label>
-                                    <InputText id="db-user" v-model="dbConfig.DB_USER" />
-                                </div>
-                                <div class="field">
-                                    <label for="db-password">Contraseña</label>
-                                    <Password id="db-password" v-model="dbConfig.DB_PASSWORD" :feedback="false" toggleMask placeholder="Dejar en blanco para no cambiar" />
-                                </div>
-                                <div class="field">
-                                    <label for="db-database">Base de Datos</label>
-                                    <InputText id="db-database" v-model="dbConfig.DB_DATABASE" />
+                                <div class="flex flex-wrap gap-2 mt-4 justify-content-end">
+                                    <Button @click="testDbConnection" label="Probar Conexión" icon="pi pi-bolt" severity="secondary" />
+                                    <Button @click="saveDbConfig" label="Guardar Cambios" icon="pi pi-save" :disabled="!isDbConfigChanged" />
+                                    <Button @click="restoreDbConfig" label="Restaurar Valores" icon="pi pi-history" severity="danger" :disabled="!backupExists" />
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-12">
-                            <div class="flex flex-wrap gap-2">
-                                <Button @click="testDbConnection" label="Probar Conexión" icon="pi pi-bolt" class="p-button-secondary" :disabled="!isDbConfigChanged" />
-                                <Button @click="saveDbConfig" label="Guardar Cambios" icon="pi pi-save" :disabled="!isDbConfigChanged" />
-                                <Button @click="restoreDbConfig" label="Restaurar Configuración" icon="pi pi-history" class="p-button-danger" :disabled="!backupExists" />
+                            <div class="card">
+                                <div class="text-lg font-semibold">Respaldo y Restauración</div>
+                                <p>Crea una copia de seguridad completa de la base de datos o restáurala a partir de un archivo previo.</p>
+                                <div class="flex flex-wrap gap-2 mt-4">
+                                    <Button label="Respaldar" icon="pi pi-download" severity="secondary" @click="backupDatabase" />
+                                    <Button label="Restaurar" icon="pi pi-upload" severity="secondary" @click="restoreDatabase" />
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    Respaldar / restaurar el contenido completo de la base de datos:
-                    <Button label="Respaldar" icon="pi pi-download" severity="secondary" class="mr-2" @click="backupDatabase" />
-                    <Button label="Restaurar" icon="pi pi-upload" severity="secondary" class="mr-2" @click="restoreDatabase" />
                 </TabPanel>
                 <TabPanel value="2">
                     <p class="m-0">

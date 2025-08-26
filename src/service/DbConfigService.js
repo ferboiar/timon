@@ -22,6 +22,40 @@ export class DbConfigService {
     }
 
     /**
+     * Obtiene solo la contraseña de la base de datos.
+     * @returns {Promise<Object>}
+     */
+    static async getDbPassword() {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const response = await fetch(`${API_URL}/password`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        if (!response.ok) {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const error = await response.json();
+                throw new Error(error.message || 'Error al obtener la contraseña');
+            } else {
+                const errorText = await response.text();
+                throw new Error(`Server returned non-JSON response: ${errorText}`);
+            }
+        }
+        return await response.json();
+    }
+
+    /**
+     * Prueba una nueva configuración de conexión a la base de datos.
+     * @param {Object} config - Datos de conexión a probar.
+     * @returns {Promise<Object>}
++                throw new Error(`Server returned non-JSON response: ${errorText}`);
++            }
+         }
+        return await response.json();
+    }
+
+    /**
      * Prueba una nueva configuración de conexión a la base de datos.
      * @param {Object} config - Datos de conexión a probar.
      * @returns {Promise<Object>}

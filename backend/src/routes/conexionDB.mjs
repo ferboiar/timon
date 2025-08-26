@@ -3,9 +3,9 @@
  *
  * @module routes/conexionDB
  */
+import * as dbConnUtils from '#backend/db/db_utilsConn.mjs';
 import { verifyAdmin } from '#backend/middleware/auth.mjs';
 import express from 'express';
-import * as dbConnUtils from '../db/db_utilsConn.mjs';
 
 const router = express.Router();
 
@@ -18,6 +18,20 @@ router.get('/', verifyAdmin, async (req, res) => {
     try {
         const config = await dbConnUtils.getDbConfig();
         res.json(config);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+/**
+ * Obtener solo la contraseña de la base de datos.
+ * @route GET /api/db-config/password
+ * @access Privado - Administrador
+ */
+router.get('/password', verifyAdmin, async (req, res) => {
+    try {
+        const password = await dbConnUtils.getDbPassword();
+        res.json({ password });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
