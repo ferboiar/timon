@@ -17,4 +17,21 @@ export class MtoDBService {
             throw error;
         }
     }
+
+    static async restoreDatabase(formData) {
+        try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(`${API_URL}/restore`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    ...(token && { Authorization: `Bearer ${token}` })
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error al restaurar la base de datos:', error);
+            // Propagar el mensaje de error del servidor si está disponible
+            throw error.response?.data || error;
+        }
+    }
 }

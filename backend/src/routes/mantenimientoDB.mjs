@@ -1,10 +1,15 @@
-import { backupDb } from '#backend/db/db_maintenance.mjs';
+import { backupDb, restoreDb } from '#backend/db/db_maintenance.mjs';
 import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
+import os from 'os';
 
 const router = Router();
+
+// Configuración de Multer para guardar el fichero subido en un directorio temporal
+const upload = multer({ dest: os.tmpdir() });
 
 // Obtener el directorio raíz del proyecto
 const __filename = fileURLToPath(import.meta.url);
@@ -50,6 +55,59 @@ router.get('/backup', async (req, res) => {
     } catch (error) {
         console.error('API. Error en el endpoint de backup:', error);
         res.status(500).json({ error: 'Error al generar la copia de seguridad' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/db/restore:
+ *   post:
+ *     summary: Restaura la base de datos desde un fichero de volcado SQL.
+ *     description: Sube un fichero .sql, lo valida y lo usa para restaurar la base de datos, sobrescribiendo los datos actuales.
+ *     tags: [Database]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               backupFile:
+ *                 type: string
+ *                 format: binary
+ *                 description: El fichero .sql para restaurar.
+ *     responses:
+ *       200:
+ *         description: Base de datos restaurada con éxito.
+ *       400:
+ *         description: Fichero no proporcionado o fichero de volcado no válido.
+ *       500:
+ *         description: Error durante el proceso de restauración.
+ */
+router.post('/restore', upload.single('backupFile'), async (req, res) => {
+    const dumpFile = req.file;
+
+    if (!dumpFile) {
+        return res.status(400).json({ message: 'No se ha proporcionado ningún fichero.' });
+    }
+
+    const dumpFilePath = dumpFile.path;
+
+    try {
+        await restoreDb(dumpFilePath);
+        res.status(200).json({ message: 'Base de datos restaurada con éxito.' });
+    } catch (error) {
+        // Capturar errores específicos de validación o restauración
+        res.status(error.message.includes('fichero no parece ser un volcado') ? 400 : 500).json({ message: error.message });
+    } finally {
+        // Asegurarse de eliminar el fichero temporal después de la operación
+        fs.unlink(dumpFilePath, (err) => {
+            if (err) {
+                console.error('Error al eliminar el fichero temporal de restauración:', err);
+            }
+        });
     }
 });
 

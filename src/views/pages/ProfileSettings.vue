@@ -80,6 +80,8 @@ const deleteSelectedUsersDialog = ref(false);
 
 const saveDbConfigDialog = ref(false);
 const restoreDbConfigDialog = ref(false);
+const restoreDatabaseDialog = ref(false); // Diálogo para confirmar la restauración
+const fileToRestore = ref(null); // Almacenar el fichero mientras se confirma
 
 const user = ref({
     id: null,
@@ -284,6 +286,41 @@ const backupDatabase = async () => {
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar la copia de seguridad.', life: 5000 });
         console.error('Error al descargar la copia de seguridad:', error);
+    }
+};
+
+const onSelectFileToRestore = (event) => {
+    const file = event.files[0];
+    if (file) {
+        fileToRestore.value = file;
+        restoreDatabaseDialog.value = true;
+    }
+};
+
+const restoreDatabase = async () => {
+    if (!fileToRestore.value) {
+        toast.add({ severity: 'warn', summary: 'Advertencia', detail: 'No hay ningún fichero seleccionado para restaurar.', life: 3000 });
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('backupFile', fileToRestore.value);
+
+    try {
+        await MtoDBService.restoreDatabase(formData);
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Base de datos restaurada correctamente.', life: 3000 });
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error en la restauración',
+            detail: error.message || 'No se pudo restaurar la base de datos.',
+            life: 5000
+        });
+        console.error('Error al restaurar la base de datos:', error);
+    } finally {
+        // Limpiar el estado independientemente del resultado
+        restoreDatabaseDialog.value = false;
+        fileToRestore.value = null;
     }
 };
 
@@ -554,7 +591,7 @@ onMounted(() => {
                                 <p>Crea una copia de seguridad completa de la base de datos o restáurala a partir de un archivo previo.</p>
                                 <div class="flex flex-wrap gap-2 mt-4">
                                     <Button label="Respaldar" icon="pi pi-download" severity="secondary" @click="backupDatabase" />
-                                    <Button label="Restaurar" icon="pi pi-upload" severity="secondary" @click="restoreDatabase" />
+                                    <FileUpload mode="basic" name="backupSql" :auto="true" @uploader="onSelectFileToRestore" accept=".sql" customUpload chooseLabel="Restaurar" chooseIcon="pi pi-upload" class="p-button-secondary" />
                                 </div>
                             </div>
                         </div>
@@ -682,6 +719,30 @@ onMounted(() => {
         <template #footer>
             <Button label="No" icon="pi pi-times" autofocus text @click="restoreDbConfigDialog = false" />
             <Button label="Sí" icon="pi pi-check" @click="restoreDbConfig" />
+        </template>
+    </Dialog>
+
+    <!-- Diálogo para confirmar la restauración de la base de datos -->
+    <Dialog v-model:visible="restoreDatabaseDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
+        <div class="flex items-center gap-4">
+            <i class="pi pi-exclamation-triangle !text-3xl" />
+            <span
+                >¿Seguro que quieres restaurar la base de datos desde el fichero <b>{{ fileToRestore?.name }}</b
+                >? <br /><br /><b>¡Atención!</b> Esta acción es irreversible y sobrescribirá todos los datos actuales de la aplicación.</span
+            >
+        </div>
+        <template #footer>
+            <Button
+                label="No"
+                icon="pi pi-times"
+                autofocus
+                text
+                @click="
+                    restoreDatabaseDialog = false;
+                    fileToRestore = null;
+                "
+            />
+            <Button label="Sí" icon="pi pi-check" @click="restoreDatabase" severity="danger" />
         </template>
     </Dialog>
 </template>
