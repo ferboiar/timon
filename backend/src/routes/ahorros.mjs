@@ -11,10 +11,11 @@
 
 import { deleteMovimiento, deleteSavings, getMovimientos, getPeriodicidades, getSavings, pushMovimiento, pushSaving } from '#backend/db/db_utilsSav.mjs';
 import { Router } from 'express';
+import { verifyToken } from '#backend/middleware/auth.mjs';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const savings = await getSavings();
         res.json(savings);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
     const { id, concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo } = req.body;
     try {
         await pushSaving(id, concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo);
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.delete('/', async (req, res) => {
+router.delete('/', verifyToken, async (req, res) => {
     const { savings } = req.body;
     try {
         await deleteSavings(savings);
@@ -43,7 +44,7 @@ router.delete('/', async (req, res) => {
     }
 });
 
-router.get('/periodicidades', async (req, res) => {
+router.get('/periodicidades', verifyToken, async (req, res) => {
     try {
         const periodicidades = await getPeriodicidades();
         res.json(periodicidades);
@@ -52,7 +53,7 @@ router.get('/periodicidades', async (req, res) => {
     }
 });
 
-router.get('/:ahorroId/movimientos', async (req, res) => {
+router.get('/:ahorroId/movimientos', verifyToken, async (req, res) => {
     const { ahorroId } = req.params;
     try {
         const movimientos = await getMovimientos(ahorroId);
@@ -62,7 +63,7 @@ router.get('/:ahorroId/movimientos', async (req, res) => {
     }
 });
 
-router.post('/movimientos', async (req, res) => {
+router.post('/movimientos', verifyToken, async (req, res) => {
     const { id, ahorro_id, importe, fecha, tipo, descripcion } = req.body;
     try {
         await pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion);
@@ -72,7 +73,7 @@ router.post('/movimientos', async (req, res) => {
     }
 });
 
-router.delete('/movimientos/:id', async (req, res) => {
+router.delete('/movimientos/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
     try {
         await deleteMovimiento(id);

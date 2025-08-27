@@ -10,11 +10,13 @@
  */
 
 import { deleteAdvances, deletePago, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan } from '#backend/db/db_utilsAdv.mjs';
+import { verifyToken } from '#backend/middleware/auth.mjs';
 import { Router } from 'express';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+// Obtener todos los anticipos
+router.get('/', verifyToken, async (req, res) => {
     try {
         const advances = await getAdvances();
         res.json(advances);
@@ -23,7 +25,8 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+// Guardar un anticipo (crear o actualizar)
+router.post('/', verifyToken, async (req, res) => {
     const { id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad } = req.body;
     try {
         await pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad);
@@ -33,14 +36,15 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.delete('/', async (req, res) => {
-    const { advances } = req.body;
-    console.log('DELETE /api/anticipos - IDs recibidos para eliminar:', advances);
-    if (!Array.isArray(advances) || advances.length === 0) {
-        console.error('DELETE /api/anticipos - No se proporcionaron IDs de anticipos para eliminar');
-        return res.status(400).json({ error: 'No se proporcionaron IDs de anticipos para eliminar' });
-    }
+// Eliminar uno o más anticipos
+router.delete('/', verifyToken, async (req, res) => {
     try {
+        const { advances } = req.body;
+        console.log('DELETE /api/anticipos - IDs recibidos para eliminar:', advances);
+        if (!Array.isArray(advances) || advances.length === 0) {
+            console.error('DELETE /api/anticipos - No se proporcionaron IDs de anticipos para eliminar');
+            return res.status(400).json({ error: 'No se proporcionaron IDs de anticipos para eliminar' });
+        }
         await deleteAdvances(advances);
         console.log('DELETE /api/anticipos - Anticipos eliminados con éxito');
         res.status(200).json({ message: 'Anticipo(s) eliminado(s) correctamente' });
@@ -50,7 +54,8 @@ router.delete('/', async (req, res) => {
     }
 });
 
-router.get('/periodicidades', async (req, res) => {
+// Obtener periodicidades de anticipos
+router.get('/periodicidades', verifyToken, async (req, res) => {
     try {
         const periodicidades = await getPeriodicidades();
         res.json(periodicidades);
@@ -59,7 +64,7 @@ router.get('/periodicidades', async (req, res) => {
     }
 });
 
-router.get('/:anticipoId/pagos', async (req, res) => {
+router.get('/:anticipoId/pagos', verifyToken, async (req, res) => {
     const { anticipoId } = req.params;
     try {
         const pagos = await getPagos(anticipoId);
@@ -69,7 +74,7 @@ router.get('/:anticipoId/pagos', async (req, res) => {
     }
 });
 
-router.post('/pagos', async (req, res) => {
+router.post('/pagos', verifyToken, async (req, res) => {
     const { id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id } = req.body;
     try {
         await pushPago(id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id);
@@ -79,9 +84,10 @@ router.post('/pagos', async (req, res) => {
     }
 });
 
-router.delete('/pagos/:id', async (req, res) => {
-    const { id } = req.params;
+// Eliminar un pago
+router.delete('/pagos/:id', verifyToken, async (req, res) => {
     try {
+        const { id } = req.params;
         const saldoRestante = await deletePago(id); // Modificar deletePago para devolver el saldo restante
         res.status(200).json({
             message: 'Pago eliminado correctamente',
@@ -93,14 +99,15 @@ router.delete('/pagos/:id', async (req, res) => {
     }
 });
 
-router.post('/delete-payment', async (req, res) => {
-    const { pagoId } = req.body;
-
-    if (!pagoId) {
-        return res.status(400).json({ error: 'Pago ID es requerido' });
-    }
-
+// Manejar la eliminación de un pago
+router.post('/delete-payment', verifyToken, async (req, res) => {
     try {
+        const { pagoId } = req.body;
+
+        if (!pagoId) {
+            return res.status(400).json({ error: 'Pago ID es requerido' });
+        }
+
         const { saldoRestante, anticipoId } = await handlePaymentDeletion(pagoId);
         res.status(200).json({
             message: 'Pago eliminado correctamente',
@@ -113,15 +120,15 @@ router.post('/delete-payment', async (req, res) => {
     }
 });
 
-router.post('/recalculate-payment-plan', async (req, res) => {
-    const { anticipoId } = req.body;
-
-    if (!anticipoId) {
-        console.error('recalculate-payment-plan - Anticipo ID no proporcionado');
-        return res.status(400).json({ error: 'Anticipo ID es requerido' });
-    }
-
+router.post('/recalculate-payment-plan', verifyToken, async (req, res) => {
     try {
+        const { anticipoId } = req.body;
+
+        if (!anticipoId) {
+            console.error('recalculate-payment-plan - Anticipo ID no proporcionado');
+            return res.status(400).json({ error: 'Anticipo ID es requerido' });
+        }
+
         console.log(`recalculate-payment-plan - Procesando anticipo ID: ${anticipoId}`);
         await recalculatePaymentPlan(anticipoId); // Los datos faltantes se obtendrán en la función
         res.status(200).json({ message: 'Plan de pagos recalculado correctamente' });

@@ -10,7 +10,7 @@
  */
 
 import * as dbUsers from '#backend/db/db_utilsUsers.mjs';
-import { verifyToken } from '#backend/middleware/auth.mjs';
+import { verifyAdmin } from '#backend/middleware/auth.mjs';
 import bcrypt from 'bcrypt';
 import express from 'express';
 
@@ -21,7 +21,7 @@ const router = express.Router();
  * @route GET /api/users
  * @access Privado - Requiere autenticación
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyAdmin, async (req, res) => {
     try {
         const users = await dbUsers.getUsers();
         res.json(users);
@@ -35,7 +35,7 @@ router.get('/', verifyToken, async (req, res) => {
  * @route POST /api/users
  * @access Privado - Requiere autenticación
  */
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyAdmin, async (req, res) => {
     try {
         const { username, email, password, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = req.body;
 
@@ -74,7 +74,7 @@ router.post('/', verifyToken, async (req, res) => {
  * @route PUT /api/users
  * @access Privado - Requiere autenticación
  */
-router.put('/', verifyToken, async (req, res) => {
+router.put('/', verifyAdmin, async (req, res) => {
     try {
         const { id, username, email, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = req.body;
 
@@ -108,7 +108,7 @@ router.put('/', verifyToken, async (req, res) => {
  * @route PUT /api/users/password
  * @access Privado - Requiere autenticación
  */
-router.put('/password', verifyToken, async (req, res) => {
+router.put('/password', verifyAdmin, async (req, res) => {
     try {
         const { id, password } = req.body;
 
@@ -135,7 +135,7 @@ router.put('/password', verifyToken, async (req, res) => {
  * @route DELETE /api/users
  * @access Privado - Requiere autenticación
  */
-router.delete('/', verifyToken, async (req, res) => {
+router.delete('/', verifyAdmin, async (req, res) => {
     try {
         const { userIds } = req.body;
 
@@ -158,7 +158,7 @@ router.delete('/', verifyToken, async (req, res) => {
  * @route PUT /api/users/style-preferences
  * @access Privado - Requiere autenticación
  */
-router.put('/style-preferences', verifyToken, async (req, res) => {
+router.put('/style-preferences', verifyAdmin, async (req, res) => {
     try {
         const userId = req.user.id; // ID del usuario autenticado
         const stylePrefs = req.body; // Objeto con preferencias de estilo
@@ -182,7 +182,7 @@ router.put('/style-preferences', verifyToken, async (req, res) => {
  * @route GET /api/users/style-preferences
  * @access Privado - Requiere autenticación
  */
-router.get('/style-preferences', verifyToken, async (req, res) => {
+router.get('/style-preferences', verifyAdmin, async (req, res) => {
     try {
         const userId = req.user.id; // ID del usuario autenticado
 

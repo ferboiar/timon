@@ -11,10 +11,11 @@
 
 import { deleteAccounts, getAccounts, getTipos, pushAccount } from '#backend/db/db_utilsAcc.mjs';
 import { Router } from 'express';
+import { verifyToken } from '#backend/middleware/auth.mjs';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const accounts = await getAccounts();
         res.json(accounts);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
     const { id, nombre, tipo, iban, saldo_actual, descripcion, activa } = req.body;
     try {
         await pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa);
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.delete('/', async (req, res) => {
+router.delete('/', verifyToken, async (req, res) => {
     const { accounts } = req.body;
     try {
         await deleteAccounts(accounts);
@@ -43,7 +44,7 @@ router.delete('/', async (req, res) => {
     }
 });
 
-router.get('/tipos', async (req, res) => {
+router.get('/tipos', verifyToken, async (req, res) => {
     try {
         const tipos = await getTipos();
         res.json(tipos);

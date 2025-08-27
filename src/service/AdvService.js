@@ -7,7 +7,12 @@ export class AdvService {
     // Obtener todos los anticipos
     static async getAdvances() {
         try {
-            const response = await axios.get(API_URL);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.get(API_URL, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al obtener anticipos:', error);
@@ -18,7 +23,12 @@ export class AdvService {
     // Guardar un anticipo (crear o actualizar)
     static async saveAdvance(advance) {
         try {
-            const response = await axios.post(API_URL, advance);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(API_URL, advance, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al guardar el anticipo:', error);
@@ -34,7 +44,13 @@ export class AdvService {
             throw new Error('No se proporcionaron IDs de anticipos para eliminar');
         }
         try {
-            const response = await axios.delete(API_URL, { data: { advances } });
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.delete(API_URL, {
+                data: { advances },
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             console.log('deleteAdvances - Respuesta del servidor:', response.data);
             return response.data;
         } catch (error) {
@@ -46,7 +62,12 @@ export class AdvService {
     // Obtener periodicidades de anticipos
     static async getPeriodicidades() {
         try {
-            const response = await axios.get(`${API_URL}/periodicidades`);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/periodicidades`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al obtener las periodicidades:', error);
@@ -57,7 +78,12 @@ export class AdvService {
     // Obtener pagos de un anticipo específico
     static async getPagos(anticipoId) {
         try {
-            const response = await axios.get(`${API_URL}/${anticipoId}/pagos`);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/${anticipoId}/pagos`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al obtener los pagos:', error);
@@ -68,7 +94,12 @@ export class AdvService {
     // Guardar un pago (crear o actualizar)
     static async savePago(pago) {
         try {
-            const response = await axios.post(`${API_URL}/pagos`, pago);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(`${API_URL}/pagos`, pago, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al guardar el pago:', error);
@@ -79,7 +110,12 @@ export class AdvService {
     // Eliminar un pago
     static async deletePago(pagoId) {
         try {
-            const response = await axios.delete(`${API_URL}/pagos/${pagoId}`);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.delete(`${API_URL}/pagos/${pagoId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al eliminar el pago:', error);
@@ -90,7 +126,16 @@ export class AdvService {
     // Manejar la eliminación de un pago
     static async handlePaymentDeletion(pagoId) {
         try {
-            const response = await axios.post(`${API_URL}/delete-payment`, { pagoId });
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(
+                `${API_URL}/delete-payment`,
+                { pagoId },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
             return response.data;
         } catch (error) {
             console.error('Error al manejar la eliminación del pago:', error);
@@ -101,7 +146,16 @@ export class AdvService {
     // Recalcular plan de pagos
     static async recalculatePaymentPlan(anticipoId) {
         try {
-            const response = await axios.post(`${API_URL}/recalculate-payment-plan`, { anticipoId });
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(
+                `${API_URL}/recalculate-payment-plan`,
+                { anticipoId },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
             return response.data;
         } catch (error) {
             console.error('Error al recalcular el plan de pagos:', error);

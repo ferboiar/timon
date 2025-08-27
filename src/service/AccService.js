@@ -7,7 +7,12 @@ export class AccService {
     // Obtener todas las cuentas
     static async getAccounts() {
         try {
-            const response = await axios.get(API_URL);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.get(API_URL, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al obtener las cuentas:', error);
@@ -18,7 +23,12 @@ export class AccService {
     // Guardar una cuenta (crear o actualizar)
     static async saveAccount(account) {
         try {
-            const response = await axios.post(API_URL, account);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(API_URL, account, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al guardar la cuenta:', error);
@@ -29,7 +39,13 @@ export class AccService {
     // Eliminar una o más cuentas
     static async deleteAccounts(accounts) {
         try {
-            const response = await axios.delete(API_URL, { data: { accounts } });
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.delete(API_URL, {
+                data: { accounts },
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al eliminar la(s) cuenta(s):', error);
@@ -40,7 +56,12 @@ export class AccService {
     // Obtener tipos de cuenta
     static async getTipos() {
         try {
-            const response = await axios.get(`${API_URL}/tipos`);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/tipos`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al obtener los tipos:', error);

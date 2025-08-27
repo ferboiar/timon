@@ -1,10 +1,11 @@
 import { backupDb, restoreDb } from '#backend/db/db_maintenance.mjs';
+import { verifyAdmin } from '#backend/middleware/auth.mjs';
 import { Router } from 'express';
 import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import multer from 'multer';
 import os from 'os';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const router = Router();
 
@@ -36,7 +37,7 @@ const projectRoot = path.resolve(__dirname, '../../../'); // Ajusta según la es
  *       500:
  *         description: Error al generar la copia de seguridad.
  */
-router.get('/backup', async (req, res) => {
+router.get('/backup', verifyAdmin, async (req, res) => {
     const backupFilePath = path.join(projectRoot, 'backup.sql');
     try {
         await backupDb(backupFilePath);
@@ -86,7 +87,7 @@ router.get('/backup', async (req, res) => {
  *       500:
  *         description: Error durante el proceso de restauración.
  */
-router.post('/restore', upload.single('backupFile'), async (req, res) => {
+router.post('/restore', verifyAdmin, upload.single('backupFile'), async (req, res) => {
     const dumpFile = req.file;
 
     if (!dumpFile) {

@@ -7,7 +7,12 @@ export class CatsService {
     // Obtener todas las categorías
     static async getCategorias() {
         try {
-            const response = await axios.get(API_URL);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.get(API_URL, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al obtener las categorías:', error);
@@ -18,7 +23,12 @@ export class CatsService {
     // Guardar una categoría (crear o actualizar)
     static async saveCategoria(categoria) {
         try {
-            const response = await axios.post(API_URL, categoria);
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(API_URL, categoria, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al guardar la categoría:', error);
@@ -29,7 +39,13 @@ export class CatsService {
     // Eliminar una o más categorías
     static async deleteCategorias(categoriaIds) {
         try {
-            const response = await axios.delete(API_URL, { data: { categoriaIds } }); // Cambiar 'categorias' a 'categoriaIds'
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.delete(API_URL, {
+                data: { categoriaIds },
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             return response.data;
         } catch (error) {
             console.error('Error al eliminar la(s) categoría(s):', error);

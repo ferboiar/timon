@@ -10,11 +10,12 @@
  */
 
 import { deleteCategorias, getCategorias, pushCategoria } from '#backend/db/db_utilsCats.mjs';
+import { verifyToken } from '#backend/middleware/auth.mjs';
 import { Router } from 'express';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const categorias = await getCategorias();
         res.json(categorias);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
     const { nombre, descripcion } = req.body;
     if (!nombre) {
         return res.status(400).json({ error: 'El nombre de la categoría es obligatorio' });
@@ -36,7 +37,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.delete('/', async (req, res) => {
+router.delete('/', verifyToken, async (req, res) => {
     let { categoriaIds } = req.body;
     // Si recibimos un objeto con una propiedad categoriaIds, extraemos el array
     if (categoriaIds && typeof categoriaIds === 'object' && 'categoriaIds' in categoriaIds) {
