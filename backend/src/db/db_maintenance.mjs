@@ -10,12 +10,12 @@ const execAsync = promisify(exec);
  */
 export const backupDb = async (backupFilePath) => {
     try {
-        const config = await getDbConfig();
-        const { password: DB_PASSWORD } = await getDbPassword();
+        const { config } = await getDbConfig();
+        const DB_PASSWORD = await getDbPassword();
 
         const { DB_USER, DB_DATABASE, DB_HOST, DB_PORT } = config;
 
-        console.log('Parámetros de la base de datos para el backup:', { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_DATABASE });
+        //console.log('Parámetros de la base de datos para el backup:', { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_DATABASE });
 
         if (!DB_USER || !DB_PASSWORD || !DB_DATABASE || !DB_HOST || !DB_PORT) {
             throw new Error('La configuración de la base de datos está incompleta.');
