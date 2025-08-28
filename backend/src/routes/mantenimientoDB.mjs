@@ -1,3 +1,11 @@
+/**
+ * API para la gestión de la base de datos
+ *
+ * Este módulo proporciona endpoints para realizar copias de seguridad y restauraciones de la base de datos.
+ *
+ * @module routes/mantenimientoDB
+ */
+
 import { backupDb, restoreDb } from '#backend/db/db_maintenance.mjs';
 import { verifyAdmin } from '#backend/middleware/auth.mjs';
 import { Router } from 'express';

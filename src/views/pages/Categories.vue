@@ -56,6 +56,24 @@ const deleteSelectedCategories = async () => {
     }
 };
 
+const exportCSV = () => {
+    const exportData = (data, filename) => {
+        const csvContent = [['Nombre', 'Descripción'], ...data.map((item) => [item.nombre, item.descripcion])].map((e) => e.join(';')).join('\n');
+
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    exportData(categories.value, 'categories.csv');
+};
+
 function openNewCategory() {
     category.value = {
         id: null,
@@ -121,7 +139,7 @@ onMounted(() => {
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateCategories" />
                 </template>
                 <template #end>
-                    <Button label="Exportar" icon="pi pi-upload" severity="secondary" />
+                    <Button label="Exportar" icon="pi pi-upload" severity="secondary" @click="exportCSV" />
                 </template>
             </Toolbar>
         </div>

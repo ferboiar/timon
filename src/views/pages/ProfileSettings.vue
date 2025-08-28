@@ -467,9 +467,9 @@ onMounted(() => {
         <div class="font-semibold text-xl mb-4">Ajustes</div>
         <Tabs value="Estilo">
             <TabList>
-                <Tab value="Estilo">Estilo</Tab>
+                <Tab value="Estilo">Tema</Tab>
                 <Tab v-if="isAdmin" value="usuarios">Usuarios</Tab>
-                <Tab v-if="isAdmin" value="db"> Conexión a BD</Tab>
+                <Tab v-if="isAdmin" value="db">Base de Datos</Tab>
                 <Tab value="2">Header III</Tab>
             </TabList>
             <TabPanels>

@@ -1,5 +1,7 @@
 /**
- * API para la gestión de la conexión de la base de datos.
+ * API para la gestión de la conexión con la base de datos.
+ *
+ * Este módulo proporciona funciones para obtener y probar la configuración de conexión.
  *
  * @module routes/conexionDB
  */

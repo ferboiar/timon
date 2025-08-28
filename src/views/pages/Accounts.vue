@@ -142,6 +142,29 @@ const isFormValid = computed(() => {
     return account.value.nombre.trim() !== '' && account.value.tipo !== '';
 });
 
+const exportCSV = () => {
+    const exportData = (data, filename) => {
+        // Formateo para CSV:
+        // - IBAN: Se envuelve en `="<valor>"` para forzar a Excel a tratarlo como texto y evitar la notación científica en números largos.
+        // - Saldo Actual: Se formatea a 2 decimales y se reemplaza el punto por una coma para compatibilidad con formatos regionales.
+        const csvContent = [['Nombre', 'Tipo', 'IBAN', 'Saldo Actual', 'Descripción'], ...data.map((item) => [item.nombre, item.tipo, `="${item.iban}"`, parseFloat(item.saldo_actual).toFixed(2).replace('.', ','), item.descripcion])]
+            .map((e) => e.join(';'))
+            .join('\n');
+
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    exportData(accounts.value, 'accounts.csv');
+};
+
 onMounted(() => {
     fetchAccounts();
     fetchTipos(); // Llamar a fetchTipos para cargar las opciones de tipo
@@ -159,7 +182,7 @@ onMounted(() => {
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateAccounts" />
                 </template>
                 <template #end>
-                    <Button label="Exportar" icon="pi pi-upload" severity="secondary" />
+                    <Button label="Exportar" icon="pi pi-upload" severity="secondary" @click="exportCSV" />
                 </template>
             </Toolbar>
         </div>

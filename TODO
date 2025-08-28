@@ -1,6 +1,4 @@
 TODO
-- revisar en recibos que el offset que añadí para gestionar la diferencia horaria entre el servidor y
-mi local no se ha ido a la mierda al fijar el uso horario en Aiven
 - revisar en los ficheros markdown como dar colores a la sintaxis en bloques code (sql, php, vue, etc)
 - añadir nueva funcionalidad de permisos y visibilidad al proyecto
 
@@ -13,23 +11,3 @@ implentado:
 - funcionalidad de nuevos permisos:
 --- modificado en el backend users.mjs y db_utilsUsers.mjs para soportar nuevas columnas perm_ en tabla users, actualizada su documentación
 - revisar cuenta_id, tiene más sentido en la tabla recibos q en la tabla fechas_cargo, modificarlo
-
-
-------------
-
-Para actualizar tu repositorio local con la rama feature/cuenta-id-improvements con la que estás trabajando ahora, puedes seguir estos pasos:
-
-Primero, asegúrate de que tienes la rama remota en tu repositorio local ejecutando:
-    git fetch origin
-
-Si ya has creado la rama localmente y quieres cambiar a ella:
-    git checkout feature/cuenta-id-improvements
-
-Si aún no has creado la rama localmente pero existe en el remoto, puedes crear la rama local y enlazarla con la remota:
-    git checkout -b feature/cuenta-id-improvements origin/feature/cuenta-id-improvements
-
-Para asegurarte de que tu rama local está actualizada con la rama remota:
-    git pull origin feature/cuenta-id-improvements
-
-Esto sincronizará tu rama local con los cambios más recientes de la rama remota
-

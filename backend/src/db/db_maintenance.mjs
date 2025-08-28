@@ -1,3 +1,11 @@
+/**
+ * Utilidades para la gestión de la base de datos.
+ *
+ * Incluye funciones para realizar copias de seguridad y restauraciones.
+ *
+ * @module db/db_maintenance
+ */
+
 import { exec } from 'child_process';
 import fs from 'fs';
 import readline from 'readline';
