@@ -256,9 +256,8 @@ const renderPendingDiagrams = async () => {
 
 // Configuración de marked para procesar bloques de código
 const setupMarkedRenderer = () => {
-    console.log('Configurando renderer de marked para nomnoml');
+    console.log('Configurando renderer de marked para nomnoml y resaltado de código');
     const renderer = new marked.Renderer();
-    const originalCodeRenderer = renderer.code.bind(renderer);
 
     renderer.code = (code, language) => {
         console.log('Procesando bloque de código:', { language, codeStart: code.substring(0, 50) });
@@ -285,8 +284,9 @@ const setupMarkedRenderer = () => {
               </div>`;
         }
 
-        // Para cualquier otro código, usar el renderizador original
-        return originalCodeRenderer(code, language);
+        // Para cualquier otro lenguaje, usamos las clases que Prism.js reconocerá
+        const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<pre class="line-numbers"><code class="language-${language}">${escapedCode}</code></pre>`;
     };
 
     // Aplicar el renderizador personalizado
@@ -312,6 +312,10 @@ const loadDocument = async (path) => {
             console.log('Archivo encontrado, importando contenido');
             const content = await markdownFiles[filePath]();
             console.log('Contenido cargado, longitud:', content.length);
+
+            // Configurar marked con nuestro renderizador personalizado
+            const renderer = setupMarkedRenderer();
+            marked.setOptions({ renderer });
 
             // Convertir Markdown a HTML
             documentContent.value = marked(content);

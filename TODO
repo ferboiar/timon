@@ -2,12 +2,54 @@ TODO
 - revisar en los ficheros markdown como dar colores a la sintaxis en bloques code (sql, php, vue, etc)
 - añadir nueva funcionalidad de permisos y visibilidad al proyecto
 
-- revisar fechas_Cargoo, cuando se mete un recibo hay que asociarle una cuenta_id, para ello
-hay que modificar la función de crear recibo y añadir un nuevo campo en el formulario de recibo
+- la periodicidad de un recibo es inifinita mientras el servicio se mantenga contratado. Si doy de alta un recibo trimestral con fecha de cargo inicial 15 de agosto, la 4ª cuota será el 15 de mayo del año siguiente. Actualmente el alta contempla esas 4 cuotas, supondría que para la 1ª cuota del siguiente ciclo habría que actualizar todas las fechas de cargo a mano para adaptarlas al nuevo año. Esto no es funcional.
+Para solucionarlo se me ocurre:
+1) Al marcar un recibo como "Pagado" este recibo se copiará, con todos sus datos, fecha de cargo incluida, a una nueva tabla "histórico"
+2) un automatismo para que el 31 de diciembre a las 23:59:59 se actualicen estos datos de los recibos:
+   Si hay recibos con al menos la primera cuota pagada (están en un ciclo incompleto), actualizar las fechas de cargo (4 cuotas si son trimestrales, 6 si son bimestrales). Ej:
+   Partimos de un recibo con:
+        1ª cuota: 15/08/2025. Pagado.
+        2ª cuota: 15/11/2025. Pagado.
+        3ª cuota: 15/02/2026. Sin pagar.
+        4ª cuota: 15/05/2026. Sin pagar.
+
+        -- el 31 de diciembre de 2025 a las 23:59:59 se actualizan los datos del recibo
+       fecha de cargo de cuota 1 = 15/02/2026 (busca el primero pdte de pago y lo mueve a la primera cuota manteniendo su fecha intacta)
+       fecha de cargo de cuota 2 = 15/05/2026 (busca el siguiente pdte de pago y lo mueve a la siguiente cuota manteniendo su fecha intacta)
+       fecha de cargo de cuota 3 = 15/08/2026 (busca el siguiente pdte de pago, como no encuentra más busca el siguiente pagado y le actualiza el año +1)
+       fecha de cargo de cuota 4 = 15/11/2026 (busca el siguiente pdte de pago, como no encuentra más busca el siguiente pagado y le actualiza el año +1)
+
+       El tiempo pasa y llegamos a:
+
+        -- el 31 de diciembre de 2026 a las 23:59:59... El automatismo vuelve a revisar los recibos y ahora resulta que todos están pagados
+       fecha de cargo de cuota 1 = 15/02/2027 (estaba pagado, se actualiza el año de la cuota +1)
+       fecha de cargo de cuota 2 = 15/05/2027 (estaba pagado, se actualiza el año de la cuota +1)
+       fecha de cargo de cuota 3 = 15/08/2027 (estaba pagado, se actualiza el año de la cuota +1)
+       fecha de cargo de cuota 4 = 15/11/2027 (estaba pagado, se actualiza el año de la cuota +1)
+
+    Tengo la duda de si esta lógica funcionará en todos los casos... Y si se te ocurre una forma más simple de abordar el problema
 
 
+- al dar de alta un nuevo recibo si este es trimestral o bimestral, una vez establecida la fecha del primer cargo, la aplicación debe sugerir las siguientes fechas de cargo automáticamente. Ej:
+    1ª cuota: 15/08/2025. Pagado.
+    2ª cuota: 15/11/2025. Pagado.
+
+    -- llegamos a 31/12/2025. Cambio de año.
+
+    3ª cuota: 15/02/2026
+    4ª cuota: 15/05/2026
 
 implentado:
 - funcionalidad de nuevos permisos:
 --- modificado en el backend users.mjs y db_utilsUsers.mjs para soportar nuevas columnas perm_ en tabla users, actualizada su documentación
-- revisar cuenta_id, tiene más sentido en la tabla recibos q en la tabla fechas_cargo, modificarlo
+- cuenta_id, tiene más sentido en la tabla recibos q en la tabla fechas_cargo. Modificada BBDD y lógica desarrollo para soportarlo
+
+
+O sea, si tengo:
+        1ª cuota: 15/08/2025. Pagado.
+        2ª cuota: 15/11/2025. Pagado. Al marcarlo como pagado se ejecuta actualizarFechasCargoPagado, como aún quedan 2 recibos pdtes de pagar y el ciclo sigue siendo de 
+        3ª cuota: 15/02/2026. Sin pagar.
+        4ª cuota: 15/05/2026. Sin pagar.
+
+O sea, actualizarFechasCargoPagado debe comprobar, además, 
+

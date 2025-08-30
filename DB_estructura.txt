@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: mysql-fer-particular.b.aivencloud.com:10613
--- Tiempo de generación: 01-05-2025 a las 18:15:59
+-- Tiempo de generación: 30-08-2025 a las 15:44:36
 -- Versión del servidor: 8.0.35
--- Versión de PHP: 8.2.28
+-- Versión de PHP: 8.2.29
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -275,32 +275,37 @@ CREATE TABLE `fechas_cargo` (
   `fecha` date DEFAULT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT '1',
   `estado` enum('cargado','pendiente') CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
-  `comentario` text COLLATE utf8mb4_spanish_ci NOT NULL,
-  `cuenta_id` int NOT NULL
+  `comentario` text COLLATE utf8mb4_spanish_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `fechas_cargo`
 --
 
-INSERT INTO `fechas_cargo` (`id`, `recibo_id`, `fecha`, `activo`, `estado`, `comentario`, `cuenta_id`) VALUES
-(1, 1, '2025-02-11', 1, 'pendiente', 'válido hasta 18/02/2025', 1),
-(2, 86, '2025-10-01', 1, 'pendiente', 'suele llegar el 30 de septiembre por lo que se paga de nómina de octubre', 1),
-(3, 87, '2025-11-09', 1, 'pendiente', '', 1),
-(4, 88, '2025-08-05', 1, 'pendiente', '', 1),
-(5, 89, '2025-08-06', 1, 'pendiente', '', 1),
-(6, 90, '2025-12-29', 1, 'pendiente', '', 1),
-(7, 91, '2025-01-09', 1, 'pendiente', 'cuota 4º trimestre', 1),
-(8, 91, '2025-04-25', 1, 'pendiente', 'cuota 1er trimestre', 1),
-(9, 91, '2025-07-25', 1, 'pendiente', 'cuota 2º trimestre', 1),
-(10, 91, '2025-10-25', 1, 'pendiente', 'cuota 3er trimestre', 1),
-(131, 134, '2025-01-07', 1, 'cargado', '1er cargo', 1),
-(132, 134, '2025-03-07', 1, 'cargado', '', 1),
-(133, 134, '2025-05-07', 1, 'pendiente', '', 1),
-(134, 134, '2025-07-07', 1, 'pendiente', '', 1),
-(135, 134, '2025-09-07', 1, 'pendiente', '', 1),
-(136, 134, '2025-11-07', 1, 'pendiente', 'Último cargo', 1),
-(149, 137, '1970-01-01', 0, 'cargado', 'eeeeddd', 1);
+INSERT INTO `fechas_cargo` (`id`, `recibo_id`, `fecha`, `activo`, `estado`, `comentario`) VALUES
+(1, 1, '2025-02-11', 1, 'pendiente', 'válido hasta 18/02/2025'),
+(2, 86, '2025-10-01', 1, 'pendiente', 'suele llegar el 30 de septiembre por lo que se paga de nómina de octubre'),
+(3, 87, '2025-11-09', 1, 'pendiente', ''),
+(4, 88, '2025-08-05', 1, 'pendiente', ''),
+(5, 89, '2025-08-06', 1, 'pendiente', ''),
+(6, 90, '2025-12-29', 1, 'pendiente', ''),
+(7, 91, '2025-01-09', 1, 'pendiente', 'cuota 4º trimestre'),
+(8, 91, '2025-04-25', 1, 'pendiente', 'cuota 1er trimestre'),
+(9, 91, '2025-07-25', 1, 'pendiente', 'cuota 2º trimestre'),
+(10, 91, '2025-10-25', 1, 'pendiente', 'cuota 3er trimestre'),
+(131, 134, '2025-01-07', 1, 'cargado', '1er cargo'),
+(132, 134, '2025-03-07', 1, 'cargado', ''),
+(133, 134, '2025-05-07', 1, 'pendiente', ''),
+(134, 134, '2025-07-07', 1, 'pendiente', ''),
+(135, 134, '2025-09-07', 1, 'pendiente', ''),
+(136, 134, '2025-11-07', 1, 'pendiente', 'Último cargo'),
+(149, 137, '1970-01-01', 0, 'cargado', 'eeeeddd'),
+(159, 143, '2025-05-26', 1, 'pendiente', ''),
+(160, 144, '1970-01-01', 1, 'pendiente', 'dgffgfgf'),
+(162, 146, '2025-08-30', 1, 'pendiente', 'a ver dnd lo guarda'),
+(163, 146, '2025-10-31', 1, 'pendiente', ''),
+(164, 146, '2025-11-27', 1, 'pendiente', ''),
+(165, 146, '2025-11-13', 1, 'pendiente', '');
 
 -- --------------------------------------------------------
 
@@ -315,6 +320,15 @@ CREATE TABLE `mantenimiento_logs` (
   `fecha` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `duracion_ms` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `mantenimiento_logs`
+--
+
+INSERT INTO `mantenimiento_logs` (`id`, `operacion`, `detalles`, `fecha`, `duracion_ms`) VALUES
+(1, 'Mantenimiento índices', 'Tablas: presupuestos, recibos, ahorros, anticipos, categorias, cuentas', '2025-06-01 01:00:01', 0),
+(2, 'Mantenimiento índices', 'Tablas: presupuestos, recibos, ahorros, anticipos, categorias, cuentas', '2025-07-01 01:00:01', 1000),
+(3, 'Mantenimiento índices', 'Tablas: presupuestos, recibos, ahorros, anticipos, categorias, cuentas', '2025-08-01 01:00:01', 1000);
 
 -- --------------------------------------------------------
 
@@ -367,24 +381,46 @@ CREATE TABLE `recibos` (
   `importe` decimal(10,2) DEFAULT NULL,
   `periodicidad` enum('mensual','bimestral','trimestral','anual') COLLATE utf8mb4_spanish_ci DEFAULT NULL,
   `categoria_id` int DEFAULT NULL,
+  `cuenta_id` int NOT NULL DEFAULT '1',
   `propietario_id` int NOT NULL,
-  `es_privado` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si es privado, solo visible al propietario'
+  `es_privado` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Si es privado, solo visible al propietario',
+  `fecha_inicial` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `recibos`
 --
 
-INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_id`, `propietario_id`, `es_privado`) VALUES
-(1, 'Seguro Qualitas', 332.00, 'anual', 3, 2, 0),
-(86, 'Impuesto circulación', 125.49, 'anual', 4, 2, 0),
-(87, 'Amazon prime', 49.90, 'anual', 5, 2, 0),
-(88, 'Seguro vida (Zurich)', 437.12, 'anual', 3, 2, 0),
-(89, 'Seguro continente (Zurich)', 180.34, 'anual', 3, 2, 0),
-(90, 'Seguro contenido (Pelayo)', 121.96, 'anual', 3, 2, 0),
-(91, 'Comunidad garaje', 35.00, 'trimestral', 1, 2, 0),
-(134, 'prueba bimestral', 69.00, 'bimestral', 7, 2, 0),
-(137, 'prueba mensual 22', 11.00, 'mensual', 6, 2, 0);
+INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_id`, `cuenta_id`, `propietario_id`, `es_privado`, `fecha_inicial`) VALUES
+(1, 'Seguro Qualitas', 332.00, 'anual', 3, 1, 1, 0, '2025-02-11'),
+(86, 'Impuesto circulación', 125.49, 'anual', 4, 1, 2, 0, '2025-10-01'),
+(87, 'Amazon prime', 49.90, 'anual', 5, 1, 2, 0, '2025-11-09'),
+(88, 'Seguro vida (Zurich)', 437.12, 'anual', 3, 1, 2, 0, '2025-08-05'),
+(89, 'Seguro continente (Zurich)', 180.34, 'anual', 3, 1, 2, 0, '2025-08-06'),
+(90, 'Seguro contenido (Pelayo)', 121.96, 'anual', 3, 1, 2, 0, '2025-12-29'),
+(91, 'Comunidad garaje', 35.00, 'trimestral', 1, 1, 2, 0, '2025-01-09'),
+(134, 'prueba bimestral', 69.00, 'bimestral', 7, 2, 1, 0, '2025-01-07'),
+(137, 'prueba mensual 22', 11.00, 'mensual', 6, 1, 2, 0, '1970-01-01'),
+(143, 'prueba anual', 33.00, 'anual', 8, 1, 1, 0, '2025-05-26'),
+(144, 'pruebaaa', 15.00, 'mensual', 7, 1, 2, 0, '1970-01-01'),
+(146, 'prueba recibo ahorros fer', 15.00, 'trimestral', 7, 3, 2, 0, '2025-08-30');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `recibos_historico`
+--
+
+CREATE TABLE `recibos_historico` (
+  `id` int NOT NULL,
+  `recibo_id` int NOT NULL,
+  `fecha_pago` date NOT NULL,
+  `importe` decimal(10,2) NOT NULL,
+  `pagado` tinyint(1) DEFAULT '0',
+  `notas` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -415,8 +451,8 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `rol`, `created_at`, `updated_at`, `perm_recibos`, `perm_presupuestos`, `perm_ahorros`, `perm_anticipos`, `perm_transacciones`, `perm_categorias`, `perm_cuentas`) VALUES
 (1, 'admin', 'admin@timon.net', '$2b$10$o98mBuKI8/NsEai4/GgLp.5VjFuQMSA6dkS/YS3cbzIrAmeU6A6Ju', 'admin', '2025-04-22 09:28:57', '2025-04-24 13:15:20', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura'),
-(2, 'ferboiar', 'ferboiar@timon.net', '$1b$21$zvqPrQRy/LIpzDFJNMJWNO.C3QFTuKLlXapq/KTvYqjkFQqwKL61q', 'admin', '2025-04-23 12:25:45', '2025-04-24 13:15:30', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura'),
-(3, 'gelenpc', 'gelenpc@timon.net', '$2b$12$VNbel6jzPvsXNU.JLughI.aAY3nORzrzCXrJNJQ1qLrbeWqLeUeg4', 'limited_user', '2025-04-23 12:38:45', '2025-04-24 13:15:40', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura');
+(2, 'ferboiar', 'ferboiar@timon.net', '$2b$10$zxqPrQRy/LIpzDFJNMJWMO.C5QFTuKLlXapq/KTvYqjkFQqwKL50q', 'admin', '2025-04-23 12:25:45', '2025-04-24 13:15:30', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura'),
+(3, 'gelenpc', 'gelenpc@timon.net', '$2b$10$VNbel6jzPvsXNU.JLughI.aAY2nORzrzCXrJNJQ3qLrbeWqLeUef2', 'limited_user', '2025-04-23 12:38:45', '2025-04-24 13:15:40', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura', 'escritura');
 
 -- --------------------------------------------------------
 
@@ -438,7 +474,7 @@ CREATE TABLE `users_style_preferences` (
 
 INSERT INTO `users_style_preferences` (`id`, `user_id`, `preferences`, `created_at`, `updated_at`) VALUES
 (1, 1, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:04:57', '2025-04-24 07:15:14'),
-(2, 2, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:19:51', '2025-04-23 19:32:49'),
+(2, 2, '{\"preset\": \"Aura\", \"primary\": \"emerald\", \"surface\": \"zinc\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 16:19:51', '2025-08-26 12:47:07'),
 (3, 3, '{\"preset\": \"Aura\", \"primary\": \"purple\", \"surface\": \"soho\", \"menuMode\": \"static\", \"darkTheme\": true}', '2025-04-23 22:14:41', '2025-04-23 22:15:37');
 
 --
@@ -495,8 +531,7 @@ ALTER TABLE `cuentas`
 --
 ALTER TABLE `fechas_cargo`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `recibo_id` (`recibo_id`),
-  ADD KEY `fk_cuenta_id` (`cuenta_id`);
+  ADD KEY `recibo_id` (`recibo_id`);
 
 --
 -- Indices de la tabla `mantenimiento_logs`
@@ -528,7 +563,16 @@ ALTER TABLE `presupuesto_periodos`
 ALTER TABLE `recibos`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_categoria_id` (`categoria_id`),
-  ADD KEY `idx_recibos_visibilidad` (`propietario_id`,`es_privado`);
+  ADD KEY `idx_recibos_visibilidad` (`propietario_id`,`es_privado`),
+  ADD KEY `fk_recibos_cuenta` (`cuenta_id`);
+
+--
+-- Indices de la tabla `recibos_historico`
+--
+ALTER TABLE `recibos_historico`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `recibo_id` (`recibo_id`),
+  ADD KEY `idx_recibos_historico_fecha_pago` (`fecha_pago`);
 
 --
 -- Indices de la tabla `users`
@@ -589,13 +633,13 @@ ALTER TABLE `cuentas`
 -- AUTO_INCREMENT de la tabla `fechas_cargo`
 --
 ALTER TABLE `fechas_cargo`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=159;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
 
 --
 -- AUTO_INCREMENT de la tabla `mantenimiento_logs`
 --
 ALTER TABLE `mantenimiento_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `presupuestos`
@@ -613,7 +657,13 @@ ALTER TABLE `presupuesto_periodos`
 -- AUTO_INCREMENT de la tabla `recibos`
 --
 ALTER TABLE `recibos`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
+
+--
+-- AUTO_INCREMENT de la tabla `recibos_historico`
+--
+ALTER TABLE `recibos_historico`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `users`
@@ -673,8 +723,7 @@ ALTER TABLE `cuentas`
 -- Filtros para la tabla `fechas_cargo`
 --
 ALTER TABLE `fechas_cargo`
-  ADD CONSTRAINT `fechas_cargo_ibfk_1` FOREIGN KEY (`recibo_id`) REFERENCES `recibos` (`id`),
-  ADD CONSTRAINT `fk_cuenta_id` FOREIGN KEY (`cuenta_id`) REFERENCES `cuentas` (`id`);
+  ADD CONSTRAINT `fechas_cargo_ibfk_1` FOREIGN KEY (`recibo_id`) REFERENCES `recibos` (`id`);
 
 --
 -- Filtros para la tabla `presupuestos`
@@ -695,7 +744,14 @@ ALTER TABLE `presupuesto_periodos`
 --
 ALTER TABLE `recibos`
   ADD CONSTRAINT `fk_categoria_id` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`),
+  ADD CONSTRAINT `fk_recibos_cuenta` FOREIGN KEY (`cuenta_id`) REFERENCES `cuentas` (`id`),
   ADD CONSTRAINT `fk_recibos_propietario` FOREIGN KEY (`propietario_id`) REFERENCES `users` (`id`);
+
+--
+-- Filtros para la tabla `recibos_historico`
+--
+ALTER TABLE `recibos_historico`
+  ADD CONSTRAINT `recibos_historico_ibfk_1` FOREIGN KEY (`recibo_id`) REFERENCES `recibos` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `users_style_preferences`

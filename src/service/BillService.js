@@ -104,4 +104,54 @@ export class BillService {
             throw error;
         }
     }
+
+    // Obtener historial de pagos de un recibo
+    static async getBillHistory(id) {
+        try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/${id}/historial`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`BillService. Error al obtener el historial del recibo con ID ${id}: `, error);
+            throw error;
+        }
+    }
+
+    // Generar nuevas fechas para un recibo
+    static async generateBillDates(id) {
+        try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(
+                `${API_URL}/${id}/generar-fechas`,
+                {},
+                {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error(`BillService. Error al generar nuevas fechas para el recibo con ID ${id}: `, error);
+            throw error;
+        }
+    }
+
+    // Actualizar fechas de todos los recibos (solo admin)
+    static async updateAllBillsDates() {
+        try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.post(
+                `${API_URL}/actualizar-fechas`,
+                {},
+                {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error('BillService. Error al actualizar fechas de todos los recibos: ', error);
+            throw error;
+        }
+    }
 }

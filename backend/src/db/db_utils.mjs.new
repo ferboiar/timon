@@ -98,7 +98,7 @@ async function getHistorialRecibo(reciboId) {
             WHERE recibo_id = ?
             ORDER BY fecha_pago DESC
         `;
-
+        
         const [rows] = await connection.execute(query, [reciboId]);
         return rows;
     } catch (error) {
@@ -141,11 +141,11 @@ async function getValidValues(column, table = 'recibos') {
 function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
     const fechas = [];
     const fecha = new Date(fechaInicial);
-
+    
     for (let i = 0; i < cantidad; i++) {
         // Crear una copia de la fecha actual para no modificar la original
         const nuevaFecha = new Date(fecha);
-
+        
         // Avanzar la fecha según la periodicidad
         switch (periodicidad) {
             case 'mensual':
@@ -161,10 +161,10 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
                 nuevaFecha.setFullYear(nuevaFecha.getFullYear() + i);
                 break;
         }
-
+        
         // Formatear la fecha como YYYY-MM-DD
         const fechaFormateada = nuevaFecha.toISOString().split('T')[0];
-
+        
         // Añadir la fecha al array
         fechas.push({
             fecha: fechaFormateada,
@@ -173,7 +173,7 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
             activo: 1
         });
     }
-
+    
     return fechas;
 }
 
@@ -185,7 +185,7 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
  * @param {string} periodicidad - La periodicidad del recibo.
  * @param {number} importe - El importe del recibo.
  * @param {string} categoria - La categoría del recibo.
- * @param {Array} cargo - Un array de objetos que contiene fecha, estado y comentario.
+ * @param {Array} cargo - Un array de objetos que contiene fecha, estado y comentario. 
  *                        Si no se proporciona o está vacío, se generarán fechas automáticamente basadas en fecha_inicial.
  * @param {number} propietarioId - El ID del usuario propietario del recibo.
  * @param {number} cuenta_id - El ID de la cuenta asociada al recibo.
@@ -194,7 +194,7 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
  */
 async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial) {
     console.log('pushRecibo(). Parámetros recibidos:', { id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial });
-
+    
     // Verificar que todos los parámetros obligatorios estén presentes
     if (!concepto || !periodicidad || !importe || !categoria || !propietarioId || !cuenta_id) {
         throw new Error('API. Los campos concepto, periodicidad, importe, categoria, propietarioId y cuenta_id son obligatorios.');
@@ -204,7 +204,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
     if (!id && (!cargo || cargo.length === 0) && !fecha_inicial) {
         throw new Error('API. Para un nuevo recibo, se debe proporcionar cargo o fecha_inicial.');
     }
-
+    
     // Obtener valores válidos desde la base de datos
     const validCategorias = await getValidValues('nombre', 'categorias');
     const validPeriodicidades = await getValidValues('periodicidad');
@@ -223,7 +223,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
     if (!validCategorias.includes(categoria)) {
         throw new Error(`API. La categoría debe ser una de las siguientes: ${validCategorias.join(', ')}.`);
     }
-
+    
     // Si se proporcionó fecha_inicial, validarla
     if (fecha_inicial && !dateRegex.test(fecha_inicial)) {
         throw new Error('API. La fecha inicial debe estar en el formato YYYY-MM-DD.');
@@ -247,7 +247,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                 cantidadFechas = 1; // Una fecha
                 break;
         }
-
+        
         cargo = generarFechasFuturas(fecha_inicial, periodicidad, cantidadFechas);
     } else {
         // Validar el array de cargo proporcionado
@@ -255,10 +255,10 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
         if (cargo.length > 0 && cargo[0].activo !== undefined) {
             activo = cargo[0].activo; // Guardar el valor de activo para actualizar todas las fechas de cargo
         }
-
+        
         // Filtrar elementos del array cargo que tienen fecha como null
         cargo = cargo.filter((c) => c.fecha !== null);
-
+        
         // Validar cada elemento del array
         for (const c of cargo) {
             if (c.fecha) {
@@ -291,27 +291,16 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                 // Si se proporcionó una nueva fecha_inicial, actualizarla
                 if (fecha_inicial) {
                     // Actualizar recibo existente con la nueva fecha_inicial
-                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), propietario_id = ?, cuenta_id = ?, fecha_inicial = ? WHERE id = ?', [
-                        concepto,
-                        periodicidad,
-                        importe,
-                        categoria,
-                        propietarioId,
-                        cuenta_id,
-                        fecha_inicial,
-                        id
-                    ]);
+                    await connection.execute(
+                        'UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), propietario_id = ?, cuenta_id = ?, fecha_inicial = ? WHERE id = ?', 
+                        [concepto, periodicidad, importe, categoria, propietarioId, cuenta_id, fecha_inicial, id]
+                    );
                 } else {
                     // Actualizar recibo existente sin cambiar fecha_inicial
-                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), propietario_id = ?, cuenta_id = ? WHERE id = ?', [
-                        concepto,
-                        periodicidad,
-                        importe,
-                        categoria,
-                        propietarioId,
-                        cuenta_id,
-                        id
-                    ]);
+                    await connection.execute(
+                        'UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), propietario_id = ?, cuenta_id = ? WHERE id = ?', 
+                        [concepto, periodicidad, importe, categoria, propietarioId, cuenta_id, id]
+                    );
                 }
 
                 // Actualizar fechas de cargo
@@ -321,26 +310,38 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                     const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
 
                     const estado = c.estado === '' ? 'pendiente' : c.estado; // Si estado está vacío, se considera 'pendiente'
-
+                    
                     if (c.id) {
                         // Actualizar si existe, incluyendo activo
                         const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
-
+                        
                         if (existingCargo.length > 0) {
-                            await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ? WHERE id = ?', [estado, c.comentario || '', fecha, c.activo, c.id]);
-
+                            await connection.execute(
+                                'UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ? WHERE id = ?', 
+                                [estado, c.comentario || '', fecha, c.activo, c.id]
+                            );
+                            
                             // Si el estado cambia a 'cargado', guardar en el historial
                             if (estado === 'cargado' && existingCargo[0].estado !== 'cargado') {
-                                await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [id, fecha, importe, c.comentario || '']);
+                                await connection.execute(
+                                    'INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', 
+                                    [id, fecha, importe, c.comentario || '']
+                                );
                             }
                         }
                     } else {
                         // Insertar si no existe, incluyendo activo
-                        const [result] = await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario || '', c.activo]);
-
+                        const [result] = await connection.execute(
+                            'INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', 
+                            [id, fecha, estado, c.comentario || '', c.activo]
+                        );
+                        
                         // Si el estado es 'cargado', guardar en el historial
                         if (estado === 'cargado') {
-                            await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [id, fecha, importe, c.comentario || '']);
+                            await connection.execute(
+                                'INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', 
+                                [id, fecha, importe, c.comentario || '']
+                            );
                         }
                     }
                 }
@@ -357,7 +358,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
             let query = 'INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, propietario_id, cuenta_id';
             let valuesPart = 'VALUES (?, ?, ?, (SELECT id FROM categorias WHERE nombre = ?), ?, ?';
             let params = [concepto, periodicidad, importe, categoria, propietarioId, cuenta_id];
-
+            
             // Si se proporcionó fecha_inicial, incluirla en la consulta
             if (fecha_inicial) {
                 query += ', fecha_inicial)';
@@ -372,7 +373,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                 query += ')';
                 valuesPart += ')';
             }
-
+            
             const [result] = await connection.execute(query + ' ' + valuesPart, params);
             const newReciboId = result.insertId;
 
@@ -384,15 +385,21 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                 const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
                 const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
 
-                const [resultCargo] = await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario || '', c.activo]);
-
+                const [resultCargo] = await connection.execute(
+                    'INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', 
+                    [newReciboId, fecha, estado, c.comentario || '', c.activo]
+                );
+                
                 // Si el estado es 'cargado', guardar en el historial
                 if (estado === 'cargado') {
-                    await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [newReciboId, fecha, importe, c.comentario || '']);
+                    await connection.execute(
+                        'INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', 
+                        [newReciboId, fecha, importe, c.comentario || '']
+                    );
                 }
             }
         }
-
+        
         await connection.commit();
     } catch (error) {
         if (connection) await connection.rollback();
@@ -413,46 +420,55 @@ async function generarNuevasFechasRecibo(reciboId) {
     try {
         connection = await getConnection();
         await connection.beginTransaction();
-
+        
         // Obtener información del recibo
         const [recibos] = await connection.execute('SELECT * FROM recibos WHERE id = ?', [reciboId]);
-
+        
         if (recibos.length === 0) {
             throw new Error('API. Recibo no encontrado.');
         }
-
+        
         const recibo = recibos[0];
-
+        
         // Obtener fechas de cargo pendientes
-        const [fechasPendientes] = await connection.execute('SELECT * FROM fechas_cargo WHERE recibo_id = ? AND estado = "pendiente" AND activo = 1', [reciboId]);
-
+        const [fechasPendientes] = await connection.execute(
+            'SELECT * FROM fechas_cargo WHERE recibo_id = ? AND estado = "pendiente" AND activo = 1', 
+            [reciboId]
+        );
+        
         // Si aún hay fechas pendientes, no necesitamos generar nuevas
         if (fechasPendientes.length > 0) {
             await connection.commit();
             return false;
         }
-
+        
         // Obtener la última fecha de cargo
-        const [ultimasFechas] = await connection.execute('SELECT * FROM fechas_cargo WHERE recibo_id = ? ORDER BY fecha DESC LIMIT 1', [reciboId]);
-
+        const [ultimasFechas] = await connection.execute(
+            'SELECT * FROM fechas_cargo WHERE recibo_id = ? ORDER BY fecha DESC LIMIT 1', 
+            [reciboId]
+        );
+        
         if (ultimasFechas.length === 0) {
             // Si no hay fechas previas, usar la fecha inicial del recibo
             const fechaInicial = recibo.fecha_inicial;
             if (!fechaInicial) {
                 throw new Error('API. No se puede generar nuevas fechas: No hay fecha inicial.');
             }
-
+            
             // Generar nuevas fechas basadas en la fecha inicial
             const cargo = generarFechasFuturas(fechaInicial, recibo.periodicidad, 4);
-
+            
             // Insertar las nuevas fechas
             for (const c of cargo) {
-                await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [reciboId, c.fecha, c.estado, c.comentario, c.activo]);
+                await connection.execute(
+                    'INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', 
+                    [reciboId, c.fecha, c.estado, c.comentario, c.activo]
+                );
             }
         } else {
             // Usar la última fecha como base para generar nuevas
             const ultimaFecha = ultimasFechas[0].fecha;
-
+            
             // Determinar cuántas fechas generar según la periodicidad
             let cantidadFechas;
             switch (recibo.periodicidad) {
@@ -469,10 +485,10 @@ async function generarNuevasFechasRecibo(reciboId) {
                     cantidadFechas = 1; // Una fecha
                     break;
             }
-
+            
             // Generar nuevas fechas a partir de la última fecha
             const nuevaFechaBase = new Date(ultimaFecha);
-
+            
             // Avanzar la fecha según la periodicidad para comenzar desde el siguiente período
             switch (recibo.periodicidad) {
                 case 'mensual':
@@ -488,16 +504,19 @@ async function generarNuevasFechasRecibo(reciboId) {
                     nuevaFechaBase.setFullYear(nuevaFechaBase.getFullYear() + 1);
                     break;
             }
-
+            
             const nuevaFechaBaseStr = nuevaFechaBase.toISOString().split('T')[0];
             const cargo = generarFechasFuturas(nuevaFechaBaseStr, recibo.periodicidad, cantidadFechas);
-
+            
             // Insertar las nuevas fechas
             for (const c of cargo) {
-                await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [reciboId, c.fecha, c.estado, c.comentario, c.activo]);
+                await connection.execute(
+                    'INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', 
+                    [reciboId, c.fecha, c.estado, c.comentario, c.activo]
+                );
             }
         }
-
+        
         await connection.commit();
         return true;
     } catch (error) {
@@ -517,7 +536,7 @@ async function actualizarFechasRecibos() {
     let connection;
     try {
         connection = await getConnection();
-
+        
         // Obtener todos los recibos activos
         const [recibos] = await connection.execute(`
             SELECT DISTINCT r.id 
@@ -525,9 +544,9 @@ async function actualizarFechasRecibos() {
             JOIN fechas_cargo fc ON r.id = fc.recibo_id
             WHERE fc.activo = 1
         `);
-
+        
         let recibosActualizados = 0;
-
+        
         // Procesar cada recibo
         for (const recibo of recibos) {
             try {
@@ -540,10 +559,10 @@ async function actualizarFechasRecibos() {
                 // Continuar con el siguiente recibo aunque éste falle
             }
         }
-
-        return {
-            total: recibos.length,
-            actualizados: recibosActualizados
+        
+        return { 
+            total: recibos.length, 
+            actualizados: recibosActualizados 
         };
     } catch (error) {
         console.error('API. Error al actualizar fechas de recibos: ', error);
@@ -590,7 +609,7 @@ async function deleteRecibo(id, fecha, periodicidad) {
             if (remainingCargos[0].count === 0) {
                 // Borrar todos los registros históricos
                 await connection.query('DELETE FROM recibos_historico WHERE recibo_id = ?', [id]);
-
+                
                 const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
                 await connection.commit();
                 return result.affectedRows > 0;
@@ -601,10 +620,10 @@ async function deleteRecibo(id, fecha, periodicidad) {
         } else {
             // Para recibos mensuales, eliminar las entradas en fechas_cargo y luego de la tabla recibos
             await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
-
+            
             // Borrar todos los registros históricos
             await connection.query('DELETE FROM recibos_historico WHERE recibo_id = ?', [id]);
-
+            
             const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
             await connection.commit();
             return result.affectedRows > 0;
@@ -618,4 +637,4 @@ async function deleteRecibo(id, fecha, periodicidad) {
     }
 }
 
-export { actualizarFechasRecibos, deleteRecibo, generarNuevasFechasRecibo, getHistorialRecibo, getRecibos, pushRecibo };
+export { deleteRecibo, getRecibos, pushRecibo, generarNuevasFechasRecibo, actualizarFechasRecibos, getHistorialRecibo };

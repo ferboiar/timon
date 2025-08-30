@@ -5,6 +5,7 @@ import { CatsService } from '@/service/CatsService'; // Importar CatsService
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
+import { useAuth } from '@/composables/useAuth'; // Importar composable de autenticación para verificar permisos de administrador
 
 const annualBills = ref([]);
 const quarterlyBills = ref([]);
@@ -18,6 +19,7 @@ const bill = ref({
     cuenta_id: null, // Añadir el parámetro cuenta_id
     importe: 0,
     periodicidad: '',
+    fecha_inicial: null, // Nuevo campo para establecer la fecha inicial en modo automático
     cargo: Array(6)
         .fill()
         .map(() => ({
@@ -32,6 +34,11 @@ const bill = ref({
 const billDialog = ref(false);
 const billDialogTB = ref(false);
 const billDialogTB_FC = ref(false);
+
+// Variable para controlar el modo de programación de fechas de los recibos
+// 'manual': El usuario establece cada fecha manualmente
+// 'auto': Las fechas se generan automáticamente a partir de fecha_inicial
+const modoFechas = ref('manual');
 
 const expandedRowsTrimestral = ref([]);
 const expandedRowsBimestral = ref([]);
@@ -73,6 +80,45 @@ onMounted(async () => {
         console.error('onMounted. Error al cargar los datos:', error);
     }
 });
+
+// Función para generar nuevas fechas para un recibo específico
+// Esta función llama al endpoint del backend para generar fechas adicionales
+// para un recibo que usa el modo automático
+async function generateDates(reciboId) {
+    try {
+        const response = await BillService.generateBillDates(reciboId);
+        toast.add({ severity: 'success', summary: 'Éxito', detail: response.message, life: 3000 });
+        // Actualizar la lista de recibos para mostrar las nuevas fechas generadas
+        updateBills('all');
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al generar nuevas fechas: ${error.message}`, life: 5000 });
+        console.error('generateDates(). Error:', error);
+    }
+}
+
+// Función para actualizar todas las fechas de recibos (solo admin)
+// Esta función regenera las fechas para todos los recibos que usan el modo automático
+// Útil cuando se han añadido o modificado múltiples recibos
+async function updateAllDates() {
+    try {
+        const response = await BillService.updateAllBillsDates();
+        toast.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: `Proceso completado: ${response.actualizados} de ${response.total} recibos actualizados`,
+            life: 5000
+        });
+        // Actualizar la lista de recibos para mostrar las fechas actualizadas
+        updateBills('all');
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar fechas: ${error.message}`, life: 5000 });
+        console.error('updateAllDates(). Error:', error);
+    }
+}
+
+// Obtener el estado de administrador desde el composable de autenticación
+// Esta referencia se usa para mostrar/ocultar opciones administrativas
+const { isAdmin } = useAuth();
 
 // >>>> Menú de la tarjeta
 const cardMenu = ref([]);
@@ -323,6 +369,13 @@ function hideDialog() {
 async function guardarRecibo() {
     submitted.value = true;
 
+    // Verificar si está en modo automático y tiene fecha inicial
+    // En modo automático, la fecha inicial es obligatoria para generar las fechas automáticamente
+    if (modoFechas.value === 'auto' && !bill.value.fecha_inicial) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'La fecha inicial es obligatoria para la generación automática.', life: 5000 });
+        return;
+    }
+
     // Asegurarse de que todos los campos de la estructura bill estén definidos
     bill.value = {
         id: bill.value.id || null,
@@ -331,6 +384,7 @@ async function guardarRecibo() {
         importe: parseFloat(bill.value.importe) || 0, // Asegura que importe sea número y no string
         categoria: bill.value.categoria || '',
         cuenta_id: bill.value.cuenta_id || null,
+        fecha_inicial: bill.value.fecha_inicial ? new Date(bill.value.fecha_inicial) : null,
         cargo: bill.value.cargo.map((c) => ({
             id: c.id ?? null,
             fecha: c.fecha ? new Date(c.fecha) : null,
@@ -340,6 +394,13 @@ async function guardarRecibo() {
         }))
     };
 
+    // Ajustar la zona horaria para fecha_inicial si existe
+    // Esto es necesario para evitar problemas con la diferencia horaria al enviar al servidor
+    if (bill.value.fecha_inicial) {
+        const fechaInicialLocal = new Date(bill.value.fecha_inicial.getTime() - bill.value.fecha_inicial.getTimezoneOffset() * 60000);
+        bill.value.fecha_inicial = fechaInicialLocal;
+    }
+
     // Ajustar la zona horaria para todos los cargos donde haya fecha
     bill.value.cargo.forEach((c, index) => {
         if (c.fecha) {
@@ -348,8 +409,9 @@ async function guardarRecibo() {
         }
     });
 
-    // Comprobar fechas de cargo duplicadas para recibos trimestrales o bimestrales
-    if (bill.value.periodicidad === 'trimestral' || bill.value.periodicidad === 'bimestral') {
+    // Comprobar fechas de cargo duplicadas para recibos trimestrales o bimestrales si estamos en modo manual
+    // No permitimos fechas duplicadas en el mismo recibo para evitar problemas en la base de datos
+    if (modoFechas.value === 'manual' && (bill.value.periodicidad === 'trimestral' || bill.value.periodicidad === 'bimestral')) {
         const fechas = bill.value.cargo.map((c) => (c.fecha ? c.fecha.toISOString().split('T')[0] : null)).filter((f) => f !== null);
         const fechasUnicas = new Set(fechas);
         if (fechas.length !== fechasUnicas.size) {
@@ -405,6 +467,7 @@ function editBill(prod, openFCDialog = false) {
         cuenta_id: prod.cuenta_id,
         importe: prod.importe,
         periodicidad: prod.periodicidad,
+        fecha_inicial: prod.fecha_inicial ? new Date(prod.fecha_inicial) : null,
         cargo: [
             // Primer elemento con datos existentes
             {
@@ -426,6 +489,10 @@ function editBill(prod, openFCDialog = false) {
                 }))
         ]
     };
+
+    // Determinar el modo de edición (automático o manual) según si hay fecha_inicial o no
+    // Si el recibo tiene fecha_inicial, estamos en modo automático, de lo contrario, en modo manual
+    modoFechas.value = prod.fecha_inicial ? 'auto' : 'manual';
 
     console.log('Recibo a editar: ', bill.value);
 
@@ -650,6 +717,8 @@ const inactiveBillsCount = (periodicity) => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
+                    <!-- Botón para actualizar todas las fechas, solo visible para administradores -->
+                    <Button v-if="isAdmin" label="Actualizar fechas" icon="pi pi-calendar" severity="secondary" class="mr-2" @click="updateAllDates" v-tooltip="'Actualizar fechas de todos los recibos'" />
                     <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>
@@ -788,6 +857,8 @@ const inactiveBillsCount = (periodicity) => {
                                 <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data)" />
                                 <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(trimestralSlotProps.data)" />
                                 <Button v-if="trimestralSlotProps.data.bills.length <= 3" icon="pi pi-plus" outlined rounded class="ml-2" @click="editBill(trimestralSlotProps.data, true)" />
+                                <!-- Botón para generar nuevas fechas para este recibo específico -->
+                                <Button icon="pi pi-calendar" outlined rounded class="ml-2" @click="generateDates(trimestralSlotProps.data.id)" v-tooltip="'Generar nuevas fechas'" />
                             </template>
                         </Column>
 
@@ -879,6 +950,8 @@ const inactiveBillsCount = (periodicity) => {
                                 <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(bimestralSlotProps.data)" />
                                 <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(bimestralSlotProps.data)" />
                                 <Button v-if="bimestralSlotProps.data.bills.length <= 3" icon="pi pi-plus" outlined rounded class="ml-2" @click="editBill(bimestralSlotProps.data, true)" />
+                                <!-- Botón para generar nuevas fechas para este recibo específico -->
+                                <Button icon="pi pi-calendar" outlined rounded class="ml-2" @click="generateDates(bimestralSlotProps.data.id)" v-tooltip="'Generar nuevas fechas'" />
                             </template>
                         </Column>
 
@@ -1046,6 +1119,28 @@ const inactiveBillsCount = (periodicity) => {
                         <small v-if="submitted && !bill.cuenta_id" class="text-red-500">La cuenta es obligatoria.</small>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-12 gap-4 mb-2">
+                    <div class="col-span-12">
+                        <label class="font-bold mb-3">Tipo de programación</label>
+                        <div class="flex gap-4">
+                            <RadioButton v-model="modoFechas" value="manual" inputId="modo-manual" />
+                            <label for="modo-manual">Fechas manuales</label>
+                            <RadioButton v-model="modoFechas" value="auto" inputId="modo-auto" />
+                            <label for="modo-auto">Generar fechas automáticamente</label>
+                        </div>
+                        <small class="text-gray-500 block mt-1">Modo manual: establece las fechas individualmente. Modo automático: las fechas se generan a partir de la fecha inicial según la periodicidad.</small>
+                    </div>
+                </div>
+
+                <div v-if="modoFechas === 'auto'" class="grid grid-cols-12 gap-4 mb-2">
+                    <div class="col-span-6">
+                        <label for="fecha_inicial" class="block font-bold mb-3">Fecha inicial</label>
+                        <DatePicker id="fecha_inicial" v-model="bill.fecha_inicial" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <small v-if="submitted && modoFechas === 'auto' && !bill.fecha_inicial" class="text-red-500">La fecha inicial es obligatoria para la generación automática.</small>
+                    </div>
+                </div>
+
                 <div v-if="showFields.commentBox">
                     <label for="comentario" class="block font-bold mb-3">Comentario</label>
                     <Textarea id="comentario" v-model="bill.cargo[0].comentario" required="true" rows="3" cols="20" fluid />
@@ -1065,7 +1160,7 @@ const inactiveBillsCount = (periodicity) => {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-12 gap-2">
+                <div v-if="modoFechas === 'manual'" class="grid grid-cols-12 gap-2">
                     <div v-if="showFields.fechaCargo" class="col-span-4">
                         <label for="fecha" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>Fecha cargo</span>
@@ -1125,7 +1220,7 @@ const inactiveBillsCount = (periodicity) => {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-12 gap-2">
+                <div v-if="modoFechas === 'manual'" class="grid grid-cols-12 gap-2">
                     <div v-if="showFields.fechaCargo4" class="col-span-4">
                         <label for="fecha4" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>4º cargo</span>
@@ -1210,6 +1305,28 @@ const inactiveBillsCount = (periodicity) => {
                         <small v-if="submitted && !bill.cuenta_id" class="text-red-500">La cuenta es obligatoria.</small>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-12 gap-4 mb-2">
+                    <div class="col-span-12">
+                        <label class="font-bold mb-3">Tipo de programación</label>
+                        <div class="flex gap-4">
+                            <RadioButton v-model="modoFechas" value="manual" inputId="modo-manual-tb" />
+                            <label for="modo-manual-tb">Fechas manuales</label>
+                            <RadioButton v-model="modoFechas" value="auto" inputId="modo-auto-tb" />
+                            <label for="modo-auto-tb">Generar fechas automáticamente</label>
+                        </div>
+                        <small class="text-gray-500 block mt-1">Modo manual: establece las fechas individualmente. Modo automático: las fechas se generan a partir de la fecha inicial según la periodicidad.</small>
+                    </div>
+                </div>
+
+                <div v-if="modoFechas === 'auto'" class="grid grid-cols-12 gap-4 mb-2">
+                    <div class="col-span-6">
+                        <label for="fecha_inicial_tb" class="block font-bold mb-3">Fecha inicial</label>
+                        <DatePicker id="fecha_inicial_tb" v-model="bill.fecha_inicial" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <small v-if="submitted && modoFechas === 'auto' && !bill.fecha_inicial" class="text-red-500">La fecha inicial es obligatoria para la generación automática.</small>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-5">
                         <label for="categoria" class="block font-bold mb-3">Categoría</label>
