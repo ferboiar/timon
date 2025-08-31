@@ -190,19 +190,56 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
  * @param {number} propietarioId - El ID del usuario propietario del recibo.
  * @param {number} cuenta_id - El ID de la cuenta asociada al recibo.
  * @param {string} fecha_inicial - La fecha inicial para generar automáticamente las fechas de cargo. Formato YYYY-MM-DD.
+ * @param {string} modoFechas - El modo de manejo de fechas: 'auto' (generar automáticamente) o 'manual' (establecidas por el usuario).
  * @throws {Error} - Si falta algún parámetro obligatorio o si algún parámetro no es válido.
  */
-async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial) {
-    console.log('pushRecibo(). Parámetros recibidos:', { id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial });
+async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas) {
+    console.log('API db_utils.mjs: ==== INICIO FUNCIÓN pushRecibo ====');
+    console.log('API db_utils.mjs: Parámetros recibidos:');
+    console.log('API db_utils.mjs: - ID:', id);
+    console.log('API db_utils.mjs: - Concepto:', concepto);
+    console.log('API db_utils.mjs: - Periodicidad:', periodicidad);
+    console.log('API db_utils.mjs: - Importe:', importe);
+    console.log('API db_utils.mjs: - Categoría:', categoria);
+    console.log('API db_utils.mjs: - Propietario ID:', propietarioId);
+    console.log('API db_utils.mjs: - Cuenta ID:', cuenta_id);
+    console.log('API db_utils.mjs: - Fecha Inicial:', fecha_inicial);
+    console.log('API db_utils.mjs: - Modo Fechas:', modoFechas);
+    console.log('API db_utils.mjs: - Cargo tipo:', typeof cargo);
+    console.log('API db_utils.mjs: - Cargo es array:', Array.isArray(cargo));
+    console.log('API db_utils.mjs: - Cargo longitud:', cargo ? cargo.length : 'No definido');
+
+    if (cargo && cargo.length > 0) {
+        console.log('API db_utils.mjs: - Primera fecha en cargo:', JSON.stringify(cargo[0]));
+        if (cargo.length > 1) {
+            console.log('API db_utils.mjs: - Segunda fecha en cargo:', JSON.stringify(cargo[1]));
+        }
+    }
 
     // Verificar que todos los parámetros obligatorios estén presentes
     if (!concepto || !periodicidad || !importe || !categoria || !propietarioId || !cuenta_id) {
+        console.log('API db_utils.mjs: ERROR - Faltan parámetros obligatorios');
         throw new Error('API. Los campos concepto, periodicidad, importe, categoria, propietarioId y cuenta_id son obligatorios.');
     }
 
-    // Si es un nuevo recibo y no se proporcionan fechas, verificar que se proporcione fecha_inicial
-    if (!id && (!cargo || cargo.length === 0) && !fecha_inicial) {
-        throw new Error('API. Para un nuevo recibo, se debe proporcionar cargo o fecha_inicial.');
+    // Manejar validaciones específicas según el modo de fechas
+    if (modoFechas === 'auto') {
+        if (!fecha_inicial) {
+            console.log('API db_utils.mjs: ERROR - En modo automático falta fecha_inicial');
+            throw new Error('API. En modo automático, fecha_inicial es obligatorio.');
+        }
+    } else if (modoFechas === 'manual') {
+        if (!cargo || cargo.length === 0) {
+            console.log('API db_utils.mjs: ERROR - En modo manual cargo está vacío');
+            throw new Error('API. En modo manual, cargo es obligatorio y debe contener al menos un elemento.');
+        }
+    } else {
+        // Modo no especificado, usar validación tradicional
+        // Si es un nuevo recibo y no se proporcionan fechas, verificar que se proporcione fecha_inicial
+        if (!id && (!cargo || cargo.length === 0) && !fecha_inicial) {
+            console.log('API db_utils.mjs: ERROR - Nuevo recibo sin cargo ni fecha_inicial');
+            throw new Error('API. Para un nuevo recibo, se debe proporcionar cargo o fecha_inicial.');
+        }
     }
 
     // Obtener valores válidos desde la base de datos
@@ -229,8 +266,14 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
         throw new Error('API. La fecha inicial debe estar en el formato YYYY-MM-DD.');
     }
 
-    // Si no se proporcionaron fechas de cargo, generar automáticamente
-    if (!cargo || cargo.length === 0) {
+    // Determinar si necesitamos generar fechas automáticamente
+    const generarFechasAutomaticamente = modoFechas === 'auto' || !cargo || cargo.length === 0;
+
+    // Preparar el array de fechas de cargo a procesar
+    let fechasCargo = cargo;
+
+    // Si estamos en modo automático, generar nuevas fechas
+    if (generarFechasAutomaticamente && fecha_inicial) {
         // Determinar el número de fechas a generar según la periodicidad
         let cantidadFechas;
         switch (periodicidad) {
@@ -248,25 +291,21 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                 break;
         }
 
-        cargo = generarFechasFuturas(fecha_inicial, periodicidad, cantidadFechas);
+        // Generar las nuevas fechas
+        fechasCargo = generarFechasFuturas(fecha_inicial, periodicidad, cantidadFechas);
     } else {
-        // Validar el array de cargo proporcionado
-        let activo = 1; // Valor por defecto
-        if (cargo.length > 0 && cargo[0].activo !== undefined) {
-            activo = cargo[0].activo; // Guardar el valor de activo para actualizar todas las fechas de cargo
-        }
-
+        // En modo manual, validar el array de cargo proporcionado
         // Filtrar elementos del array cargo que tienen fecha como null
-        cargo = cargo.filter((c) => c.fecha !== null);
+        fechasCargo = cargo.filter((c) => c.fecha !== null);
 
         // Validar cada elemento del array
-        for (const c of cargo) {
+        for (const c of fechasCargo) {
             if (c.fecha) {
                 if (!dateRegex.test(new Date(c.fecha).toISOString().split('T')[0])) {
                     throw new Error('API. La fecha debe estar en el formato YYYY-MM-DD.');
                 }
             }
-            if (!validEstados.includes(c.estado)) {
+            if (c.estado && !validEstados.includes(c.estado)) {
                 throw new Error(`API. El estado del cargo debe ser uno de los siguientes: ${validEstados.join(', ')}.`);
             }
             if (c.activo === undefined || c.activo === null) {
@@ -314,33 +353,153 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                     ]);
                 }
 
-                // Actualizar fechas de cargo
-                for (const c of cargo) {
-                    const f = new Date(c.fecha);
-                    const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
-                    const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+                // Si estamos en modo automático y tenemos ID de recibo y fecha_inicial, manejamos de forma especial
+                if (modoFechas === 'auto' && id && fecha_inicial) {
+                    // Obtener todas las fechas de cargo existentes para este recibo
+                    const [existingFechas] = await connection.execute('SELECT * FROM fechas_cargo WHERE recibo_id = ? ORDER BY fecha ASC', [id]);
 
-                    const estado = c.estado === '' ? 'pendiente' : c.estado; // Si estado está vacío, se considera 'pendiente'
+                    // Si hay fechas existentes, actualizarlas con las nuevas fechas generadas
+                    if (existingFechas.length > 0) {
+                        // Generar nuevas fechas basadas en fecha_inicial y periodicidad
+                        const nuevasFechas = generarFechasFuturas(fecha_inicial, periodicidad, existingFechas.length);
 
-                    if (c.id) {
-                        // Actualizar si existe, incluyendo activo
-                        const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
-
-                        if (existingCargo.length > 0) {
-                            await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ? WHERE id = ?', [estado, c.comentario || '', fecha, c.activo, c.id]);
-
-                            // Si el estado cambia a 'cargado', guardar en el historial
-                            if (estado === 'cargado' && existingCargo[0].estado !== 'cargado') {
-                                await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [id, fecha, importe, c.comentario || '']);
-                            }
+                        // Actualizar cada fecha existente con la nueva fecha correspondiente
+                        for (let i = 0; i < existingFechas.length; i++) {
+                            // Solo actualizamos la fecha, mantenemos los demás datos
+                            await connection.execute('UPDATE fechas_cargo SET fecha = ? WHERE id = ?', [nuevasFechas[i].fecha, existingFechas[i].id]);
                         }
                     } else {
-                        // Insertar si no existe, incluyendo activo
-                        const [result] = await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario || '', c.activo]);
+                        // Si no hay fechas existentes, crear nuevas
+                        for (const c of fechasCargo) {
+                            await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [id, c.fecha, c.estado, c.comentario || '', c.activo]);
+                        }
+                    }
+                } else {
+                    // Modo manual: Actualizar fechas de cargo de manera tradicional
+                    console.log('API: Procesando fechas en modo manual. Recibidas:', cargo.length, 'fechas para el recibo ID:', id);
+                    for (const c of cargo) {
+                        console.log('API: Procesando cargo:', c);
 
-                        // Si el estado es 'cargado', guardar en el historial
-                        if (estado === 'cargado') {
-                            await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [id, fecha, importe, c.comentario || '']);
+                        // Si tiene ID pero no fecha, podría ser una actualización de solo comentario o estado
+                        if (!c.fecha && c.id) {
+                            console.log('API: Detectada posible actualización de solo comentario o estado para ID:', c.id);
+                            try {
+                                // Obtener los datos actuales para preservar la fecha
+                                const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
+
+                                if (existingCargo.length > 0) {
+                                    console.log('API: Encontrado cargo existente para actualización parcial:', existingCargo[0]);
+
+                                    // Usar los valores existentes para los campos no proporcionados
+                                    const estado = c.estado !== undefined ? c.estado : existingCargo[0].estado;
+                                    const comentario = c.comentario !== undefined ? c.comentario : existingCargo[0].comentario;
+                                    const activo = c.activo !== undefined ? c.activo : existingCargo[0].activo;
+                                    const fecha = existingCargo[0].fecha; // Preservar la fecha existente
+
+                                    console.log('API: Realizando actualización parcial con valores:');
+                                    console.log('API: - Estado:', estado);
+                                    console.log('API: - Comentario:', comentario);
+                                    console.log('API: - Activo:', activo);
+                                    console.log('API: - Fecha (preservada):', fecha);
+
+                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ? WHERE id = ?', [estado, comentario, activo, c.id]);
+
+                                    console.log('API: Resultado de actualización parcial:', updateResult.affectedRows, 'filas afectadas');
+
+                                    // Verificar después de la actualización
+                                    const [verifyUpdate] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
+                                    if (verifyUpdate.length > 0) {
+                                        console.log('API: Verificación después de actualización parcial:', `Estado: ${verifyUpdate[0].estado}`, `Comentario: "${verifyUpdate[0].comentario}"`, `Activo: ${verifyUpdate[0].activo}`);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('API: ERROR en actualización parcial:', error.message);
+                                throw error;
+                            }
+                            continue;
+                        }
+
+                        if (!c.fecha) {
+                            console.log('API: Ignorando cargo sin fecha');
+                            continue; // Ignorar elementos sin fecha para nuevos cargos
+                        }
+
+                        ////const f = new Date(c.fecha);
+                        //const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
+                        ////const fecha = new Date(f).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+
+                        const fecha = c.fecha;
+
+                        // Validar fecha antes de procesar (evitar fechas como 1970-01-01)
+                        if (fecha === '1970-01-01') {
+                            console.log('API: Ignorando fecha inválida:', fecha);
+                            continue; // Ignorar fechas inválidas
+                        }
+
+                        const estado = c.estado === '' ? 'pendiente' : c.estado; // Si estado está vacío, se considera 'pendiente'
+
+                        if (c.id) {
+                            try {
+                                // Actualizar si existe, incluyendo activo
+                                console.log('API: Actualizando fecha_cargo con ID:', c.id, 'Estado:', estado, 'Comentario:', c.comentario, 'Fecha:', fecha);
+                                const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
+
+                                if (existingCargo.length > 0) {
+                                    console.log('API: Encontrado cargo existente:', existingCargo[0]);
+
+                                    // Mostrar diferencias entre valores antiguos y nuevos
+                                    console.log(
+                                        'API: Diferencias detectadas:',
+                                        existingCargo[0].estado !== estado ? `Estado: ${existingCargo[0].estado} -> ${estado}` : 'Estado: Sin cambios',
+                                        existingCargo[0].comentario !== c.comentario ? `Comentario: "${existingCargo[0].comentario}" -> "${c.comentario}"` : 'Comentario: Sin cambios',
+                                        existingCargo[0].activo !== c.activo ? `Activo: ${existingCargo[0].activo} -> ${c.activo}` : 'Activo: Sin cambios'
+                                    );
+
+                                    // Realizar la actualización
+                                    console.log('API: REALIZANDO ACTUALIZACIÓN para fecha_cargo ID:', c.id);
+                                    console.log('API: Valores a actualizar:');
+                                    console.log('API: - Estado:', estado);
+                                    console.log('API: - Comentario:', c.comentario, 'Tipo:', typeof c.comentario);
+                                    console.log('API: - Fecha:', fecha);
+                                    console.log('API: - Activo:', c.activo);
+
+                                    // Asegurar que el comentario nunca sea undefined
+                                    const comentarioFinal = c.comentario !== undefined ? c.comentario : '';
+
+                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ? WHERE id = ?', [estado, comentarioFinal, fecha, c.activo, c.id]);
+                                    console.log('API: Resultado de actualización:', updateResult.affectedRows, 'filas afectadas');
+
+                                    // Verificar que la actualización fue efectiva
+                                    if (updateResult.affectedRows === 0) {
+                                        console.error('API: ¡ADVERTENCIA! La actualización no afectó ninguna fila');
+                                    }
+
+                                    // Verificar que los datos se actualizaron correctamente
+                                    const [verifyUpdate] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
+                                    if (verifyUpdate.length > 0) {
+                                        console.log('API: Verificación después de actualizar:', `Estado: ${verifyUpdate[0].estado}`, `Comentario: "${verifyUpdate[0].comentario}"`, `Activo: ${verifyUpdate[0].activo}`);
+                                    }
+
+                                    // Si el estado cambia a 'cargado', guardar en el historial
+                                    if (estado === 'cargado' && existingCargo[0].estado !== 'cargado') {
+                                        await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [id, fecha, importe, c.comentario || '']);
+                                        console.log('API: Guardado en historial por cambio a estado cargado');
+                                    }
+                                } else {
+                                    console.log('API: No se encontró el cargo con ID:', c.id);
+                                }
+                            } catch (error) {
+                                console.error('API: ERROR en actualización de fecha_cargo:', error.message);
+                                throw error; // Re-lanzar para manejo en nivel superior
+                            }
+                        } else {
+                            // Insertar si no existe, incluyendo activo
+                            await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario || '', c.activo]);
+
+                            // Si el estado es 'cargado', guardar en el historial
+                            if (estado === 'cargado') {
+                                await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [id, fecha, importe, c.comentario || '']);
+                            }
                         }
                     }
                 }
@@ -363,7 +522,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                 query += ', fecha_inicial)';
                 valuesPart += ', ?)';
                 params.push(fecha_inicial);
-            } else if (cargo.length > 0) {
+            } else if (cargo && cargo.length > 0) {
                 // Si no se proporcionó fecha_inicial pero sí cargo, usar la primera fecha de cargo como fecha_inicial
                 query += ', fecha_inicial)';
                 valuesPart += ', ?)';
@@ -376,20 +535,70 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
             const [result] = await connection.execute(query + ' ' + valuesPart, params);
             const newReciboId = result.insertId;
 
-            // Insertar fechas de cargo
-            for (const c of cargo) {
-                const estado = c.estado === '' ? 'pendiente' : c.estado;
+            console.log('API: Recibo insertado con ID:', newReciboId, 'Modo fechas:', modoFechas);
 
-                const f = new Date(c.fecha);
-                const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
-                const fecha = new Date(fechaLocal).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
-
-                const [resultCargo] = await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario || '', c.activo]);
-
-                // Si el estado es 'cargado', guardar en el historial
-                if (estado === 'cargado') {
-                    await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [newReciboId, fecha, importe, c.comentario || '']);
+            // Determinar si necesitamos generar fechas automáticamente o usar las fechas de cargo proporcionadas
+            if (modoFechas === 'auto' && fecha_inicial) {
+                console.log('API: Generando fechas automáticamente para el recibo ID:', newReciboId);
+                // Determinar el número de fechas a generar según la periodicidad
+                let cantidadFechas;
+                switch (periodicidad) {
+                    case 'mensual':
+                        cantidadFechas = 12; // Un año
+                        break;
+                    case 'bimestral':
+                        cantidadFechas = 6; // Un año
+                        break;
+                    case 'trimestral':
+                        cantidadFechas = 4; // Un año
+                        break;
+                    case 'anual':
+                        cantidadFechas = 1; // Una fecha
+                        break;
                 }
+
+                // Generar las nuevas fechas
+                const fechasAutomaticas = generarFechasFuturas(fecha_inicial, periodicidad, cantidadFechas);
+                console.log('API: Fechas generadas automáticamente:', fechasAutomaticas);
+
+                // Insertar las fechas generadas automáticamente
+                for (const c of fechasAutomaticas) {
+                    await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [newReciboId, c.fecha, c.estado, c.comentario, c.activo]);
+                    console.log('API: Fecha insertada:', c.fecha, 'para recibo ID:', newReciboId);
+                }
+            } else if (cargo && cargo.length > 0) {
+                // Insertar fechas de cargo proporcionadas manualmente
+                console.log('API: Insertando fechas de cargo manuales para el recibo ID:', newReciboId);
+                for (const c of cargo) {
+                    if (!c.fecha) {
+                        console.log('API: Ignorando cargo sin fecha:', c);
+                        continue; // Ignorar elementos sin fecha
+                    }
+
+                    const estado = c.estado === '' ? 'pendiente' : c.estado;
+
+                    ////const f = new Date(c.fecha);
+                    //const fechaLocal = new Date(f.getTime() - f.getTimezoneOffset() * 60000);
+                    ////const fecha = new Date(f).toISOString().split('T')[0]; // Convertir fecha al formato YYYY-MM-DD
+
+                    const fecha = c.fecha;
+
+                    // Validar fecha antes de insertar (evitar fechas como 1970-01-01)
+                    if (fecha === '1970-01-01') {
+                        console.log('API: Ignorando fecha inválida:', fecha);
+                        continue; // Ignorar fechas inválidas
+                    }
+
+                    console.log('API: Insertando fecha de cargo:', fecha, 'para recibo ID:', newReciboId);
+                    await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario || '', c.activo]);
+
+                    // Si el estado es 'cargado', guardar en el historial
+                    if (estado === 'cargado') {
+                        await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [newReciboId, fecha, importe, c.comentario || '']);
+                    }
+                }
+            } else {
+                console.log('API: ADVERTENCIA - No se han insertado fechas de cargo para el recibo ID:', newReciboId);
             }
         }
 

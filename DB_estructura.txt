@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: mysql-fer-particular.b.aivencloud.com:10613
--- Tiempo de generación: 30-08-2025 a las 15:44:36
+-- Tiempo de generación: 31-08-2025 a las 12:06:27
 -- Versión del servidor: 8.0.35
 -- Versión de PHP: 8.2.29
 
@@ -305,7 +305,15 @@ INSERT INTO `fechas_cargo` (`id`, `recibo_id`, `fecha`, `activo`, `estado`, `com
 (162, 146, '2025-08-30', 1, 'pendiente', 'a ver dnd lo guarda'),
 (163, 146, '2025-10-31', 1, 'pendiente', ''),
 (164, 146, '2025-11-27', 1, 'pendiente', ''),
-(165, 146, '2025-11-13', 1, 'pendiente', '');
+(165, 146, '2025-11-13', 1, 'pendiente', ''),
+(172, 150, '2025-08-18', 1, 'pendiente', 'Fecha inicial'),
+(173, 150, '2025-11-18', 1, 'pendiente', ''),
+(174, 150, '2026-02-18', 1, 'pendiente', ''),
+(175, 150, '2026-05-18', 1, 'pendiente', ''),
+(176, 151, '2025-08-15', 1, 'pendiente', 'prueba comentario 1'),
+(177, 151, '2025-11-15', 1, 'pendiente', ''),
+(178, 151, '2026-02-15', 1, 'pendiente', ''),
+(179, 151, '2026-05-15', 1, 'pendiente', 'prueba comentario 4');
 
 -- --------------------------------------------------------
 
@@ -403,7 +411,9 @@ INSERT INTO `recibos` (`id`, `concepto`, `importe`, `periodicidad`, `categoria_i
 (137, 'prueba mensual 22', 11.00, 'mensual', 6, 1, 2, 0, '1970-01-01'),
 (143, 'prueba anual', 33.00, 'anual', 8, 1, 1, 0, '2025-05-26'),
 (144, 'pruebaaa', 15.00, 'mensual', 7, 1, 2, 0, '1970-01-01'),
-(146, 'prueba recibo ahorros fer', 15.00, 'trimestral', 7, 3, 2, 0, '2025-08-30');
+(146, 'prueba recibo ahorros fer', 15.00, 'trimestral', 7, 3, 2, 0, '2025-08-30'),
+(150, 'prueba fecha en automático', 33.00, 'trimestral', 2, 1, 2, 0, '2025-08-18'),
+(151, 'prueba fechas manual', 12.00, 'trimestral', 7, 1, 2, 0, '2025-08-15');
 
 -- --------------------------------------------------------
 
@@ -633,7 +643,7 @@ ALTER TABLE `cuentas`
 -- AUTO_INCREMENT de la tabla `fechas_cargo`
 --
 ALTER TABLE `fechas_cargo`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=180;
 
 --
 -- AUTO_INCREMENT de la tabla `mantenimiento_logs`
@@ -657,7 +667,7 @@ ALTER TABLE `presupuesto_periodos`
 -- AUTO_INCREMENT de la tabla `recibos`
 --
 ALTER TABLE `recibos`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=152;
 
 --
 -- AUTO_INCREMENT de la tabla `recibos_historico`

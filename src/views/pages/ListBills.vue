@@ -1,11 +1,14 @@
 <script setup>
+import { useAuth } from '@/composables/useAuth'; // Importar composable de autenticación para verificar permisos de administrador
 import { AccService } from '@/service/AccService'; // Importar el servicio de cuentas
 import { BillService } from '@/service/BillService';
 import { CatsService } from '@/service/CatsService'; // Importar CatsService
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
-import { useAuth } from '@/composables/useAuth'; // Importar composable de autenticación para verificar permisos de administrador
+
+const instance = getCurrentInstance();
+const formatDate = instance.appContext.config.globalProperties.$formatDate; // Obtener la función global de formateo de fechas
 
 const annualBills = ref([]);
 const quarterlyBills = ref([]);
@@ -369,14 +372,14 @@ function hideDialog() {
 async function guardarRecibo() {
     submitted.value = true;
 
+    // 1. VALIDACIÓN INICIAL - Esto es necesario independientemente del modo
     // Verificar si está en modo automático y tiene fecha inicial
-    // En modo automático, la fecha inicial es obligatoria para generar las fechas automáticamente
     if (modoFechas.value === 'auto' && !bill.value.fecha_inicial) {
         toast.add({ severity: 'error', summary: 'Error', detail: 'La fecha inicial es obligatoria para la generación automática.', life: 5000 });
         return;
     }
 
-    // Asegurarse de que todos los campos de la estructura bill estén definidos
+    // 2. NORMALIZACIÓN DEL OBJETO - Garantiza que todos los campos estén definidos
     bill.value = {
         id: bill.value.id || null,
         concepto: bill.value.concepto || '',
@@ -386,7 +389,7 @@ async function guardarRecibo() {
         cuenta_id: bill.value.cuenta_id || null,
         fecha_inicial: bill.value.fecha_inicial ? new Date(bill.value.fecha_inicial) : null,
         cargo: bill.value.cargo.map((c) => ({
-            id: c.id ?? null,
+            id: c.id ?? null, // Preservar el ID es crítico para fechas existentes
             fecha: c.fecha ? new Date(c.fecha) : null,
             estado: c.estado ?? 'pendiente',
             comentario: c.comentario ?? '',
@@ -394,25 +397,29 @@ async function guardarRecibo() {
         }))
     };
 
-    // Ajustar la zona horaria para fecha_inicial si existe
-    // Esto es necesario para evitar problemas con la diferencia horaria al enviar al servidor
+    // 3. AJUSTE DE ZONA HORARIA - Esto debe hacerse siempre que haya fechas
+    // Ajustar la zona horaria y formatear la fecha inicial para el backend
     if (bill.value.fecha_inicial) {
-        const fechaInicialLocal = new Date(bill.value.fecha_inicial.getTime() - bill.value.fecha_inicial.getTimezoneOffset() * 60000);
-        bill.value.fecha_inicial = fechaInicialLocal;
+        //const fechaInicialLocal = new Date(bill.value.fecha_inicial.getTime() - bill.value.fecha_inicial.getTimezoneOffset() * 60000);
+        //bill.value.fecha_inicial = formatDate(fechaInicialLocal, '-'); // Usar el formato YYYY-MM-DD
+        bill.value.fecha_inicial = formatDate(bill.value.fecha_inicial, '-', true); // // Usar el formato YYYY-MM-DD, con ajuste de zona horaria
     }
 
-    // Ajustar la zona horaria para todos los cargos donde haya fecha
+    // Ajustar la zona horaria de las fechas de cargo
+    // Esto debe hacerse para todas las fechas, independientemente del modo
     bill.value.cargo.forEach((c, index) => {
         if (c.fecha) {
-            const fechaLocal = new Date(c.fecha.getTime() - c.fecha.getTimezoneOffset() * 60000);
-            bill.value.cargo[index].fecha = fechaLocal;
+            //const fechaLocal = new Date(c.fecha.getTime() - c.fecha.getTimezoneOffset() * 60000);
+            //bill.value.cargo[index].fecha = formatDate(fechaLocal, '-'); // Usar el formato YYYY-MM-DD
+            bill.value.cargo[index].fecha = formatDate(c.fecha, '-', true); // Usar el formato YYYY-MM-DD con ajuste horario
         }
     });
 
-    // Comprobar fechas de cargo duplicadas para recibos trimestrales o bimestrales si estamos en modo manual
-    // No permitimos fechas duplicadas en el mismo recibo para evitar problemas en la base de datos
+    // 4. VALIDACIONES ESPECÍFICAS - Solo aplicables en ciertos escenarios
+    // Comprobar fechas de cargo duplicadas para recibos trimestrales o bimestrales en modo manual
+    // (En modo automático no es necesario porque el backend genera fechas sin duplicados)
     if (modoFechas.value === 'manual' && (bill.value.periodicidad === 'trimestral' || bill.value.periodicidad === 'bimestral')) {
-        const fechas = bill.value.cargo.map((c) => (c.fecha ? c.fecha.toISOString().split('T')[0] : null)).filter((f) => f !== null);
+        const fechas = bill.value.cargo.map((c) => (c.fecha ? c.fecha : null)).filter((f) => f !== null);
         const fechasUnicas = new Set(fechas);
         if (fechas.length !== fechasUnicas.size) {
             toast.add({ severity: 'error', summary: 'Error', detail: 'Hay fechas de cargo duplicadas. Por favor, rectifique.', life: 5000 });
@@ -422,12 +429,57 @@ async function guardarRecibo() {
 
     console.log('guardarRecibo(). Recibo a guardar:', bill.value);
 
+    // 5. VERIFICACIÓN FINAL antes de guardar
     if (bill.value.concepto.trim() && Array.isArray(bill.value.cargo)) {
         try {
-            await BillService.saveBill(bill.value);
-            toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo guardado!', life: 5000 });
+            console.log('guardarRecibo() - Modo de fechas actual:', modoFechas.value);
+            console.log('guardarRecibo() - ID del recibo a guardar:', bill.value.id);
+            console.log(
+                'guardarRecibo() - Cargo datos:',
+                bill.value.cargo.map((c) => ({ id: c.id, estado: c.estado, comentario: c.comentario, fecha: c.fecha }))
+            );
 
-            // Actualizar la lista de recibos según la periodicidad
+            // 6. PREPARACIÓN DEL OBJETO A ENVIAR
+            // Importante: Por defecto enviamos el objeto completo sin filtrar nada
+            const billToSave = {
+                ...bill.value,
+                modoFechas: modoFechas.value // Enviamos el modo al backend para que sepa cómo procesar las fechas
+            };
+
+            // 7. CASOS ESPECIALES
+            // Solo para el caso especial del diálogo de fechas individuales
+            if (billDialogTB_FC.value) {
+                console.log('guardarRecibo() - Detectado edición desde diálogo de fechas individuales');
+
+                // En este caso especial, solo enviamos la fecha que estamos editando (por diseño de la UI)
+                if (bill.value.cargo[0] && bill.value.cargo[0].id) {
+                    billToSave.cargo = [
+                        {
+                            id: bill.value.cargo[0].id,
+                            comentario: bill.value.cargo[0].comentario || '',
+                            estado: bill.value.cargo[0].estado || 'pendiente',
+                            activo: bill.value.cargo[0].activo !== undefined ? bill.value.cargo[0].activo : 1,
+                            fecha: bill.value.cargo[0].fecha
+                        }
+                    ];
+                    billToSave.modoFechas = 'manual'; // Forzar modo manual para este caso especial
+                    console.log('guardarRecibo() - Enviando solo la fecha individual completa:', billToSave.cargo[0]);
+                }
+            }
+            // En modo automático para nuevo recibo, enviamos array vacío para que el backend genere las fechas
+            else if (modoFechas.value === 'auto' && !bill.value.id) {
+                billToSave.cargo = [];
+                console.log('guardarRecibo() - Nuevo recibo en modo automático, enviando cargo vacío');
+            }
+            // Para todos los demás casos, usamos el objeto completo sin modificaciones
+
+            // 8. GUARDAR Y PROCESAR RESPUESTA
+            console.log('ListBills. Enviando recibo para guardar:', billToSave);
+            const respuesta = await BillService.saveBill(billToSave);
+            console.log('guardarRecibo() - Respuesta del servidor:', respuesta);
+            toast.add({ severity: 'success', summary: 'Éxito', detail: 'Recibo guardado!', life: 5000 });
+
+            // 9. ACTUALIZAR UI y LIMPIAR
             updateBills(bill.value.periodicidad);
             updateBills('inactivo');
 
@@ -450,8 +502,14 @@ async function guardarRecibo() {
                 }))
             };
         } catch (error) {
-            toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el recibo: ${error.message}`, life: 5000 });
-            console.error('guardarRecibo(). Error al guardar el recibo: ', error.response?.data || error.message);
+            toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el recibo: ${error.message}`, life: 7000 });
+            console.error('guardarRecibo(). Error completo:', error);
+            console.error('guardarRecibo(). Detalles:', {
+                mensaje: error.message,
+                respuesta: error.response?.data,
+                status: error.response?.status,
+                headers: error.response?.headers
+            });
         }
     } else {
         toast.add({ severity: 'error', summary: 'Error', detail: 'Todos los campos son obligatorios y cargo debe ser un array con id, fecha, estado y comentario.', life: 5000 });
@@ -525,8 +583,6 @@ async function deleteBill() {
     }
 }
 
-const { appContext } = getCurrentInstance();
-
 function exportCSV(periodicity) {
     const exportData = (bills, filename, formatDate) => {
         const csvContent = [
@@ -553,8 +609,6 @@ function exportCSV(periodicity) {
         link.click();
         document.body.removeChild(link);
     };
-
-    const formatDate = appContext.config.globalProperties.$formatDate; // Obtener la función global
 
     if (periodicity === 'all') {
         const allBills = [...annualBills.value, ...quarterlyBills.value, ...bimonthlyBills.value, ...monthlyBills.value];
@@ -718,7 +772,12 @@ const inactiveBillsCount = (periodicity) => {
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
                     <!-- Botón para actualizar todas las fechas, solo visible para administradores -->
+                    <!-- De momento desactivo el botón, me parece muy peligroso. Su proposito es actualizar las fechas 
+                         de cargo en aquellos recibos para los que se ha definido una fecha_inicial. Puede ser útil 
+                         al inicio de un nuevo año fiscal o después de cambios en la configuración del sistema
+                         Pero de momento lo mantengo desactivado por si a futuro lo retomo
                     <Button v-if="isAdmin" label="Actualizar fechas" icon="pi pi-calendar" severity="secondary" class="mr-2" @click="updateAllDates" v-tooltip="'Actualizar fechas de todos los recibos'" />
+-->
                     <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>

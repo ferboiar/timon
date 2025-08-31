@@ -37,20 +37,37 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 router.post('/', verifyToken, async (req, res) => {
-    const { id, concepto, periodicidad, importe, categoria, cargo, cuenta_id, fecha_inicial } = req.body;
+    const { id, concepto, periodicidad, importe, categoria, cargo, cuenta_id, fecha_inicial, modoFechas } = req.body;
 
-    // Si no se proporciona cargo, verificar que se haya proporcionado fecha_inicial
-    if (!cargo && !fecha_inicial) {
+    // Si estamos en modo automático y no se proporciona fecha_inicial, error
+    if (modoFechas === 'auto' && !fecha_inicial) {
         return res.status(400).json({
-            error: 'Se debe proporcionar al menos uno de estos campos: cargo o fecha_inicial.'
+            error: 'En modo automático, el campo fecha_inicial es obligatorio.'
         });
     }
 
-    // Si se proporciona cargo, verificar que sea un array
-    if (cargo && !Array.isArray(cargo)) {
+    // Si estamos en modo manual y no se proporciona cargo, error
+    if (modoFechas === 'manual' && (!cargo || !Array.isArray(cargo) || cargo.length === 0)) {
         return res.status(400).json({
-            error: 'El campo cargo debe ser un array.'
+            error: 'En modo manual, el campo cargo es obligatorio y debe ser un array no vacío.'
         });
+    }
+
+    // Si no se especifica modoFechas, verificar requisitos tradicionales
+    if (!modoFechas) {
+        // Si no se proporciona cargo, verificar que se haya proporcionado fecha_inicial
+        if (!cargo && !fecha_inicial) {
+            return res.status(400).json({
+                error: 'Se debe proporcionar al menos uno de estos campos: cargo o fecha_inicial.'
+            });
+        }
+
+        // Si se proporciona cargo, verificar que sea un array
+        if (cargo && !Array.isArray(cargo)) {
+            return res.status(400).json({
+                error: 'El campo cargo debe ser un array.'
+            });
+        }
     }
 
     if (!cuenta_id) {
@@ -65,10 +82,31 @@ router.post('/', verifyToken, async (req, res) => {
 
         const propietarioId = req.user.id; // Obtenemos el ID del usuario del token JWT
 
-        await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial);
+        console.log('API recibos.mjs: ==== INICIO PETICIÓN POST /recibos ====');
+        console.log('API recibos.mjs: Datos validados correctamente, procediendo a llamar pushRecibo');
+        console.log('API recibos.mjs: Llamando a pushRecibo con ID:', id);
+        console.log('API recibos.mjs: Tipo de cargo:', Array.isArray(cargo) ? 'Array' : typeof cargo);
+        console.log('API recibos.mjs: Número de fechas en cargo:', cargo ? cargo.length : 0);
+
+        if (cargo && cargo.length > 0) {
+            console.log('API recibos.mjs: Primera fecha en cargo:', JSON.stringify(cargo[0]));
+            console.log('API recibos.mjs: Comentario en cargo[0]:', cargo[0].comentario, 'Tipo:', typeof cargo[0].comentario);
+            if (cargo.length > 1) {
+                console.log('API recibos.mjs: Segunda fecha en cargo:', JSON.stringify(cargo[1]));
+            }
+        }
+        await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas);
+        console.log('API recibos.mjs: pushRecibo completado con éxito para ID:', id);
+        console.log('API recibos.mjs: ==== FIN PETICIÓN POST /recibos (ÉXITO) ====');
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente' });
     } catch (error) {
-        res.status(400).json({ error: `Error al insertar o actualizar el recibo: ${error.message}`, details: error.stack });
+        console.error('API recibos.mjs: Error al insertar/actualizar recibo:', error);
+        console.error('API recibos.mjs: Detalles del error:', error.stack);
+        console.log('API recibos.mjs: ==== FIN PETICIÓN POST /recibos (ERROR) ====');
+        res.status(400).json({
+            error: `Error al ${id ? 'actualizar' : 'insertar'} el recibo: ${error.message}`,
+            details: error.stack
+        });
     }
 });
 

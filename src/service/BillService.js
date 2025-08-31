@@ -37,14 +37,39 @@ export class BillService {
     // Guardar un recibo (crear o actualizar)
     static async saveBill(bill) {
         try {
+            console.log('BillService. Guardando recibo:', bill);
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+            // Imprimir información detallada antes de enviar
+            console.log('BillService. Detalles de la petición:');
+            console.log('BillService. URL:', API_URL);
+            console.log('BillService. Token presente:', !!token);
+            console.log('BillService. Modo fechas:', bill.modoFechas);
+            console.log('BillService. Cargos:', bill.cargo);
+
             const response = await axios.post(API_URL, bill, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
+            console.log('BillService. Respuesta exitosa:', response.data);
             return response.data;
         } catch (error) {
             console.error('BillService. Error al guardar el recibo: ', error);
-            throw error;
+            console.error('BillService. Detalles del error:', {
+                mensaje: error.message,
+                respuesta: error.response?.data,
+                status: error.response?.status
+            });
+
+            // Mejorar el mensaje de error para que sea más descriptivo
+            if (error.response && error.response.data && error.response.data.error) {
+                // Si el backend devuelve un mensaje de error específico, lanzarlo
+                throw new Error(error.response.data.error);
+            } else if (error.response && error.response.status) {
+                // Si hay un código de estado, incluirlo en el mensaje
+                throw new Error(`Error ${error.response.status}: No se pudo guardar el recibo. Compruebe la conexión con el servidor.`);
+            } else {
+                throw new Error('Error al guardar el recibo. Verifique su conexión a Internet.');
+            }
         }
     }
 
