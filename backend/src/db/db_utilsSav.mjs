@@ -25,7 +25,7 @@ async function getSavings() {
     }
 }
 
-async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_objetivo = null, periodicidad = null, importe_periodico, activo = 1) {
+async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_objetivo = null, periodicidad = null, importe_periodico, activo = 1, propietario_id) {
     let connection;
     try {
         connection = await getConnection();
@@ -45,14 +45,16 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
             console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             // Insertar nuevo ahorro
-            const [insertResult] = await connection.execute('INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+            if (!propietario_id) throw new Error('Falta el propietario para crear el ahorro');
+            const [insertResult] = await connection.execute('INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
                 concepto,
                 descripcion,
                 ahorrado,
                 fecha_objetivo,
                 periodicidad,
                 importe_periodico,
-                activo
+                activo,
+                propietario_id
             ]);
             console.log(`Insert realizado correctamente en tabla ahorros. Filas afectadas: ${insertResult.affectedRows}`);
         }

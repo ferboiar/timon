@@ -25,7 +25,7 @@ async function getAccounts() {
     }
 }
 
-async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, descripcion = null, activa = 1) {
+async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, descripcion = null, activa = 1, propietario_id) {
     let connection;
     try {
         connection = await getConnection();
@@ -44,7 +44,8 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
             console.log(`Update realizado correctamente en tabla cuentas. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             // Insertar nueva cuenta
-            const [insertResult] = await connection.execute('INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa) VALUES (?, ?, ?, ?, ?, ?)', [nombre, tipo, iban, saldo_actual, descripcion, activa]);
+            if (!propietario_id) throw new Error('Falta el propietario para crear la cuenta');
+            const [insertResult] = await connection.execute('INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id]);
             console.log(`Insert realizado correctamente en tabla cuentas. Filas afectadas: ${insertResult.affectedRows}`);
         }
     } catch (error) {

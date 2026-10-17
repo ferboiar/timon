@@ -29,7 +29,7 @@ router.get('/', verifyToken, async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
     const { id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad } = req.body;
     try {
-        await pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad);
+        await pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.user.id);
         res.status(201).json({ message: 'Anticipo insertado o actualizado correctamente' });
     } catch (error) {
         res.status(400).json({ error: `Error al guardar el anticipo: ${error.message}` });

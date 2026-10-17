@@ -1,6 +1,6 @@
 // Pruebas de la fase 0 (registro de hallazgos: doc/mantenimiento/registro-hallazgos.md).
 // 1) Paridad del entorno de pruebas con el entorno de referencia.
-// 2) Reproducción de F-01: las altas de la aplicación omiten propietario_id.
+// 2) F-01: las altas de la aplicación deben incluir propietario_id.
 // Requiere el servicio de docker-compose.test.yml (ver backend/test/README.md).
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -88,18 +88,18 @@ describe('esquema de la línea base', () => {
     });
 });
 
-describe('F-01: altas de la aplicación sin propietario_id', () => {
+describe('F-01: altas de la aplicación con propietario_id', () => {
     // Sentencias copiadas de db_utilsSav, db_utilsAdv, db_utilsAcc y db_utilsCats.
-    // Cuando F-01 se corrija, actualizarlas con el propietario_id y quitar la marca todo.
+    // Mantenerlas sincronizadas con los INSERT de la aplicación, que deben incluir propietario_id (F-01).
     const altas = [
-        ['ahorros', 'INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Prueba', null, 0, null, null, 0, 1]],
-        ['anticipos', 'INSERT INTO anticipos (concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', ['Prueba', 100, 10, '2026-01-01', null, null, 'activo', 1, 'mensual']],
-        ['cuentas', 'INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa) VALUES (?, ?, ?, ?, ?, ?)', ['Prueba', 'corriente', 'ES0000000000000000000002', 0, null, 1]],
-        ['categorias', 'INSERT INTO categorias (nombre, descripcion) VALUES (?, ?)', ['zz_prueba', null]]
+        ['ahorros', 'INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', ['Prueba', null, 0, null, null, 0, 1, 2]],
+        ['anticipos', 'INSERT INTO anticipos (concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', ['Prueba', 100, 10, '2026-01-01', null, null, 'activo', 1, 'mensual', 2]],
+        ['cuentas', 'INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Prueba', 'corriente', 'ES0000000000000000000002', 0, null, 1, 2]],
+        ['categorias', 'INSERT INTO categorias (nombre, descripcion, propietario_id) VALUES (?, ?, ?)', ['zz_prueba', null, 2]]
     ];
 
     for (const [tabla, sql, params] of altas) {
-        test(`la sentencia de la aplicación crea un registro en ${tabla}`, { todo: 'F-01: se corrige en la fase 1' }, async () => {
+        test(`la sentencia de la aplicación crea un registro en ${tabla}`, async () => {
             await db.beginTransaction();
             try {
                 await db.execute(sql, params);

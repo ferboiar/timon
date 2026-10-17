@@ -30,7 +30,7 @@ router.post('/', verifyToken, async (req, res) => {
         return res.status(400).json({ error: 'El nombre de la categoría es obligatorio' });
     }
     try {
-        await pushCategoria(nombre, descripcion);
+        await pushCategoria(nombre, descripcion, req.user.id);
         res.status(201).json({ message: 'Categoría insertada o actualizada correctamente' });
     } catch (error) {
         res.status(400).json({ error: `Error al insertar o actualizar la categoría: ${error.message}`, details: error.stack });

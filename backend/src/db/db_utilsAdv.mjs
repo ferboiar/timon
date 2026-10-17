@@ -26,7 +26,7 @@ async function getAdvances() {
     }
 }
 
-async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista = null, descripcion = null, estado = 'activo', cuenta_origen_id, periodicidad) {
+async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista = null, descripcion = null, estado = 'activo', cuenta_origen_id, periodicidad, propietario_id) {
     let connection;
     try {
         connection = await getConnection();
@@ -62,7 +62,8 @@ async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_ini
             }
         } else {
             // Insertar nuevo anticipo
-            const [result] = await connection.execute('INSERT INTO anticipos (concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            if (!propietario_id) throw new Error('Falta el propietario para crear el anticipo');
+            const [result] = await connection.execute('INSERT INTO anticipos (concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
                 concepto,
                 importe_total,
                 pago_sugerido,
@@ -71,7 +72,8 @@ async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_ini
                 descripcion,
                 estado,
                 cuenta_origen_id,
-                periodicidad
+                periodicidad,
+                propietario_id
             ]);
             console.log(`Inserción realizada en anticipos, filas afectadas: ${result.affectedRows}`);
 
