@@ -57,7 +57,7 @@ async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_ini
             }
 
             // Si se especifica periodicidad y pago sugerido, recalcular el plan de pagos
-            if (periodicidad && pago_sugerido) {
+            if (periodicidad && Number(pago_sugerido) > 0) {
                 await recalculatePaymentPlan(id, importe_total, pago_sugerido, fecha_inicio, periodicidad);
             }
         } else {
@@ -86,7 +86,7 @@ async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_ini
             }
 
             // Si se especifica periodicidad y pago sugerido, crear el plan de pagos
-            if (periodicidad && pago_sugerido) {
+            if (periodicidad && Number(pago_sugerido) > 0) {
                 await recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, fecha_inicio, periodicidad);
             }
         }
@@ -134,9 +134,9 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
         const pagosPendientes = existingPagos.filter((pago) => pago.estado === 'pendiente');
 
         // Restar los pagos pendientes del saldo restante
-        let saldoRestante = importe_total;
+        let saldoRestante = Number(importe_total);
         for (const pago of pagosPendientes) {
-            saldoRestante -= pago.importe;
+            saldoRestante -= Number(pago.importe);
         }
 
         console.log(`recalculatePaymentPlan - Saldo restante después de considerar los pagos pendientes: ${saldoRestante}`);
@@ -150,6 +150,16 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
         }
 
         // Crear nuevos pagos si es necesario
+        // El pago sugerido llega como cadena desde la base de datos (por ejemplo '0.00'): se convierte a número y se valida antes de crear ningún pago
+        pago_sugerido = Number(pago_sugerido);
+        if (saldoRestante > 0) {
+            if (!Number.isFinite(pago_sugerido) || pago_sugerido <= 0) {
+                throw new Error('El pago sugerido debe ser mayor que 0 para generar el plan de pagos');
+            }
+            if (Math.ceil(saldoRestante / pago_sugerido) > 1200) {
+                throw new Error('El plan superaría los 1200 pagos; revisa el importe y el pago sugerido');
+            }
+        }
         let ultimaFechaPago = null;
         while (saldoRestante > 0) {
             const importePago = saldoRestante > pago_sugerido ? pago_sugerido : saldoRestante;

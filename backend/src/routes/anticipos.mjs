@@ -134,7 +134,7 @@ router.post('/recalculate-payment-plan', verifyToken, async (req, res) => {
         res.status(200).json({ message: 'Plan de pagos recalculado correctamente' });
     } catch (error) {
         console.error('Error al recalcular el plan de pagos:', error);
-        res.status(500).json({ error: 'Error al recalcular el plan de pagos' });
+        res.status(500).json({ error: 'Error al recalcular el plan de pagos: ' + error.message });
     }
 });
 
