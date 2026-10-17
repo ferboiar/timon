@@ -27,7 +27,7 @@ router.get('/', verifyToken, async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
     const { id, nombre, tipo, iban, saldo_actual, descripcion, activa } = req.body;
     try {
-        await pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa);
+        await pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa, req.user.id);
         res.status(201).json({ message: 'Cuenta insertada o actualizada correctamente' });
     } catch (error) {
         res.status(400).json({ error: `Error al insertar o actualizar la cuenta: ${error.message}`, details: error.stack });

@@ -31,7 +31,7 @@ async function getCategorias() {
     }
 }
 
-async function pushCategoria(nombre, descripcion = null) {
+async function pushCategoria(nombre, descripcion = null, propietario_id) {
     let connection;
     try {
         connection = await getConnection();
@@ -43,7 +43,8 @@ async function pushCategoria(nombre, descripcion = null) {
             console.log(`Update realizado correctamente en tabla categorias. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             // Insertar nueva categoría
-            const [insertResult] = await connection.execute('INSERT INTO categorias (nombre, descripcion) VALUES (?, ?)', [nombre || 'Sin nombre', descripcion]);
+            if (!propietario_id) throw new Error('Falta el propietario para crear la categoría');
+            const [insertResult] = await connection.execute('INSERT INTO categorias (nombre, descripcion, propietario_id) VALUES (?, ?, ?)', [nombre || 'Sin nombre', descripcion, propietario_id]);
             console.log(`Insert realizado correctamente en tabla categorias. Filas afectadas: ${insertResult.affectedRows}`);
         }
     } catch (error) {

@@ -27,7 +27,7 @@ router.get('/', verifyToken, async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
     const { id, concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo } = req.body;
     try {
-        await pushSaving(id, concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo);
+        await pushSaving(id, concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, req.user.id);
         res.status(201).json({ message: 'Ahorro insertado o actualizado correctamente' });
     } catch (error) {
         res.status(400).json({ error: `Error al insertar o actualizar el ahorro: ${error.message}`, details: error.stack });
