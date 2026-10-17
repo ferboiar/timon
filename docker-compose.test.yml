@@ -1,0 +1,30 @@
+# MariaDB efímero para las pruebas del backend.
+# Reproduce la configuración de referencia (doc/mantenimiento/registro-hallazgos.md, sección 3).
+# Solo para pruebas: los datos viven en memoria y se pierden al parar el servicio.
+services:
+  mariadb-test:
+    image: mariadb:11.8
+    container_name: mariadb-test
+    command:
+      - --transaction-isolation=READ-COMMITTED
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_spanish_ci
+      - --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+      - --max-connections=100
+      - --event-scheduler=ON
+      - --default-time-zone=+00:00
+    environment:
+      MARIADB_ROOT_PASSWORD: test_root_pw
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
