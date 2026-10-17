@@ -15,7 +15,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | DC-03 | Precedencia ante discrepancias: 1) el Excel del usuario como criterio de aceptación, 2) la documentación de diseño (`doc/db/schema`), 3) la BD viva como línea base migrable, 4) el código. |
 | DC-04 | BD en MariaDB 11.8 local. Misma configuración en desarrollo, tests y producción (sección 3). |
 | DC-05 | Servidor y sesión en `+00:00`; el evento de mantenimiento se define en `Europe/Madrid`; `mysql2` devolverá `DATE` como texto (`dateStrings`). |
-| DC-06 | Usuarios de BD: `timon_app` (SELECT, INSERT, UPDATE, DELETE) y `timon_admin` (ALL) sobre `conta_hogar`, host `172.20.0.%`. La aplicación usa `timon_admin` hasta separar el mantenimiento (S-02). |
+| DC-06 | Usuarios de BD: `timon_app` (SELECT, INSERT, UPDATE, DELETE) y `timon_admin` (ALL) sobre `conta_hogar`, host `172.20.0.%`. La aplicación usa `timon_admin` hasta separar el mantenimiento (S-02). Las pruebas usan `timon_test`, con permisos solo sobre `conta_hogar_test`. |
 
 ## 3. Entorno de referencia
 
@@ -23,6 +23,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 - Opciones: `transaction_isolation=READ-COMMITTED`, `character-set-server=utf8mb4`, `collation-server=utf8mb4_spanish_ci`, `sql_mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION`, `max_connections=100`, `event_scheduler=ON`, `default-time-zone='+00:00'`.
 - Tablas de zonas horarias cargadas con `mariadb-tzinfo-to-sql`. Base creada con `COLLATE utf8mb4_spanish_ci`.
 - Conexión: Node (contenedor `timon`, red Docker `backend`) hacia `mariadb01:3306`. TLS disponible (`have_ssl=YES`).
+- Sesión de la aplicación: `mysql2` activa la bandera de cliente `IGNORE_SPACE`, así que el `sql_mode` de cada sesión lleva `IGNORE_SPACE` aunque el valor global no. Las pruebas comparan los valores globales.
 - Origen de los datos: volcado de Aiven (MySQL 8.4.8). Restaurado con dos retoques manuales (se quitó el `DEFINER` y se recreó la rutina con comillas invertidas) y verificado: 14 tablas, 18 claves foráneas y el mismo recuento de filas.
 
 ## 4. Casos de aceptación (Excel del usuario)
@@ -69,9 +70,10 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | S-05 | Medio | `error.stack` devuelto al cliente, `console.log` masivo y CORS abierto. | Confirmado |
 | S-06 | Medio | `/tech-docs` y `/documentation` solo se ocultan en el menú; ninguna ruta define `requiresAdmin`. | Confirmado |
 | S-07 | Medio | Los servicios usan `axios` crudo, no `apiClient`; el interceptor llama a `useAuth()` fuera de componente; dependencia circular `api.js` y `useAuth.js`; cada `useAuth()` crea su estado e intervalo. | Confirmado |
-| S-08 | Bajo | `.gitignore` no cubre `.db_connection.backup` ni `*.sql`; `engines` Node >=20.9 <21 frente a README Node 16+; sin tests; scripts con rutas `/workspaces`; sin herramienta de migraciones. | Confirmado |
+| S-08 | Bajo | `.gitignore` no cubre `.db_connection.backup` ni `*.sql`; `engines` Node >=20.9 <21 frente a README Node 16+; scripts con rutas `/workspaces`; sin herramienta de migraciones (la línea base 0001 y las pruebas de la fase 0 son el primer paso). | Confirmado |
 | S-09 | Bajo | El contenedor de desarrollo no trae `git-crypt` aunque el README lo exige; añadirlo a `.devcontainer/Dockerfile`. | Confirmado |
 | S-10 | Cerrado | El `.env` de la raíz solo contiene `VITE_API_URL`; no hay secretos. `backend/.env` y `backend/src/db/.db_connection` figuran cifrados. | Confirmado |
+| S-11 | Alto | Dependencias: Dependabot informa de 108 vulnerabilidades en `main` el 2026-10-17 (3 críticas, 59 altas, 38 moderadas, 8 bajas) y hay cinco ramas `snyk-fix-*` sin fusionar. Actualizar en una fase propia, con las pruebas en verde. | Confirmado |
 | O-01 | Bajo | `VITE_API_URL=http://localhost:3000`: el frontend no alcanzará el backend desde otros equipos de la red; configurar en el despliegue. | Confirmado |
 
 ## 7. Interfaz y documentación (U, D)
@@ -107,9 +109,10 @@ Sin leer: `Tech-documentation.vue`, `Login.vue`, `layout/*`, `useTheme`, `vRole`
 
 ## 10. Plan por fases
 
-1. Fase 0: este registro, migración 0001 (esquema de la BD viva), `docker-compose` de pruebas con MariaDB 11.8 y la configuración de la sección 3, y test de F-01.
+1. Fase 0, completada el 2026-10-17: este registro, migración 0001 (esquema de la BD viva), pruebas con `npm run test:backend` (5 pasan y 4 de F-01 quedan como `todo`, verificadas contra MariaDB 11.8.8) y `docker-compose.test.yml` como alternativa.
 2. Fase 1: bloqueantes F-01, F-02, F-03, F-04, F-05 y F-06, más las migraciones de DC-01 y DC-02.
 3. Fase 2: permisos reales (S-01, S-04, S-06).
 4. Fase 3: operación (S-02, S-03, S-07) y migración 0002 de la rutina de mantenimiento (`NOW(6)`, solo `ANALYZE`, 14 tablas).
 5. Fase 4: limpieza de interfaz y sincronización de `doc/` (U-01 a U-08, D-01 a D-05).
-6. Fase 5: hoja de ruta funcional (R-01 a R-04).
+6. Fase 5: dependencias (S-11), revisando antes las ramas `snyk-fix-*` y con las pruebas en verde.
+7. Fase 6: hoja de ruta funcional (R-01 a R-04).
