@@ -46,7 +46,7 @@ after(async () => {
 describe('paridad con el entorno de referencia', () => {
     test('configuración del servidor', async () => {
         const [[v]] = await db.query(
-            'SELECT @@sql_mode AS sql_mode, @@transaction_isolation AS aislamiento, @@character_set_server AS juego, @@collation_server AS colacion, @@global.time_zone AS zona, @@event_scheduler AS eventos'
+            'SELECT @@global.sql_mode AS sql_mode, @@global.transaction_isolation AS aislamiento, @@character_set_server AS juego, @@collation_server AS colacion, @@global.time_zone AS zona, @@event_scheduler AS eventos'
         );
         assert.equal(v.sql_mode, 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION');
         assert.equal(v.aislamiento, 'READ-COMMITTED');
