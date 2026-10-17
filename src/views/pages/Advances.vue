@@ -212,7 +212,7 @@ async function createPaymentPlan(anticipoId) {
         }
 
         // Verificar si el pago sugerido es 0
-        if (anticipo.pago_sugerido === 0) {
+        if (!(Number(anticipo.pago_sugerido) > 0)) {
             toast.add({ severity: 'error', summary: 'Error', detail: 'Imposible generar plan de pagos mientras pago sugerido sea 0.', life: 5000 });
             return;
         }

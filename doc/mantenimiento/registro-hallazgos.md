@@ -37,7 +37,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | ID | Sev. | Dónde | Hallazgo | Certeza |
 |---|---|---|---|---|
 | F-01 | Crítico | `db_utilsSav/Adv/Acc/Cats.mjs` | Los INSERT de ahorros, anticipos, cuentas y categorías omiten `propietario_id` (NOT NULL sin default). Reproducido contra la BD real: ER_NO_DEFAULT_FOR_FIELD. Regresión de la migración de permisos. Corregido en la fase 1: las rutas pasan el id del token a las funciones de alta. Verificado con las pruebas y creando los cuatro registros desde la aplicación (2026-10-18). | Confirmado |
-| F-02 | Crítico | `recalculatePaymentPlan`, `Advances.vue` | `mysql2` devuelve DECIMAL como string. Con `pago_sugerido = '0.00'` (valor por defecto al crear) el bucle inserta pagos de 0 € sin fin; la guarda de la UI (`=== 0`) no salta. Indicio: `anticipos_pagos` tiene AUTO_INCREMENT 5501 con 32 filas (salto de id 124 a 5499). | Probable |
+| F-02 | Crítico | `recalculatePaymentPlan`, `Advances.vue` | `mysql2` devuelve DECIMAL como string. Con `pago_sugerido = '0.00'` (valor por defecto al crear) el bucle inserta pagos de 0 € sin fin; la guarda de la UI (`=== 0`) no salta. Indicio: `anticipos_pagos` tiene AUTO_INCREMENT 5501 con 32 filas (salto de id 124 a 5499). Corregido en la fase 1: el pago sugerido se convierte a número y se valida (mayor que 0 y como máximo 1200 pagos) antes de crear ningún pago, al guardar el anticipo y al generar el plan; la pantalla también lo valida como número. | Probable |
 | F-03 | Alto | `pushMovimiento` | Editar un movimiento suma el importe completo a `ahorrado`. `ahorrado` es editable a mano (dos fuentes de verdad) y las tres sentencias no van en transacción. | Confirmado |
 | F-04 | Alto | `ListBills.vue`, `pushRecibo` | `editBill` abre en modo auto si hay `fecha_inicial`, y todos los recibos la tienen. Al guardar en auto se reescriben las fechas y se pisan las manuales. | Probable |
 | F-05 | Alto | `add_recibos_historico.sql` | Crea `recibos_historico` con columnas distintas de las que usa el código y de la tabla viva (`pagado`, `notas`). | Confirmado |
@@ -59,6 +59,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | F-21 | Bajo | Cuentas | `saldo_actual` es manual y nada lo actualiza. | Confirmado |
 | F-22 | Medio | `categorias` | `nombre` no es único y los recibos resuelven la categoría por nombre con una subconsulta. Se cierra con DC-02. | Confirmado |
 | F-23 | Medio | `generarNuevasFechasRecibo` | SQL con comillas dobles (`estado = «pendiente»`) falla con ANSI_QUOTES. Con el `sql_mode` de MariaDB no ocurre; se corrige igualmente. Verificar la versión activa del fichero. | Probable |
+| F-24 | Alto | `recalculatePaymentPlan` | Al regenerar el plan desde la base de datos, el saldo y el pago sugerido son cadenas y se comparan como texto (por ejemplo «100.00» resulta menor que «40.00»): se crea un único pago por el total en lugar de cuotas. Corregido junto con F-02 al convertir los importes a número. | Probable |
 
 ## 6. Seguridad y operación (S)
 
@@ -111,7 +112,7 @@ Sin leer: `Tech-documentation.vue`, `Login.vue`, `layout/*`, `useTheme`, `vRole`
 ## 10. Plan por fases
 
 1. Fase 0, completada el 2026-10-17: este registro, migración 0001 (esquema de la BD viva), pruebas con `npm run test:backend` (5 pasan y 4 de F-01 quedan como `todo`, verificadas contra MariaDB 11.8.8) y `docker-compose.test.yml` como alternativa.
-2. Fase 1 (en curso): F-01 corregido; pendientes F-02, F-03, F-04, F-05 y F-06, más las migraciones de DC-01 y DC-02.
+2. Fase 1 (en curso): F-01 y F-02 corregidos; pendientes F-03, F-04, F-05 y F-06, más las migraciones de DC-01 y DC-02.
 3. Fase 2: permisos reales (S-01, S-04, S-06).
 4. Fase 3: operación (S-02, S-03, S-07) y migración 0002 de la rutina de mantenimiento (`NOW(6)`, solo `ANALYZE`, 14 tablas).
 5. Fase 4: limpieza de interfaz y sincronización de `doc/` (U-01 a U-08, D-01 a D-05).
