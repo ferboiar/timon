@@ -9,7 +9,7 @@
     "scripts": {
         "start:backend": "NODE_ENV=production node backend/src/server.mjs",
         "dev:backend": "NODE_ENV=development nodemon backend/src/server.mjs",
-        "test:backend": "echo \"Error: no test specified\" && exit 1",
+        "test:backend": "node --test backend/test/",
         "dev:frontend": "vite",
         "build:frontend": "vite build",
         "preview:frontend": "vite preview",
