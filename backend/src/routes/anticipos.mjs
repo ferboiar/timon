@@ -102,17 +102,20 @@ router.delete('/pagos/:id', verifyToken, async (req, res) => {
 // Manejar la eliminación de un pago
 router.post('/delete-payment', verifyToken, async (req, res) => {
     try {
-        const { pagoId } = req.body;
+        const { pagoId, redistribuir } = req.body;
 
         if (!pagoId) {
             return res.status(400).json({ error: 'Pago ID es requerido' });
         }
 
-        const { saldoRestante, anticipoId } = await handlePaymentDeletion(pagoId);
+        console.log('delete-payment - Procesando pago ID: ' + pagoId + ' (redistribuir: ' + (redistribuir === true) + ')');
+        const { saldoRestante, anticipoId, redistribuido } = await handlePaymentDeletion(pagoId, redistribuir === true);
+        console.log('delete-payment - Pago ' + pagoId + ' eliminado del anticipo ' + anticipoId + ' (saldo restante ' + saldoRestante + ', redistribuido: ' + redistribuido + ')');
         res.status(200).json({
             message: 'Pago eliminado correctamente',
             saldoRestante,
-            anticipoId
+            anticipoId,
+            redistribuido
         });
     } catch (error) {
         console.error('Error al eliminar el pago:', error);

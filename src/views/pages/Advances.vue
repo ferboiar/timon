@@ -228,6 +228,7 @@ async function createPaymentPlan(anticipoId) {
 }
 
 function openNewPago(anticipoId) {
+    isReplacingPayment.value = false; // Una alta nueva nunca es una sustitución
     // Obtener el anticipo relacionado
     const anticipo = advances.value.find((a) => a.id === anticipoId);
     if (!anticipo) {
@@ -298,7 +299,8 @@ async function savePago() {
         console.log('savePago - Anticipo relacionado encontrado:', anticipo);
 
         // Calcular la suma de los pagos pendientes
-        const pagosPendientes = pagos.value[pago.value.anticipo_id]?.filter((p) => p.estado === 'pendiente') || [];
+        const idReemplazado = isReplacingPayment.value ? selectedPayment.value?.id : null;
+        const pagosPendientes = pagos.value[pago.value.anticipo_id]?.filter((p) => p.estado === 'pendiente' && p.id !== idReemplazado) || [];
         const sumaPagosPendientes = pagosPendientes.reduce((total, p) => total + parseFloat(p.importe || 0), 0);
 
         console.log('savePago - Suma de pagos pendientes:', sumaPagosPendientes);
@@ -322,6 +324,11 @@ async function savePago() {
         // Guardar el nuevo pago
         console.log('savePago - Guardando el nuevo pago');
         await AdvService.savePago(pago.value);
+        if (isReplacingPayment.value && selectedPayment.value) {
+            // Sustitución: el pago antiguo se elimina una vez guardado el nuevo
+            console.log('savePago - Sustitución: eliminando el pago antiguo ID:', selectedPayment.value.id);
+            await AdvService.handlePaymentDeletion(selectedPayment.value.id);
+        }
         toast.add({ severity: 'success', summary: 'Pago guardado', detail: 'El pago ha sido guardado correctamente.', life: 3000 });
 
         // Actualizar los anticipos y pagos relacionados
@@ -400,10 +407,10 @@ const confirmDeletePago = async () => {
 const recalculatePayments = async () => {
     try {
         // Eliminar el pago y recalcular los pagos restantes
-        await AdvService.handlePaymentDeletion(selectedPayment.value.id);
-        await AdvService.recalculatePaymentPlan(selectedPayment.value.anticipo_id);
+        const resultado = await AdvService.handlePaymentDeletion(selectedPayment.value.id, true);
+        console.log('recalculatePayments - Resultado del reparto:', resultado);
 
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Pagos pendientes recalculados.', life: 3000 });
+        toast.add({ severity: resultado.redistribuido ? 'success' : 'warn', summary: resultado.redistribuido ? 'Successful' : 'Sin pagos pendientes', detail: resultado.redistribuido ? 'Importe repartido entre los pagos pendientes.' : 'No quedan pagos pendientes entre los que repartir el importe: queda pendiente de planificar.', life: 5000 });
         await fetchAdvances(); // Actualizar la lista de anticipos
         await fetchAllPagos(); // Actualizar los pagos relacionados
         deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo

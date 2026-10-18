@@ -17,6 +17,8 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | DC-05 | Servidor y sesión en `+00:00`; el evento de mantenimiento se define en `Europe/Madrid`; `mysql2` devolverá `DATE` como texto (`dateStrings`). |
 | DC-06 | Usuarios de BD: `timon_app` (SELECT, INSERT, UPDATE, DELETE) y `timon_admin` (ALL) sobre `conta_hogar`, host `172.20.0.%`. La aplicación usa `timon_admin` hasta separar el mantenimiento (S-02). Las pruebas usan `timon_test`, con permisos solo sobre `conta_hogar_test`. |
 | DC-07 | Desde 2026-10-18 la aplicación usa la BD local `conta_hogar` en `mariadb01`. Aiven queda fuera de uso; ninguna de las dos bases estaba en producción y tenían los mismos datos. |
+| DC-08 | Al borrar un pago y elegir «Recalcular pagos», su importe se reparte entre los pagos pendientes con la misma lógica que al editar un pago: primero se suben los que estén por debajo del pago sugerido y el resto se reparte a partes iguales. |
+| DC-09 | Toda operación nueva o modificada deja trazas en el log del backend con el formato «módulo - acción: datos» (`console.log`), como las existentes. Las acciones que no se realizan, por ejemplo un plan de pagos no generado, también se registran con su motivo. |
 
 ## 3. Entorno de referencia
 
@@ -60,6 +62,8 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | F-22 | Medio | `categorias` | `nombre` no es único y los recibos resuelven la categoría por nombre con una subconsulta. Se cierra con DC-02. | Confirmado |
 | F-23 | Medio | `generarNuevasFechasRecibo` | SQL con comillas dobles (`estado = «pendiente»`) falla con ANSI_QUOTES. Con el `sql_mode` de MariaDB no ocurre; se corrige igualmente. Verificar la versión activa del fichero. | Probable |
 | F-24 | Alto | `recalculatePaymentPlan` | Al regenerar el plan desde la base de datos, el saldo y el pago sugerido son cadenas y se comparan como texto (por ejemplo «100.00» resulta menor que «40.00»): se crea un único pago por el total en lugar de cuotas. Corregido junto con F-02 al convertir los importes a número. | Probable |
+| F-25 | Medio | `Advances.vue` (`savePago`, `addNewPayment`) | «Añadirlo en uno nuevo» tras borrar un pago: la bandera `isReplacingPayment` no se consultaba y el pago a sustituir seguía contando en la suma de pendientes, así que salía «los pagos pendientes incluidos ya cubren el anticipo» y no dejaba guardar. Aunque pasara, el pago antiguo no se borraba. Corregido: se excluye de la suma y se elimina tras guardar el nuevo. | Confirmado |
+| F-26 | Medio | `Advances.vue` (`recalculatePayments`) | «Recalcular pagos» tras borrar un pago volvía a generar el plan y añadía un pago nuevo al final en vez de repartir el importe. Corregido según DC-08. `recalculatePendingPayments` (prorrateo igualitario) no la usa ninguna ruta. | Confirmado |
 
 ## 6. Seguridad y operación (S)
 
@@ -112,7 +116,7 @@ Sin leer: `Tech-documentation.vue`, `Login.vue`, `layout/*`, `useTheme`, `vRole`
 ## 10. Plan por fases
 
 1. Fase 0, completada el 2026-10-17: este registro, migración 0001 (esquema de la BD viva), pruebas con `npm run test:backend` (5 pasan y 4 de F-01 quedan como `todo`, verificadas contra MariaDB 11.8.8) y `docker-compose.test.yml` como alternativa.
-2. Fase 1 (en curso): F-01 y F-02 corregidos; pendientes F-03, F-04, F-05 y F-06, más las migraciones de DC-01 y DC-02.
+2. Fase 1 (en curso): F-01, F-02, F-24, F-25 y F-26 corregidos; pendientes F-03, F-04, F-05 y F-06, más las migraciones de DC-01 y DC-02.
 3. Fase 2: permisos reales (S-01, S-04, S-06).
 4. Fase 3: operación (S-02, S-03, S-07) y migración 0002 de la rutina de mantenimiento (`NOW(6)`, solo `ANALYZE`, 14 tablas).
 5. Fase 4: limpieza de interfaz y sincronización de `doc/` (U-01 a U-08, D-01 a D-05).
