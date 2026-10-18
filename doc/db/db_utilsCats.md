@@ -21,6 +21,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `id` | INT | Clave primaria |
 | `nombre` | VARCHAR | Nombre de la categoría (único) |
 | `descripcion` | VARCHAR | Descripción detallada (opcional) |
+| `propietario_id` | INT | Usuario que creó la categoría; no limita su visibilidad, las categorías son globales (DC-02) |
 
 ## Funciones Principales
 

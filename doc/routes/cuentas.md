@@ -37,6 +37,8 @@ Esta ruta permite crear una nueva cuenta o actualizar una existente. El comporta
 | `descripcion` | String | Descripción detallada de la cuenta | No |
 | `activa` | Number | Estado de la cuenta (1 activa, 0 inactiva) | No |
 
+Al crear una cuenta, el propietario (`propietario_id`) se toma del usuario autenticado (`req.user.id`); no se acepta desde el cuerpo de la petición.
+
 ### Eliminar cuentas (DELETE /api/cuentas)
 
 Esta ruta permite eliminar una o más cuentas basándose en sus IDs. Acepta un array de IDs en el cuerpo de la petición bajo la propiedad `accounts`.

@@ -261,6 +261,7 @@ Este sistema sigue una arquitectura multicapa:
 - Creación y gestión de anticipos
 - Generación automática de planes de pago
 - Recálculo dinámico de pagos al realizar cambios
+- Borrado de un pago con reparto de su importe entre los pendientes, o sustitución por un pago nuevo
 - Seguimiento del estado de anticipos y pagos
 - Exportación de datos a CSV
 
@@ -268,6 +269,7 @@ Este sistema sigue una arquitectura multicapa:
 - Creación y seguimiento de objetivos de ahorro
 - Configuración de fechas objetivo y periodicidades
 - Registro de movimientos de aportación regulares y extraordinarios
+- Saldo `ahorrado` = valor inicial más movimientos; el valor inicial se puede corregir solo mientras no hay movimientos
 - Visualización expandible de movimientos por objetivo
 - Exportación de datos a CSV
 

@@ -19,6 +19,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | DC-07 | Desde 2026-10-18 la aplicación usa la BD local `conta_hogar` en `mariadb01`. Aiven queda fuera de uso; ninguna de las dos bases estaba en producción y tenían los mismos datos. |
 | DC-08 | Al borrar un pago y elegir «Recalcular pagos», su importe se reparte entre los pagos pendientes con la misma lógica que al editar un pago: primero se suben los que estén por debajo del pago sugerido y el resto se reparte a partes iguales. |
 | DC-09 | Toda operación nueva o modificada deja trazas en el log del backend con el formato «módulo - acción: datos» (`console.log`), como las existentes. Las acciones que no se realizan, por ejemplo un plan de pagos no generado, también se registran con su motivo. |
+| DC-10 | `ahorros.ahorrado` es el valor inicial más la suma de los movimientos. Se puede editar a mano solo mientras el ahorro no tiene movimientos (para corregir un valor inicial erróneo). Con movimientos queda bloqueado en la pantalla y el servidor rechaza el cambio; se corrige añadiendo un movimiento positivo o negativo. |
 
 ## 3. Entorno de referencia
 
@@ -40,7 +41,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 |---|---|---|---|---|
 | F-01 | Crítico | `db_utilsSav/Adv/Acc/Cats.mjs` | Los INSERT de ahorros, anticipos, cuentas y categorías omiten `propietario_id` (NOT NULL sin default). Reproducido contra la BD real: ER_NO_DEFAULT_FOR_FIELD. Regresión de la migración de permisos. Corregido en la fase 1: las rutas pasan el id del token a las funciones de alta. Verificado con las pruebas y creando los cuatro registros desde la aplicación (2026-10-18). | Confirmado |
 | F-02 | Crítico | `recalculatePaymentPlan`, `Advances.vue` | `mysql2` devuelve DECIMAL como string. Con `pago_sugerido = '0.00'` (valor por defecto al crear) el bucle inserta pagos de 0 € sin fin; la guarda de la UI (`=== 0`) no salta. Indicio: `anticipos_pagos` tiene AUTO_INCREMENT 5501 con 32 filas (salto de id 124 a 5499). Corregido en la fase 1: el pago sugerido se convierte a número y se valida (mayor que 0 y como máximo 1200 pagos) antes de crear ningún pago, al guardar el anticipo y al generar el plan; la pantalla también lo valida como número. | Probable |
-| F-03 | Alto | `pushMovimiento` | Editar un movimiento suma el importe completo a `ahorrado`. `ahorrado` es editable a mano (dos fuentes de verdad) y las tres sentencias no van en transacción. | Confirmado |
+| F-03 | Alto | `pushMovimiento` | Editar un movimiento suma el importe completo a `ahorrado`. `ahorrado` es editable a mano (dos fuentes de verdad) y las tres sentencias no van en transacción. Corregido en la fase 1: al editar solo se aplica la diferencia de importe, las sentencias van en una transacción, el ahorro se toma de la base de datos y `ahorrado` tolera valores nulos. La edición manual de `ahorrado` se rige por DC-10. | Confirmado |
 | F-04 | Alto | `ListBills.vue`, `pushRecibo` | `editBill` abre en modo auto si hay `fecha_inicial`, y todos los recibos la tienen. Al guardar en auto se reescriben las fechas y se pisan las manuales. | Probable |
 | F-05 | Alto | `add_recibos_historico.sql` | Crea `recibos_historico` con columnas distintas de las que usa el código y de la tabla viva (`pagado`, `notas`). | Confirmado |
 | F-06 | Alto | `cuentas`, `Accounts.vue` | `UNIQUE(iban)` más el formulario enviando `''` hace fallar la segunda cuenta sin IBAN. | Confirmado |
@@ -64,6 +65,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | F-24 | Alto | `recalculatePaymentPlan` | Al regenerar el plan desde la base de datos, el saldo y el pago sugerido son cadenas y se comparan como texto (por ejemplo «100.00» resulta menor que «40.00»): se crea un único pago por el total en lugar de cuotas. Corregido junto con F-02 al convertir los importes a número. | Probable |
 | F-25 | Medio | `Advances.vue` (`savePago`, `addNewPayment`) | «Añadirlo en uno nuevo» tras borrar un pago: la bandera `isReplacingPayment` no se consultaba y el pago a sustituir seguía contando en la suma de pendientes, así que salía «los pagos pendientes incluidos ya cubren el anticipo» y no dejaba guardar. Aunque pasara, el pago antiguo no se borraba. Corregido: se excluye de la suma y se elimina tras guardar el nuevo. | Confirmado |
 | F-26 | Medio | `Advances.vue` (`recalculatePayments`) | «Recalcular pagos» tras borrar un pago volvía a generar el plan y añadía un pago nuevo al final en vez de repartir el importe. Corregido según DC-08. `recalculatePendingPayments` (prorrateo igualitario) no la usa ninguna ruta. | Confirmado |
+| F-27 | Medio | `db_utilsAdv.mjs` | Las operaciones compuestas de anticipos (borrar un pago y repartir, editar un pago y recalcular, regenerar el plan) ejecutan varias sentencias sin transacción; un fallo intermedio deja el plan a medias. Comprobado: el módulo no usa `beginTransaction`. | Confirmado |
 
 ## 6. Seguridad y operación (S)
 
@@ -99,6 +101,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | D-03 | Medio | Falta documentar `historial`, `generar-fechas`, `actualizar-fechas`, `/api/db-config*`, `/api/db/backup|restore`, `fecha_inicial`, `modoFechas` y las páginas Calendar, Budgets, Transactions y Automation. |
 | D-04 | Bajo | `db_utilsBill.md` apunta a un módulo inexistente; faltan `anual` y otros valores; `Tech-documentation.vue` duplica a mano `doc/`. |
 | D-05 | Bajo | Los planes de anticipos de los datos empiezan un periodo después de `fecha_inicio`; el código actual empieza en `fecha_inicio`. Aclarar el comportamiento. |
+| D-06 | Medio | `db_utilsSav.md` y `db_utilsAdv.md` afirmaban que las operaciones usaban transacciones y ninguna lo hacía. Corregido en la fase 1: el de ahorros describe las transacciones de F-03 y el de anticipos avisa de que no las usa (F-27). Puesta al día de F-01, F-02, F-03, F-24, F-25 y F-26 en `doc/db`, `doc/routes`, `doc/components`, `doc/services` e `index.md`. |
 
 ## 8. Hoja de ruta funcional (alineación con el Excel; no se aborda hasta cerrar los fallos)
 
@@ -111,12 +114,12 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 
 ## 9. Cobertura de la revisión
 
-Sin leer: `Tech-documentation.vue`, `Login.vue`, `layout/*`, `useTheme`, `vRole`, `AccService`, `AdvService`, `UsersService`, `DbConfigService`, `MaintenanceDBService`, `doc/auth|components|composables|directives|middleware|router|services`, `doc/routes` salvo recibos, `schema/optimizaciones.md` y `schema/index.md`. Lectura parcial por truncado del conector (~40 KB): final de `db_utils.mjs` y de `db_utilsAdv.mjs`, plantilla de `ListBills.vue`, cola de `Advances.vue` y diálogo de usuario de `ProfileSettings.vue`.
+Sin leer: `Tech-documentation.vue`, `Login.vue`, `layout/*`, `useTheme`, `vRole`, `AccService`, `AdvService`, `UsersService`, `DbConfigService`, `MaintenanceDBService`, `doc/auth|composables|directives|middleware|router`, `doc/components` salvo Advances y Savings, `doc/services` salvo AdvService, `doc/routes` salvo recibos, ahorros, anticipos, cuentas y categorías, `schema/optimizaciones.md` y `schema/index.md`. Lectura parcial por truncado del conector (~40 KB): final de `db_utils.mjs` y de `db_utilsAdv.mjs`, plantilla de `ListBills.vue`, cola de `Advances.vue` y diálogo de usuario de `ProfileSettings.vue`.
 
 ## 10. Plan por fases
 
 1. Fase 0, completada el 2026-10-17: este registro, migración 0001 (esquema de la BD viva), pruebas con `npm run test:backend` (5 pasan y 4 de F-01 quedan como `todo`, verificadas contra MariaDB 11.8.8) y `docker-compose.test.yml` como alternativa.
-2. Fase 1 (en curso): F-01, F-02, F-24, F-25 y F-26 corregidos; pendientes F-03, F-04, F-05 y F-06, más las migraciones de DC-01 y DC-02.
+2. Fase 1 (en curso): F-01, F-02, F-03, F-24, F-25 y F-26 corregidos; pendientes F-04, F-05, F-06 y F-27, más las migraciones de DC-01 y DC-02.
 3. Fase 2: permisos reales (S-01, S-04, S-06).
 4. Fase 3: operación (S-02, S-03, S-07) y migración 0002 de la rutina de mantenimiento (`NOW(6)`, solo `ANALYZE`, 14 tablas).
 5. Fase 4: limpieza de interfaz y sincronización de `doc/` (U-01 a U-08, D-01 a D-05).

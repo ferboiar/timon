@@ -22,7 +22,7 @@ Este módulo implementa las rutas de la API REST para la gestión de anticipos y
 | `GET` | `/api/anticipos/:anticipoId/pagos` | Obtiene los pagos de un anticipo específico |
 | `POST` | `/api/anticipos/pagos` | Crea o actualiza un pago |
 | `DELETE` | `/api/anticipos/pagos/:id` | Elimina un pago específico |
-| `POST` | `/api/anticipos/delete-payment` | Maneja la eliminación de un pago con opciones adicionales |
+| `POST` | `/api/anticipos/delete-payment` | Elimina un pago; con `redistribuir: true` reparte su importe entre los pagos pendientes |
 | `POST` | `/api/anticipos/recalculate-payment-plan` | Recalcula el plan de pagos para un anticipo |
 
 ## Detalles de Implementación
@@ -41,6 +41,23 @@ Las rutas de pagos permiten:
 - Crear, actualizar y eliminar pagos individuales
 - Recalcular el plan de pagos cuando sea necesario
 
+### Alta de anticipos y plan de pagos
+
+Al crear un anticipo, el propietario (`propietario_id`) se toma del usuario autenticado (`req.user.id`). El plan de pagos solo se genera si hay periodicidad y un pago sugerido mayor que 0. Si el plan superaría los 1.200 pagos, la petición falla con 400 y no se crea ningún pago.
+
+### Eliminar un pago con reparto (POST /api/anticipos/delete-payment)
+
+| Campo | Tipo | Descripción | Requerido |
+|-------|------|-------------|-----------|
+| `pagoId` | Number | ID del pago a eliminar | Sí |
+| `redistribuir` | Boolean | Solo `true` activa el reparto del importe entre los pagos pendientes | No |
+
+Respuesta 200: `message`, `saldoRestante`, `anticipoId` y `redistribuido`. Si falta `pagoId` responde 400; ante cualquier otro error, 500.
+
+### Recalcular el plan (POST /api/anticipos/recalculate-payment-plan)
+
+Recibe `anticipoId` (obligatorio, 400 si falta). Si el pago sugerido no es válido o el plan superaría los 1.200 pagos, responde 500 con el motivo en `error`.
+
 ### Ejemplo de Cuerpo de Solicitud para POST /api/anticipos
 
 ```json
@@ -57,6 +74,14 @@ Las rutas de pagos permiten:
   "periodicidad": "mensual"
 }
 ```
+
+## Trazas en el log
+
+Las rutas de pagos escriben su actividad en el log del backend (DC-09):
+
+- `delete-payment - Procesando pago ID: … (redistribuir: …)` al recibir la petición y `delete-payment - Pago … eliminado del anticipo … (saldo restante …, redistribuido: …)` al terminar.
+- `recalculate-payment-plan - Procesando anticipo ID: …` al regenerar el plan.
+- Los errores de validación del plan salen como `Error en recalculatePaymentPlan: …`.
 
 ## Dependencias
 
