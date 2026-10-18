@@ -50,6 +50,7 @@ El componente `Savings` permite la administración completa de ahorros financier
 | `isMovimientoFormValid` | Valida si el formulario de movimiento tiene los campos obligatorios |
 | `hasInactiveSavings` | Detecta si existen ahorros inactivos en el sistema |
 | `savingsWithMovements` | Calcula el número de ahorros que tienen movimientos asociados |
+| `savingHasMovimientos` | Indica si el ahorro en edición ya tiene movimientos; en ese caso el campo «Ahorrado» queda bloqueado |
 
 ## Funciones Principales
 
@@ -118,12 +119,14 @@ El template está estructurado en varias secciones:
 - **Filtrado de inactivos**: Botón específico para mostrar/ocultar ahorros marcados como inactivos
 - **Exportación a CSV**: Incluye datos tanto de los ahorros como de sus movimientos asociados
 - **Formateo de fechas**: Utiliza funciones globales para formatear fechas y valores monetarios
+- **Corrección del saldo**: para corregir un ahorro que ya tiene movimientos se añade un movimiento positivo o negativo; así queda constancia de cada cambio
 
 ## Validaciones
 
 - El concepto del ahorro es obligatorio
 - La fecha del movimiento y su tipo son obligatorios
 - La descripción tiene un límite de 255 caracteres
+- El campo «Ahorrado» se puede editar al crear el ahorro y mientras no tenga movimientos; con movimientos aparece deshabilitado y el servidor rechaza cualquier cambio (DC-10)
 
 ## Dependencias
 

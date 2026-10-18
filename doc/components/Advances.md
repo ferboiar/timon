@@ -22,6 +22,7 @@ El componente `Advances` permite la administración completa de anticipos financ
 | `pago` | `ref({})` | Objeto que almacena los datos del pago en edición |
 | `pagos` | `ref({})` | Objeto que mapea IDs de anticipo a sus pagos asociados |
 | `originalImporte` | `ref(0)` | Almacena el importe original de un pago para detectar modificaciones |
+| `isReplacingPayment` | `ref(false)` | Indica que el pago nuevo sustituye a otro: el antiguo no cuenta en la suma de pendientes y se elimina al guardar el nuevo (F-25) |
 
 ### Estados de Diálogos
 
@@ -63,11 +64,11 @@ El componente `Advances` permite la administración completa de anticipos financ
 | `fetchAllPagos()` | Recupera todos los pagos de todos los anticipos |
 | `openNewPago(anticipoId)` | Inicializa un nuevo pago para un anticipo y abre el diálogo de creación |
 | `editPago(p)` | Carga los datos de un pago existente para su edición |
-| `savePago()` | Guarda un pago nuevo o actualiza uno existente |
+| `savePago()` | Guarda un pago nuevo o actualiza uno existente. Si el pago sustituye a otro (`isReplacingPayment`), elimina el antiguo tras guardar el nuevo (F-25) |
 | `deletePago(pago)` | Prepara la eliminación de un pago mostrando opciones |
 | `confirmDeletePago()` | Elimina un pago sin recalcular el plan |
-| `recalculatePayments()` | Elimina un pago y recalcula los pagos restantes |
-| `addNewPayment()` | Crea un nuevo pago después de eliminar uno existente |
+| `recalculatePayments()` | Elimina un pago y reparte su importe entre los pagos pendientes con la misma lógica que al editar un pago (F-26, DC-08); si no quedan pagos pendientes, lo indica en pantalla |
+| `addNewPayment()` | Prepara un pago nuevo que sustituye al seleccionado (`isReplacingPayment`); el pago antiguo se elimina al guardar el nuevo |
 
 ### Otras Funciones
 
@@ -110,6 +111,7 @@ El template está estructurado en varias secciones:
 
 - **Advertencia de recálculo**: Al modificar el importe de un pago existente, se muestra una advertencia al usuario informando que los demás pagos serán recalculados
 - **Exportación a CSV**: Permite exportar los datos de anticipos a un archivo CSV
+- **Trazas**: `savePago` y `recalculatePayments` escriben en la consola del navegador la sustitución y el resultado del reparto, y el backend registra cada paso en su log (DC-09)
 - **Opciones de eliminación de pagos**: Al eliminar un pago, ofrece tres opciones: eliminar sin más, recalcular los pagos restantes, o crear un nuevo pago
 
 ## Dependencias

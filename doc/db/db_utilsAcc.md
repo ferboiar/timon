@@ -25,6 +25,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `saldo_actual` | DECIMAL | Saldo actual de la cuenta |
 | `descripcion` | TEXT | Descripción detallada (opcional) |
 | `activa` | TINYINT | Estado de la cuenta (1 activa, 0 inactiva) |
+| `propietario_id` | INT | Usuario que creó la cuenta; se guarda al crearla (F-01) |
 
 ## Funciones Principales
 

@@ -300,6 +300,9 @@ const hasInactiveSavings = computed(() => {
     return savings.value.some((saving) => saving.activo === 0);
 });
 
+// El ahorrado solo se edita a mano mientras el ahorro no tiene movimientos (DC-10)
+const savingHasMovimientos = computed(() => !!saving.value.id && (movimientos.value[saving.value.id]?.length ?? 0) > 0);
+
 const isMovimientoFormValid = computed(() => {
     return movimiento.value.fecha && movimiento.value.tipo;
 });
@@ -501,7 +504,8 @@ onMounted(async () => {
             <div class="flex gap-6">
                 <div class="flex-1">
                     <label for="ahorrado" class="block font-bold mb-3">Ahorrado</label>
-                    <InputNumber id="ahorrado" v-model="saving.ahorrado" mode="currency" currency="EUR" locale="es-ES" fluid />
+                    <InputNumber id="ahorrado" v-model="saving.ahorrado" mode="currency" currency="EUR" locale="es-ES" :disabled="savingHasMovimientos" fluid />
+                    <small v-if="savingHasMovimientos" class="text-gray-500">Bloqueado: el ahorro ya tiene movimientos. Para corregirlo, añade un movimiento positivo o negativo.</small>
                 </div>
                 <div class="flex-1">
                     <label for="fecha_objetivo" class="block font-bold mb-3">Fecha objetivo</label>

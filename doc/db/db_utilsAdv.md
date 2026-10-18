@@ -10,7 +10,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 - Cálculo automático de planes de pago basados en periodicidad y monto total
 - Recálculo dinámico de pagos pendientes tras modificaciones
 - Manejo de diferentes periodicidades (mensual, bimestral, trimestral, anual)
-- Manejo de transacciones para garantizar la integridad de datos
+- Cada sentencia se confirma por separado: las operaciones de anticipos no usan transacciones (pendiente, hallazgo F-27 del registro de mantenimiento)
 - Validación de datos y manejo de errores robusto
 
 ## Estructura de Datos
@@ -29,6 +29,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `estado` | ENUM | Estado del anticipo: 'activo', 'pausado', 'cancelado', 'completado' |
 | `cuenta_origen_id` | INT | ID de la cuenta de origen |
 | `periodicidad` | ENUM | Frecuencia de pagos: 'mensual', 'bimestral', 'trimestral', 'anual' |
+| `propietario_id` | INT | Usuario que creó el anticipo; obligatorio al crear |
 
 ### Tabla `anticipos_pagos`
 
@@ -50,7 +51,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getAdvances()` | Obtiene todos los anticipos ordenados por fecha de inicio |
-| `pushAdvance(id, concepto, ...)` | Crea o actualiza un anticipo con todos sus atributos |
+| `pushAdvance(id, concepto, ...)` | Crea o actualiza un anticipo. Al crear exige el propietario. Genera o recalcula el plan solo si hay periodicidad y un pago sugerido mayor que 0; si no, lo anota en el log con el motivo |
 | `deleteAdvances(advances)` | Elimina uno o más anticipos y sus pagos asociados |
 | `getPeriodicidades()` | Obtiene las periodicidades definidas en el esquema |
 
@@ -61,7 +62,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `getPagos(anticipoId)` | Obtiene los pagos asociados a un anticipo |
 | `pushPago(id, anticipo_id, ...)` | Crea o actualiza un pago con todos sus atributos |
 | `deletePago(id)` | Elimina un pago específico |
-| `handlePaymentDeletion(pagoId)` | Elimina un pago y proporciona información para siguientes acciones |
+| `handlePaymentDeletion(pagoId, redistribuir)` | Elimina un pago y devuelve `saldoRestante`, `anticipoId` y `redistribuido`. Con `redistribuir` verdadero reparte su importe entre los pagos pendientes (DC-08) |
 
 ### Planes de Pago
 
@@ -69,7 +70,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 |---------|-------------|
 | `recalculatePaymentPlan(anticipoId, ...)` | Genera o actualiza un plan de pagos para un anticipo |
 | `recalculatePostEditPayments(anticipo_id, ...)` | Recalcula los pagos pendientes después de editar un pago |
-| `recalculatePendingPayments(anticipoId)` | Redistribuye importes entre pagos pendientes |
+| `recalculatePendingPayments(anticipoId)` | Redistribuye importes entre pagos pendientes a partes iguales. No la usa ninguna ruta |
 
 ## Algoritmos Clave
 
@@ -80,8 +81,9 @@ El algoritmo para `recalculatePaymentPlan` implementa la siguiente lógica:
 1. Obtiene todos los pagos existentes del anticipo
 2. Calcula el saldo restante después de considerar los pagos pendientes
 3. Determina la fecha del próximo pago basándose en la periodicidad
-4. Crea nuevos pagos hasta cubrir el importe total del anticipo
-5. Actualiza la fecha fin prevista del anticipo
+4. Convierte el pago sugerido a número y lo valida antes de crear ningún pago: debe ser mayor que 0 y el plan no puede superar los 1.200 pagos; si no se cumple, falla con un error y no crea nada (F-02, F-24)
+5. Crea nuevos pagos hasta cubrir el importe total del anticipo
+6. Actualiza la fecha fin prevista del anticipo
 
 ### Recálculo de Pagos tras Edición
 
@@ -95,10 +97,25 @@ La función `recalculatePostEditPayments` implementa un sofisticado algoritmo pa
    - Primero, reduce los pagos por encima del importe sugerido
    - Luego, reduce proporcionalmente los pagos restantes
 
+### Borrado de un pago con reparto
+
+`handlePaymentDeletion(pagoId, redistribuir)` elimina el pago. Con `redistribuir` verdadero y pagos pendientes en el anticipo, llama a `recalculatePostEditPayments` como si el pago se hubiera editado a 0 €, de modo que su importe se reparte con la misma lógica que en una edición (DC-08, F-26). Si no quedan pagos pendientes no hay nada que repartir: `redistribuido` es falso y el importe queda sin planificar.
+
+La sustitución («Añadirlo en uno nuevo») la orquesta la pantalla: guarda el pago nuevo y después borra el antiguo sin repartir (F-25).
+
+## Trazas en el log
+
+Cada paso deja trazas en el log del backend con el formato «módulo - acción: datos» (DC-09):
+
+- `pushAdvance - Plan de pagos no generado …` o `… no recalculado …`, con el motivo, cuando no hay periodicidad o el pago sugerido no es mayor que 0.
+- `handlePaymentDeletion - Eliminando el pago ID: … (anticipo …, importe …, estado …, redistribuir: …)` al borrar un pago.
+- `handlePaymentDeletion - Importe … redistribuido entre N pagos pendientes …` o `… No quedan pagos pendientes …` según el resultado.
+- Las líneas `recalculatePaymentPlan - …` y `recalculatePostEditPayments - …` describen cada importe y fecha calculados.
+
 ## Consideraciones de Rendimiento
 
 - Las operaciones de recálculo de pagos (`recalculatePostEditPayments`, `recalculatePaymentPlan`) pueden ser intensivas en recursos para anticipos con muchos pagos.
-- En todas las operaciones de actualización, se utilizan transacciones para asegurar la integridad de los datos.
+- Las operaciones de anticipos y pagos no usan transacciones: un fallo intermedio puede dejar un plan a medias (hallazgo F-27 del registro de mantenimiento).
 
 ## Referencias
 

@@ -37,6 +37,8 @@ Esta ruta permite crear una nueva categoría o actualizar una existente si ya ex
 | `nombre` | String | Nombre de la categoría | Sí |
 | `descripcion` | String | Descripción de la categoría | No |
 
+Al crear una categoría, el propietario (`propietario_id`) se toma del usuario autenticado (`req.user.id`); las categorías son visibles para todos (DC-02).
+
 ### Eliminar categorías (DELETE /api/categorias)
 
 Esta ruta permite eliminar una o más categorías basándose en sus IDs. Acepta un array de IDs en el cuerpo de la petición bajo la propiedad `categoriaIds`.
