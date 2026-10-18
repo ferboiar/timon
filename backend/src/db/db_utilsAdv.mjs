@@ -59,6 +59,8 @@ async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_ini
             // Si se especifica periodicidad y pago sugerido, recalcular el plan de pagos
             if (periodicidad && Number(pago_sugerido) > 0) {
                 await recalculatePaymentPlan(id, importe_total, pago_sugerido, fecha_inicio, periodicidad);
+            } else {
+                console.log('pushAdvance - Plan de pagos no recalculado para el anticipo ' + id + ': requiere periodicidad y un pago sugerido mayor que 0');
             }
         } else {
             // Insertar nuevo anticipo
@@ -88,6 +90,8 @@ async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_ini
             // Si se especifica periodicidad y pago sugerido, crear el plan de pagos
             if (periodicidad && Number(pago_sugerido) > 0) {
                 await recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, fecha_inicio, periodicidad);
+            } else {
+                console.log('pushAdvance - Plan de pagos no generado para el anticipo ' + anticipoId + ': requiere periodicidad y un pago sugerido mayor que 0');
             }
         }
     } catch (error) {
@@ -614,7 +618,7 @@ async function deletePago(id) {
     }
 }
 
-async function handlePaymentDeletion(pagoId) {
+async function handlePaymentDeletion(pagoId, redistribuir = false) {
     let connection;
     try {
         connection = await getConnection();
@@ -628,6 +632,7 @@ async function handlePaymentDeletion(pagoId) {
         const { anticipo_id, importe, estado } = pago[0];
 
         // Eliminar el pago
+        console.log('handlePaymentDeletion - Eliminando el pago ID: ' + pagoId + ' (anticipo ' + anticipo_id + ', importe ' + importe + ', estado ' + estado + ', redistribuir: ' + (redistribuir ? 'sí' : 'no') + ')');
         const [result] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [pagoId]);
         console.log(`Pago eliminado, filas afectadas: ${result.affectedRows}`);
 
@@ -640,7 +645,20 @@ async function handlePaymentDeletion(pagoId) {
         const [saldoResult] = await connection.execute('SELECT importe_total FROM anticipos WHERE id = ?', [anticipo_id]);
         const saldoRestante = saldoResult[0]?.importe_total || 0;
 
-        return { saldoRestante, anticipoId: anticipo_id };
+        // Repartir el importe del pago eliminado entre los pagos pendientes que quedan (misma lógica que al editar un pago)
+        let redistribuido = false;
+        if (redistribuir) {
+            const [restantes] = await connection.execute("SELECT COUNT(*) AS n FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente'", [anticipo_id]);
+            if (Number(restantes[0].n) > 0) {
+                await recalculatePostEditPayments(anticipo_id, importe, 0, '1970-01-01');
+                redistribuido = true;
+                console.log('handlePaymentDeletion - Importe ' + importe + ' redistribuido entre ' + restantes[0].n + ' pagos pendientes del anticipo ' + anticipo_id);
+            } else {
+                console.log('handlePaymentDeletion - No quedan pagos pendientes en el anticipo ' + anticipo_id + ': ' + importe + ' queda pendiente de planificar');
+            }
+        }
+
+        return { saldoRestante, anticipoId: anticipo_id, redistribuido };
     } catch (error) {
         console.error('Error en handlePaymentDeletion:', error);
         throw error;

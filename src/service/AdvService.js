@@ -124,12 +124,12 @@ export class AdvService {
     }
 
     // Manejar la eliminación de un pago
-    static async handlePaymentDeletion(pagoId) {
+    static async handlePaymentDeletion(pagoId, redistribuir = false) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await axios.post(
                 `${API_URL}/delete-payment`,
-                { pagoId },
+                { pagoId, redistribuir },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
