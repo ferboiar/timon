@@ -45,7 +45,7 @@ El componente `Accounts` permite la administración completa de cuentas bancaria
 | `fetchTipos()` | Obtiene los tipos de cuentas permitidos en el sistema |
 | `openNewAccount()` | Inicializa un nuevo objeto cuenta y abre el diálogo de creación |
 | `editAccount(acc)` | Carga los datos de una cuenta existente para su edición |
-| `saveAccount()` | Guarda una cuenta nueva o actualiza una existente |
+| `saveAccount()` | Guarda una cuenta nueva o actualiza una existente. Envía el IBAN vacío como NULL sin modificar el formulario (F-06) |
 | `deleteAccount()` | Elimina una cuenta seleccionada |
 | `deleteSelectedAccounts()` | Elimina todas las cuentas seleccionadas en la tabla |
 
@@ -56,6 +56,7 @@ El componente `Accounts` permite la administración completa de cuentas bancaria
 | `updateAccounts()` | Actualiza la lista de cuentas y muestra un mensaje de confirmación |
 | `hideDialog()` | Cierra cualquier diálogo abierto |
 | `capitalizeFirstLetter(string)` | Convierte la primera letra de un texto a mayúscula |
+| `exportCSV()` | Exporta las cuentas a CSV; el IBAN se escribe como fórmula de texto (`="…"`) para que Excel no lo convierta a notación científica ni pierda ceros iniciales, y queda vacío si la cuenta no tiene IBAN |
 
 ## Ciclo de Vida
 
@@ -80,6 +81,8 @@ El componente implementa las siguientes validaciones:
 - El nombre de la cuenta es obligatorio
 - El tipo de cuenta es obligatorio
 - La descripción no puede exceder los 255 caracteres
+- El IBAN es opcional: si se deja vacío se envía NULL, así que puede haber varias cuentas sin IBAN; un IBAN repetido lo rechaza el servidor
+- Los avisos de error muestran el mensaje que envía el servidor (`getApiErrorMessage`, ver [apiError](../utils/apiError.md)) y no el texto genérico de axios
 
 ## Dependencias
 

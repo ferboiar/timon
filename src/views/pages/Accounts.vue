@@ -1,5 +1,6 @@
 <script setup>
 import { AccService } from '@/service/AccService';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
@@ -31,7 +32,7 @@ const fetchAccounts = async () => {
             nombre: acc.nombre.charAt(0).toUpperCase() + acc.nombre.slice(1)
         }));
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar las cuentas: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar las cuentas: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al actualizar las cuentas:', error);
     }
 };
@@ -44,7 +45,7 @@ const fetchTipos = async () => {
             value: tipo
         }));
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los tipos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los tipos: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al obtener los tipos:', error);
     }
 };
@@ -70,7 +71,7 @@ const deleteSelectedAccounts = async () => {
         toast.add({ severity: 'success', summary: 'Borrada', detail: 'Cuentas borradas con exito.', life: 3000 });
         deleteSelectedAccountsDialog.value = false;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al borrar las cuentas: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al borrar las cuentas: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al borrar las cuentas:', error);
     }
 };
@@ -96,12 +97,13 @@ function hideDialog() {
 
 async function saveAccount() {
     try {
-        await AccService.saveAccount(account.value);
+        // El IBAN es opcional: se envía NULL cuando está vacío (F-06)
+        await AccService.saveAccount({ ...account.value, iban: account.value.iban?.trim() || null });
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Cuenta guardada!', life: 5000 });
         fetchAccounts();
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar la cuenta: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar la cuenta: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al guardar la cuenta:', error);
     }
 }
@@ -133,7 +135,7 @@ async function deleteAccount() {
         fetchAccounts();
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar la cuenta: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar la cuenta: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al eliminar la cuenta:', error);
     }
 }
@@ -147,7 +149,7 @@ const exportCSV = () => {
         // Formateo para CSV:
         // - IBAN: Se envuelve en `="<valor>"` para forzar a Excel a tratarlo como texto y evitar la notación científica en números largos.
         // - Saldo Actual: Se formatea a 2 decimales y se reemplaza el punto por una coma para compatibilidad con formatos regionales.
-        const csvContent = [['Nombre', 'Tipo', 'IBAN', 'Saldo Actual', 'Descripción'], ...data.map((item) => [item.nombre, item.tipo, `="${item.iban}"`, parseFloat(item.saldo_actual).toFixed(2).replace('.', ','), item.descripcion])]
+        const csvContent = [['Nombre', 'Tipo', 'IBAN', 'Saldo Actual', 'Descripción'], ...data.map((item) => [item.nombre, item.tipo, (item.iban ? `="${item.iban}"` : ''), parseFloat(item.saldo_actual).toFixed(2).replace('.', ','), item.descripcion])]
             .map((e) => e.join(';'))
             .join('\n');
 
@@ -222,6 +224,7 @@ onMounted(() => {
             <div>
                 <label for="iban" class="block font-bold mb-3">IBAN</label>
                 <InputText id="iban" v-model.trim="account.iban" fluid />
+                <small class="text-gray-500">Opcional. Si se deja vacío, la cuenta se guarda sin IBAN.</small>
             </div>
             <div class="flex gap-6">
                 <div class="flex-1">

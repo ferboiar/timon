@@ -30,8 +30,17 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
     try {
         connection = await getConnection();
 
+        // El IBAN es opcional: vacío o solo espacios se guarda como NULL, porque UNIQUE(iban) admite varios NULL pero no varias cadenas vacías (F-06)
+        const ibanRecibido = iban;
+        const ibanTexto = iban === null || iban === undefined ? '' : String(iban).trim();
+        iban = ibanTexto !== '' ? ibanTexto : null;
+        if (ibanRecibido !== iban) {
+            console.log(`pushAccount - IBAN normalizado: ${JSON.stringify(ibanRecibido)} -> ${JSON.stringify(iban)}`);
+        }
+
         if (id) {
             // Actualizar cuenta existente
+            console.log(`pushAccount - Actualizando la cuenta ${id}: ${nombre} (${tipo}), IBAN: ${iban ?? 'sin IBAN'}`);
             const [updateResult] = await connection.execute('UPDATE cuentas SET nombre = ?, tipo = ?, iban = ?, saldo_actual = ?, descripcion = COALESCE(?, descripcion), activa = ? WHERE id = ?', [
                 nombre,
                 tipo,
@@ -45,17 +54,28 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
         } else {
             // Insertar nueva cuenta
             if (!propietario_id) throw new Error('Falta el propietario para crear la cuenta');
+            console.log(`pushAccount - Nueva cuenta: ${nombre} (${tipo}), IBAN: ${iban ?? 'sin IBAN'}`);
             const [insertResult] = await connection.execute('INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id]);
             console.log(`Insert realizado correctamente en tabla cuentas. Filas afectadas: ${insertResult.affectedRows}`);
         }
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
             console.error('Error: Entrada duplicada para IBAN:', iban);
-            throw new Error(`El IBAN ${iban} ya existe en la base de datos.`);
-        } else {
-            console.error('Error al insertar o actualizar la cuenta:', error);
-            throw error;
+            let mensaje = `El IBAN ${iban} ya está asignado a otra cuenta.`;
+            try {
+                const [filas] = await connection.execute('SELECT nombre FROM cuentas WHERE iban = ?', [iban]);
+                if (filas.length > 0) {
+                    mensaje = `El IBAN ${iban} ya está asignado a la cuenta «${filas[0].nombre}».`;
+                }
+            } catch (consultaError) {
+                console.error('pushAccount - No se pudo identificar la cuenta con el IBAN duplicado:', consultaError);
+            }
+            const duplicado = new Error(mensaje);
+            duplicado.code = 'IBAN_DUPLICADO';
+            throw duplicado;
         }
+        console.error('Error al insertar o actualizar la cuenta:', error);
+        throw error;
     } finally {
         if (connection) {
             connection.release();

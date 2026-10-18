@@ -118,3 +118,27 @@ describe('F-01: altas de la aplicación con propietario_id', () => {
         }
     });
 });
+
+describe('F-06: IBAN opcional en cuentas', () => {
+    const alta = 'INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
+
+    test('varias cuentas sin IBAN (NULL) se admiten', async () => {
+        await db.beginTransaction();
+        try {
+            await db.execute(alta, ['Sin IBAN 1', 'corriente', null, 0, null, 1, 2]);
+            await db.execute(alta, ['Sin IBAN 2', 'corriente', null, 0, null, 1, 2]);
+        } finally {
+            await db.rollback();
+        }
+    });
+
+    test('la cadena vacía no sirve como «sin IBAN»: la segunda falla por duplicado', async () => {
+        await db.beginTransaction();
+        try {
+            await db.execute(alta, ['Vacío 1', 'corriente', '', 0, null, 1, 2]);
+            await assert.rejects(() => db.execute(alta, ['Vacío 2', 'corriente', '', 0, null, 1, 2]), { code: 'ER_DUP_ENTRY' });
+        } finally {
+            await db.rollback();
+        }
+    });
+});
