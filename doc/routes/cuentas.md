@@ -32,7 +32,7 @@ Esta ruta permite crear una nueva cuenta o actualizar una existente. El comporta
 | `id` | Number | ID de la cuenta (null para crear nueva) | No |
 | `nombre` | String | Nombre de la cuenta | Sí |
 | `tipo` | String | Tipo de cuenta (corriente, ahorro, etc.) | Sí |
-| `iban` | String | Código IBAN de la cuenta | No |
+| `iban` | String | Código IBAN de la cuenta. Opcional: vacío o solo espacios se guardan como NULL. No puede repetirse entre cuentas; un IBAN repetido responde 409 con un mensaje que indica la cuenta que ya lo tiene | No |
 | `saldo_actual` | Number | Saldo actual de la cuenta | No |
 | `descripcion` | String | Descripción detallada de la cuenta | No |
 | `activa` | Number | Estado de la cuenta (1 activa, 0 inactiva) | No |
@@ -51,7 +51,7 @@ Devuelve un array con los tipos de cuentas definidos en el esquema de la base de
 
 Todas las rutas implementan manejo de errores que:
 1. Capturan excepciones que puedan ocurrir durante el procesamiento
-2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 500)
+2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 409, 500)
 3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
 
 ## Dependencias

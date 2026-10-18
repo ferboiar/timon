@@ -44,7 +44,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | F-03 | Alto | `pushMovimiento` | Editar un movimiento suma el importe completo a `ahorrado`. `ahorrado` es editable a mano (dos fuentes de verdad) y las tres sentencias no van en transacción. Corregido en la fase 1: al editar solo se aplica la diferencia de importe, las sentencias van en una transacción, el ahorro se toma de la base de datos y `ahorrado` tolera valores nulos. La edición manual de `ahorrado` se rige por DC-10. | Confirmado |
 | F-04 | Alto | `ListBills.vue`, `pushRecibo` | `editBill` abre en modo auto si hay `fecha_inicial`, y todos los recibos la tienen. Al guardar en auto se reescriben las fechas y se pisan las manuales. | Probable |
 | F-05 | Alto | `add_recibos_historico.sql` | Crea `recibos_historico` con columnas distintas de las que usa el código y de la tabla viva (`pagado`, `notas`). | Confirmado |
-| F-06 | Alto | `cuentas`, `Accounts.vue` | `UNIQUE(iban)` más el formulario enviando `''` hace fallar la segunda cuenta sin IBAN. | Confirmado |
+| F-06 | Alto | `cuentas`, `Accounts.vue` | `UNIQUE(iban)` más el formulario enviando `''` hace fallar la segunda cuenta sin IBAN. Corregido en la fase 1: el servidor guarda NULL cuando el IBAN llega vacío o con solo espacios (`UNIQUE` admite varios NULL pero no varias cadenas vacías), la pantalla envía NULL y la exportación CSV deja vacía la columna en vez de escribir «null». Las cuentas ya guardadas con IBAN vacío se pasan a NULL con `UPDATE cuentas SET iban = NULL WHERE iban = '';`. El aviso de IBAN repetido indica ahora la cuenta que ya lo tiene (código 409; ver F-28). | Confirmado |
 | F-07 | Medio | `Savings.vue` | `deleteSaving` llama a `getCurrentInstance().refs` tras un await: TypeError tras borrar con éxito. | Confirmado |
 | F-08 | Medio | `Savings.vue` | Mostrar u ocultar inactivos no filtra nada y `activo` no es editable. | Confirmado |
 | F-09 | Medio | Categorías | El API ignora `id` y busca por nombre: renombrar crea otra categoría. | Confirmado |
@@ -57,7 +57,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | F-16 | Medio | `Savings.vue`, `Advances.vue` | Se muta el modelo a texto antes del POST; si falla, el reintento revienta. | Confirmado |
 | F-17 | Bajo | `Advances.vue` | `re; turn;` en lugar de `return` en `confirmDeleteAdvance`. | Confirmado |
 | F-18 | Bajo | `ListBills.vue` | `openNew()` no reinicia `modoFechas` ni `fecha_inicial`. | Confirmado |
-| F-19 | Bajo | Exportaciones CSV | No se escapan `;`, comillas, saltos de línea ni `=`, `+`, `-`, `@`. | Confirmado |
+| F-19 | Bajo | Exportaciones CSV | No se escapan `;`, comillas, saltos de línea ni `=`, `+`, `-`, `@`. La exportación de cuentas envuelve el IBAN en `="…"` a propósito, para que Excel no lo convierta en número; al corregir F-19 hay que conservar ese efecto con otro método. | Confirmado |
 | F-20 | Bajo | `BillService.getBillById` | Llama a `GET /api/recibos/:id`, que no existe. | Confirmado |
 | F-21 | Bajo | Cuentas | `saldo_actual` es manual y nada lo actualiza. | Confirmado |
 | F-22 | Medio | `categorias` | `nombre` no es único y los recibos resuelven la categoría por nombre con una subconsulta. Se cierra con DC-02. | Confirmado |
@@ -66,6 +66,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | F-25 | Medio | `Advances.vue` (`savePago`, `addNewPayment`) | «Añadirlo en uno nuevo» tras borrar un pago: la bandera `isReplacingPayment` no se consultaba y el pago a sustituir seguía contando en la suma de pendientes, así que salía «los pagos pendientes incluidos ya cubren el anticipo» y no dejaba guardar. Aunque pasara, el pago antiguo no se borraba. Corregido: se excluye de la suma y se elimina tras guardar el nuevo. | Confirmado |
 | F-26 | Medio | `Advances.vue` (`recalculatePayments`) | «Recalcular pagos» tras borrar un pago volvía a generar el plan y añadía un pago nuevo al final en vez de repartir el importe. Corregido según DC-08. `recalculatePendingPayments` (prorrateo igualitario) no la usa ninguna ruta. | Confirmado |
 | F-27 | Medio | `db_utilsAdv.mjs` | Las operaciones compuestas de anticipos (borrar un pago y repartir, editar un pago y recalcular, regenerar el plan) ejecutan varias sentencias sin transacción; un fallo intermedio deja el plan a medias. Comprobado: el módulo no usa `beginTransaction`. | Confirmado |
+| F-28 | Medio | Pantallas (`*.vue`) | Los avisos de error muestran el `error.message` de axios («Request failed with status code 400») y no el mensaje que devuelve el servidor en `response.data.error`. Corregido en la fase 1 solo en `Accounts.vue`, con el ayudante `src/utils/apiError.js`; el resto de pantallas queda pendiente (incluye lo descrito en F-10). | Confirmado |
 
 ## 6. Seguridad y operación (S)
 
@@ -102,6 +103,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | D-04 | Bajo | `db_utilsBill.md` apunta a un módulo inexistente; faltan `anual` y otros valores; `Tech-documentation.vue` duplica a mano `doc/`. |
 | D-05 | Bajo | Los planes de anticipos de los datos empiezan un periodo después de `fecha_inicio`; el código actual empieza en `fecha_inicio`. Aclarar el comportamiento. |
 | D-06 | Medio | `db_utilsSav.md` y `db_utilsAdv.md` afirmaban que las operaciones usaban transacciones y ninguna lo hacía. Corregido en la fase 1: el de ahorros describe las transacciones de F-03 y el de anticipos avisa de que no las usa (F-27). Puesta al día de F-01, F-02, F-03, F-24, F-25 y F-26 en `doc/db`, `doc/routes`, `doc/components`, `doc/services` e `index.md`. |
+| D-07 | Bajo | `db_utilsAcc.md` decía que los saldos se mantenían automáticamente y que el IBAN se verificaba antes de insertar; el saldo es manual (F-21) y el duplicado lo detecta el índice único. Corregido en la fase 1 junto con F-06. |
 
 ## 8. Hoja de ruta funcional (alineación con el Excel; no se aborda hasta cerrar los fallos)
 
@@ -119,7 +121,7 @@ Sin leer: `Tech-documentation.vue`, `Login.vue`, `layout/*`, `useTheme`, `vRole`
 ## 10. Plan por fases
 
 1. Fase 0, completada el 2026-10-17: este registro, migración 0001 (esquema de la BD viva), pruebas con `npm run test:backend` (5 pasan y 4 de F-01 quedan como `todo`, verificadas contra MariaDB 11.8.8) y `docker-compose.test.yml` como alternativa.
-2. Fase 1 (en curso): F-01, F-02, F-03, F-24, F-25 y F-26 corregidos; pendientes F-04, F-05, F-06 y F-27, más las migraciones de DC-01 y DC-02.
+2. Fase 1 (en curso): F-01, F-02, F-03, F-06, F-24, F-25 y F-26 corregidos; pendientes F-04, F-05, F-27 y F-28, más las migraciones de DC-01 y DC-02.
 3. Fase 2: permisos reales (S-01, S-04, S-06).
 4. Fase 3: operación (S-02, S-03, S-07) y migración 0002 de la rutina de mantenimiento (`NOW(6)`, solo `ANALYZE`, 14 tablas).
 5. Fase 4: limpieza de interfaz y sincronización de `doc/` (U-01 a U-08, D-01 a D-05).

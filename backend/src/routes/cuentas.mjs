@@ -30,6 +30,10 @@ router.post('/', verifyToken, async (req, res) => {
         await pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa, req.user.id);
         res.status(201).json({ message: 'Cuenta insertada o actualizada correctamente' });
     } catch (error) {
+        if (error.code === 'IBAN_DUPLICADO') {
+            console.log(`cuentas - Alta o edición rechazada: ${error.message}`);
+            return res.status(409).json({ error: error.message });
+        }
         res.status(400).json({ error: `Error al insertar o actualizar la cuenta: ${error.message}`, details: error.stack });
     }
 });

@@ -10,7 +10,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 - Soporte para múltiples tipos de cuentas (corriente, ahorro, efectivo, etc.)
 - Validación de códigos IBAN para prevenir duplicidades
 - Control de estado de cuentas (activas e inactivas)
-- Mantenimiento automático de saldos actualizados
+- El saldo (`saldo_actual`) se edita a mano; ninguna operación lo actualiza (hallazgo F-21)
 
 ## Estructura de Datos
 
@@ -21,7 +21,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `id` | INT | Clave primaria |
 | `nombre` | VARCHAR | Nombre descriptivo de la cuenta |
 | `tipo` | ENUM | Tipo de cuenta (corriente, ahorro, efectivo, etc.) |
-| `iban` | VARCHAR | Código IBAN de la cuenta (opcional) |
+| `iban` | VARCHAR | Código IBAN de la cuenta (opcional y único). Sin IBAN se guarda NULL, no una cadena vacía |
 | `saldo_actual` | DECIMAL | Saldo actual de la cuenta |
 | `descripcion` | TEXT | Descripción detallada (opcional) |
 | `activa` | TINYINT | Estado de la cuenta (1 activa, 0 inactiva) |
@@ -42,7 +42,9 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 
 ### Validación de IBAN
 
-El módulo implementa una validación especial para códigos IBAN, asegurando que no se puedan crear dos cuentas con el mismo código, lo que podría llevar a problemas de integridad en la gestión financiera.
+El IBAN es opcional y único (`UNIQUE KEY iban`). El índice rechaza dos cuentas con el mismo código y `pushAccount` traduce el error de duplicado en un error con código `IBAN_DUPLICADO` y el mensaje «El IBAN … ya está asignado a la cuenta «…».», para que la ruta responda 409.
+
+El índice único admite varios NULL pero no varias cadenas vacías. Por eso `pushAccount` guarda NULL cuando el IBAN llega vacío o con solo espacios y elimina los espacios de los extremos (F-06). Así puede haber varias cuentas sin IBAN.
 
 ### Manejo de Estado
 
@@ -50,7 +52,7 @@ Las cuentas pueden marcarse como activas o inactivas, permitiendo a los usuarios
 
 ## Validaciones y Manejo de Errores
 
-- Verificación de duplicidad de IBAN antes de insertar o actualizar cuentas
+- Detección de IBAN duplicado mediante el índice único, con un mensaje específico
 - Validación de campos obligatorios (nombre y tipo de cuenta)
 - Captura y reporte detallado de errores para facilitar la depuración
 - Mensajes específicos para cada tipo de error en las operaciones de base de datos
@@ -59,6 +61,17 @@ Las cuentas pueden marcarse como activas o inactivas, permitiendo a los usuarios
 
 - Las operaciones de lectura y escritura están optimizadas mediante el uso de índices en los campos más consultados
 - Se utiliza un pool de conexiones para minimizar el tiempo de establecimiento de conexiones a la base de datos
+
+## Trazas en el log
+
+Cada operación deja trazas en el log del backend con el formato «módulo - acción: datos» (DC-09):
+
+| Traza | Cuándo |
+|-------|--------|
+| `pushAccount - Nueva cuenta: … IBAN: …` | Al crear una cuenta; «sin IBAN» si no tiene |
+| `pushAccount - Actualizando la cuenta …` | Al editar una cuenta |
+| `pushAccount - IBAN normalizado: "" -> null` | Cuando el IBAN llega vacío o con espacios |
+| `Error: Entrada duplicada para IBAN: …` | Cuando el IBAN ya existe |
 
 ## Referencias
 
