@@ -17,10 +17,11 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | DC-05 | Servidor y sesión en `+00:00`; el evento de mantenimiento se define en `Europe/Madrid`; `mysql2` devolverá `DATE` como texto (`dateStrings`). |
 | DC-06 | Usuarios de BD: `timon_app` (SELECT, INSERT, UPDATE, DELETE) y `timon_admin` (ALL) sobre `conta_hogar`, host `172.20.0.%`. La aplicación usa `timon_admin` hasta separar el mantenimiento (S-02). Las pruebas usan `timon_test`, con permisos solo sobre `conta_hogar_test`. |
 | DC-07 | Desde 2026-10-18 la aplicación usa la BD local `conta_hogar` en `mariadb01`. Aiven queda fuera de uso; ninguna de las dos bases estaba en producción y tenían los mismos datos. |
-| DC-08 | Al borrar un pago y elegir «Recalcular pagos», su importe se reparte entre los pagos pendientes con la misma lógica que al editar un pago: primero se suben los que estén por debajo del pago sugerido y el resto se reparte a partes iguales. |
+| DC-08 | Al borrar un pago y elegir «Recalcular pagos», su importe se reparte entre los pagos pendientes con la misma lógica que al editar un pago: primero se suben los que estén por debajo del pago sugerido y el resto se reparte a partes iguales. Para el borrado queda sustituida por DC-12; sigue vigente para la edición de un pago. |
 | DC-09 | Toda operación nueva o modificada deja trazas en el log del backend con el formato «módulo - acción: datos» (`console.log`), como las existentes. Las acciones que no se realizan, por ejemplo un plan de pagos no generado, también se registran con su motivo. |
 | DC-10 | `ahorros.ahorrado` es el valor inicial más la suma de los movimientos. Se puede editar a mano solo mientras el ahorro no tiene movimientos (para corregir un valor inicial erróneo). Con movimientos queda bloqueado en la pantalla y el servidor rechaza el cambio; se corrige añadiendo un movimiento positivo o negativo. |
 | DC-11 | Al editar un recibo, el modo de fechas es siempre manual; el modo automático solo se activa si el usuario lo elige en el diálogo, que avisa de que se reescribirán las fechas pendientes. El servidor solo reescribe las fechas en estado `pendiente` y conserva las demás, dejando traza del antes y el después de cada fecha. |
+| DC-12 | Al borrar un pago y elegir «Recalcular pagos», su importe se coloca así: primero se suben los pagos pendientes que estén por debajo del pago sugerido hasta ese tope y, si aún queda importe, se crean pagos nuevos de hasta el pago sugerido, a continuación del último pago y según la periodicidad. Ningún pago supera el sugerido. Exige pago sugerido y periodicidad, y el botón solo se deshabilita si faltan. |
 
 ## 3. Entorno de referencia
 
@@ -72,9 +73,10 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | F-30 | Bajo | `ListBills.vue` | La tabla de trimestrales enlaza su selección a `selectedBimonthlyBills` y comparte estado con la de bimestrales; `selectedQuarterlyBills` no se llena nunca. | Confirmado |
 | F-31 | Bajo | `ListBills.vue` | El diálogo de borrado muestra `bill.name`, que no existe (el campo es `concepto`): el mensaje sale sin nombre. | Confirmado |
 | F-32 | Bajo | `generarNuevasFechasRecibo` | Si el recibo no tiene fechas previas genera siempre 4 fechas, sea mensual, bimestral, trimestral o anual; con fechas previas genera 12, 6, 4 o 1 según la periodicidad. | Confirmado |
-| F-33 | Bajo | `Advances.vue` | El botón «Recalcular pagos» del diálogo de borrado se deshabilita cuando queda un solo pago pendiente (`pagosPendientesCount <= 1`), aunque el servidor sabe repartir el importe sobre uno; por eso el aviso «Sin pagos pendientes» no se puede alcanzar desde la pantalla. Falta decidir si es intencionado. | Probable |
+| F-33 | Bajo | `Advances.vue` | El botón «Recalcular pagos» del diálogo de borrado se deshabilita cuando queda un solo pago pendiente (`pagosPendientesCount <= 1`), aunque el servidor sabe repartir el importe sobre uno; por eso el aviso «Sin pagos pendientes» no se puede alcanzar desde la pantalla. Resuelto con DC-12 en la fase 1: «Recalcular pagos» completa los pagos hasta el sugerido y crea los que falten, y solo se deshabilita si el anticipo no tiene pago sugerido y periodicidad. | Confirmado |
 | F-34 | Bajo | `pushRecibo`, `ListBills.vue` | Al faltar un campo obligatorio, el aviso enumeraba siempre los seis campos (incluido el propietario, que no se introduce) sin indicar cuál faltaba. Corregido en la fase 1: la pantalla avisa antes de enviar y el servidor nombra los campos que faltan. | Confirmado |
 | F-35 | Bajo | `pushRecibo` | Cambiar en modo manual la fecha de un cargo ya pagado deja `recibos_historico.fecha_pago` con la fecha antigua: el historial solo se escribe al pasar a «cargado» (ver también F-15). | Confirmado |
+| F-36 | Bajo | `recalculatePaymentPlan` | El saldo restante se resta en coma flotante sin redondear; con céntimos puede quedar un residuo del orden de 1e-15 que crea un último pago de 0,00 € (por ejemplo, 20,10 € en pagos de 6,70 € genera 4 pagos en vez de 3). Corregido en la fase 1: el saldo se redondea a céntimos en cada paso. | Confirmado |
 
 ## 6. Seguridad y operación (S)
 
@@ -129,7 +131,7 @@ Sin leer: `Tech-documentation.vue`, `Login.vue`, `layout/*`, `useTheme`, `vRole`
 ## 10. Plan por fases
 
 1. Fase 0, completada el 2026-10-17: este registro, migración 0001 (esquema de la BD viva), pruebas con `npm run test:backend` (5 pasan y 4 de F-01 quedan como `todo`, verificadas contra MariaDB 11.8.8) y `docker-compose.test.yml` como alternativa.
-2. Fase 1 (en curso): F-01, F-02, F-03, F-04, F-06, F-18, F-24, F-25, F-26, F-29 y F-34 corregidos; pendientes F-05, F-27, F-28, F-30, F-31, F-32, F-33 y F-35, más las migraciones de DC-01 y DC-02.
+2. Fase 1 (en curso): F-01, F-02, F-03, F-04, F-06, F-18, F-24, F-25, F-26, F-29, F-33, F-34 y F-36 corregidos; pendientes F-05, F-27, F-28, F-30, F-31, F-32 y F-35, más las migraciones de DC-01 y DC-02.
 3. Fase 2: permisos reales (S-01, S-04, S-06).
 4. Fase 3: operación (S-02, S-03, S-07) y migración 0002 de la rutina de mantenimiento (`NOW(6)`, solo `ANALYZE`, 14 tablas).
 5. Fase 4: limpieza de interfaz y sincronización de `doc/` (U-01 a U-08, D-01 a D-05).

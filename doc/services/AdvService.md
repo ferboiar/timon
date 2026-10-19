@@ -22,7 +22,7 @@ El servicio `AdvService` actúa como intermediario entre la interfaz de usuario 
 | `getPagos(anticipoId)` | Obtiene todos los pagos de un anticipo específico | `GET /api/anticipos/{anticipoId}/pagos` |
 | `savePago(pago)` | Crea o actualiza un pago | `POST /api/anticipos/pagos` |
 | `deletePago(pagoId)` | Elimina un pago por su ID | `DELETE /api/anticipos/pagos/{pagoId}` |
-| `handlePaymentDeletion(pagoId, redistribuir)` | Elimina un pago; con `redistribuir = true` el servidor reparte su importe entre los pagos pendientes (DC-08) | `POST /api/anticipos/delete-payment` |
+| `handlePaymentDeletion(pagoId, redistribuir)` | Elimina un pago; con `redistribuir = true` el servidor completa el plan de pagos con su importe (DC-12) | `POST /api/anticipos/delete-payment` |
 | `recalculatePaymentPlan(anticipoId)` | Recalcula el plan de pagos para un anticipo | `POST /api/anticipos/recalculate-payment-plan` |
 
 ## Uso Común

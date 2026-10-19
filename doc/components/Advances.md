@@ -23,6 +23,7 @@ El componente `Advances` permite la administración completa de anticipos financ
 | `pagos` | `ref({})` | Objeto que mapea IDs de anticipo a sus pagos asociados |
 | `originalImporte` | `ref(0)` | Almacena el importe original de un pago para detectar modificaciones |
 | `isReplacingPayment` | `ref(false)` | Indica que el pago nuevo sustituye a otro: el antiguo no cuenta en la suma de pendientes y se elimina al guardar el nuevo (F-25) |
+| `puedeRecalcular` | `ref(false)` | Indica si el anticipo del pago que se borra tiene pago sugerido y periodicidad; sin ellos no se puede recalcular |
 
 ### Estados de Diálogos
 
@@ -67,7 +68,7 @@ El componente `Advances` permite la administración completa de anticipos financ
 | `savePago()` | Guarda un pago nuevo o actualiza uno existente. Si el pago sustituye a otro (`isReplacingPayment`), elimina el antiguo tras guardar el nuevo (F-25) |
 | `deletePago(pago)` | Prepara la eliminación de un pago mostrando opciones |
 | `confirmDeletePago()` | Elimina un pago sin recalcular el plan |
-| `recalculatePayments()` | Elimina un pago y reparte su importe entre los pagos pendientes con la misma lógica que al editar un pago (F-26, DC-08); si no quedan pagos pendientes, lo indica en pantalla. El botón «Recalcular pagos» está deshabilitado cuando queda un solo pago pendiente o ninguno (F-33) |
+| `recalculatePayments()` | Elimina un pago y completa el plan con su importe (DC-12): sube los pagos pendientes por debajo del pago sugerido hasta ese tope y crea los pagos nuevos que hagan falta; el aviso indica cuántos se han ajustado y cuántos creado. El botón «Recalcular pagos» solo se deshabilita si el anticipo no tiene pago sugerido y periodicidad (F-33) |
 | `addNewPayment()` | Prepara un pago nuevo que sustituye al seleccionado (`isReplacingPayment`); el pago antiguo se elimina al guardar el nuevo |
 
 ### Otras Funciones

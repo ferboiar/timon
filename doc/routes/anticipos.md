@@ -22,7 +22,7 @@ Este módulo implementa las rutas de la API REST para la gestión de anticipos y
 | `GET` | `/api/anticipos/:anticipoId/pagos` | Obtiene los pagos de un anticipo específico |
 | `POST` | `/api/anticipos/pagos` | Crea o actualiza un pago |
 | `DELETE` | `/api/anticipos/pagos/:id` | Elimina un pago específico |
-| `POST` | `/api/anticipos/delete-payment` | Elimina un pago; con `redistribuir: true` reparte su importe entre los pagos pendientes |
+| `POST` | `/api/anticipos/delete-payment` | Elimina un pago; con `redistribuir: true` completa el plan de pagos con ese importe (DC-12) |
 | `POST` | `/api/anticipos/recalculate-payment-plan` | Recalcula el plan de pagos para un anticipo |
 
 ## Detalles de Implementación
@@ -50,9 +50,9 @@ Al crear un anticipo, el propietario (`propietario_id`) se toma del usuario aute
 | Campo | Tipo | Descripción | Requerido |
 |-------|------|-------------|-----------|
 | `pagoId` | Number | ID del pago a eliminar | Sí |
-| `redistribuir` | Boolean | Solo `true` activa el reparto del importe entre los pagos pendientes | No |
+| `redistribuir` | Boolean | Solo `true` activa el recálculo: completa los pagos pendientes hasta el pago sugerido y crea los pagos nuevos que hagan falta (DC-12); exige pago sugerido y periodicidad | No |
 
-Respuesta 200: `message`, `saldoRestante`, `anticipoId` y `redistribuido`. Si falta `pagoId` responde 400; ante cualquier otro error, 500.
+Respuesta 200: `message`, `saldoRestante`, `anticipoId`, `redistribuido`, `pagosAjustados` y `pagosCreados`. Si falta `pagoId` responde 400; si se pide recalcular y el anticipo no tiene pago sugerido y periodicidad, responde 400 con el motivo; ante cualquier otro error, 500.
 
 ### Recalcular el plan (POST /api/anticipos/recalculate-payment-plan)
 
@@ -79,7 +79,7 @@ Recibe `anticipoId` (obligatorio, 400 si falta). Si el pago sugerido no es váli
 
 Las rutas de pagos escriben su actividad en el log del backend (DC-09):
 
-- `delete-payment - Procesando pago ID: … (redistribuir: …)` al recibir la petición y `delete-payment - Pago … eliminado del anticipo … (saldo restante …, redistribuido: …)` al terminar.
+- `delete-payment - Procesando pago ID: … (redistribuir: …)` al recibir la petición y `delete-payment - Pago … eliminado del anticipo … (saldo restante …, redistribuido: …, pagos ajustados: …, pagos nuevos: …)` al terminar.
 - `recalculate-payment-plan - Procesando anticipo ID: …` al regenerar el plan.
 - Los errores de validación del plan salen como `Error en recalculatePaymentPlan: …`.
 
