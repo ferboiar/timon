@@ -95,10 +95,10 @@ router.post('/', verifyToken, async (req, res) => {
                 console.log('API recibos.mjs: Segunda fecha en cargo:', JSON.stringify(cargo[1]));
             }
         }
-        await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas);
+        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas);
         console.log('API recibos.mjs: pushRecibo completado con éxito para ID:', id);
         console.log('API recibos.mjs: ==== FIN PETICIÓN POST /recibos (ÉXITO) ====');
-        res.status(201).json({ message: 'Recibo insertado o actualizado correctamente' });
+        res.status(201).json({ message: 'Recibo insertado o actualizado correctamente', ...resultado });
     } catch (error) {
         console.error('API recibos.mjs: Error al insertar/actualizar recibo:', error);
         console.error('API recibos.mjs: Detalles del error:', error.stack);

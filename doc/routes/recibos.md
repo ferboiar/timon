@@ -11,6 +11,9 @@ Este módulo implementa las rutas de la API REST para la gestión de recibos y s
 | `GET` | `/api/recibos` | Obtiene recibos con filtros opcionales |
 | `POST` | `/api/recibos` | Crea o actualiza un recibo con sus fechas de cargo |
 | `DELETE` | `/api/recibos/:id` | Elimina un recibo o una fecha de cargo específica |
+| `GET` | `/api/recibos/:id/historial` | Obtiene el historial de pagos de un recibo |
+| `POST` | `/api/recibos/:id/generar-fechas` | Genera un nuevo ciclo de fechas si no quedan fechas pendientes activas |
+| `POST` | `/api/recibos/actualizar-fechas` | Aplica lo anterior a todos los recibos; solo administradores (403 en otro caso) |
 
 ## Características Principales
 
@@ -51,6 +54,8 @@ Esta ruta permite crear un nuevo recibo o actualizar uno existente si se proporc
 | `categoria` | String | Categoría a la que pertenece el recibo | Sí |
 | `cuenta_id` | Number | ID de la cuenta bancaria asociada al recibo | Sí |
 | `cargo` | Array | Lista de fechas de cargo con sus estados | Sí |
+| `fecha_inicial` | String | Fecha desde la que se generan las fechas de cargo en modo automático (YYYY-MM-DD). Obligatoria con `modoFechas` = `auto` | No |
+| `modoFechas` | String | `manual` o `auto`. Con `auto` el servidor genera las fechas; sin este campo solo las genera si no llega `cargo` | No |
 
 Cada elemento del array `cargo` debe contener:
 
@@ -61,6 +66,14 @@ Cada elemento del array `cargo` debe contener:
 | `estado` | String | Estado del cargo (pendiente, pagado, rechazado) |
 | `comentario` | String | Comentario opcional |
 | `activo` | Boolean/Number | Estado de actividad (1 activo, 0 inactivo) |
+
+#### Modo de fechas (`modoFechas`)
+
+- `manual`: se guardan las fechas recibidas. Las que traen `id` se actualizan, las demás se insertan y las entradas sin fecha se ignoran.
+- `auto` en un recibo nuevo: el servidor genera las fechas desde `fecha_inicial` (12 mensuales, 6 bimestrales, 4 trimestrales o 1 anual).
+- `auto` al actualizar un recibo con fechas: se reescriben solo las fechas en estado `pendiente`, siguiendo la secuencia generada desde `fecha_inicial`. Las fechas con cualquier otro estado no se tocan (DC-11) y el log registra cada cambio.
+
+La respuesta 201 incluye, además de `message`, `fechasReescritas` y `fechasConservadas`: ambos valen 0 salvo en modo automático sobre un recibo con fechas.
 
 ### Eliminar un recibo (DELETE /api/recibos/:id)
 
@@ -111,6 +124,7 @@ Este campo asocia el recibo con una cuenta bancaria específica, lo que permite 
 La API implementa las siguientes validaciones:
 - El campo `cargo` debe ser un array
 - Los campos concepto, periodicidad, importe, categoría, cuenta_id y cargo son obligatorios
+- Si falta alguno de concepto, periodicidad, importe, categoría o cuenta, el error nombra exactamente los campos que faltan; un importe vacío o 0 cuenta como falta. El propietario no se envía: lo asigna el servidor desde el token
 - El campo `cuenta_id` debe hacer referencia a una cuenta existente 
 - El campo `propietario_id` se obtiene automáticamente del token JWT del usuario autenticado
 - Validaciones adicionales de tipos y formatos se realizan en las funciones de base de datos
@@ -121,6 +135,10 @@ Todas las rutas implementan manejo de errores que:
 1. Capturan excepciones que puedan ocurrir durante el procesamiento
 2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 404, 500)
 3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
+
+## Trazas en el log
+
+Al guardar un recibo en modo automático, `pushRecibo` registra en el log cada fecha reescrita, conservada o sin cambios (DC-09); el detalle está en [db_utilsBill](../db/db_utilsBill.md#trazas-en-el-log).
 
 ## Dependencias
 

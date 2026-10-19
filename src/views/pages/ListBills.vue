@@ -348,6 +348,7 @@ function openNew(periodicity) {
         cuenta_id: null,
         importe: 0,
         periodicidad: periodicity,
+        fecha_inicial: null,
         cargo: Array(6)
             .fill()
             .map(() => ({
@@ -359,6 +360,7 @@ function openNew(periodicity) {
             }))
     };
     submitted.value = false;
+    modoFechas.value = 'manual'; // F-18: cada alta empieza en modo manual y sin fecha inicial
     billDialog.value = true;
 }
 
@@ -371,6 +373,18 @@ function hideDialog() {
 
 async function guardarRecibo() {
     submitted.value = true;
+
+    // Campos obligatorios: se indica cuáles faltan antes de enviar nada al servidor
+    const faltan = [];
+    if (!bill.value.concepto?.trim()) faltan.push('concepto');
+    if (!bill.value.periodicidad || typeof bill.value.periodicidad !== 'string') faltan.push('periodicidad');
+    if (!(parseFloat(bill.value.importe) > 0)) faltan.push('importe (mayor que 0)');
+    if (!bill.value.categoria) faltan.push('categoría');
+    if (!bill.value.cuenta_id) faltan.push('cuenta');
+    if (faltan.length > 0) {
+        toast.add({ severity: 'error', summary: 'Faltan datos', detail: `Faltan campos obligatorios: ${faltan.join(', ')}.`, life: 7000 });
+        return;
+    }
 
     // 1. VALIDACIÓN INICIAL - Esto es necesario independientemente del modo
     // Verificar si está en modo automático y tiene fecha inicial
@@ -477,7 +491,17 @@ async function guardarRecibo() {
             console.log('ListBills. Enviando recibo para guardar:', billToSave);
             const respuesta = await BillService.saveBill(billToSave);
             console.log('guardarRecibo() - Respuesta del servidor:', respuesta);
-            toast.add({ severity: 'success', summary: 'Éxito', detail: 'Recibo guardado!', life: 5000 });
+            // En modo automático, avisar de las fechas ya pagadas que no se han modificado (F-04, DC-11)
+            if (billToSave.modoFechas === 'auto' && respuesta?.fechasConservadas > 0) {
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Recibo guardado con avisos',
+                    detail: `Las fechas ya pagadas (${respuesta.fechasConservadas}) no se han modificado: una fecha pagada no se puede cambiar en modo automático. Fechas pendientes actualizadas: ${respuesta.fechasReescritas}. Para corregir una fecha pagada, edítala en modo manual.`,
+                    life: 10000
+                });
+            } else {
+                toast.add({ severity: 'success', summary: 'Éxito', detail: 'Recibo guardado!', life: 5000 });
+            }
 
             // 9. ACTUALIZAR UI y LIMPIAR
             updateBills(bill.value.periodicidad);
@@ -548,9 +572,9 @@ function editBill(prod, openFCDialog = false) {
         ]
     };
 
-    // Determinar el modo de edición (automático o manual) según si hay fecha_inicial o no
-    // Si el recibo tiene fecha_inicial, estamos en modo automático, de lo contrario, en modo manual
-    modoFechas.value = prod.fecha_inicial ? 'auto' : 'manual';
+    // Al editar, el modo de fechas es siempre manual (F-04, DC-11): el modo automático reescribe las fechas pendientes
+    // a partir de fecha_inicial, así que solo se activa si el usuario lo elige en el diálogo, nunca por inferencia
+    modoFechas.value = 'manual';
 
     console.log('Recibo a editar: ', bill.value);
 
@@ -761,7 +785,7 @@ const inactiveBillsCount = (periodicity) => {
             <div class="font-semibold text-xl mb-4"></div>
             <Toolbar class="mb-6">
                 <template #start>
-                    <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNew" />
+                    <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNew('')" />
                     <Button
                         label="Borrar"
                         icon="pi pi-trash"
@@ -1193,6 +1217,9 @@ const inactiveBillsCount = (periodicity) => {
                 </div>
 
                 <div v-if="modoFechas === 'auto'" class="grid grid-cols-12 gap-4 mb-2">
+                    <div v-if="bill.id" class="col-span-12">
+                        <small class="text-orange-500">Al guardar se reescribirán las fechas pendientes de este recibo a partir de la fecha inicial. Las fechas ya pagadas se conservan.</small>
+                    </div>
                     <div class="col-span-6">
                         <label for="fecha_inicial" class="block font-bold mb-3">Fecha inicial</label>
                         <DatePicker id="fecha_inicial" v-model="bill.fecha_inicial" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
@@ -1379,6 +1406,9 @@ const inactiveBillsCount = (periodicity) => {
                 </div>
 
                 <div v-if="modoFechas === 'auto'" class="grid grid-cols-12 gap-4 mb-2">
+                    <div v-if="bill.id" class="col-span-12">
+                        <small class="text-orange-500">Al guardar se reescribirán las fechas pendientes de este recibo a partir de la fecha inicial. Las fechas ya pagadas se conservan.</small>
+                    </div>
                     <div class="col-span-6">
                         <label for="fecha_inicial_tb" class="block font-bold mb-3">Fecha inicial</label>
                         <DatePicker id="fecha_inicial_tb" v-model="bill.fecha_inicial" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />

@@ -34,6 +34,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `bill` | `ref({})` | Objeto que almacena los datos del recibo en edición |
 | `categorias` | `ref([])` | Lista de categorías disponibles para asignar a los recibos |
 | `cuentas` | `ref([])` | Lista de cuentas bancarias disponibles para asociar a los recibos |
+| `modoFechas` | `ref('manual')` | Modo de programación de fechas del recibo en edición: `manual` (el usuario fija cada fecha) o `auto` (se generan desde `fecha_inicial`) |
 
 ### Estados de Diálogos
 
@@ -55,6 +56,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `categoria_id` | Number | ID de la categoría asignada al recibo |
 | `cuenta_id` | Number | ID de la cuenta bancaria asociada al recibo |
 | `cargo` | Array | Lista de fechas de cargo asociadas al recibo |
+| `fecha_inicial` | Date | Fecha desde la que se generan las fechas de cargo en modo automático |
 
 ## Funciones Principales
 
@@ -63,9 +65,9 @@ El componente `ListBills` permite la administración completa de recibos periód
 | Función | Descripción |
 |---------|-------------|
 | `updateBills(periodicity)` | Actualiza los recibos de la periodicidad especificada |
-| `openNew(periodicity)` | Inicializa un nuevo objeto recibo para la periodicidad indicada |
+| `openNew(periodicity)` | Inicializa un nuevo objeto recibo para la periodicidad indicada, en modo manual y sin fecha inicial (F-18) |
 | `guardarRecibo()` | Guarda un recibo nuevo o actualiza uno existente |
-| `editBill(prod, openFCDialog)` | Carga los datos de un recibo existente para su edición |
+| `editBill(prod, openFCDialog)` | Carga los datos de un recibo existente para su edición, siempre en modo de fechas manual (F-04) |
 | `confirmDeleteBill(prod)` | Prepara la eliminación de un recibo |
 | `deleteBill()` | Elimina un recibo seleccionado |
 | `confirmDeleteSelected()` | Prepara la eliminación de recibos seleccionados |
@@ -101,6 +103,17 @@ await BillService.saveBill({
 });
 ```
 
+## Modo de programación de fechas
+
+Los diálogos de recibo ofrecen dos modos para las fechas de cargo (`modoFechas`):
+
+- Manual: el usuario fija cada fecha. Es el modo de partida al crear un recibo y siempre al editar uno (DC-11); nunca se deduce de que el recibo tenga `fecha_inicial`.
+- Automático: las fechas se generan desde `fecha_inicial` según la periodicidad. Solo se activa si el usuario lo elige. Al editar un recibo existente, el diálogo avisa de que se reescribirán las fechas pendientes; las ya pagadas (estado `cargado`) se conservan.
+
+`guardarRecibo()` envía `modoFechas` al backend. El diálogo de una fecha individual (`billDialogTB_FC`) fuerza siempre el modo manual y envía solo esa fecha.
+
+Si en modo automático se ha conservado alguna fecha pagada, el aviso de guardado pasa de «Éxito» a una advertencia que indica cuántas fechas pagadas no se han modificado y cuántas pendientes se han actualizado. Para corregir una fecha pagada hay que editarla en modo manual.
+
 ## Gestión de Propiedad de Recibos
 
 La propiedad de los recibos se maneja automáticamente a través del sistema de autenticación:
@@ -134,6 +147,10 @@ El template está estructurado en varias secciones:
 3. **Tablas de recibos**: Muestran los recibos con sus datos principales, con la opción de expandir para ver las fechas de cargo
 4. **Diálogos de edición**: Varios diálogos específicos según la periodicidad y operación (crear, editar, eliminar)
 5. **Selectores de cuenta**: En los diálogos de creación/edición para asociar el recibo a una cuenta bancaria
+
+## Validaciones
+
+Antes de enviar, `guardarRecibo()` comprueba concepto, periodicidad, importe (mayor que 0), categoría y cuenta, y muestra un aviso con los campos que faltan. El servidor repite la comprobación y también nombra los que faltan. El propietario no se introduce: lo asigna el servidor a partir del usuario autenticado.
 
 ## Referencias
 
