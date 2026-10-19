@@ -1,6 +1,7 @@
 <script setup>
 import { AccService } from '@/service/AccService'; // Importar AccService
 import { AdvService } from '@/service/AdvService';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref } from 'vue';
 
@@ -350,6 +351,7 @@ const deletePaymentDialog = ref(false);
 const selectedPayment = ref(null);
 const saldoRestante = ref(0);
 const pagosPendientesCount = ref(0); // Contador de pagos pendientes
+const puedeRecalcular = ref(false); // El anticipo tiene pago sugerido y periodicidad (F-33, DC-12)
 const dialogMessage = ref(''); // Mensaje dinámico para el cuadro de diálogo
 
 const deletePago = (pago) => {
@@ -384,6 +386,12 @@ const deletePago = (pago) => {
 
     // Actualizar contador de pagos pendientes
     pagosPendientesCount.value = pagosPendientes.length;
+
+    // «Recalcular pagos» puede crear pagos nuevos, así que exige pago sugerido y periodicidad (F-33, DC-12)
+    puedeRecalcular.value = Number(anticipo?.pago_sugerido) > 0 && !!anticipo?.periodicidad;
+    if (!puedeRecalcular.value) {
+        dialogMessage.value += ' «Recalcular pagos» no está disponible: el anticipo necesita un pago sugerido y una periodicidad.';
+    }
     console.log('deletePago - Número de pagos pendientes (excluyendo el pago a eliminar):', pagosPendientesCount.value);
 
     // Mostrar el cuadro de diálogo
@@ -410,12 +418,12 @@ const recalculatePayments = async () => {
         const resultado = await AdvService.handlePaymentDeletion(selectedPayment.value.id, true);
         console.log('recalculatePayments - Resultado del reparto:', resultado);
 
-        toast.add({ severity: resultado.redistribuido ? 'success' : 'warn', summary: resultado.redistribuido ? 'Successful' : 'Sin pagos pendientes', detail: resultado.redistribuido ? 'Importe repartido entre los pagos pendientes.' : 'No quedan pagos pendientes entre los que repartir el importe: queda pendiente de planificar.', life: 5000 });
+        toast.add({ severity: resultado.redistribuido ? 'success' : 'warn', summary: resultado.redistribuido ? 'Successful' : 'Sin cambios', detail: resultado.redistribuido ? `Pagos recalculados: ${resultado.pagosAjustados} ajustados hasta el pago sugerido y ${resultado.pagosCreados} nuevos.` : 'No había importe que colocar: el plan de pagos ya cubre el saldo del anticipo.', life: 5000 });
         await fetchAdvances(); // Actualizar la lista de anticipos
         await fetchAllPagos(); // Actualizar los pagos relacionados
         deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al recalcular los pagos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al recalcular los pagos: ${getApiErrorMessage(error)}`, life: 5000 });
     }
 };
 
@@ -848,7 +856,7 @@ async function handleCreatePaymentPlan() {
             <div class="flex flex-col gap-4">
                 <p>{{ dialogMessage }}</p>
                 <div class="flex gap-4">
-                    <Button label="Recalcular pagos" class="flex-1" v-tooltip="'Reparte el importe entre los pagos ya definidos'" icon="pi pi-refresh" @click="recalculatePayments" :disabled="pagosPendientesCount <= 1" autofocus />
+                    <Button label="Recalcular pagos" class="flex-1" v-tooltip="'Completa los pagos pendientes hasta el pago sugerido y crea los que falten'" icon="pi pi-refresh" @click="recalculatePayments" :disabled="!puedeRecalcular" autofocus />
                     <Button label="Añadirlo en un nuevo" class="flex-1" v-tooltip="'Crea un nuevo pago con el total del importe pendiente'" icon="pi pi-plus" @click="addNewPayment" />
                 </div>
                 <div class="flex justify-center">

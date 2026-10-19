@@ -143,6 +143,7 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
             saldoRestante -= Number(pago.importe);
         }
 
+        saldoRestante = Math.round(saldoRestante * 100) / 100; // F-36: sin residuos de coma flotante
         console.log(`recalculatePaymentPlan - Saldo restante después de considerar los pagos pendientes: ${saldoRestante}`);
 
         // Determinar la fecha del próximo pago basándote en el último pago existente
@@ -176,7 +177,7 @@ async function recalculatePaymentPlan(anticipoId, importe_total, pago_sugerido, 
                 cuentaDestinoId
             ]);
             console.log(`recalculatePaymentPlan - Nuevo pago creado con importe: ${importePago}, fecha: ${fechaPago.toISOString().split('T')[0]}`);
-            saldoRestante -= importePago;
+            saldoRestante = Math.round((saldoRestante - importePago) * 100) / 100; // F-36
             ultimaFechaPago = new Date(fechaPago); // Actualizar la fecha del último pago
             fechaPago.setMonth(fechaPago.getMonth() + getMonthsFromPeriodicidad(periodicidad));
         }
@@ -618,6 +619,58 @@ async function deletePago(id) {
     }
 }
 
+async function completarPlanTrasBorrado(anticipoId) {
+    let connection;
+    try {
+        connection = await getConnection();
+
+        const [anticipo] = await connection.execute('SELECT importe_total, pago_sugerido FROM anticipos WHERE id = ?', [anticipoId]);
+        if (anticipo.length === 0) {
+            throw new Error(`Anticipo con ID ${anticipoId} no encontrado`);
+        }
+        const saldo = Number(anticipo[0].importe_total);
+        const pagoSugerido = Number(anticipo[0].pago_sugerido);
+
+        // Importe que falta por colocar: el saldo del anticipo menos lo que ya suman los pagos pendientes
+        const [pendientes] = await connection.execute("SELECT id, importe FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' ORDER BY importe ASC, fecha ASC", [anticipoId]);
+        const sumaPendientes = pendientes.reduce((total, p) => total + Number(p.importe), 0);
+        let restante = Math.round((saldo - sumaPendientes) * 100) / 100;
+        console.log(`completarPlanTrasBorrado - Anticipo ${anticipoId}: saldo ${saldo.toFixed(2)}, pendientes ${sumaPendientes.toFixed(2)} en ${pendientes.length} pagos, por colocar ${restante.toFixed(2)}, pago sugerido ${pagoSugerido.toFixed(2)}`);
+
+        // Paso 1: subir los pagos pendientes que estén por debajo del pago sugerido hasta ese tope
+        let pagosAjustados = 0;
+        for (const pago of pendientes) {
+            if (restante <= 0) break;
+            const actual = Number(pago.importe);
+            if (actual >= pagoSugerido) continue;
+            const incremento = Math.round(Math.min(restante, pagoSugerido - actual) * 100) / 100;
+            const nuevoImporte = Math.round((actual + incremento) * 100) / 100;
+            await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [nuevoImporte, pago.id]);
+            restante = Math.round((restante - incremento) * 100) / 100;
+            pagosAjustados++;
+            console.log(`completarPlanTrasBorrado - Pago ID ${pago.id} de ${actual.toFixed(2)} a ${nuevoImporte.toFixed(2)} (+${incremento.toFixed(2)})`);
+        }
+
+        // Paso 2: crear los pagos nuevos que hagan falta, de hasta el pago sugerido, a continuación del último pago
+        let pagosCreados = 0;
+        if (restante > 0) {
+            console.log(`completarPlanTrasBorrado - Quedan ${restante.toFixed(2)} por colocar: se crean pagos nuevos de hasta ${pagoSugerido.toFixed(2)}`);
+            const [antes] = await connection.execute('SELECT COUNT(*) AS n FROM anticipos_pagos WHERE anticipo_id = ?', [anticipoId]);
+            await recalculatePaymentPlan(anticipoId);
+            const [despues] = await connection.execute('SELECT COUNT(*) AS n FROM anticipos_pagos WHERE anticipo_id = ?', [anticipoId]);
+            pagosCreados = Number(despues[0].n) - Number(antes[0].n);
+        }
+
+        console.log(`completarPlanTrasBorrado - Anticipo ${anticipoId}: ${pagosAjustados} pagos ajustados y ${pagosCreados} pagos nuevos`);
+        return { pagosAjustados, pagosCreados };
+    } catch (error) {
+        console.error('Error en completarPlanTrasBorrado:', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 async function handlePaymentDeletion(pagoId, redistribuir = false) {
     let connection;
     try {
@@ -630,6 +683,19 @@ async function handlePaymentDeletion(pagoId, redistribuir = false) {
         }
 
         const { anticipo_id, importe, estado } = pago[0];
+
+        // Recalcular puede crear pagos nuevos: hace falta pago sugerido y periodicidad, y se comprueba antes de borrar nada (DC-12)
+        if (redistribuir) {
+            const [datos] = await connection.execute('SELECT pago_sugerido, periodicidad FROM anticipos WHERE id = ?', [anticipo_id]);
+            if (datos.length === 0) {
+                throw new Error(`Anticipo con ID ${anticipo_id} no encontrado`);
+            }
+            if (!(Number(datos[0].pago_sugerido) > 0) || !datos[0].periodicidad) {
+                const sinDatos = new Error('No se pueden recalcular los pagos: el anticipo necesita un pago sugerido mayor que 0 y una periodicidad');
+                sinDatos.status = 400;
+                throw sinDatos;
+            }
+        }
 
         // Eliminar el pago
         console.log('handlePaymentDeletion - Eliminando el pago ID: ' + pagoId + ' (anticipo ' + anticipo_id + ', importe ' + importe + ', estado ' + estado + ', redistribuir: ' + (redistribuir ? 'sí' : 'no') + ')');
@@ -645,20 +711,21 @@ async function handlePaymentDeletion(pagoId, redistribuir = false) {
         const [saldoResult] = await connection.execute('SELECT importe_total FROM anticipos WHERE id = ?', [anticipo_id]);
         const saldoRestante = saldoResult[0]?.importe_total || 0;
 
-        // Repartir el importe del pago eliminado entre los pagos pendientes que quedan (misma lógica que al editar un pago)
+        // Completar el plan con el importe del pago eliminado: ajustar los pendientes hasta el sugerido y crear los pagos que falten (DC-12)
         let redistribuido = false;
+        let pagosAjustados = 0;
+        let pagosCreados = 0;
         if (redistribuir) {
-            const [restantes] = await connection.execute("SELECT COUNT(*) AS n FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente'", [anticipo_id]);
-            if (Number(restantes[0].n) > 0) {
-                await recalculatePostEditPayments(anticipo_id, importe, 0, '1970-01-01');
-                redistribuido = true;
-                console.log('handlePaymentDeletion - Importe ' + importe + ' redistribuido entre ' + restantes[0].n + ' pagos pendientes del anticipo ' + anticipo_id);
+            ({ pagosAjustados, pagosCreados } = await completarPlanTrasBorrado(anticipo_id));
+            redistribuido = pagosAjustados + pagosCreados > 0;
+            if (redistribuido) {
+                console.log('handlePaymentDeletion - Importe ' + importe + ' colocado en el anticipo ' + anticipo_id + ': ' + pagosAjustados + ' pagos ajustados y ' + pagosCreados + ' pagos nuevos');
             } else {
-                console.log('handlePaymentDeletion - No quedan pagos pendientes en el anticipo ' + anticipo_id + ': ' + importe + ' queda pendiente de planificar');
+                console.log('handlePaymentDeletion - No había importe que colocar en el anticipo ' + anticipo_id + ': el plan ya cubre el saldo');
             }
         }
 
-        return { saldoRestante, anticipoId: anticipo_id, redistribuido };
+        return { saldoRestante, anticipoId: anticipo_id, redistribuido, pagosAjustados, pagosCreados };
     } catch (error) {
         console.error('Error en handlePaymentDeletion:', error);
         throw error;
