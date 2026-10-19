@@ -191,6 +191,7 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
  * @param {number} cuenta_id - El ID de la cuenta asociada al recibo.
  * @param {string} fecha_inicial - La fecha inicial para generar automáticamente las fechas de cargo. Formato YYYY-MM-DD.
  * @param {string} modoFechas - El modo de manejo de fechas: 'auto' (generar automáticamente) o 'manual' (establecidas por el usuario).
+ * @returns {{fechasReescritas: number, fechasConservadas: number}} - En modo automático sobre un recibo con fechas, cuántas fechas pendientes se reescribieron y cuántas se conservaron; en los demás casos, 0 y 0.
  * @throws {Error} - Si falta algún parámetro obligatorio o si algún parámetro no es válido.
  */
 async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas) {
@@ -217,9 +218,16 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
     }
 
     // Verificar que todos los parámetros obligatorios estén presentes
-    if (!concepto || !periodicidad || !importe || !categoria || !propietarioId || !cuenta_id) {
-        console.log('API db_utils.mjs: ERROR - Faltan parámetros obligatorios');
-        throw new Error('API. Los campos concepto, periodicidad, importe, categoria, propietarioId y cuenta_id son obligatorios.');
+    const faltantes = [];
+    if (!concepto) faltantes.push('concepto');
+    if (!periodicidad) faltantes.push('periodicidad');
+    if (!importe) faltantes.push('importe (vacío o 0)');
+    if (!categoria) faltantes.push('categoría');
+    if (!propietarioId) faltantes.push('propietario (usuario no identificado)');
+    if (!cuenta_id) faltantes.push('cuenta');
+    if (faltantes.length > 0) {
+        console.log('API db_utils.mjs: ERROR - Faltan parámetros obligatorios: ' + faltantes.join(', '));
+        throw new Error('Faltan campos obligatorios: ' + faltantes.join(', ') + '.');
     }
 
     // Manejar validaciones específicas según el modo de fechas
@@ -271,6 +279,9 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
 
     // Preparar el array de fechas de cargo a procesar
     let fechasCargo = cargo;
+
+    // Resultado que se devuelve a la ruta: fechas pendientes reescritas y fechas conservadas (modo automático)
+    const resultadoFechas = { fechasReescritas: 0, fechasConservadas: 0 };
 
     // Si estamos en modo automático, generar nuevas fechas
     if (generarFechasAutomaticamente && fecha_inicial) {
@@ -363,11 +374,28 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                         // Generar nuevas fechas basadas en fecha_inicial y periodicidad
                         const nuevasFechas = generarFechasFuturas(fecha_inicial, periodicidad, existingFechas.length);
 
-                        // Actualizar cada fecha existente con la nueva fecha correspondiente
+                        // Solo se reescriben las fechas pendientes; las cargadas y las rechazadas se conservan (F-04, DC-11)
+                        const formatear = (f) => (f instanceof Date ? f.toISOString().split('T')[0] : String(f));
+                        let reescritas = 0;
+                        let conservadas = 0;
                         for (let i = 0; i < existingFechas.length; i++) {
-                            // Solo actualizamos la fecha, mantenemos los demás datos
-                            await connection.execute('UPDATE fechas_cargo SET fecha = ? WHERE id = ?', [nuevasFechas[i].fecha, existingFechas[i].id]);
+                            const actual = existingFechas[i];
+                            if (actual.estado !== 'pendiente') {
+                                conservadas++;
+                                console.log(`pushRecibo - Recibo ${id}: fecha ${formatear(actual.fecha)} (fechas_cargo ${actual.id}) conservada por estar ${actual.estado}`);
+                                continue;
+                            }
+                            if (formatear(actual.fecha) === nuevasFechas[i].fecha) {
+                                console.log(`pushRecibo - Recibo ${id}: fecha ${nuevasFechas[i].fecha} (fechas_cargo ${actual.id}) sin cambios`);
+                                continue;
+                            }
+                            await connection.execute('UPDATE fechas_cargo SET fecha = ? WHERE id = ?', [nuevasFechas[i].fecha, actual.id]);
+                            reescritas++;
+                            console.log(`pushRecibo - Recibo ${id}: fecha ${formatear(actual.fecha)} -> ${nuevasFechas[i].fecha} (fechas_cargo ${actual.id})`);
                         }
+                        resultadoFechas.fechasReescritas = reescritas;
+                        resultadoFechas.fechasConservadas = conservadas;
+                        console.log(`pushRecibo - Recibo ${id}: modo automático, ${reescritas} fechas reescritas y ${conservadas} conservadas`);
                     } else {
                         // Si no hay fechas existentes, crear nuevas
                         for (const c of fechasCargo) {
@@ -603,6 +631,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
         }
 
         await connection.commit();
+        return resultadoFechas;
     } catch (error) {
         if (connection) await connection.rollback();
         console.error('API. Error al insertar o actualizar el recibo: ', error);

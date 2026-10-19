@@ -25,6 +25,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `categoria_id` | INT | Referencia a la categoría asociada |
 | `cuenta_id` | INT | ID de la cuenta bancaria asociada al recibo |
 | `propietario_id` | INT | ID del usuario propietario del recibo |
+| `fecha_inicial` | DATE | Fecha desde la que se generan las fechas en modo automático; en modo manual se guarda la primera fecha de cargo |
 
 ### Tabla `fechas_cargo`
 
@@ -60,8 +61,11 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getRecibos(filters)` | Obtiene recibos aplicando filtros opcionales (periodicidad, fecha, año, etc.) |
-| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id)` | Crea o actualiza un recibo con sus fechas de cargo |
+| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas)` | Crea o actualiza un recibo con sus fechas de cargo. En modo `auto` genera las fechas desde `fecha_inicial`; al actualizar solo reescribe las pendientes. Devuelve `{ fechasReescritas, fechasConservadas }` |
 | `deleteRecibo(id, fecha, periodicidad)` | Elimina un recibo completo o solo una fecha de cargo específica |
+| `getHistorialRecibo(reciboId)` | Obtiene el historial de pagos de un recibo, del más reciente al más antiguo |
+| `generarNuevasFechasRecibo(reciboId)` | Genera un nuevo ciclo de fechas cuando no quedan fechas pendientes activas, a partir de la última fecha. Nunca modifica las existentes. Sin fechas previas parte de `fecha_inicial` y crea siempre 4 (F-32) |
+| `actualizarFechasRecibos()` | Aplica `generarNuevasFechasRecibo` a todos los recibos con fechas activas y devuelve `total` y `actualizados` |
 | `getValidValues(column, table)` | Obtiene valores válidos para campos ENUM o categorías |
 
 ## Algoritmos Clave
@@ -82,6 +86,12 @@ El sistema maneja de forma diferenciada los recibos según su periodicidad:
 1. **Recibos mensuales**: Mantienen una sola fecha de cargo asociada
 2. **Recibos bimestrales/trimestrales**: Pueden tener múltiples fechas de cargo, cada una con su propio estado y comentario
 3. **Eliminación inteligente**: Al eliminar fechas de cargo de recibos no mensuales, el sistema determina automáticamente si debe eliminar también el recibo principal
+
+### Fechas de cargo en modo automático
+
+En un recibo nuevo, `pushRecibo` genera con `generarFechasFuturas` las fechas desde `fecha_inicial`: 12 para mensuales, 6 para bimestrales, 4 para trimestrales y 1 para anuales.
+
+Al actualizar un recibo que ya tiene fechas, calcula la secuencia para el mismo número de fechas y aplica solo las posiciones cuya fecha está en estado `pendiente`. Las fechas con otro estado se conservan (DC-11, F-04). Si una fecha pendiente ya coincide con la calculada, no se toca.
 
 ## Características Especiales
 
@@ -117,7 +127,7 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 
 ## Validaciones y Manejo de Errores
 
-- Verificación de presencia de campos obligatorios (concepto, periodicidad, importe, categoría, cuenta_id)
+- Verificación de presencia de campos obligatorios (concepto, periodicidad, importe, categoría, cuenta_id), con un mensaje que nombra los campos que faltan (un importe vacío o 0 cuenta como falta)
 - Validación de tipos y rangos (importe positivo, longitud máxima para concepto)
 - Comprobación de valores permitidos (categorías existentes, periodicidades válidas)
 - Verificación de formato de fechas
@@ -129,6 +139,17 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 - Liberación inmediata de conexiones para maximizar la disponibilidad del pool
 - Uso de transacciones para operaciones que afectan a múltiples tablas
 - Consultas optimizadas con filtros aplicados directamente en la base de datos
+
+## Trazas en el log
+
+Al guardar en modo automático un recibo con fechas, `pushRecibo` deja trazas con el formato «módulo - acción: datos» (DC-09):
+
+| Traza | Cuándo |
+|-------|--------|
+| `pushRecibo - Recibo …: fecha A -> B (fechas_cargo …)` | Una fecha pendiente se ha reescrito |
+| `pushRecibo - Recibo …: fecha … conservada por estar …` | La fecha no está pendiente y no se toca |
+| `pushRecibo - Recibo …: fecha … sin cambios` | La fecha pendiente ya coincidía con la calculada |
+| `pushRecibo - Recibo …: modo automático, N fechas reescritas y M conservadas` | Resumen al terminar |
 
 ## Referencias
 

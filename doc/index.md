@@ -255,6 +255,7 @@ Este sistema sigue una arquitectura multicapa:
 - Seguimiento de fechas de cargo y sus estados (pendiente, pagado, rechazado)
 - Filtrado avanzado por periodicidad, año y estado
 - Visualización expandible de fechas de cargo por recibo
+- Programación de fechas manual o automática (desde una fecha inicial); la edición parte siempre en manual y el modo automático solo reescribe las fechas pendientes
 - Exportación de datos a CSV
 
 ### Anticipos
