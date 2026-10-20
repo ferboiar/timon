@@ -1,9 +1,7 @@
 # TAREAS PENDIENTES
 - [ ] Revisar sintaxis de colores en bloques de código en archivos markdown (SQL, PHP, Vue, etc.)
 - [ ] Implementar nueva funcionalidad de permisos y visibilidad en el proyecto
-- [ ] Depurar la gestión de recibos_historico:
-        - Comprobar que los registros se crean correctamente al marcar un recibo como pagado
-        - Verificar la función getHistorialRecibo (implementada pero sin probar a fondo)
+- [ ] Rediseño de recibos por año (DC-14 a DC-18 del registro de mantenimiento): esquema, pago con importe real, evento anual y vistas por año
 - [ ] Mejorar la interfaz de los diálogos para la gestión de fechas de cargo en ListBills.vue
 - [ ] Evaluar la utilidad de la función updateAllDates:
         - Añadir diálogo de confirmación para evitar actualizaciones accidentales
@@ -12,8 +10,8 @@
 # IMPLEMENTADO:
 - [x] **Nuevos permisos de usuario**: Modificado el backend (users.mjs y db_utilsUsers.mjs) para soportar columnas perm_ en tabla users
 - [x] **Reorganización de cuenta_id**: Movido de la tabla fechas_cargo a la tabla recibos, con adaptaciones en la base de datos y lógica
-- [x] **Historial de recibos pagados**: Al marcar un recibo como pagado, se copia a recibos_historico (función getHistorialRecibo pendiente de depurar)
-- [x] **Generación automática de fechas futuras**: Al marcar un recibo como 'cargado', la función actualizarFechasCargoPagado verifica si es el último del año y genera fechas para el siguiente
+- [x] **Historial de recibos pagados**: al marcar un cargo como cargado se copia a recibos_historico (se sustituirá por el recibo por año, DC-14)
+- [x] **Generación de fechas desde la fecha inicial** al dar de alta un recibo; la generación al cambiar de año será un evento de la base de datos (DC-17)
 - [x] **Modos de gestión de fechas**: Implementada la creación de recibos con fechas manuales o automáticas basadas en fecha inicial y periodicidad
 
 

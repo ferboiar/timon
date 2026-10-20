@@ -26,6 +26,8 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `cuenta_id` | INT | ID de la cuenta bancaria asociada al recibo |
 | `propietario_id` | INT | ID del usuario propietario del recibo |
 | `fecha_inicial` | DATE | Fecha desde la que se generan las fechas en modo automático; en modo manual se guarda la primera fecha de cargo |
+| `recibo_origen_id` | INT | Recibo del año anterior del que procede; único, así que cada recibo tiene como mucho un sucesor (DC-14). Aún sin uso en la aplicación |
+| `replicar` | TINYINT | 1 por defecto; con 0 no se crea el recibo del año siguiente (DC-17). Aún sin uso en la aplicación |
 
 ### Tabla `fechas_cargo`
 
@@ -34,6 +36,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `id` | INT | Clave primaria |
 | `recibo_id` | INT | Referencia al recibo asociado |
 | `fecha` | DATE | Fecha del cargo |
+| `importe` | DECIMAL | Importe real del cargo: vacío mientras está pendiente (se usa el del recibo) y fijado al pagarlo (DC-15). La columna existe, pero la aplicación aún no la usa |
 | `estado` | ENUM | Estado del cargo: 'pendiente', 'pagado', 'rechazado' |
 | `comentario` | VARCHAR | Comentario opcional sobre el cargo |
 | `activo` | TINYINT | Estado del cargo (1 activo, 0 inactivo) |

@@ -3,7 +3,7 @@
 // 2) F-01: las altas de la aplicación deben incluir propietario_id.
 // Requiere el servicio de docker-compose.test.yml (ver backend/test/README.md).
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { after, before, describe, test } from 'node:test';
 import mysql from 'mysql2/promise';
 
@@ -30,8 +30,10 @@ before(async () => {
     await admin.end();
 
     db = await mysql.createConnection({ ...conexion, database: dbName });
-    const baseline = await readFile(new URL('../src/db/migrations/0001_baseline.sql', import.meta.url), 'utf8');
-    await db.query(baseline);
+    const migraciones = (await readdir(new URL('../src/db/migrations/', import.meta.url))).filter((f) => f.endsWith('.sql')).sort();
+    for (const fichero of migraciones) {
+        await db.query(await readFile(new URL(`../src/db/migrations/${fichero}`, import.meta.url), 'utf8'));
+    }
     await db.query(`INSERT INTO users (id, username, email, password, rol) VALUES (2, 'tester', 'tester@example.test', 'x', 'admin')`);
     await db.query(`INSERT INTO cuentas (id, nombre, tipo, iban, propietario_id) VALUES (1, 'Cuenta de prueba', 'corriente', 'ES0000000000000000000001', 2)`);
 });
@@ -63,7 +65,7 @@ describe('paridad con el entorno de referencia', () => {
 });
 
 describe('esquema de la línea base', () => {
-    test('14 tablas y 18 claves foráneas', async () => {
+    test('14 tablas y 19 claves foráneas', async () => {
         const [[v]] = await db.query(
             `SELECT
                (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?) AS tablas,
@@ -71,7 +73,7 @@ describe('esquema de la línea base', () => {
             [dbName, dbName]
         );
         assert.equal(Number(v.tablas), 14);
-        assert.equal(Number(v.fks), 18);
+        assert.equal(Number(v.fks), 19);
     });
 
     test('propietario_id es obligatorio y no tiene valor por defecto', async () => {
@@ -137,6 +139,56 @@ describe('F-06: IBAN opcional en cuentas', () => {
         try {
             await db.execute(alta, ['Vacío 1', 'corriente', '', 0, null, 1, 2]);
             await assert.rejects(() => db.execute(alta, ['Vacío 2', 'corriente', '', 0, null, 1, 2]), { code: 'ER_DUP_ENTRY' });
+        } finally {
+            await db.rollback();
+        }
+    });
+});
+
+describe('DC-14: esquema de recibo por año', () => {
+    const altaRecibo = 'INSERT INTO recibos (concepto, periodicidad, importe, cuenta_id, propietario_id, fecha_inicial, recibo_origen_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
+
+    test('fechas_cargo tiene importe y recibos tiene recibo_origen_id y replicar', async () => {
+        const [filas] = await db.query(
+            `SELECT CONCAT(TABLE_NAME, '.', COLUMN_NAME) AS columna FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = ? AND ((TABLE_NAME = 'fechas_cargo' AND COLUMN_NAME = 'importe') OR (TABLE_NAME = 'recibos' AND COLUMN_NAME IN ('recibo_origen_id', 'replicar')))
+             ORDER BY 1`,
+            [dbName]
+        );
+        assert.deepEqual(
+            filas.map((f) => f.columna),
+            ['fechas_cargo.importe', 'recibos.recibo_origen_id', 'recibos.replicar']
+        );
+    });
+
+    test('replicar vale 1 por defecto', async () => {
+        await db.beginTransaction();
+        try {
+            const [recibo] = await db.execute(altaRecibo, ['Prueba DC-14', 'anual', 10, 1, 2, '2026-03-15', null]);
+            const [[fila]] = await db.execute('SELECT replicar FROM recibos WHERE id = ?', [recibo.insertId]);
+            assert.equal(fila.replicar, 1);
+        } finally {
+            await db.rollback();
+        }
+    });
+
+    test('un recibo solo puede tener un sucesor', async () => {
+        await db.beginTransaction();
+        try {
+            const [origen] = await db.execute(altaRecibo, ['Origen', 'anual', 10, 1, 2, '2026-03-15', null]);
+            await db.execute(altaRecibo, ['Sucesor', 'anual', 10, 1, 2, '2027-03-15', origen.insertId]);
+            await assert.rejects(() => db.execute(altaRecibo, ['Segundo sucesor', 'anual', 10, 1, 2, '2027-03-15', origen.insertId]), { code: 'ER_DUP_ENTRY' });
+        } finally {
+            await db.rollback();
+        }
+    });
+
+    test('no se puede borrar un recibo que tiene sucesor', async () => {
+        await db.beginTransaction();
+        try {
+            const [origen] = await db.execute(altaRecibo, ['Origen', 'anual', 10, 1, 2, '2026-03-15', null]);
+            await db.execute(altaRecibo, ['Sucesor', 'anual', 10, 1, 2, '2027-03-15', origen.insertId]);
+            await assert.rejects(() => db.execute('DELETE FROM recibos WHERE id = ?', [origen.insertId]), { code: 'ER_ROW_IS_REFERENCED_2' });
         } finally {
             await db.rollback();
         }
