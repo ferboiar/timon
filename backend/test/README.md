@@ -57,5 +57,5 @@ Los valores por defecto corresponden a la opción B. En la opción A hay que ind
 - Las pruebas borran y recrean la base `TEST_DB_NAME`. Nunca la apuntes a `conta_hogar`.
 - Las pruebas marcadas como `todo` reproducen hallazgos abiertos del registro y no hacen fallar la ejecución. Al corregir el hallazgo se quita la marca.
 - La prueba de configuración compara los valores globales del servidor. La sesión de `mysql2` añade `IGNORE_SPACE` al `sql_mode`, por lo que el valor de sesión no sirve para comparar.
-- El esquema se carga desde `backend/src/db/migrations/0001_baseline.sql`.
+- El esquema se carga aplicando por orden todos los ficheros de `backend/src/db/migrations/`.
 - Todavía no se importan los módulos de `backend/src/db`, porque la conexión se lee de `.db_connection` y apuntaría a la base real. Eso cambia cuando S-03 permita configurar la conexión por variables de entorno.

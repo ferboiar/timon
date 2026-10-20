@@ -35,7 +35,7 @@ El frontend es una Aplicación de Página Única (SPA) que se comunica con el ba
 ### Base de Datos
 
 - **Sistema**: MySQL
-- **Esquema**: El esquema completo de la base de datos, incluyendo tablas y relaciones, se define en `DB_estructura.txt`.
+- **Esquema**: El esquema completo de la base de datos, incluyendo tablas y relaciones, se define en las migraciones de `backend/src/db/migrations/` (línea base `0001_baseline.sql` y una migración por cada cambio posterior).
 - **Conexión**: La configuración de la conexión a la base de datos se gestiona en `backend/src/db/db_connection.mjs` y se configura a través de `backend/src/db/.db_connection`.
 
 ## Flujo de Datos
@@ -75,7 +75,7 @@ Los scripts principales están definidos en `package.json`.
 - `package.json`: Define los scripts, dependencias y metadatos del proyecto.
 - `vite.config.mjs`: Archivo de configuración para Vite, el empaquetador del frontend.
 - `backend/src/server.mjs`: El punto de entrada que inicializa el servidor Express y sus middlewares.
-- `DB_estructura.txt`: Contiene el DDL de SQL para crear la estructura completa de la base de datos.
+- `backend/src/db/migrations/`: Migraciones SQL, por orden, que crean y modifican la estructura de la base de datos.
 - `src/router/index.js`: Define todas las rutas del frontend y sus guardias de navegación.
 - `src/App.vue`: El componente principal de Vue que contiene la disposición general de la aplicación.
 

@@ -61,21 +61,21 @@ sudo mysql -u root -p
 ```
 
 ```sql
-CREATE DATABASE conta_hogar;
+CREATE DATABASE conta_hogar CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci;
 CREATE USER 'user'@'localhost' IDENTIFIED BY 'your_password';
 GRANT ALL PRIVILEGES ON conta_hogar.* TO 'user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
-- Import the initial database structure from the `DB_estructura.txt` file:
+- Create the database structure by applying, in order, the files in `backend/src/db/migrations/`:
 
 ```bash
 # From the project root
-mysql -u user -p conta_hogar < DB_estructura.txt
+for f in backend/src/db/migrations/*.sql; do mysql -u user -p conta_hogar < "$f"; done
 ```
 
-This file contains the complete database structure, with all necessary tables (users, accounts, bills, categories, advances, savings, etc.) as well as sample data to start working with. Importing this file will save you from having to manually create all the tables and relationships.
+The migrations create all the tables and relationships (users, accounts, bills, categories, advances, savings, etc.), without data. The first administrator user is created in step 6.
 
 5. **Configure environment files**:
 
