@@ -2,6 +2,7 @@
 - [ ] Revisar sintaxis de colores en bloques de código en archivos markdown (SQL, PHP, Vue, etc.)
 - [ ] Implementar nueva funcionalidad de permisos y visibilidad en el proyecto
 - [ ] Rediseño de recibos por año (DC-14 a DC-18 del registro de mantenimiento): esquema, pago con importe real, evento anual y vistas por año
+- [ ] Ajustes, sección «Administrar recibos»: opción «Permitir editar/borrar recibos pagados» (DC-21), con interruptor desactivado por defecto que se desactiva al cerrar sesión; junto al botón del evento anual (DC-17)
 - [ ] Mejorar la interfaz de los diálogos para la gestión de fechas de cargo en ListBills.vue
 - [ ] Evaluar la utilidad de la función updateAllDates:
         - Añadir diálogo de confirmación para evitar actualizaciones accidentales

@@ -14,8 +14,14 @@ El componente `ListBills` permite la administración completa de recibos periód
 - Listado de recibos organizados por periodicidad (anual, trimestral, bimestral, mensual)
 - Creación y edición de recibos mediante diálogos modales específicos según periodicidad
 - Eliminación individual de recibos completos o fechas de cargo específicas
-- Visualización expandible de fechas de cargo asociadas a cada recibo trimestral o bimestral
+- Visualización expandible de fechas de cargo asociadas a cada recibo trimestral, bimestral o mensual
 - Filtrado por periodicidad y estado de actividad
+- Selector de año en la barra superior: se muestran los cargos del año elegido (por defecto el actual) y, en el año en curso, los cargos pendientes de años anteriores marcados como «Atrasado» (DC-18)
+- Importe propio en cada fecha de cargo, editable desde el lápiz de la fecha (DC-15)
+- Ejercicio cerrado (año anterior al actual): no se puede añadir ni editar el recibo, y solo se pueden editar los cargos que siguen pendientes; los botones se ven deshabilitados (DC-20)
+- Un cargo pagado solo se puede editar o borrar durante el mes en que vence; después queda cerrado, con el lápiz y la papelera deshabilitados (DC-21)
+- Al añadir fechas, generarlas o actualizar la lista se conservan los recibos expandidos; solo el cambio de año los contrae
+- «+» está activo si al recibo le falta cualquier fecha del año en curso (incluso una ya pasada, para añadirla a mano); «Generar nuevas fechas» solo si faltan fechas posteriores al último cargo o huecos cuya fecha aún no ha llegado (DC-22)
 - Gestión diferenciada según la periodicidad del recibo (anual, trimestral, bimestral, mensual)
 - Selección de cuenta bancaria asociada al recibo
 - Exportación de datos a formato CSV
@@ -29,7 +35,9 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `annualBills` | `ref([])` | Lista de recibos anuales recuperados de la base de datos |
 | `quarterlyBills` | `ref([])` | Lista de recibos trimestrales recuperados de la base de datos |
 | `bimonthlyBills` | `ref([])` | Lista de recibos bimestrales recuperados de la base de datos |
-| `monthlyBills` | `ref([])` | Lista de recibos mensuales recuperados de la base de datos |
+| `monthlyBills` | `ref([])` | Lista de cargos mensuales recuperados de la base de datos, agrupados por recibo en la tabla |
+| `expandedRowsMensual` | `ref([])` | Filas expandidas de la tabla de mensuales |
+| `selectedYear` | `ref(año actual)` | Año cuyos cargos se muestran; los atrasados solo aparecen si es el año en curso |
 | `inactiveBills` | `ref([])` | Lista de recibos inactivos recuperados de la base de datos |
 | `bill` | `ref({})` | Objeto que almacena los datos del recibo en edición |
 | `categorias` | `ref([])` | Lista de categorías disponibles para asignar a los recibos |
@@ -41,8 +49,8 @@ El componente `ListBills` permite la administración completa de recibos periód
 | Propiedad | Tipo | Descripción |
 |-----------|------|-------------|
 | `billDialog` | `ref(false)` | Controla la visibilidad del diálogo principal de edición de recibos |
-| `billDialogTB` | `ref(false)` | Controla la visibilidad del diálogo para recibos trimestrales/bimestrales |
-| `billDialogTB_FC` | `ref(false)` | Controla la visibilidad del diálogo para fechas de cargo trimestrales/bimestrales |
+| `billDialogTB` | `ref(false)` | Controla la visibilidad del diálogo del recibo trimestral, bimestral o mensual |
+| `billDialogTB_FC` | `ref(false)` | Controla la visibilidad del diálogo de una fecha de cargo (fecha, estado, comentario e importe) de trimestrales, bimestrales y mensuales |
 | `deleteBillDialog` | `ref(false)` | Controla la visibilidad del diálogo de confirmación para eliminar recibos |
 | `deleteSelectedBillsDialog` | `ref(false)` | Controla la visibilidad del diálogo para eliminar recibos seleccionados |
 
@@ -65,6 +73,11 @@ El componente `ListBills` permite la administración completa de recibos periód
 | Función | Descripción |
 |---------|-------------|
 | `updateBills(periodicity)` | Actualiza los recibos de la periodicidad especificada |
+| `fetchBills(periodicity)` | Carga los cargos de una periodicidad para el año elegido y, en el año en curso, añade los atrasados marcados con `atrasado` |
+| `reloadBills()` | Recarga en silencio todas las periodicidades (la usan los botones de año) |
+| `changeYear(delta)` / `resetYear()` | Cambian el año mostrado o vuelven al año en curso |
+| `puedeEditarCargo(cargo)` | Indica si el lápiz y la papelera de un cargo están activos: siempre si está pendiente; si está pagado, solo durante su mes (o con la opción de Ajustes, pendiente) |
+| `puedeAnadirFecha(grupo)` / `puedeGenerarFechas(grupo)` | Activan el «+» (falta cualquier fecha) y «Generar nuevas fechas» (faltan fechas generables); replican `fechasFaltantes` del backend |
 | `openNew(periodicity)` | Inicializa un nuevo objeto recibo para la periodicidad indicada, en modo manual y sin fecha inicial (F-18) |
 | `guardarRecibo()` | Guarda un recibo nuevo o actualiza uno existente |
 | `editBill(prod, openFCDialog)` | Carga los datos de un recibo existente para su edición, siempre en modo de fechas manual (F-04) |

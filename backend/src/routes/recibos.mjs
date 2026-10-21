@@ -10,7 +10,7 @@
  */
 
 // Importamos Router de express para crear rutas
-import { actualizarFechasRecibos, deleteRecibo, generarNuevasFechasRecibo, getHistorialRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
+import { actualizarFechasRecibos, completarFechasAnio, deleteRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
 import { verifyToken } from '#backend/middleware/auth.mjs';
 import { Router } from 'express';
 
@@ -122,21 +122,10 @@ router.delete('/:id', verifyToken, async (req, res) => {
             res.status(404).send({ message: 'Recibo no encontrado' });
         }
     } catch (error) {
+        if (error.status === 409) {
+            return res.status(409).send({ message: error.message });
+        }
         res.status(500).send({ message: 'Error al eliminar el recibo', error: error.message });
-    }
-});
-
-// Ruta para obtener historial de pagos de un recibo
-router.get('/:id/historial', verifyToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const historial = await getHistorialRecibo(id);
-        res.json(historial);
-    } catch (error) {
-        res.status(500).json({
-            error: 'Error al obtener el historial del recibo',
-            details: error.message
-        });
     }
 });
 
@@ -144,21 +133,16 @@ router.get('/:id/historial', verifyToken, async (req, res) => {
 router.post('/:id/generar-fechas', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const resultado = await generarNuevasFechasRecibo(id);
-        if (resultado) {
-            res.status(200).json({
-                message: 'Nuevas fechas generadas correctamente'
-            });
-        } else {
-            res.status(200).json({
-                message: 'No fue necesario generar nuevas fechas'
-            });
-        }
-    } catch (error) {
-        res.status(500).json({
-            error: 'Error al generar nuevas fechas',
-            details: error.message
+        const creadas = await completarFechasAnio(id);
+        res.status(200).json({
+            message: creadas > 0 ? 'Se han añadido ' + creadas + ' fecha(s) de cargo hasta completar el año' : 'No faltan fechas de cargo para completar el año',
+            creadas
         });
+    } catch (error) {
+        if (error.status) {
+            return res.status(error.status).json({ error: error.message });
+        }
+        res.status(500).json({ error: 'Error al generar nuevas fechas', details: error.message });
     }
 });
 

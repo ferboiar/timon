@@ -13,13 +13,14 @@ El servicio `BillService` actúa como intermediario entre la interfaz de usuario
 | `getBills()` | Obtiene todos los recibos disponibles | `GET /api/recibos` |
 | `getBillById(id)` | Obtiene un recibo específico por su ID | `GET /api/recibos/:id` |
 | `saveBill(bill)` | Crea o actualiza un recibo | `POST /api/recibos` |
-| `deleteBill(id, fecha, periodicidad)` | Elimina un recibo o una fecha de cargo específica | `DELETE /api/recibos/:id` |
+| `deleteBill(id, fecha, periodicidad)` | Elimina un recibo o una fecha de cargo específica. Si el servidor responde 409 (cargos pagados o recibo con sucesor), lanza un error con el mensaje del servidor | `DELETE /api/recibos/:id` |
 
 ### Filtrado de Recibos
 
 | Método | Descripción | Endpoint |
 |--------|-------------|----------|
-| `getBillsByPeriodicity(periodicity)` | Obtiene recibos filtrados por periodicidad | `GET /api/recibos?periodicidad=:periodicity` |
+| `getBillsByPeriodicity(periodicity, year)` | Obtiene recibos filtrados por periodicidad y, si se indica, por el año de sus fechas de cargo | `GET /api/recibos?periodicidad=:periodicity&año=:year` |
+| `getOverdueBills(periodicity, year)` | Obtiene los cargos pendientes de años anteriores al indicado (atrasados) | `GET /api/recibos?periodicidad=:periodicity&estado=pendiente&fecha=1900-01-01a:año-1-12-31` |
 | `getBillsByYear(year)` | Obtiene recibos filtrados por año | `GET /api/recibos?año=:year` |
 | `getInactiveBills()` | Obtiene recibos inactivos | `GET /api/recibos?activo=0` |
 

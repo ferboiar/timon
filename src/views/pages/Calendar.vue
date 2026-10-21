@@ -26,7 +26,7 @@ const updateEvents = (bills) => {
     events.value = filteredBills.map((bill) => ({
         start: formatDate(bill.fecha, '-'),
         end: formatDate(bill.fecha, '-'),
-        title: `${bill.concepto}: ${bill.importe}€`
+        title: `${bill.concepto}: ${bill.importe_cargo ?? bill.importe}€`
     }));
 };
 
@@ -50,7 +50,7 @@ const calcularTotales = (bills) => {
     activeBills.forEach((bill) => {
         const fecha = new Date(bill.fecha);
         const mes = fecha.getMonth();
-        const importe = parseFloat(bill.importe);
+        const importe = parseFloat(bill.importe_cargo ?? bill.importe);
 
         if (bill.periodicidad === 'mensual') totalesPorMes[mes].mensual += importe;
         else if (bill.periodicidad === 'bimestral') totalesPorMes[mes].bimestral += importe;
@@ -99,6 +99,14 @@ const changeYear = (increment) => {
     fetchBillsByYear(displayedYear.value);
 };
 
+// Vuelve al año en curso al pulsar sobre el año (igual que en la vista de recibos)
+const resetYear = () => {
+    if (displayedYear.value !== new Date().getFullYear()) {
+        selectedDate.value = new Date();
+        fetchBillsByYear(displayedYear.value);
+    }
+};
+
 const getVueCalDate = (monthIndex) => {
     return new Date(displayedYear.value, monthIndex, 1);
 };
@@ -134,7 +142,7 @@ const footerTotals = computed(() => {
     <div :class="{ 'calendar-dark': isDarkTheme }" class="card">
         <div class="flex items-center justify-center gap-4 mb-4">
             <Button icon="pi pi-caret-left" severity="secondary" class="mr-2" @click="changeYear(-1)" />
-            <div class="font-semibold text-xl">{{ displayedYear }}</div>
+            <div class="font-semibold text-xl cursor-pointer" @click="resetYear" v-tooltip="'Volver al año en curso'">{{ displayedYear }}</div>
             <Button icon="pi pi-caret-right" severity="secondary" class="mr-2" @click="changeYear(1)" />
         </div>
 
