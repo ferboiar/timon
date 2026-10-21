@@ -1,7 +1,7 @@
 /**
  * Utilidades para la gestión de recibos en la base de datos
  *
- * Este módulo proporciona funciones para interactuar con las tablas 'recibos', 'recibos_historico' y 'fechas_cargo'.
+ * Este módulo proporciona funciones para interactuar con las tablas 'recibos' y 'fechas_cargo'.
  * Incluye operaciones como obtener, crear, actualizar y eliminar recibos,
  * así como gestionar los filtros de búsqueda y validar valores permitidos.
  * Soporta filtrado por múltiples criterios como periodicidad, fecha, año, etc.
@@ -27,7 +27,7 @@ async function getRecibos(filters) {
     try {
         connection = await getConnection();
         let query = `
-            SELECT r.*, c.nombre AS categoria, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.activo, fc.comentario
+            SELECT r.*, c.nombre AS categoria, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.activo, fc.comentario, fc.importe AS importe_cargo
             FROM recibos r
             LEFT JOIN fechas_cargo fc ON r.id = fc.recibo_id
             LEFT JOIN categorias c ON r.categoria_id = c.id
@@ -78,31 +78,6 @@ async function getRecibos(filters) {
         return rows;
     } catch (error) {
         console.error('API. Error al obtener los recibos:', error);
-        throw error;
-    } finally {
-        if (connection) connection.release();
-    }
-}
-
-/**
- * Obtiene el historial de pagos de un recibo específico
- * @param {number} reciboId - ID del recibo
- * @returns {Array} - Historial de pagos del recibo
- */
-async function getHistorialRecibo(reciboId) {
-    let connection;
-    try {
-        connection = await getConnection();
-        const query = `
-            SELECT * FROM recibos_historico
-            WHERE recibo_id = ?
-            ORDER BY fecha_pago DESC
-        `;
-
-        const [rows] = await connection.execute(query, [reciboId]);
-        return rows;
-    } catch (error) {
-        console.error('API. Error al obtener el historial del recibo:', error);
         throw error;
     } finally {
         if (connection) connection.release();
@@ -175,6 +150,60 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
     }
 
     return fechas;
+}
+
+/**
+ * Genera las fechas de cargo de un recibo que caen en el mismo año natural que su fecha inicial (DC-16).
+ * La secuencia está anclada en el día y el mes de fechaInicial: cada fecha se calcula sumando un múltiplo
+ * de la periodicidad a la fecha inicial, sin arrastrar desvíos. Si el día no existe en un mes
+ * (por ejemplo el 31 en abril), se usa el último día de ese mes.
+ * @param {string} fechaInicial - Fecha inicial en formato YYYY-MM-DD
+ * @param {string} periodicidad - mensual, bimestral, trimestral o anual
+ * @returns {Array} - Fechas con estado "pendiente", desde fechaInicial hasta el 31 de diciembre de su año
+ */
+function generarFechasDelAnio(fechaInicial, periodicidad) {
+    const mesesPorPeriodo = { mensual: 1, bimestral: 2, trimestral: 3, anual: 12 }[periodicidad];
+    if (!mesesPorPeriodo) {
+        throw new Error(`API. Periodicidad no válida: ${periodicidad}.`);
+    }
+    const [anio, mes, dia] = String(fechaInicial).split('-').map(Number);
+    const dosCifras = (n) => String(n).padStart(2, '0');
+    const fechas = [];
+    for (let k = 0; ; k++) {
+        const mesesDesdeEnero = mes - 1 + k * mesesPorPeriodo;
+        if (mesesDesdeEnero >= 12) break;
+        const mesCargo = mesesDesdeEnero + 1;
+        const ultimoDia = new Date(Date.UTC(anio, mesCargo, 0)).getUTCDate();
+        const diaCargo = Math.min(dia, ultimoDia);
+        fechas.push({ fecha: `${anio}-${dosCifras(mesCargo)}-${dosCifras(diaCargo)}`, estado: 'pendiente', comentario: k === 0 ? 'Fecha inicial' : '', activo: 1 });
+    }
+    return fechas;
+}
+
+/**
+ * Importe que debe quedar guardado en un cargo (DC-15). Un cargo pagado guarda siempre el suyo (el indicado,
+ * el que ya tuviera o el del recibo); uno pendiente solo si se ha personalizado: si coincide con el del recibo, queda vacío y lo sigue.
+ * @param {string} estado - Estado del cargo tras la operación
+ * @param {Object|null} cargoActual - Fila actual de fechas_cargo, si existe
+ * @param {Object} cargoPeticion - Cargo recibido en la petición
+ * @param {number} importeRecibo - Importe del recibo
+ * @returns {number|null}
+ */
+function importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo) {
+    const indicado = cargoPeticion?.importe;
+    if (indicado !== undefined && indicado !== null && indicado !== '') {
+        const importeIndicado = Number(indicado);
+        if (!Number.isFinite(importeIndicado) || importeIndicado < 0) {
+            throw new Error('API. El importe del cargo debe ser un número positivo.');
+        }
+        // Pagado: el importe queda fijado. Pendiente: solo se guarda si difiere del importe del recibo
+        if (estado === 'cargado') return importeIndicado;
+        return importeIndicado === Number(importeRecibo) ? null : importeIndicado;
+    }
+    const importeActual = cargoActual && cargoActual.importe !== null && cargoActual.importe !== undefined ? Number(cargoActual.importe) : null;
+    if (estado === 'cargado') return importeActual ?? importeRecibo;
+    // Pendiente sin importe indicado: conserva el personalizado de un cargo que ya estaba pendiente; al volver desde «cargado» se vacía
+    return cargoActual && cargoActual.estado !== 'cargado' ? importeActual : null;
 }
 
 /**
@@ -285,25 +314,8 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
 
     // Si estamos en modo automático, generar nuevas fechas
     if (generarFechasAutomaticamente && fecha_inicial) {
-        // Determinar el número de fechas a generar según la periodicidad
-        let cantidadFechas;
-        switch (periodicidad) {
-            case 'mensual':
-                cantidadFechas = 12; // Un año
-                break;
-            case 'bimestral':
-                cantidadFechas = 6; // Un año
-                break;
-            case 'trimestral':
-                cantidadFechas = 4; // Un año
-                break;
-            case 'anual':
-                cantidadFechas = 1; // Una fecha
-                break;
-        }
-
         // Generar las nuevas fechas
-        fechasCargo = generarFechasFuturas(fecha_inicial, periodicidad, cantidadFechas);
+        fechasCargo = generarFechasDelAnio(fecha_inicial, periodicidad); // DC-16: solo hasta el 31 de diciembre del año de fecha_inicial
     } else {
         // En modo manual, validar el array de cargo proporcionado
         // Filtrar elementos del array cargo que tienen fecha como null
@@ -430,7 +442,8 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                                     console.log('API: - Activo:', activo);
                                     console.log('API: - Fecha (preservada):', fecha);
 
-                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ? WHERE id = ?', [estado, comentario, activo, c.id]);
+                                    const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
+                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ?, importe = ? WHERE id = ?', [estado, comentario, activo, importeCargo, c.id]);
 
                                     console.log('API: Resultado de actualización parcial:', updateResult.affectedRows, 'filas afectadas');
 
@@ -494,7 +507,9 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                                     // Asegurar que el comentario nunca sea undefined
                                     const comentarioFinal = c.comentario !== undefined ? c.comentario : '';
 
-                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ? WHERE id = ?', [estado, comentarioFinal, fecha, c.activo, c.id]);
+                                    // DC-15: al pagar se fija el importe del cargo; al volver a pendiente se vacía
+                                    const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
+                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ?, importe = ? WHERE id = ?', [estado, comentarioFinal, fecha, c.activo, importeCargo, c.id]);
                                     console.log('API: Resultado de actualización:', updateResult.affectedRows, 'filas afectadas');
 
                                     // Verificar que la actualización fue efectiva
@@ -507,12 +522,6 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                                     if (verifyUpdate.length > 0) {
                                         console.log('API: Verificación después de actualizar:', `Estado: ${verifyUpdate[0].estado}`, `Comentario: "${verifyUpdate[0].comentario}"`, `Activo: ${verifyUpdate[0].activo}`);
                                     }
-
-                                    // Si el estado cambia a 'cargado', guardar en el historial
-                                    if (estado === 'cargado' && existingCargo[0].estado !== 'cargado') {
-                                        await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [id, fecha, importe, c.comentario || '']);
-                                        console.log('API: Guardado en historial por cambio a estado cargado');
-                                    }
                                 } else {
                                     console.log('API: No se encontró el cargo con ID:', c.id);
                                 }
@@ -522,12 +531,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                             }
                         } else {
                             // Insertar si no existe, incluyendo activo
-                            await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario || '', c.activo]);
-
-                            // Si el estado es 'cargado', guardar en el historial
-                            if (estado === 'cargado') {
-                                await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [id, fecha, importe, c.comentario || '']);
-                            }
+                            await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, importe) VALUES (?, ?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario || '', c.activo, importeDelCargo(estado, null, c, importe)]);
                         }
                     }
                 }
@@ -568,25 +572,8 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
             // Determinar si necesitamos generar fechas automáticamente o usar las fechas de cargo proporcionadas
             if (modoFechas === 'auto' && fecha_inicial) {
                 console.log('API: Generando fechas automáticamente para el recibo ID:', newReciboId);
-                // Determinar el número de fechas a generar según la periodicidad
-                let cantidadFechas;
-                switch (periodicidad) {
-                    case 'mensual':
-                        cantidadFechas = 12; // Un año
-                        break;
-                    case 'bimestral':
-                        cantidadFechas = 6; // Un año
-                        break;
-                    case 'trimestral':
-                        cantidadFechas = 4; // Un año
-                        break;
-                    case 'anual':
-                        cantidadFechas = 1; // Una fecha
-                        break;
-                }
-
                 // Generar las nuevas fechas
-                const fechasAutomaticas = generarFechasFuturas(fecha_inicial, periodicidad, cantidadFechas);
+                const fechasAutomaticas = generarFechasDelAnio(fecha_inicial, periodicidad); // DC-16
                 console.log('API: Fechas generadas automáticamente:', fechasAutomaticas);
 
                 // Insertar las fechas generadas automáticamente
@@ -618,12 +605,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                     }
 
                     console.log('API: Insertando fecha de cargo:', fecha, 'para recibo ID:', newReciboId);
-                    await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario || '', c.activo]);
-
-                    // Si el estado es 'cargado', guardar en el historial
-                    if (estado === 'cargado') {
-                        await connection.execute('INSERT INTO recibos_historico (recibo_id, fecha_pago, importe, pagado, notas) VALUES (?, ?, ?, 1, ?)', [newReciboId, fecha, importe, c.comentario || '']);
-                    }
+                    await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, importe) VALUES (?, ?, ?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario || '', c.activo, importeDelCargo(estado, null, c, importe)]);
                 }
             } else {
                 console.log('API: ADVERTENCIA - No se han insertado fechas de cargo para el recibo ID:', newReciboId);
@@ -791,69 +773,167 @@ async function actualizarFechasRecibos() {
     }
 }
 
-async function deleteRecibo(id, fecha, periodicidad) {
+/** Error con código HTTP asociado, para que la ruta responda con el estado adecuado. */
+class ErrorDeRecibo extends Error {
+    constructor(mensaje, status) {
+        super(mensaje);
+        this.name = 'ErrorDeRecibo';
+        this.status = status;
+    }
+}
+
+/**
+ * Elimina un recibo completo o solo una fecha de cargo (DC-18).
+ * - Con fecha solo se borra ese cargo, sea cual sea la periodicidad; si era el último, también el recibo.
+ * - Si lo que se borra tiene cargos pagados, o el recibo tiene recibos de años posteriores, lanza un error con status 409.
+ *   Excepción: un cargo pagado suelto sí se puede borrar durante el mes en que vence (para rectificar); los de meses anteriores están cerrados.
+ * - Al borrar un recibo que procede de otro, el origen queda con replicar = 0 para que el evento anual no lo recree.
+ * @returns {boolean} - false si el recibo no existe
+ */
+async function deleteRecibo(id, fecha, periodicidad, hoy = new Date()) {
     let connection;
     try {
         connection = await getConnection();
         await connection.beginTransaction();
 
-        if (periodicidad === 'bimestral' || periodicidad === 'trimestral') {
-            if (!fecha) {
-                // Borrar todos los recibos de fechas_cargo con recibo_id = id
-                await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
+        const [recibos] = await connection.execute('SELECT id, recibo_origen_id FROM recibos WHERE id = ? FOR UPDATE', [id]);
+        if (recibos.length === 0) {
+            await connection.rollback();
+            return false;
+        }
+        const reciboOrigenId = recibos[0].recibo_origen_id;
 
-                // Borrar todos los registros históricos
-                await connection.query('DELETE FROM recibos_historico WHERE recibo_id = ?', [id]);
+        const soloUnaFecha = Boolean(fecha);
+        const fechaFormateada = soloUnaFecha ? new Date(fecha).toISOString().split('T')[0] : null;
+        const filtroFecha = soloUnaFecha ? ' AND fecha = ?' : '';
+        const parametros = soloUnaFecha ? [id, fechaFormateada] : [id];
 
-                // Borrar todos los recibos de recibos con id = id
-                const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
-                await connection.commit();
-                return result.affectedRows > 0;
-            }
+        const mesActual = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
+        const filtroPagados = soloUnaFecha ? filtroFecha + " AND DATE_FORMAT(fecha, '%Y-%m') <> ?" : '';
+        const parametrosPagados = soloUnaFecha ? [id, fechaFormateada, mesActual] : [id];
+        const [[pagados]] = await connection.execute(`SELECT COUNT(*) AS total FROM fechas_cargo WHERE recibo_id = ? AND estado = 'cargado'${filtroPagados}`, parametrosPagados);
+        if (Number(pagados.total) > 0) {
+            throw new ErrorDeRecibo(soloUnaFecha ? 'No se puede borrar un cargo pagado de un mes anterior: ese periodo está cerrado.' : 'No se puede borrar un recibo con cargos pagados.', 409);
         }
 
-        if (periodicidad !== 'mensual') {
-            const fecha_formateada = fecha ? new Date(fecha).toISOString().split('T')[0] : null; // Convertir fecha al formato YYYY-MM-DD
+        await connection.execute(`DELETE FROM fechas_cargo WHERE recibo_id = ?${filtroFecha}`, parametros);
 
-            if (fecha_formateada) {
-                // Eliminar recibo de la tabla fechas_cargo
-                await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, fecha_formateada]);
-            } else {
-                // Eliminar todos los recibos de fechas_cargo con recibo_id = id
-                await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
-            }
-
-            // Si no tiene más fechas de cargo eliminar el recibo de la tabla recibos
-            const [remainingCargos] = await connection.query('SELECT COUNT(*) as count FROM fechas_cargo WHERE recibo_id = ?', [id]);
-            if (remainingCargos[0].count === 0) {
-                // Borrar todos los registros históricos
-                await connection.query('DELETE FROM recibos_historico WHERE recibo_id = ?', [id]);
-
-                const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
-                await connection.commit();
-                return result.affectedRows > 0;
-            } else {
+        if (soloUnaFecha) {
+            const [[restantes]] = await connection.execute('SELECT COUNT(*) AS total FROM fechas_cargo WHERE recibo_id = ?', [id]);
+            if (Number(restantes.total) > 0) {
                 await connection.commit();
                 return true;
             }
-        } else {
-            // Para recibos mensuales, eliminar las entradas en fechas_cargo y luego de la tabla recibos
-            await connection.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
-
-            // Borrar todos los registros históricos
-            await connection.query('DELETE FROM recibos_historico WHERE recibo_id = ?', [id]);
-
-            const [result] = await connection.query('DELETE FROM recibos WHERE id = ?', [id]);
-            await connection.commit();
-            return result.affectedRows > 0;
         }
+
+        const [sucesores] = await connection.execute('SELECT id FROM recibos WHERE recibo_origen_id = ?', [id]);
+        if (sucesores.length > 0) {
+            throw new ErrorDeRecibo('No se puede borrar un recibo que tiene recibos de años posteriores.', 409);
+        }
+
+        // Filas antiguas del historial: esta línea desaparece cuando se elimine la tabla
+        await connection.execute('DELETE FROM recibos_historico WHERE recibo_id = ?', [id]);
+        const [result] = await connection.execute('DELETE FROM recibos WHERE id = ?', [id]);
+        if (reciboOrigenId) {
+            await connection.execute('UPDATE recibos SET replicar = 0 WHERE id = ?', [reciboOrigenId]);
+        }
+        await connection.commit();
+        return result.affectedRows > 0;
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error('API. Error al eliminar el recibo: ', error);
+        if (error.status !== 409) console.error('API. Error al eliminar el recibo: ', error);
         throw error;
     } finally {
         if (connection) connection.release();
     }
 }
 
-export { actualizarFechasRecibos, deleteRecibo, generarNuevasFechasRecibo, getHistorialRecibo, getRecibos, pushRecibo };
+/**
+ * Fechas que le faltan a un recibo en el año en curso (DC-16, DC-22).
+ * Sigue la secuencia anclada en fechaInicial (cada fecha es un múltiplo de la periodicidad desde ella). Una fecha falta si ningún
+ * cargo del recibo cae en ese mes. Solo se consideran los meses del año en curso, nunca los anteriores a fechaInicial, y nada si el
+ * recibo es de un ejercicio cerrado (su última fecha es de un año anterior). Si el día no existe en un mes, se usa el último día.
+ * Cada fecha lleva generable = true si es posterior al último cargo del recibo, o si es un hueco intermedio cuya fecha aún no ha
+ * llegado; los huecos de fechas ya pasadas solo se pueden añadir a mano.
+ * @param {string} fechaInicial - Ancla de la secuencia, en formato YYYY-MM-DD
+ * @param {string} periodicidad - mensual, bimestral, trimestral o anual
+ * @param {string[]} fechasExistentes - Fechas de cargo que ya tiene el recibo, en formato YYYY-MM-DD
+ * @param {number} anioActual - Año en curso
+ * @param {Date} [hoy] - Fecha de hoy (parámetro para poder probarlo)
+ * @returns {Array} - Fechas con estado "pendiente" y la marca generable, en orden cronológico
+ */
+function fechasFaltantes(fechaInicial, periodicidad, fechasExistentes, anioActual, hoy = new Date()) {
+    const mesesPorPeriodo = { mensual: 1, bimestral: 2, trimestral: 3, anual: 12 }[periodicidad];
+    if (!mesesPorPeriodo) {
+        throw new Error('API. Periodicidad no válida: ' + periodicidad + '.');
+    }
+    if (fechasExistentes.length === 0) return [];
+    const indiceMes = (fecha) => {
+        const [anio, mes] = String(fecha).slice(0, 10).split('-').map(Number);
+        return anio * 12 + (mes - 1);
+    };
+    const dosCifras = (n) => String(n).padStart(2, '0');
+    const existentes = new Set(fechasExistentes.map(indiceMes));
+    const indiceUltimo = Math.max(...existentes);
+    if (Math.floor(indiceUltimo / 12) < anioActual) return [];
+    const hoyTexto = hoy.getFullYear() + '-' + dosCifras(hoy.getMonth() + 1) + '-' + dosCifras(hoy.getDate());
+    const [anioAncla, mesAncla, diaAncla] = String(fechaInicial ?? fechasExistentes[0]).slice(0, 10).split('-').map(Number);
+    const indiceAncla = anioAncla * 12 + (mesAncla - 1);
+    const fechas = [];
+    for (let indice = Math.max(indiceAncla, anioActual * 12); indice <= anioActual * 12 + 11; indice++) {
+        if ((((indice - indiceAncla) % mesesPorPeriodo) + mesesPorPeriodo) % mesesPorPeriodo !== 0) continue;
+        if (existentes.has(indice)) continue;
+        const mes = (indice % 12) + 1;
+        const ultimoDia = new Date(Date.UTC(anioActual, mes, 0)).getUTCDate();
+        const fecha = anioActual + '-' + dosCifras(mes) + '-' + dosCifras(Math.min(diaAncla, ultimoDia));
+        fechas.push({ fecha, estado: 'pendiente', comentario: '', activo: 1, generable: indice > indiceUltimo || fecha > hoyTexto });
+    }
+    return fechas;
+}
+
+/**
+ * Añade a un recibo las fechas generables que le faltan (botón «Generar nuevas fechas»): las posteriores a su último cargo y los
+ * huecos intermedios cuya fecha aún no ha llegado. Nunca toca ejercicios cerrados ni fechas existentes.
+ * @param {number|string} reciboId - ID del recibo
+ * @param {number} [anioActual] - Año en curso (parámetro para poder probar el cierre de ejercicio)
+ * @param {Date} [hoy] - Fecha de hoy (parámetro para poder probarlo)
+ * @returns {number} - Número de fechas añadidas
+ * @throws {Error} - Con status 404 si el recibo no existe, o 409 si no tiene fechas o su ejercicio está cerrado
+ */
+async function completarFechasAnio(reciboId, anioActual = new Date().getFullYear(), hoy = new Date()) {
+    let connection;
+    try {
+        connection = await getConnection();
+        await connection.beginTransaction();
+
+        const [recibos] = await connection.execute("SELECT periodicidad, DATE_FORMAT(fecha_inicial, '%Y-%m-%d') AS fecha_inicial FROM recibos WHERE id = ? FOR UPDATE", [reciboId]);
+        if (recibos.length === 0) {
+            throw new ErrorDeRecibo('Recibo no encontrado.', 404);
+        }
+
+        const [cargos] = await connection.execute("SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, activo FROM fechas_cargo WHERE recibo_id = ? AND fecha IS NOT NULL ORDER BY fecha ASC", [reciboId]);
+        if (cargos.length === 0) {
+            throw new ErrorDeRecibo('El recibo no tiene fechas de cargo: usa el modo automático con una fecha inicial.', 409);
+        }
+
+        const ultima = cargos[cargos.length - 1];
+        if (Number(ultima.fecha.slice(0, 4)) < anioActual) {
+            throw new ErrorDeRecibo('El ejercicio de este recibo está cerrado.', 409);
+        }
+
+        const faltantes = fechasFaltantes(recibos[0].fecha_inicial ?? cargos[0].fecha, recibos[0].periodicidad, cargos.map((c) => c.fecha), anioActual, hoy).filter((f) => f.generable);
+        for (const f of faltantes) {
+            await connection.execute("INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, 'pendiente', '', ?)", [reciboId, f.fecha, ultima.activo]);
+        }
+        await connection.commit();
+        return faltantes.length;
+    } catch (error) {
+        if (connection) await connection.rollback();
+        if (!error.status) console.error('API. Error al completar las fechas del recibo: ', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export { actualizarFechasRecibos, completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, generarNuevasFechasRecibo, getRecibos, importeDelCargo, pushRecibo };

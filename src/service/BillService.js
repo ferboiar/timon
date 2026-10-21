@@ -84,20 +84,39 @@ export class BillService {
             return response.data;
         } catch (error) {
             console.error(`BillService. Error al eliminar el recibo ${periodicidad} del ${fecha} con ID ${id}: `, error);
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
             throw error;
         }
     }
 
     // Obtener recibos por periodicidad
-    static async getBillsByPeriodicity(periodicity) {
+    static async getBillsByPeriodicity(periodicity, year) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}?periodicidad=${periodicity}`, {
+            const response = await axios.get(API_URL, {
+                params: { periodicidad: periodicity, ...(year ? { año: year } : {}) },
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
             return response.data;
         } catch (error) {
             console.error(`BillService. Error al obtener los recibos con periodicidad ${periodicity}: `, error);
+            throw error;
+        }
+    }
+
+    // Obtener los cargos pendientes de años anteriores al indicado (atrasados) de una periodicidad
+    static async getOverdueBills(periodicity, year) {
+        try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const response = await axios.get(API_URL, {
+                params: { periodicidad: periodicity, estado: 'pendiente', fecha: '1900-01-01a' + (year - 1) + '-12-31' },
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
+            return response.data;
+        } catch (error) {
+            console.error('BillService. Error al obtener los cargos atrasados ' + periodicity + ': ', error);
             throw error;
         }
     }
@@ -130,20 +149,6 @@ export class BillService {
         }
     }
 
-    // Obtener historial de pagos de un recibo
-    static async getBillHistory(id) {
-        try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/${id}/historial`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
-            });
-            return response.data;
-        } catch (error) {
-            console.error(`BillService. Error al obtener el historial del recibo con ID ${id}: `, error);
-            throw error;
-        }
-    }
-
     // Generar nuevas fechas para un recibo
     static async generateBillDates(id) {
         try {
@@ -158,6 +163,9 @@ export class BillService {
             return response.data;
         } catch (error) {
             console.error(`BillService. Error al generar nuevas fechas para el recibo con ID ${id}: `, error);
+            if (error.response?.data?.error) {
+                throw new Error(error.response.data.error);
+            }
             throw error;
         }
     }

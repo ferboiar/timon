@@ -24,7 +24,7 @@ let pool;
 async function initPool() {
     try {
         // Verificar si el archivo de configuración existe
-        if (!fs.existsSync(dbConfigPath)) {
+        if (!process.env.DB_HOST && !fs.existsSync(dbConfigPath)) {
             throw new Error(
                 `El archivo de configuración no existe: ${dbConfigPath}\n` +
                     `Crea un fichero '.db_connection' en la ruta ${__dirname} con el siguiente contenido:\n` +
@@ -37,7 +37,7 @@ async function initPool() {
         }
 
         // Cargar variables de entorno desde el archivo .db_connection
-        const result = dotenv.config({ path: dbConfigPath });
+        const result = fs.existsSync(dbConfigPath) ? dotenv.config({ path: dbConfigPath }) : {};
 
         if (result.error) {
             throw new Error(`Error al procesar el archivo de configuración: ${result.error}`);
@@ -80,4 +80,12 @@ async function getConnection() {
     return pool.getConnection();
 }
 
-export { getConnection };
+// Cierra el pool (las pruebas lo usan para terminar limpiamente)
+async function closePool() {
+    if (pool) {
+        await pool.end();
+        pool = undefined;
+    }
+}
+
+export { closePool, getConnection };

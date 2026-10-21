@@ -26,8 +26,8 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `cuenta_id` | INT | ID de la cuenta bancaria asociada al recibo |
 | `propietario_id` | INT | ID del usuario propietario del recibo |
 | `fecha_inicial` | DATE | Fecha desde la que se generan las fechas en modo automático; en modo manual se guarda la primera fecha de cargo |
-| `recibo_origen_id` | INT | Recibo del año anterior del que procede; único, así que cada recibo tiene como mucho un sucesor (DC-14). Aún sin uso en la aplicación |
-| `replicar` | TINYINT | 1 por defecto; con 0 no se crea el recibo del año siguiente (DC-17). Aún sin uso en la aplicación |
+| `recibo_origen_id` | INT | Recibo del año anterior del que procede; único, así que cada recibo tiene como mucho un sucesor (DC-14). `deleteRecibo` impide borrar un recibo con sucesor y lo usa para marcar `replicar = 0` en su origen |
+| `replicar` | TINYINT | 1 por defecto; con 0 no se crea el recibo del año siguiente (DC-17). `deleteRecibo` lo pone a 0 en el origen del recibo que borra (DC-18) |
 
 ### Tabla `fechas_cargo`
 
@@ -36,8 +36,8 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `id` | INT | Clave primaria |
 | `recibo_id` | INT | Referencia al recibo asociado |
 | `fecha` | DATE | Fecha del cargo |
-| `importe` | DECIMAL | Importe real del cargo: vacío mientras está pendiente (se usa el del recibo) y fijado al pagarlo (DC-15). La columna existe, pero la aplicación aún no la usa |
-| `estado` | ENUM | Estado del cargo: 'pendiente', 'pagado', 'rechazado' |
+| `importe` | DECIMAL | Importe real del cargo: vacío mientras el cargo sigue el importe del recibo; fijado al pagarlo y, en un cargo pendiente, cuando se personaliza (DC-15); lo escribe `pushRecibo` |
+| `estado` | ENUM | Estado del cargo: 'pendiente' o 'cargado' |
 | `comentario` | VARCHAR | Comentario opcional sobre el cargo |
 | `activo` | TINYINT | Estado del cargo (1 activo, 0 inactivo) |
 
@@ -63,10 +63,13 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 
 | Función | Descripción |
 |---------|-------------|
-| `getRecibos(filters)` | Obtiene recibos aplicando filtros opcionales (periodicidad, fecha, año, etc.) |
-| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas)` | Crea o actualiza un recibo con sus fechas de cargo. En modo `auto` genera las fechas desde `fecha_inicial`; al actualizar solo reescribe las pendientes. Devuelve `{ fechasReescritas, fechasConservadas }` |
-| `deleteRecibo(id, fecha, periodicidad)` | Elimina un recibo completo o solo una fecha de cargo específica |
-| `getHistorialRecibo(reciboId)` | Obtiene el historial de pagos de un recibo, del más reciente al más antiguo |
+| `getRecibos(filters)` | Obtiene recibos aplicando filtros opcionales (periodicidad, fecha, año, etc.). Cada fila incluye `importe` (el del recibo) e `importe_cargo` (el real del cargo, vacío si está pendiente) |
+| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas)` | Crea o actualiza un recibo con sus fechas de cargo. En modo `auto` genera las fechas desde `fecha_inicial` hasta el 31 de diciembre de ese año (DC-16); al actualizar solo reescribe las pendientes. Al pasar un cargo a «cargado» guarda su importe (DC-15). Devuelve `{ fechasReescritas, fechasConservadas }` |
+| `deleteRecibo(id, fecha, periodicidad)` | Elimina un recibo completo o solo una fecha de cargo específica. Si el recibo tiene cargos pagados, o la fecha indicada está pagada y es de un mes anterior al actual, o el recibo tiene sucesor, lanza un error con `status` 409 y no borra nada; una fecha pagada del mes en curso sí puede borrarse (para rectificar). Al borrar un recibo con origen, marca `replicar = 0` en el origen (DC-18) |
+| `generarFechasDelAnio(fechaInicial, periodicidad)` | Devuelve las fechas de la secuencia anclada en `fechaInicial` que caen en su mismo año natural (DC-16). Si el día no existe en un mes, usa el último día |
+| `fechasFaltantes(fechaInicial, periodicidad, fechasExistentes, anioActual, hoy)` | Devuelve los meses de la secuencia anclada en `fechaInicial` que no tienen cargo en el año en curso, nunca antes de `fechaInicial` ni en un ejercicio cerrado. Cada fecha lleva `generable`: verdadero si es posterior al último cargo o un hueco cuya fecha aún no ha llegado (DC-22) |
+| `completarFechasAnio(reciboId)` | Añade a un recibo las fechas generables de `fechasFaltantes` (botón «Generar nuevas fechas»). Devuelve cuántas añadió; error 409 si el recibo no tiene fechas o su ejercicio está cerrado |
+| `importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo)` | Importe que debe guardarse en un cargo: si está «cargado», el indicado, el que ya tuviera o el del recibo; si está pendiente, solo uno personalizado (si coincide con el del recibo queda vacío) (DC-15) |
 | `generarNuevasFechasRecibo(reciboId)` | Genera un nuevo ciclo de fechas cuando no quedan fechas pendientes activas, a partir de la última fecha. Nunca modifica las existentes. Sin fechas previas parte de `fecha_inicial` y crea siempre 4 (F-32) |
 | `actualizarFechasRecibos()` | Aplica `generarNuevasFechasRecibo` a todos los recibos con fechas activas y devuelve `total` y `actualizados` |
 | `getValidValues(column, table)` | Obtiene valores válidos para campos ENUM o categorías |
@@ -86,13 +89,13 @@ La función `getRecibos()` implementa un sistema de filtrado flexible que permit
 
 El sistema maneja de forma diferenciada los recibos según su periodicidad:
 
-1. **Recibos mensuales**: Mantienen una sola fecha de cargo asociada
+1. **Recibos mensuales**: Se dan de alta con las fechas del año que quedan desde la fecha inicial (hasta 12); como los bimestrales y trimestrales, cada fecha tiene su estado, comentario e importe
 2. **Recibos bimestrales/trimestrales**: Pueden tener múltiples fechas de cargo, cada una con su propio estado y comentario
-3. **Eliminación inteligente**: Al eliminar fechas de cargo de recibos no mensuales, el sistema determina automáticamente si debe eliminar también el recibo principal
+3. **Eliminación inteligente**: Al eliminar una fecha de cargo, el sistema determina automáticamente si debe eliminar también el recibo principal
 
 ### Fechas de cargo en modo automático
 
-En un recibo nuevo, `pushRecibo` genera con `generarFechasFuturas` las fechas desde `fecha_inicial`: 12 para mensuales, 6 para bimestrales, 4 para trimestrales y 1 para anuales.
+En un recibo nuevo, `pushRecibo` genera con `generarFechasDelAnio` las fechas desde `fecha_inicial` hasta el 31 de diciembre de ese año (DC-16): un mensual dado de alta en octubre tiene 3 y uno dado de alta en enero tiene 12 (6 bimestrales, 4 trimestrales y 1 anual en un año completo).
 
 Al actualizar un recibo que ya tiene fechas, calcula la secuencia para el mismo número de fechas y aplica solo las posiciones cuya fecha está en estado `pendiente`. Las fechas con otro estado se conservan (DC-11, F-04). Si una fecha pendiente ya coincide con la calculada, no se toca.
 

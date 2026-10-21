@@ -22,6 +22,8 @@ if (!/^[a-z0-9_]+_test$/.test(dbName)) {
 }
 
 let db;
+let cerrarPool;
+let completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo;
 
 before(async () => {
     const admin = await mysql.createConnection(conexion);
@@ -36,9 +38,15 @@ before(async () => {
     }
     await db.query(`INSERT INTO users (id, username, email, password, rol) VALUES (2, 'tester', 'tester@example.test', 'x', 'admin')`);
     await db.query(`INSERT INTO cuentas (id, nombre, tipo, iban, propietario_id) VALUES (1, 'Cuenta de prueba', 'corriente', 'ES0000000000000000000001', 2)`);
+    await db.query(`INSERT INTO categorias (id, nombre, descripcion, propietario_id) VALUES (1, 'General', NULL, 2)`);
+    // Las funciones reales de la aplicación se conectan a la base de pruebas (dotenv no pisa las variables ya definidas)
+    Object.assign(process.env, { DB_HOST: conexion.host, DB_PORT: String(conexion.port), DB_USER: conexion.user, DB_PASSWORD: conexion.password, DB_DATABASE: dbName });
+    ({ closePool: cerrarPool } = await import('../src/db/db_connection.mjs'));
+    ({ completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo } = await import('../src/db/db_utils.mjs'));
 });
 
 after(async () => {
+    if (cerrarPool) await cerrarPool();
     if (db) await db.end();
     const admin = await mysql.createConnection(conexion);
     await admin.query(`DROP DATABASE IF EXISTS ${mysql.escapeId(dbName)}`);
@@ -192,5 +200,239 @@ describe('DC-14: esquema de recibo por año', () => {
         } finally {
             await db.rollback();
         }
+    });
+});
+
+describe('DC-14 a DC-18: lógica de recibos con las funciones reales de la aplicación', () => {
+    const crear = async (concepto, periodicidad, fechaInicial, importe = 35) => {
+        await pushRecibo(undefined, concepto, periodicidad, importe, 'General', undefined, 2, 1, fechaInicial, 'auto');
+        const [[fila]] = await db.query('SELECT id FROM recibos WHERE concepto = ?', [concepto]);
+        return fila.id;
+    };
+    const cargosDe = async (reciboId) => {
+        const [filas] = await db.query("SELECT id, DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, estado, importe FROM fechas_cargo WHERE recibo_id = ? ORDER BY fecha", [reciboId]);
+        return filas;
+    };
+    const actualizarCargos = (id, concepto, periodicidad, importe, cargo) => pushRecibo(id, concepto, periodicidad, importe, 'General', cargo, 2, 1, undefined, 'manual');
+
+    test('generarFechasDelAnio: un trimestral que empieza en agosto solo llega a noviembre', () => {
+        assert.deepEqual(
+            generarFechasDelAnio('2026-08-15', 'trimestral').map((f) => f.fecha),
+            ['2026-08-15', '2026-11-15']
+        );
+    });
+
+    test('generarFechasDelAnio: un año completo da 12, 6, 4 y 1 fechas', () => {
+        assert.equal(generarFechasDelAnio('2026-01-09', 'mensual').length, 12);
+        assert.equal(generarFechasDelAnio('2026-01-07', 'bimestral').length, 6);
+        assert.deepEqual(
+            generarFechasDelAnio('2026-01-09', 'trimestral').map((f) => f.fecha),
+            ['2026-01-09', '2026-04-09', '2026-07-09', '2026-10-09']
+        );
+        assert.equal(generarFechasDelAnio('2026-05-26', 'anual').length, 1);
+    });
+
+    test('generarFechasDelAnio: ajusta al último día del mes sin acumular desvíos', () => {
+        assert.deepEqual(
+            generarFechasDelAnio('2026-10-31', 'mensual').map((f) => f.fecha),
+            ['2026-10-31', '2026-11-30', '2026-12-31']
+        );
+        const bisiesto = generarFechasDelAnio('2028-01-31', 'mensual').map((f) => f.fecha);
+        assert.equal(bisiesto[1], '2028-02-29');
+        assert.equal(bisiesto[2], '2028-03-31');
+    });
+
+    test('importeDelCargo: vacío si no está cargado; si lo está, el indicado, el que tenía o el del recibo', () => {
+        assert.equal(importeDelCargo('pendiente', { estado: 'cargado', importe: '35.00' }, {}, 40), null);
+        assert.equal(importeDelCargo('pendiente', { estado: 'pendiente', importe: '20.00' }, {}, 40), 20);
+        assert.equal(importeDelCargo('pendiente', { estado: 'pendiente', importe: null }, { importe: 52.3 }, 40), 52.3);
+        assert.equal(importeDelCargo('pendiente', { estado: 'pendiente', importe: '20.00' }, { importe: 40 }, 40), null);
+        assert.equal(importeDelCargo('cargado', null, { importe: 37.5 }, 40), 37.5);
+        assert.equal(importeDelCargo('cargado', { importe: '35.00' }, {}, 40), 35);
+        assert.equal(importeDelCargo('cargado', { importe: null }, {}, 40), 40);
+        assert.throws(() => importeDelCargo('cargado', null, { importe: -1 }, 40), /importe del cargo/);
+    });
+
+    test('el alta automática solo crea fechas del año de fecha_inicial', async () => {
+        const id = await crear('DC16 trimestral agosto', 'trimestral', '2026-08-15');
+        const cargos = await cargosDe(id);
+        assert.deepEqual(
+            cargos.map((c) => c.fecha),
+            ['2026-08-15', '2026-11-15']
+        );
+        assert.ok(cargos.every((c) => c.estado === 'pendiente' && c.importe === null));
+    });
+
+    test('al pagar un cargo se guarda su importe y no se escribe en recibos_historico', async () => {
+        const concepto = 'DC15 pago e importe';
+        const id = await crear(concepto, 'trimestral', '2026-01-09');
+        let cargos = await cargosDe(id);
+        assert.equal(cargos.length, 4);
+
+        await actualizarCargos(id, concepto, 'trimestral', 35, [{ id: cargos[0].id, fecha: '2026-01-09', estado: 'cargado', comentario: '', activo: 1 }]);
+        await actualizarCargos(id, concepto, 'trimestral', 35, [{ id: cargos[1].id, fecha: '2026-04-09', estado: 'cargado', comentario: '', activo: 1, importe: 37.5 }]);
+        cargos = await cargosDe(id);
+        assert.deepEqual(
+            cargos.map((c) => c.importe),
+            ['35.00', '37.50', null, null]
+        );
+
+        // Cambiar el importe del recibo no altera lo ya pagado
+        await actualizarCargos(id, concepto, 'trimestral', 40, [{ id: cargos[0].id, fecha: '2026-01-09', estado: 'cargado', comentario: '', activo: 1 }]);
+        cargos = await cargosDe(id);
+        assert.equal(cargos[0].importe, '35.00');
+
+        // Volver a pendiente vacía el importe
+        await actualizarCargos(id, concepto, 'trimestral', 40, [{ id: cargos[1].id, fecha: '2026-04-09', estado: 'pendiente', comentario: '', activo: 1 }]);
+        cargos = await cargosDe(id);
+        assert.equal(cargos[1].importe, null);
+
+        const [[historial]] = await db.query('SELECT COUNT(*) AS total FROM recibos_historico WHERE recibo_id = ?', [id]);
+        assert.equal(Number(historial.total), 0);
+    });
+
+    test('un cargo pendiente puede tener un importe propio; si coincide con el del recibo, lo sigue', async () => {
+        const concepto = 'DC15 importe propio';
+        const id = await crear(concepto, 'mensual', '2026-10-05', 30);
+        let cargos = await cargosDe(id);
+        assert.equal(cargos.length, 3);
+
+        await actualizarCargos(id, concepto, 'mensual', 30, [{ id: cargos[1].id, fecha: '2026-11-05', estado: 'pendiente', comentario: '', activo: 1, importe: 52.3 }]);
+        cargos = await cargosDe(id);
+        assert.deepEqual(
+            cargos.map((c) => c.importe),
+            [null, '52.30', null]
+        );
+
+        // Guardar sin indicar importe no lo pierde
+        await actualizarCargos(id, concepto, 'mensual', 30, [{ id: cargos[1].id, fecha: '2026-11-05', estado: 'pendiente', comentario: 'luz', activo: 1 }]);
+        cargos = await cargosDe(id);
+        assert.equal(cargos[1].importe, '52.30');
+
+        // Al volver al importe del recibo, el cargo vuelve a seguirlo
+        await actualizarCargos(id, concepto, 'mensual', 30, [{ id: cargos[1].id, fecha: '2026-11-05', estado: 'pendiente', comentario: 'luz', activo: 1, importe: 30 }]);
+        cargos = await cargosDe(id);
+        assert.equal(cargos[1].importe, null);
+    });
+
+    test('se puede borrar una sola fecha de un recibo mensual', async () => {
+        const id = await crear('DC18 mensual fecha', 'mensual', '2026-10-05');
+        assert.equal(await deleteRecibo(id, '2026-11-05', 'mensual'), true);
+        assert.deepEqual(
+            (await cargosDe(id)).map((c) => c.fecha),
+            ['2026-10-05', '2026-12-05']
+        );
+        const [[recibo]] = await db.query('SELECT COUNT(*) AS total FROM recibos WHERE id = ?', [id]);
+        assert.equal(Number(recibo.total), 1);
+    });
+
+    test('fechasFaltantes: generables son las posteriores al último cargo y los huecos aún no alcanzados', () => {
+        const hoy = new Date(2026, 9, 21);
+        const faltan = (ancla, periodicidad, existentes) => fechasFaltantes(ancla, periodicidad, existentes, 2026, hoy).map((f) => [f.fecha, f.generable]);
+        // Posteriores al último cargo: todas son generables, aunque ya hayan pasado
+        assert.deepEqual(faltan('2025-08-18', 'trimestral', ['2025-08-18', '2025-11-18', '2026-02-18']), [['2026-05-18', true], ['2026-08-18', true], ['2026-11-18', true]]);
+        // Hueco intermedio con fecha ya pasada: se puede añadir a mano, pero no se genera
+        assert.deepEqual(faltan('2025-08-18', 'trimestral', ['2025-08-18', '2025-11-18', '2026-02-18', '2026-08-18', '2026-11-18']), [['2026-05-18', false]]);
+        // Hueco intermedio con fecha futura: se genera
+        assert.deepEqual(faltan('2026-10-05', 'mensual', ['2026-10-05', '2026-12-05']), [['2026-11-05', true]]);
+        // Un ejercicio cerrado no se completa, y un recibo completo tampoco
+        assert.deepEqual(faltan('2025-01-09', 'trimestral', ['2025-01-09', '2025-04-25', '2025-07-25']), []);
+        assert.deepEqual(faltan('2026-10-21', 'mensual', ['2026-10-21', '2026-11-21', '2026-12-21']), []);
+        // Nunca antes de la fecha inicial; el día se ajusta al último del mes
+        assert.deepEqual(faltan('2026-01-31', 'mensual', ['2026-01-31', '2026-10-31']), [
+            ['2026-02-28', false], ['2026-03-31', false], ['2026-04-30', false], ['2026-05-31', false], ['2026-06-30', false], ['2026-07-31', false], ['2026-08-31', false], ['2026-09-30', false],
+            ['2026-11-30', true], ['2026-12-31', true]
+        ]);
+        assert.deepEqual(faltan('2026-03-15', 'anual', ['2026-03-15']), []);
+    });
+
+    test('completarFechasAnio añade las posteriores al último cargo y deja los huecos pasados', async () => {
+        const id = await crear('DC16 completar año', 'trimestral', '2026-01-09');
+        await db.query('DELETE FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, '2026-04-09']); // hueco que ya ha pasado
+        await db.query('DELETE FROM fechas_cargo WHERE recibo_id = ? AND fecha > ?', [id, '2026-07-09']); // y el último cargo
+        const hoy = new Date(2026, 9, 21);
+
+        assert.equal(await completarFechasAnio(id, 2026, hoy), 1);
+        assert.deepEqual(
+            (await cargosDe(id)).map((c) => c.fecha),
+            ['2026-01-09', '2026-07-09', '2026-10-09']
+        );
+        assert.equal(await completarFechasAnio(id, 2026, hoy), 0);
+
+        // Con el año en curso posterior al de la última fecha, el ejercicio está cerrado
+        await assert.rejects(() => completarFechasAnio(id, 2027, hoy), { status: 409 });
+    });
+
+    test('completarFechasAnio rellena un hueco intermedio cuya fecha aún no ha llegado', async () => {
+        const id = await crear('DC16 hueco futuro', 'mensual', '2026-10-05');
+        await db.query('DELETE FROM fechas_cargo WHERE recibo_id = ? AND fecha = ?', [id, '2026-11-05']);
+        assert.equal(await completarFechasAnio(id, 2026, new Date(2026, 9, 21)), 1);
+        assert.deepEqual(
+            (await cargosDe(id)).map((c) => c.fecha),
+            ['2026-10-05', '2026-11-05', '2026-12-05']
+        );
+    });
+
+    test('getRecibos devuelve importe_cargo junto al importe del recibo', async () => {
+        const concepto = 'DC15 lectura';
+        const id = await crear(concepto, 'bimestral', '2026-01-07', 69);
+        const cargos = await cargosDe(id);
+        await actualizarCargos(id, concepto, 'bimestral', 69, [{ id: cargos[0].id, fecha: '2026-01-07', estado: 'cargado', comentario: '', activo: 1, importe: 65.5 }]);
+        const filas = await getRecibos({ concepto });
+        assert.equal(filas.length, 6);
+        const pagada = filas.find((f) => f.estado === 'cargado');
+        assert.equal(pagada.importe, '69.00');
+        assert.equal(pagada.importe_cargo, '65.50');
+        assert.ok(filas.filter((f) => f.estado === 'pendiente').every((f) => f.importe_cargo === null));
+    });
+
+    test('no se borra un recibo ni una fecha con cargos pagados (409)', async () => {
+        const concepto = 'DC18 borrado bloqueado';
+        const id = await crear(concepto, 'trimestral', '2026-01-09');
+        const cargos = await cargosDe(id);
+        await actualizarCargos(id, concepto, 'trimestral', 35, [{ id: cargos[0].id, fecha: '2026-01-09', estado: 'cargado', comentario: '', activo: 1 }]);
+
+        await assert.rejects(() => deleteRecibo(id, null, 'trimestral'), { status: 409 });
+        await assert.rejects(() => deleteRecibo(id, '2026-01-09', 'trimestral', new Date(2026, 9, 21)), { status: 409 });
+        assert.equal((await cargosDe(id)).length, 4);
+
+        assert.equal(await deleteRecibo(id, '2026-04-09', 'trimestral'), true);
+        assert.equal((await cargosDe(id)).length, 3);
+    });
+
+    test('un cargo pagado solo se puede borrar durante su mes; los de meses anteriores quedan cerrados', async () => {
+        const concepto = 'DC18 pagado del mes';
+        const id = await crear(concepto, 'mensual', '2026-10-05');
+        const cargos = await cargosDe(id);
+        await actualizarCargos(id, concepto, 'mensual', 35, [{ id: cargos[0].id, fecha: '2026-10-05', estado: 'cargado', comentario: '', activo: 1 }]);
+        await actualizarCargos(id, concepto, 'mensual', 35, [{ id: cargos[1].id, fecha: '2026-11-05', estado: 'cargado', comentario: '', activo: 1 }]);
+
+        const hoy = new Date(2026, 10, 20);
+        await assert.rejects(() => deleteRecibo(id, '2026-10-05', 'mensual', hoy), { status: 409 }); // octubre ya está cerrado
+        assert.equal(await deleteRecibo(id, '2026-11-05', 'mensual', hoy), true); // noviembre es el mes en curso
+        assert.deepEqual(
+            (await cargosDe(id)).map((c) => c.fecha),
+            ['2026-10-05', '2026-12-05']
+        );
+    });
+
+    test('se borra un recibo sin cargos pagados con todas sus fechas', async () => {
+        const id = await crear('DC18 borrado libre', 'bimestral', '2026-01-07');
+        assert.equal(await deleteRecibo(id, null, 'bimestral'), true);
+        const [[recibos]] = await db.query('SELECT COUNT(*) AS total FROM recibos WHERE id = ?', [id]);
+        assert.equal(Number(recibos.total), 0);
+        assert.equal((await cargosDe(id)).length, 0);
+        assert.equal(await deleteRecibo(id, null, 'bimestral'), false);
+    });
+
+    test('con sucesor no se borra el origen; al borrar el sucesor el origen deja de replicarse', async () => {
+        const origen = await crear('DC18 origen', 'anual', '2026-03-15');
+        const [sucesor] = await db.execute('INSERT INTO recibos (concepto, periodicidad, importe, cuenta_id, propietario_id, fecha_inicial, recibo_origen_id) VALUES (?, ?, ?, ?, ?, ?, ?)', ['DC18 sucesor', 'anual', 35, 1, 2, '2027-03-15', origen]);
+        await assert.rejects(() => deleteRecibo(origen, null, 'anual'), { status: 409 });
+        assert.equal((await cargosDe(origen)).length, 1);
+
+        assert.equal(await deleteRecibo(sucesor.insertId, null, 'anual'), true);
+        const [[fila]] = await db.query('SELECT replicar FROM recibos WHERE id = ?', [origen]);
+        assert.equal(fila.replicar, 0);
     });
 });

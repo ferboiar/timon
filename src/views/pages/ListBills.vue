@@ -45,6 +45,10 @@ const modoFechas = ref('manual');
 
 const expandedRowsTrimestral = ref([]);
 const expandedRowsBimestral = ref([]);
+const expandedRowsMensual = ref([]);
+
+const currentYear = new Date().getFullYear();
+const selectedYear = ref(currentYear); // Año cuyos recibos se muestran (DC-18)
 
 const categorias = ref([]); // Inicializar como un array vacío
 const cuentas = ref([]); // Lista de cuentas disponibles
@@ -56,13 +60,120 @@ const periodicidad = ref([
     { label: 'Mensual', value: 'mensual' }
 ]);
 
+// DC-18: un año anterior al actual es un ejercicio cerrado: solo se pueden editar los cargos que siguen pendientes
+const anioCerrado = computed(() => selectedYear.value < currentYear);
+
+// Un cargo pagado solo se puede editar o borrar durante el mes en que vence (para rectificar); después se considera cerrado.
+// Pendiente: la opción «Permitir editar/borrar recibos pagados» (Ajustes, Administrar recibos, DC-21) activará este interruptor.
+const permitirEditarPagados = ref(false);
+
+function esDelMesEnCurso(fecha) {
+    const hoy = new Date();
+    return String(fecha).slice(0, 7) === hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
+}
+
+function puedeEditarCargo(cargo) {
+    if (cargo.estado !== 'cargado') return true;
+    return permitirEditarPagados.value || esDelMesEnCurso(cargo.fecha);
+}
+
+const MESES_POR_PERIODO = { mensual: 1, bimestral: 2, trimestral: 3, anual: 12 };
+
+// Fechas que le faltan al recibo en el año en curso (DC-22). Debe coincidir con fechasFaltantes() del backend
+function fechasFaltantesDelGrupo(grupo) {
+    const paso = MESES_POR_PERIODO[grupo.periodicidad];
+    const fechas = grupo.bills
+        .map((b) => (b.fecha ? String(b.fecha).slice(0, 10) : null))
+        .filter(Boolean)
+        .sort();
+    if (!paso || !fechas.length || selectedYear.value !== currentYear) return [];
+    const indiceMes = (fecha) => {
+        const [anio, mes] = fecha.split('-').map(Number);
+        return anio * 12 + (mes - 1);
+    };
+    const existentes = new Set(fechas.map(indiceMes));
+    const indiceUltimo = Math.max(...existentes);
+    if (Math.floor(indiceUltimo / 12) < currentYear) return [];
+    const hoy = new Date();
+    const hoyTexto = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+    const [anioAncla, mesAncla, diaAncla] = String(grupo.fecha_inicial ?? fechas[0])
+        .slice(0, 10)
+        .split('-')
+        .map(Number);
+    const indiceAncla = anioAncla * 12 + (mesAncla - 1);
+    const faltantes = [];
+    for (let indice = Math.max(indiceAncla, currentYear * 12); indice <= currentYear * 12 + 11; indice++) {
+        if ((((indice - indiceAncla) % paso) + paso) % paso !== 0 || existentes.has(indice)) continue;
+        const mes = (indice % 12) + 1;
+        const ultimoDia = new Date(Date.UTC(currentYear, mes, 0)).getUTCDate();
+        const fecha = currentYear + '-' + String(mes).padStart(2, '0') + '-' + String(Math.min(diaAncla, ultimoDia)).padStart(2, '0');
+        faltantes.push({ fecha, generable: indice > indiceUltimo || fecha > hoyTexto });
+    }
+    return faltantes;
+}
+
+// «+»: activo si falta cualquier fecha, incluso una ya pasada (para añadirla a mano)
+function puedeAnadirFecha(grupo) {
+    return fechasFaltantesDelGrupo(grupo).length > 0;
+}
+
+// «Generar nuevas fechas»: activo solo si hay fechas posteriores al último cargo o huecos cuya fecha aún no ha llegado
+function puedeGenerarFechas(grupo) {
+    return fechasFaltantesDelGrupo(grupo).some((f) => f.generable);
+}
+
+// DC-18: la vista muestra los cargos del año elegido y, en el año en curso, los pendientes de años anteriores (atrasados)
+async function fetchBills(periodicity) {
+    const [delAnio, atrasados] = await Promise.all([BillService.getBillsByPeriodicity(periodicity, selectedYear.value), selectedYear.value === currentYear ? BillService.getOverdueBills(periodicity, selectedYear.value) : Promise.resolve([])]);
+    return [...delAnio, ...atrasados.map((b) => ({ ...b, atrasado: true }))];
+}
+
+function copiarExpansion() {
+    return { trimestral: { ...expandedRowsTrimestral.value }, bimestral: { ...expandedRowsBimestral.value }, mensual: { ...expandedRowsMensual.value } };
+}
+
+function restaurarExpansion(copia) {
+    expandedRowsTrimestral.value = { ...copia.trimestral };
+    expandedRowsBimestral.value = { ...copia.bimestral };
+    expandedRowsMensual.value = { ...copia.mensual };
+    checkGlobalExpandState();
+}
+
+// Recarga en silencio todas las periodicidades. Por defecto conserva los recibos expandidos; al cambiar de año se contraen
+async function reloadBills({ conservarExpansion = true } = {}) {
+    const copia = copiarExpansion();
+    try {
+        [annualBills.value, quarterlyBills.value, bimonthlyBills.value, monthlyBills.value] = await Promise.all([fetchBills('anual'), fetchBills('trimestral'), fetchBills('bimestral'), fetchBills('mensual')]);
+        if (conservarExpansion) {
+            restaurarExpansion(copia);
+        } else {
+            contraer('all');
+        }
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los recibos del año ' + selectedYear.value + ': ' + error.message, life: 5000 });
+        console.error('reloadBills(). Error:', error);
+    }
+}
+
+function changeYear(delta) {
+    selectedYear.value += delta;
+    reloadBills({ conservarExpansion: false });
+}
+
+function resetYear() {
+    if (selectedYear.value !== currentYear) {
+        selectedYear.value = currentYear;
+        reloadBills({ conservarExpansion: false });
+    }
+}
+
 onMounted(async () => {
     try {
         [annualBills.value, quarterlyBills.value, bimonthlyBills.value, monthlyBills.value, inactiveBills.value] = await Promise.all([
-            BillService.getBillsByPeriodicity('anual'),
-            BillService.getBillsByPeriodicity('trimestral'),
-            BillService.getBillsByPeriodicity('bimestral'),
-            BillService.getBillsByPeriodicity('mensual'),
+            fetchBills('anual'),
+            fetchBills('trimestral'),
+            fetchBills('bimestral'),
+            fetchBills('mensual'),
             BillService.getInactiveBills() // Nuevo endpoint para obtener recibos inactivos
         ]);
 
@@ -92,7 +203,7 @@ async function generateDates(reciboId) {
         const response = await BillService.generateBillDates(reciboId);
         toast.add({ severity: 'success', summary: 'Éxito', detail: response.message, life: 3000 });
         // Actualizar la lista de recibos para mostrar las nuevas fechas generadas
-        updateBills('all');
+        reloadBills();
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al generar nuevas fechas: ${error.message}`, life: 5000 });
         console.error('generateDates(). Error:', error);
@@ -129,13 +240,13 @@ const menuRef = ref(null);
 
 function toggleCardMenu(event, periodicity) {
     cardMenu.value = [
-        { label: 'Añadir', icon: 'pi pi-fw pi-plus', command: () => openNew(periodicity) },
+        { label: 'Añadir', icon: 'pi pi-fw pi-plus', disabled: anioCerrado.value, command: () => openNew(periodicity) },
         { label: 'Actualizar', icon: 'pi pi-fw pi-refresh', command: () => updateBills(periodicity) },
         { label: 'Multiselección', icon: 'pi pi-fw pi-check-square', command: () => showSelector(periodicity) },
         { label: 'Exportar', icon: 'pi pi-fw pi-upload', command: () => exportCSV(periodicity) }
     ];
 
-    if (periodicity === 'trimestral' || periodicity === 'bimestral') {
+    if (['trimestral', 'bimestral', 'mensual'].includes(periodicity)) {
         cardMenu.value.push(
             // eslint-disable-next-line prettier/prettier
             { separator: true },
@@ -149,6 +260,7 @@ function toggleCardMenu(event, periodicity) {
 const isExpanded = ref(false);
 const tableT = ref(false); // Estado de la tabla trimestral
 const tableB = ref(false); // Estado de la tabla bimestral
+const tableM = ref(false); // Estado de la tabla mensual
 
 function toggleExpandCollapseAll() {
     if (isExpanded.value) {
@@ -159,77 +271,71 @@ function toggleExpandCollapseAll() {
 }
 
 function expandir(periodicity) {
-    if (periodicity === 'trimestral') {
-        expandedRowsTrimestral.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-        tableT.value = true;
-    } else if (periodicity === 'bimestral') {
-        expandedRowsBimestral.value = groupedBimonthlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-        tableB.value = true;
-    } else if (periodicity === 'all') {
-        expandedRowsTrimestral.value = groupedQuarterlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-        expandedRowsBimestral.value = groupedBimonthlyBills.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
-        tableT.value = true;
-        tableB.value = true;
+    const abrir = (grupos) => grupos.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+    if (periodicity === 'trimestral' || periodicity === 'all') {
+        expandedRowsTrimestral.value = abrir(groupedQuarterlyBills.value);
+    }
+    if (periodicity === 'bimestral' || periodicity === 'all') {
+        expandedRowsBimestral.value = abrir(groupedBimonthlyBills.value);
+    }
+    if (periodicity === 'mensual' || periodicity === 'all') {
+        expandedRowsMensual.value = abrir(groupedMonthlyBills.value);
     }
     checkGlobalExpandState();
 }
 
 function contraer(periodicity) {
-    if (periodicity === 'trimestral') {
+    if (periodicity === 'trimestral' || periodicity === 'all') {
         expandedRowsTrimestral.value = [];
-        tableT.value = false;
-    } else if (periodicity === 'bimestral') {
+    }
+    if (periodicity === 'bimestral' || periodicity === 'all') {
         expandedRowsBimestral.value = [];
-        tableB.value = false;
-    } else if (periodicity === 'all') {
-        expandedRowsTrimestral.value = [];
-        expandedRowsBimestral.value = [];
-        tableT.value = false;
-        tableB.value = false;
+    }
+    if (periodicity === 'mensual' || periodicity === 'all') {
+        expandedRowsMensual.value = [];
     }
     checkGlobalExpandState();
 }
 
 function checkGlobalExpandState() {
-    const trimestralExpandedCount = Object.values(expandedRowsTrimestral.value).filter(Boolean).length;
-    const bimestralExpandedCount = Object.values(expandedRowsBimestral.value).filter(Boolean).length;
+    const contarAbiertas = (filas) => Object.values(filas).filter(Boolean).length;
+    const tablas = [
+        [contarAbiertas(expandedRowsTrimestral.value), groupedQuarterlyBills.value.length],
+        [contarAbiertas(expandedRowsBimestral.value), groupedBimonthlyBills.value.length],
+        [contarAbiertas(expandedRowsMensual.value), groupedMonthlyBills.value.length]
+    ];
+    tableT.value = tablas[0][0] > 0;
+    tableB.value = tablas[1][0] > 0;
+    tableM.value = tablas[2][0] > 0;
 
-    tableT.value = trimestralExpandedCount > 0;
-    tableB.value = bimestralExpandedCount > 0;
-
-    const trimestralTotal = groupedQuarterlyBills.value.length;
-    const bimestralTotal = groupedBimonthlyBills.value.length;
-
-    isExpanded.value = trimestralExpandedCount === trimestralTotal && trimestralTotal > 0 && bimestralExpandedCount === bimestralTotal && bimestralTotal > 0;
+    // «Expandir todo» está activo cuando todas las tablas que tienen recibos están completamente expandidas
+    const conRecibos = tablas.filter(([, total]) => total > 0);
+    isExpanded.value = conRecibos.length > 0 && conRecibos.every(([abiertas, total]) => abiertas === total);
 }
 
 function onRowExpand(event, type) {
-    if (type === 'trimestral') {
-        expandedRowsTrimestral.value[event.data.id] = true;
-    } else {
-        expandedRowsBimestral.value[event.data.id] = true;
-    }
+    const filas = { trimestral: expandedRowsTrimestral, bimestral: expandedRowsBimestral, mensual: expandedRowsMensual }[type];
+    filas.value[event.data.id] = true;
     checkGlobalExpandState();
 }
 
 function onRowCollapse(event, type) {
-    if (type === 'trimestral') {
-        delete expandedRowsTrimestral.value[event.data.id];
-    } else {
-        delete expandedRowsBimestral.value[event.data.id];
-    }
+    const filas = { trimestral: expandedRowsTrimestral, bimestral: expandedRowsBimestral, mensual: expandedRowsMensual }[type];
+    delete filas.value[event.data.id];
     checkGlobalExpandState();
 }
 
 function updateBills(periodicity) {
+    const copiaExpansion = copiarExpansion();
     if (periodicity === 'all') {
-        Promise.all([BillService.getBillsByPeriodicity('anual'), BillService.getBillsByPeriodicity('trimestral'), BillService.getBillsByPeriodicity('bimestral'), BillService.getBillsByPeriodicity('mensual'), BillService.getInactiveBills()])
+        Promise.all([fetchBills('anual'), fetchBills('trimestral'), fetchBills('bimestral'), fetchBills('mensual'), BillService.getInactiveBills()])
             .then(([anual, trimestral, bimestral, mensual, inactivos]) => {
                 annualBills.value = anual;
                 quarterlyBills.value = trimestral;
                 bimonthlyBills.value = bimestral;
                 monthlyBills.value = mensual;
                 inactiveBills.value = inactivos;
+                restaurarExpansion(copiaExpansion);
                 toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Todos los recibos actualizados.', life: 3000 });
             })
             .catch((error) => {
@@ -246,7 +352,7 @@ function updateBills(periodicity) {
                 console.error('Error al actualizar la lista de recibos inactivos:', error);
             });
     } else {
-        BillService.getBillsByPeriodicity(periodicity)
+        fetchBills(periodicity)
             .then((response) => {
                 if (periodicity === 'anual') {
                     annualBills.value = response;
@@ -257,6 +363,7 @@ function updateBills(periodicity) {
                 } else if (periodicity === 'mensual') {
                     monthlyBills.value = response;
                 }
+                restaurarExpansion(copiaExpansion);
                 toast.add({ severity: 'success', summary: 'Actualizado', detail: `Listado de recibos ${periodicity}es actualizado.`, life: 3000 });
             })
             .catch((error) => {
@@ -407,7 +514,8 @@ async function guardarRecibo() {
             fecha: c.fecha ? new Date(c.fecha) : null,
             estado: c.estado ?? 'pendiente',
             comentario: c.comentario ?? '',
-            activo: c.activo ?? 1
+            activo: c.activo ?? 1,
+            importe: billDialogTB_FC.value ? (c.importe ?? null) : null
         }))
     };
 
@@ -473,7 +581,8 @@ async function guardarRecibo() {
                             comentario: bill.value.cargo[0].comentario || '',
                             estado: bill.value.cargo[0].estado || 'pendiente',
                             activo: bill.value.cargo[0].activo !== undefined ? bill.value.cargo[0].activo : 1,
-                            fecha: bill.value.cargo[0].fecha
+                            fecha: bill.value.cargo[0].fecha,
+                            importe: bill.value.cargo[0].importe ?? null
                         }
                     ];
                     billToSave.modoFechas = 'manual'; // Forzar modo manual para este caso especial
@@ -557,7 +666,8 @@ function editBill(prod, openFCDialog = false) {
                 fecha: prod.fecha ? new Date(prod.fecha) : null,
                 activo: prod.activo ?? 1,
                 estado: prod.estado ?? 'pendiente',
-                comentario: prod.comentario ?? ''
+                comentario: prod.comentario ?? '',
+                importe: Number(prod.importe_cargo ?? prod.importe)
             },
             // Resto de elementos (5 elementos adicionales)
             ...Array(5)
@@ -580,7 +690,7 @@ function editBill(prod, openFCDialog = false) {
 
     if (openFCDialog) {
         billDialogTB_FC.value = true;
-    } else if (bill.value.periodicidad === 'anual' || bill.value.periodicidad === 'mensual') {
+    } else if (bill.value.periodicidad === 'anual') {
         billDialog.value = true;
     } else {
         billDialogTB.value = true;
@@ -614,7 +724,9 @@ function exportCSV(periodicity) {
             ...bills.map((bill) => [
                 bill.periodicidad,
                 bill.concepto,
-                parseFloat(bill.importe).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
+                parseFloat(bill.importe_cargo ?? bill.importe)
+                    .toFixed(2)
+                    .replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
                 formatDate(bill.fecha), // Usar la función pasada como argumento
                 bill.estado,
                 bill.comentario
@@ -707,34 +819,30 @@ watch(
             showFields.value = { commentBox: false, fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: true, fechaCargo6: true };
         } else if (newVal === 'trimestral') {
             showFields.value = { commentBox: false, fechaCargo: true, fechaCargo2: true, fechaCargo3: true, fechaCargo4: true, fechaCargo5: false, fechaCargo6: false };
-        } else if (newVal === 'mensual' || !newVal) {
+        } else if (newVal === 'mensual') {
+            showFields.value = { commentBox: true, fechaCargo: true, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false };
+        } else if (!newVal) {
             showFields.value = { commentBox: true, estadoCheck: true, fechaCargo: false, fechaCargo2: false, fechaCargo3: false, fechaCargo4: false, fechaCargo5: false, fechaCargo6: false };
         }
     },
     { immediate: true }
 );
 
-const groupedQuarterlyBills = computed(() => {
+// Agrupa los cargos por recibo (id): un recibo de otro año con el mismo concepto no se mezcla
+function agruparPorRecibo(bills) {
     const grouped = {};
-    quarterlyBills.value.forEach((bill) => {
-        if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, cuenta_id: bill.cuenta_id, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
+    bills.forEach((bill) => {
+        if (!grouped[bill.id]) {
+            grouped[bill.id] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, cuenta_id: bill.cuenta_id, periodicidad: bill.periodicidad, activo: bill.activo, fecha_inicial: bill.fecha_inicial, bills: [] };
         }
-        grouped[bill.concepto].bills.push(bill);
+        grouped[bill.id].bills.push(bill);
     });
     return Object.values(grouped).filter((group) => showInactive.value || group.activo);
-});
+}
 
-const groupedBimonthlyBills = computed(() => {
-    const grouped = {};
-    bimonthlyBills.value.forEach((bill) => {
-        if (!grouped[bill.concepto]) {
-            grouped[bill.concepto] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, cuenta_id: bill.cuenta_id, periodicidad: bill.periodicidad, activo: bill.activo, bills: [] };
-        }
-        grouped[bill.concepto].bills.push(bill);
-    });
-    return Object.values(grouped).filter((group) => showInactive.value || group.activo);
-});
+const groupedQuarterlyBills = computed(() => agruparPorRecibo(quarterlyBills.value));
+const groupedBimonthlyBills = computed(() => agruparPorRecibo(bimonthlyBills.value));
+const groupedMonthlyBills = computed(() => agruparPorRecibo(monthlyBills.value));
 
 const groupedInactiveBills = computed(() => {
     const grouped = {};
@@ -773,7 +881,8 @@ const inactiveBillsCount = (periodicity) => {
         // Dividido entre 6 porque los bimestrales tienen 6 fechas de cargo, equivalentes a 6 recibos
         return Math.floor(bimonthlyBills.value.filter((bill) => !bill.activo).length / 6);
     } else if (periodicity === 'mensual') {
-        return monthlyBills.value.filter((bill) => !bill.activo).length;
+        // Un recibo mensual tiene varias fechas: cada recibo se cuenta una sola vez
+        return new Set(monthlyBills.value.filter((bill) => !bill.activo).map((bill) => bill.id)).size;
     }
     return 0;
 };
@@ -785,7 +894,7 @@ const inactiveBillsCount = (periodicity) => {
             <div class="font-semibold text-xl mb-4"></div>
             <Toolbar class="mb-6">
                 <template #start>
-                    <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" @click="openNew('')" />
+                    <Button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" :disabled="anioCerrado" :class="{ 'pointer-events-none': anioCerrado }" @click="openNew('')" />
                     <Button
                         label="Borrar"
                         icon="pi pi-trash"
@@ -804,6 +913,13 @@ const inactiveBillsCount = (periodicity) => {
 -->
                     <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
+                </template>
+                <template #center>
+                    <div class="flex items-center justify-center gap-4">
+                        <Button icon="pi pi-caret-left" severity="secondary" @click="changeYear(-1)" />
+                        <div class="font-semibold text-xl cursor-pointer" @click="resetYear" v-tooltip="'Volver al año en curso'">{{ selectedYear }}</div>
+                        <Button icon="pi pi-caret-right" severity="secondary" @click="changeYear(1)" />
+                    </div>
                 </template>
                 <template #end>
                     <!--
@@ -856,12 +972,13 @@ const inactiveBillsCount = (periodicity) => {
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="anualSlotProps">
-                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(anualSlotProps.data.importe) }}
+                                {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(anualSlotProps.data.importe_cargo ?? anualSlotProps.data.importe) }}
                             </template>
                         </Column>
                         <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
                             <template #body="anualSlotProps">
                                 {{ $formatDate(anualSlotProps.data.fecha) }}
+                                <Tag v-if="anualSlotProps.data.atrasado" value="Atrasado" severity="warn" style="font-size: calc(0.875rem - 1pt)" class="ml-2" />
                             </template>
                         </Column>
                         <Column field="estado" header="Estado" sortable style="min-width: 2rem">
@@ -881,8 +998,24 @@ const inactiveBillsCount = (periodicity) => {
                         </Column>
                         <Column :exportable="false" style="min-width: 12rem">
                             <template #body="anualSlotProps">
-                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(anualSlotProps.data)" />
-                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(anualSlotProps.data)" />
+                                <Button
+                                    icon="pi pi-pencil"
+                                    outlined
+                                    rounded
+                                    class="mr-2"
+                                    :disabled="!puedeEditarCargo(anualSlotProps.data)"
+                                    :class="{ 'pointer-events-none': !puedeEditarCargo(anualSlotProps.data) }"
+                                    @click="editBill(anualSlotProps.data)"
+                                />
+                                <Button
+                                    icon="pi pi-trash"
+                                    outlined
+                                    rounded
+                                    severity="danger"
+                                    :disabled="!puedeEditarCargo(anualSlotProps.data)"
+                                    :class="{ 'pointer-events-none': !puedeEditarCargo(anualSlotProps.data) }"
+                                    @click="confirmDeleteBill(anualSlotProps.data)"
+                                />
                             </template>
                         </Column>
                     </DataTable>
@@ -937,11 +1070,29 @@ const inactiveBillsCount = (periodicity) => {
 
                         <Column :exportable="false" style="min-width: 12rem">
                             <template #body="trimestralSlotProps">
-                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data)" />
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" :disabled="anioCerrado" :class="{ 'pointer-events-none': anioCerrado }" @click="editBill(trimestralSlotProps.data)" />
                                 <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(trimestralSlotProps.data)" />
-                                <Button v-if="trimestralSlotProps.data.bills.length <= 3" icon="pi pi-plus" outlined rounded class="ml-2" @click="editBill(trimestralSlotProps.data, true)" />
+                                <Button
+                                    icon="pi pi-plus"
+                                    outlined
+                                    rounded
+                                    class="ml-2"
+                                    :disabled="!puedeAnadirFecha(trimestralSlotProps.data)"
+                                    :class="{ 'pointer-events-none': !puedeAnadirFecha(trimestralSlotProps.data) }"
+                                    @click="editBill(trimestralSlotProps.data, true)"
+                                    v-tooltip="'Añadir una fecha de cargo'"
+                                />
                                 <!-- Botón para generar nuevas fechas para este recibo específico -->
-                                <Button icon="pi pi-calendar" outlined rounded class="ml-2" @click="generateDates(trimestralSlotProps.data.id)" v-tooltip="'Generar nuevas fechas'" />
+                                <Button
+                                    icon="pi pi-calendar"
+                                    outlined
+                                    rounded
+                                    class="ml-2"
+                                    :disabled="!puedeGenerarFechas(trimestralSlotProps.data)"
+                                    :class="{ 'pointer-events-none': !puedeGenerarFechas(trimestralSlotProps.data) }"
+                                    @click="generateDates(trimestralSlotProps.data.id)"
+                                    v-tooltip="'Generar nuevas fechas'"
+                                />
                             </template>
                         </Column>
 
@@ -950,6 +1101,12 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
                                     <template #body="trimestralSlotProps">
                                         {{ $formatDate(trimestralSlotProps.data.fecha) }}
+                                        <Tag v-if="trimestralSlotProps.data.atrasado" value="Atrasado" severity="warn" style="font-size: calc(0.875rem - 1pt)" class="ml-2" />
+                                    </template>
+                                </Column>
+                                <Column header="Importe" style="min-width: 3rem">
+                                    <template #body="trimestralSlotProps">
+                                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(trimestralSlotProps.data.importe_cargo ?? trimestralSlotProps.data.importe) }}
                                     </template>
                                 </Column>
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
@@ -969,8 +1126,24 @@ const inactiveBillsCount = (periodicity) => {
                                 </Column>
                                 <Column :exportable="false" style="min-width: 12rem">
                                     <template #body="trimestralSlotProps">
-                                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(trimestralSlotProps.data, true)" />
-                                        <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(trimestralSlotProps.data)" />
+                                        <Button
+                                            icon="pi pi-pencil"
+                                            outlined
+                                            rounded
+                                            class="mr-2"
+                                            :disabled="!puedeEditarCargo(trimestralSlotProps.data)"
+                                            :class="{ 'pointer-events-none': !puedeEditarCargo(trimestralSlotProps.data) }"
+                                            @click="editBill(trimestralSlotProps.data, true)"
+                                        />
+                                        <Button
+                                            icon="pi pi-trash"
+                                            outlined
+                                            rounded
+                                            severity="danger"
+                                            :disabled="!puedeEditarCargo(trimestralSlotProps.data)"
+                                            :class="{ 'pointer-events-none': !puedeEditarCargo(trimestralSlotProps.data) }"
+                                            @click="confirmDeleteBill(trimestralSlotProps.data)"
+                                        />
                                     </template>
                                 </Column>
                             </DataTable>
@@ -1030,11 +1203,29 @@ const inactiveBillsCount = (periodicity) => {
 
                         <Column :exportable="false" style="min-width: 12rem">
                             <template #body="bimestralSlotProps">
-                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(bimestralSlotProps.data)" />
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" :disabled="anioCerrado" :class="{ 'pointer-events-none': anioCerrado }" @click="editBill(bimestralSlotProps.data)" />
                                 <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(bimestralSlotProps.data)" />
-                                <Button v-if="bimestralSlotProps.data.bills.length <= 3" icon="pi pi-plus" outlined rounded class="ml-2" @click="editBill(bimestralSlotProps.data, true)" />
+                                <Button
+                                    icon="pi pi-plus"
+                                    outlined
+                                    rounded
+                                    class="ml-2"
+                                    :disabled="!puedeAnadirFecha(bimestralSlotProps.data)"
+                                    :class="{ 'pointer-events-none': !puedeAnadirFecha(bimestralSlotProps.data) }"
+                                    @click="editBill(bimestralSlotProps.data, true)"
+                                    v-tooltip="'Añadir una fecha de cargo'"
+                                />
                                 <!-- Botón para generar nuevas fechas para este recibo específico -->
-                                <Button icon="pi pi-calendar" outlined rounded class="ml-2" @click="generateDates(bimestralSlotProps.data.id)" v-tooltip="'Generar nuevas fechas'" />
+                                <Button
+                                    icon="pi pi-calendar"
+                                    outlined
+                                    rounded
+                                    class="ml-2"
+                                    :disabled="!puedeGenerarFechas(bimestralSlotProps.data)"
+                                    :class="{ 'pointer-events-none': !puedeGenerarFechas(bimestralSlotProps.data) }"
+                                    @click="generateDates(bimestralSlotProps.data.id)"
+                                    v-tooltip="'Generar nuevas fechas'"
+                                />
                             </template>
                         </Column>
 
@@ -1043,6 +1234,12 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
                                     <template #body="bimestralSlotProps">
                                         {{ $formatDate(bimestralSlotProps.data.fecha) }}
+                                        <Tag v-if="bimestralSlotProps.data.atrasado" value="Atrasado" severity="warn" style="font-size: calc(0.875rem - 1pt)" class="ml-2" />
+                                    </template>
+                                </Column>
+                                <Column header="Importe" style="min-width: 3rem">
+                                    <template #body="bimestralSlotProps">
+                                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(bimestralSlotProps.data.importe_cargo ?? bimestralSlotProps.data.importe) }}
                                     </template>
                                 </Column>
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
@@ -1062,8 +1259,24 @@ const inactiveBillsCount = (periodicity) => {
                                 </Column>
                                 <Column :exportable="false" style="min-width: 12rem">
                                     <template #body="bimestralSlotProps">
-                                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(bimestralSlotProps.data, true)" />
-                                        <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(bimestralSlotProps.data)" />
+                                        <Button
+                                            icon="pi pi-pencil"
+                                            outlined
+                                            rounded
+                                            class="mr-2"
+                                            :disabled="!puedeEditarCargo(bimestralSlotProps.data)"
+                                            :class="{ 'pointer-events-none': !puedeEditarCargo(bimestralSlotProps.data) }"
+                                            @click="editBill(bimestralSlotProps.data, true)"
+                                        />
+                                        <Button
+                                            icon="pi pi-trash"
+                                            outlined
+                                            rounded
+                                            severity="danger"
+                                            :disabled="!puedeEditarCargo(bimestralSlotProps.data)"
+                                            :class="{ 'pointer-events-none': !puedeEditarCargo(bimestralSlotProps.data) }"
+                                            @click="confirmDeleteBill(bimestralSlotProps.data)"
+                                        />
                                     </template>
                                 </Column>
                             </DataTable>
@@ -1092,48 +1305,118 @@ const inactiveBillsCount = (periodicity) => {
                     <DataTable
                         ref="dt_mensual"
                         v-model:selection="selectedMonthlyBills"
-                        :value="monthlyBills"
+                        v-model:expandedRows="expandedRowsMensual"
+                        :value="groupedMonthlyBills"
                         dataKey="id"
-                        :paginator="monthlyBills.length > 8"
+                        :paginator="groupedMonthlyBills.length > 8"
                         :rows="8"
                         :filters="filtersMensual"
                         :rowHover="true"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[5, 10, 15, 20]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} recibos"
+                        rowGroupMode="subheader"
+                        groupField="concepto"
                         removableSort
+                        @row-expand="(event) => onRowExpand(event, 'mensual')"
+                        @row-collapse="(event) => onRowCollapse(event, 'mensual')"
                     >
                         <template #empty>
                             <div class="text-center p-4">No hay recibos mensuales a mostrar.</div>
                         </template>
                         <Column v-if="showSelectionColumn.mensual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
-                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column expander style="width: 5rem" />
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
+                            <template #body="mensualSlotProps">
+                                {{ mensualSlotProps.data.concepto }}
+                                <Tag v-if="mensualSlotProps.data.bills.some((b) => b.atrasado)" value="Atrasado" severity="warn" style="font-size: calc(0.875rem - 1pt)" class="ml-2" v-tooltip="'Tiene cargos pendientes de años anteriores'" />
+                            </template>
+                        </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="mensualSlotProps">
                                 {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(mensualSlotProps.data.importe) }}
                             </template>
                         </Column>
-                        <Column field="estado" header="Estado" sortable style="min-width: 2rem">
+
+                        <Column :exportable="false" style="min-width: 12rem">
                             <template #body="mensualSlotProps">
-                                <i
-                                    :class="mensualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : mensualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
-                                    v-tooltip="mensualSlotProps.data.estado === 'cargado' ? 'Cargado' : mensualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" :disabled="anioCerrado" :class="{ 'pointer-events-none': anioCerrado }" @click="editBill(mensualSlotProps.data)" />
+                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(mensualSlotProps.data)" />
+                                <Button
+                                    icon="pi pi-plus"
+                                    outlined
+                                    rounded
+                                    class="ml-2"
+                                    :disabled="!puedeAnadirFecha(mensualSlotProps.data)"
+                                    :class="{ 'pointer-events-none': !puedeAnadirFecha(mensualSlotProps.data) }"
+                                    @click="editBill(mensualSlotProps.data, true)"
+                                    v-tooltip="'Añadir una fecha de cargo'"
+                                />
+                                <Button
+                                    icon="pi pi-calendar"
+                                    outlined
+                                    rounded
+                                    class="ml-2"
+                                    :disabled="!puedeGenerarFechas(mensualSlotProps.data)"
+                                    :class="{ 'pointer-events-none': !puedeGenerarFechas(mensualSlotProps.data) }"
+                                    @click="generateDates(mensualSlotProps.data.id)"
+                                    v-tooltip="'Generar nuevas fechas'"
                                 />
                             </template>
                         </Column>
-                        <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
-                            <template #body="mensualSlotProps">
-                                <template v-if="mensualSlotProps.data.comentario">
-                                    <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, mensualSlotProps.data.comentario, 'comment')" v-tooltip="mensualSlotProps.data.comentario" />
-                                </template>
-                            </template>
-                        </Column>
-                        <Column :exportable="false" style="min-width: 12rem">
-                            <template #body="mensualSlotProps">
-                                <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editBill(mensualSlotProps.data)" />
-                                <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteBill(mensualSlotProps.data)" />
-                            </template>
-                        </Column>
+
+                        <template #expansion="mensualSlotProps">
+                            <DataTable :value="mensualSlotProps.data.bills" sortField="fecha" :sortOrder="1" removableSort>
+                                <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
+                                    <template #body="mensualSlotProps">
+                                        {{ $formatDate(mensualSlotProps.data.fecha) }}
+                                        <Tag v-if="mensualSlotProps.data.atrasado" value="Atrasado" severity="warn" style="font-size: calc(0.875rem - 1pt)" class="ml-2" />
+                                    </template>
+                                </Column>
+                                <Column header="Importe" style="min-width: 3rem">
+                                    <template #body="mensualSlotProps">
+                                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(mensualSlotProps.data.importe_cargo ?? mensualSlotProps.data.importe) }}
+                                    </template>
+                                </Column>
+                                <Column field="estado" header="Estado" sortable style="min-width: 2rem">
+                                    <template #body="mensualSlotProps">
+                                        <i
+                                            :class="mensualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : mensualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            v-tooltip="mensualSlotProps.data.estado === 'cargado' ? 'Cargado' : mensualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                        />
+                                    </template>
+                                </Column>
+                                <Column field="comentario" header="Comentario" sortable style="min-width: 2rem">
+                                    <template #body="mensualSlotProps">
+                                        <template v-if="mensualSlotProps.data.comentario">
+                                            <Button icon="pi pi-fw pi-plus" class="p-button-text" @click="(event) => toggleComment(event, mensualSlotProps.data.comentario, 'comment')" v-tooltip="mensualSlotProps.data.comentario" />
+                                        </template>
+                                    </template>
+                                </Column>
+                                <Column :exportable="false" style="min-width: 12rem">
+                                    <template #body="mensualSlotProps">
+                                        <Button
+                                            icon="pi pi-pencil"
+                                            outlined
+                                            rounded
+                                            class="mr-2"
+                                            :disabled="!puedeEditarCargo(mensualSlotProps.data)"
+                                            :class="{ 'pointer-events-none': !puedeEditarCargo(mensualSlotProps.data) }"
+                                            @click="editBill(mensualSlotProps.data, true)"
+                                        />
+                                        <Button
+                                            icon="pi pi-trash"
+                                            outlined
+                                            rounded
+                                            severity="danger"
+                                            :disabled="!puedeEditarCargo(mensualSlotProps.data)"
+                                            :class="{ 'pointer-events-none': !puedeEditarCargo(mensualSlotProps.data) }"
+                                            @click="confirmDeleteBill(mensualSlotProps.data)"
+                                        />
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </template>
                     </DataTable>
                 </div>
 
@@ -1458,6 +1741,10 @@ const inactiveBillsCount = (periodicity) => {
                             />
                         </label>
                         <DatePicker id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                    </div>
+                    <div class="col-span-4">
+                        <label for="importe_cargo" class="block font-bold mb-3">Importe</label>
+                        <InputNumber id="importe_cargo" v-model="bill.cargo[0].importe" mode="currency" currency="EUR" locale="es-ES" fluid />
                     </div>
                 </div>
             </div>
