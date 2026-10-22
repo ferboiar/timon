@@ -48,7 +48,9 @@ const docNavigation = [
                     { title: 'BillService', path: 'services/BillService' },
                     { title: 'API de Recibos', path: 'routes/recibos' },
                     { title: 'DB Utils Recibos', path: 'db/db_utilsBill' },
-                    { title: 'Procedimiento de recibos del año', path: 'db/generar_recibos_anio' }
+                    { title: 'Procedimiento de recibos del año', path: 'db/generar_recibos_anio' },
+                    { title: 'DB Utils Ajustes', path: 'db/db_ajustes' },
+                    { title: 'API de Ajustes', path: 'routes/ajustes' }
                 ]
             },
             {

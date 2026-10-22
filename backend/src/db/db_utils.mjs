@@ -9,6 +9,7 @@
  * @module db_utils
  */
 
+import { hoyEnZona } from './db_ajustes.mjs';
 import { getConnection } from './db_connection.mjs';
 
 const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 'estado', 'activo'];
@@ -790,12 +791,13 @@ class ErrorDeRecibo extends Error {
  * - Al borrar un recibo que procede de otro, el origen queda con replicar = 0 para que el evento anual no lo recree.
  * @returns {boolean} - false si el recibo no existe
  */
-async function deleteRecibo(id, fecha, periodicidad, hoy = new Date()) {
+async function deleteRecibo(id, fecha, periodicidad, hoy) {
     let connection;
     try {
         connection = await getConnection();
         await connection.beginTransaction();
 
+        hoy = hoy ?? (await hoyEnZona());
         const [recibos] = await connection.execute('SELECT id, recibo_origen_id FROM recibos WHERE id = ? FOR UPDATE', [id]);
         if (recibos.length === 0) {
             await connection.rollback();
@@ -893,17 +895,19 @@ function fechasFaltantes(fechaInicial, periodicidad, fechasExistentes, anioActua
  * Añade a un recibo las fechas generables que le faltan (botón «Generar nuevas fechas»): las posteriores a su último cargo y los
  * huecos intermedios cuya fecha aún no ha llegado. Nunca toca ejercicios cerrados ni fechas existentes.
  * @param {number|string} reciboId - ID del recibo
- * @param {number} [anioActual] - Año en curso (parámetro para poder probar el cierre de ejercicio)
+ * @param {number} [anioActual] - Año en curso en la zona horaria de los ajustes (parámetro para poder probar el cierre de ejercicio)
  * @param {Date} [hoy] - Fecha de hoy (parámetro para poder probarlo)
  * @returns {number} - Número de fechas añadidas
  * @throws {Error} - Con status 404 si el recibo no existe, o 409 si no tiene fechas o su ejercicio está cerrado
  */
-async function completarFechasAnio(reciboId, anioActual = new Date().getFullYear(), hoy = new Date()) {
+async function completarFechasAnio(reciboId, anioActual, hoy) {
     let connection;
     try {
         connection = await getConnection();
         await connection.beginTransaction();
 
+        hoy = hoy ?? (await hoyEnZona());
+        anioActual = anioActual ?? hoy.getFullYear();
         const [recibos] = await connection.execute("SELECT periodicidad, DATE_FORMAT(fecha_inicial, '%Y-%m-%d') AS fecha_inicial FROM recibos WHERE id = ? FOR UPDATE", [reciboId]);
         if (recibos.length === 0) {
             throw new ErrorDeRecibo('Recibo no encontrado.', 404);
@@ -934,4 +938,24 @@ async function completarFechasAnio(reciboId, anioActual = new Date().getFullYear
     }
 }
 
-export { actualizarFechasRecibos, completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, generarNuevasFechasRecibo, getRecibos, importeDelCargo, pushRecibo };
+/**
+ * Lanza el procedimiento que crea los recibos del año siguiente y pone al día los que falten (DC-17, DC-24).
+ * Es una acción explícita del administrador: ignora el interruptor y la hora programada del evento.
+ * @param {boolean} [simular] - Si es true (por defecto) solo devuelve lo que crearía, sin escribir nada
+ * @returns {Promise<Array>} - Una fila por recibo y año: origen_id, nuevo_id, concepto, anio_nuevo, fechas, primera, ultima y aviso
+ */
+async function generarRecibosAnio(simular = true) {
+    let connection;
+    try {
+        connection = await getConnection();
+        const [resultado] = await connection.query('CALL generar_recibos_anio(?, 1, NULL)', [simular ? 1 : 0]);
+        return Array.isArray(resultado[0]) ? resultado[0] : [];
+    } catch (error) {
+        console.error('API. Error al generar los recibos del año: ', error);
+        throw error;
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+export { actualizarFechasRecibos, completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, generarNuevasFechasRecibo, generarRecibosAnio, getRecibos, importeDelCargo, pushRecibo };

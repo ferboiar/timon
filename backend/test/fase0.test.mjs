@@ -674,3 +674,79 @@ describe('Procedimiento generar_recibos_anio (DC-17, DC-24, DC-25)', () => {
         assert.equal(evento.campo, 'HOUR');
     });
 });
+
+describe('Ajustes del sistema y zona horaria (DC-25)', () => {
+    let aj;
+    let tiempo;
+    let util;
+
+    before(async () => {
+        aj = await import('../src/db/db_ajustes.mjs');
+        tiempo = await import('../src/utils/tiempo.mjs');
+        util = await import('../src/db/db_utils.mjs');
+    });
+
+    beforeEach(async () => {
+        await db.query('DELETE FROM fechas_cargo');
+        await db.query('UPDATE recibos SET recibo_origen_id = NULL');
+        await db.query('DELETE FROM recibos');
+        await db.query("UPDATE ajustes_sistema SET valor = 'Europe/Madrid' WHERE clave = 'zona_horaria'");
+        await db.query("UPDATE ajustes_sistema SET valor = '1' WHERE clave = 'crear_recibos_automaticamente'");
+        aj.reiniciarCacheAjustes();
+    });
+
+    test('hoyIsoEnZonaDe calcula el día en la zona indicada, con el cambio de hora incluido', () => {
+        const instante = new Date('2026-11-30T22:30:00Z');
+        assert.equal(tiempo.hoyIsoEnZonaDe('Europe/Madrid', instante), '2026-11-30');
+        assert.equal(tiempo.hoyIsoEnZonaDe('Pacific/Auckland', instante), '2026-12-01');
+        assert.equal(tiempo.hoyIsoEnZonaDe('Europe/Madrid', new Date('2026-06-30T22:30:00Z')), '2026-07-01'); // horario de verano (UTC+2)
+        assert.equal(tiempo.hoyIsoEnZonaDe('Europe/Madrid', new Date('2026-12-31T22:30:00Z')), '2026-12-31'); // horario de invierno (UTC+1)
+        assert.ok(tiempo.esZonaValida('Europe/Madrid'));
+        assert.ok(!tiempo.esZonaValida('No/Existe'));
+        assert.ok(!tiempo.esZonaValida(''));
+    });
+
+    test('la zona horaria por defecto es Europe/Madrid y el cambio persiste y afecta a "hoy"', async () => {
+        assert.equal(await aj.getZonaHoraria(), 'Europe/Madrid');
+        await aj.setZonaHoraria('Pacific/Auckland');
+        assert.equal(await aj.getZonaHoraria(), 'Pacific/Auckland');
+        const [[fila]] = await db.query("SELECT valor FROM ajustes_sistema WHERE clave = 'zona_horaria'");
+        assert.equal(fila.valor, 'Pacific/Auckland');
+        const hoy = await aj.hoyEnZona(new Date('2026-11-30T22:30:00Z'));
+        assert.equal(hoy.getFullYear() + '-' + (hoy.getMonth() + 1) + '-' + hoy.getDate(), '2026-12-1');
+    });
+
+    test('una zona inválida se rechaza y no cambia el ajuste', async () => {
+        await assert.rejects(() => aj.setZonaHoraria('No/Existe'), { status: 400 });
+        await assert.rejects(() => aj.setZonaHoraria(''), { status: 400 });
+        assert.equal(await aj.getZonaHoraria(), 'Europe/Madrid');
+    });
+
+    test('el interruptor de creación automática se lee y se guarda', async () => {
+        assert.equal(await aj.getCrearRecibosAutomaticamente(), true);
+        await aj.setCrearRecibosAutomaticamente(false);
+        const [[fila]] = await db.query("SELECT valor FROM ajustes_sistema WHERE clave = 'crear_recibos_automaticamente'");
+        assert.equal(fila.valor, '0');
+        assert.equal(await aj.getCrearRecibosAutomaticamente(), false);
+    });
+
+    test('generarRecibosAnio(true) devuelve la vista previa sin escribir nada', async () => {
+        const [r] = await db.execute("INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, cuenta_id, propietario_id, fecha_inicial) VALUES ('Antiguo', 'anual', 10, 1, 1, 2, '2020-03-01')");
+        await db.execute("INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, '2020-03-01', 'pendiente', '', 1)", [r.insertId]);
+        const filas = await util.generarRecibosAnio(true);
+        assert.ok(filas.some((f) => f.origen_id === r.insertId && f.anio_nuevo === 2021));
+        const [[total]] = await db.query('SELECT COUNT(*) AS n FROM recibos');
+        assert.equal(Number(total.n), 1);
+    });
+
+    test('las conexiones de la aplicación trabajan en UTC', async () => {
+        const { getConnection } = await import('../src/db/db_connection.mjs');
+        const conexion = await getConnection();
+        try {
+            const [[fila]] = await conexion.query('SELECT @@session.time_zone AS zona');
+            assert.equal(fila.zona, '+00:00');
+        } finally {
+            conexion.release();
+        }
+    });
+});

@@ -16,6 +16,7 @@ import helmet from 'helmet';
 // Importaciones usando los subpath imports configurados en package.json
 import { config } from '#backend/config/env.mjs';
 import ahorrosRouter from '#backend/routes/ahorros.mjs';
+import ajustesRouter from '#backend/routes/ajustes.mjs';
 import anticiposRouter from '#backend/routes/anticipos.mjs';
 import authRouter from '#backend/routes/auth.mjs';
 import categoriasRouter from '#backend/routes/categorias.mjs';
@@ -36,6 +37,7 @@ app.use(cors());
 
 app.use(express.json());
 app.use('/api/recibos', recibosRouter);
+app.use('/api/ajustes', ajustesRouter);
 app.use('/api/categorias', categoriasRouter);
 app.use('/api/cuentas', cuentasRouter);
 app.use('/api/ahorros', ahorrosRouter);
