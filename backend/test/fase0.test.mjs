@@ -21,6 +21,30 @@ if (!/^[a-z0-9_]+_test$/.test(dbName)) {
     throw new Error(`TEST_DB_NAME debe terminar en _test (recibido: ${dbName}).`);
 }
 
+// Ejecuta una migración; si usa DELIMITER (procedimientos y eventos) la parte como lo hace el cliente de línea de comandos
+async function ejecutarMigracion(conexion, sql) {
+    if (!/^\s*DELIMITER\s/im.test(sql)) {
+        await conexion.query(sql);
+        return;
+    }
+    let delimitador = ';';
+    let acumulado = [];
+    for (const linea of sql.split('\n')) {
+        const texto = linea.replace(/\r$/, '');
+        const cambio = texto.match(/^\s*DELIMITER\s+(\S+)\s*$/i);
+        if (cambio) {
+            delimitador = cambio[1];
+            continue;
+        }
+        if (texto.trim() === '' || texto.trim().startsWith('--')) continue;
+        acumulado.push(texto);
+        if (texto.trimEnd().endsWith(delimitador)) {
+            const sentencia = acumulado.join('\n').trimEnd();
+            acumulado = [];
+            await conexion.query(sentencia.slice(0, sentencia.length - delimitador.length));
+        }
+    }
+}
 let db;
 let cerrarPool;
 let completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo;
@@ -34,7 +58,7 @@ before(async () => {
     db = await mysql.createConnection({ ...conexion, database: dbName });
     const migraciones = (await readdir(new URL('../src/db/migrations/', import.meta.url))).filter((f) => f.endsWith('.sql')).sort();
     for (const fichero of migraciones) {
-        await db.query(await readFile(new URL(`../src/db/migrations/${fichero}`, import.meta.url), 'utf8'));
+        await ejecutarMigracion(db, await readFile(new URL(`../src/db/migrations/${fichero}`, import.meta.url), 'utf8'));
     }
     await db.query(`INSERT INTO users (id, username, email, password, rol) VALUES (2, 'tester', 'tester@example.test', 'x', 'admin')`);
     await db.query(`INSERT INTO cuentas (id, nombre, tipo, iban, propietario_id) VALUES (1, 'Cuenta de prueba', 'corriente', 'ES0000000000000000000001', 2)`);
@@ -73,14 +97,14 @@ describe('paridad con el entorno de referencia', () => {
 });
 
 describe('esquema de la línea base', () => {
-    test('13 tablas y 18 claves foráneas', async () => {
+    test('14 tablas y 18 claves foráneas', async () => {
         const [[v]] = await db.query(
             `SELECT
                (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?) AS tablas,
                (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY') AS fks`,
             [dbName, dbName]
         );
-        assert.equal(Number(v.tablas), 13);
+        assert.equal(Number(v.tablas), 14);
         assert.equal(Number(v.fks), 18);
     });
 
@@ -493,5 +517,160 @@ describe('Migración 0003: un recibo por año', () => {
         const antes = await recibos();
         await db.query(sqlMigracion);
         assert.deepEqual(await recibos(), antes);
+    });
+});
+
+describe('Procedimiento generar_recibos_anio (DC-17, DC-24, DC-25)', () => {
+    const alta = async (concepto, periodicidad, fechaInicial, fechas, { replicar = 1, activo = 1 } = {}) => {
+        const [r] = await db.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, cuenta_id, propietario_id, fecha_inicial, replicar) VALUES (?, ?, ?, 1, 1, 2, ?, ?)', [concepto, periodicidad, 35, fechaInicial, replicar]);
+        for (const [fecha, estado, importe] of fechas) {
+            await db.execute("INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, importe) VALUES (?, ?, ?, '', ?, ?)", [r.insertId, fecha, estado, activo, importe ?? null]);
+        }
+        return r.insertId;
+    };
+    const llamar = async (simular, forzar, ahoraUtc) => {
+        const [resultado] = await db.query('CALL generar_recibos_anio(?, ?, ?)', [simular, forzar, ahoraUtc]);
+        return resultado[0];
+    };
+    const sucesor = async (id) => (await db.query("SELECT id, importe, periodicidad, DATE_FORMAT(fecha_inicial, '%Y-%m-%d') AS fecha_inicial FROM recibos WHERE recibo_origen_id = ?", [id]))[0][0];
+    const fechasDe = async (id) => (await db.query("SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha FROM fechas_cargo WHERE recibo_id = ? ORDER BY fecha", [id]))[0].map((f) => f.fecha);
+    const total = async () => Number((await db.query('SELECT COUNT(*) AS n FROM recibos'))[0][0].n);
+    const DICIEMBRE = '2026-12-01 02:00:00'; // 03:00 en Madrid (UTC+1)
+
+    beforeEach(async () => {
+        await db.query('DELETE FROM fechas_cargo');
+        await db.query('UPDATE recibos SET recibo_origen_id = NULL');
+        await db.query('DELETE FROM recibos');
+        await db.query('DELETE FROM mantenimiento_logs');
+        await db.query("UPDATE ajustes_sistema SET valor = '1' WHERE clave = 'crear_recibos_automaticamente'");
+        await db.query("UPDATE ajustes_sistema SET valor = 'Europe/Madrid' WHERE clave = 'zona_horaria'");
+    });
+
+    const trimestral = () => alta('A trimestral', 'trimestral', '2026-01-09', [['2026-01-09', 'cargado', 35], ['2026-04-25', 'cargado', 37.5], ['2026-07-09', 'pendiente', null], ['2026-10-09', 'pendiente', null]]);
+
+    test('antes del 1 de diciembre no crea el año siguiente', async () => {
+        await trimestral();
+        assert.equal((await llamar(0, 0, '2026-11-30 02:00:00')).length, 0);
+        assert.equal(await total(), 1);
+    });
+
+    test('el evento solo actúa a las 03:00 de la zona horaria; la ejecución manual no tiene esa restricción', async () => {
+        await trimestral();
+        const fuera = await llamar(0, 0, '2026-12-01 10:00:00');
+        assert.match(fuera[0].aviso, /hora programada/);
+        assert.equal(await total(), 1);
+        assert.equal((await llamar(0, 1, '2026-12-01 10:00:00')).length, 1);
+    });
+
+    test('desde el 1 de diciembre crea el año siguiente: importe del último pago, día del último pago, estado y activo', async () => {
+        const a = await trimestral();
+        const b = await alta('B mensual inactivo', 'mensual', '2026-10-05', [['2026-10-05', 'pendiente', null], ['2026-11-05', 'pendiente', null], ['2026-12-05', 'pendiente', null]], { activo: 0 });
+        const c = await alta('C anual', 'anual', '2026-03-15', [['2026-03-15', 'pendiente', null]]);
+        const d = await alta('D sin replicar', 'anual', '2026-03-15', [['2026-03-15', 'pendiente', null]], { replicar: 0 });
+        const f = await alta('E fin de mes', 'mensual', '2026-01-31', [['2026-01-31', 'pendiente', null]]);
+
+        assert.equal((await llamar(0, 0, DICIEMBRE)).length, 4);
+
+        const a2 = await sucesor(a);
+        assert.equal(a2.importe, '37.50');
+        assert.equal(a2.fecha_inicial, '2027-01-25');
+        assert.deepEqual(await fechasDe(a2.id), ['2027-01-25', '2027-04-25', '2027-07-25', '2027-10-25']);
+        const [[pendientes]] = await db.query("SELECT COUNT(*) AS n FROM fechas_cargo WHERE recibo_id = ? AND estado = 'pendiente' AND importe IS NULL", [a2.id]);
+        assert.equal(Number(pendientes.n), 4);
+
+        const b2 = await sucesor(b);
+        assert.equal(b2.fecha_inicial, '2027-01-05');
+        assert.equal((await fechasDe(b2.id)).length, 12);
+        const [[activos]] = await db.query('SELECT COUNT(*) AS n FROM fechas_cargo WHERE recibo_id = ? AND activo = 1', [b2.id]);
+        assert.equal(Number(activos.n), 0);
+
+        assert.deepEqual(await fechasDe((await sucesor(c)).id), ['2027-03-15']);
+        assert.equal(await sucesor(d), undefined);
+        assert.deepEqual(await fechasDe((await sucesor(f)).id), ['2027-01-31', '2027-02-28', '2027-03-31', '2027-04-30', '2027-05-31', '2027-06-30', '2027-07-31', '2027-08-31', '2027-09-30', '2027-10-31', '2027-11-30', '2027-12-31']);
+    });
+
+    test('un servicio contratado antes mantiene su cadencia: el gas del 13 de agosto da febrero, mayo, agosto y noviembre', async () => {
+        const g = await alta('G gas', 'trimestral', '2025-08-13', [['2025-08-13', 'pendiente', null], ['2025-11-13', 'pendiente', null]]);
+        assert.equal((await llamar(0, 0, '2025-12-01 02:00:00')).length, 1);
+        const g26 = await sucesor(g);
+        assert.equal(g26.fecha_inicial, '2026-02-13');
+        assert.deepEqual(await fechasDe(g26.id), ['2026-02-13', '2026-05-13', '2026-08-13', '2026-11-13']);
+
+        assert.equal((await llamar(0, 0, DICIEMBRE)).length, 1);
+        const g27 = await sucesor(g26.id);
+        assert.deepEqual(await fechasDe(g27.id), ['2027-02-13', '2027-05-13', '2027-08-13', '2027-11-13']);
+    });
+
+    test('es repetible: una segunda ejecución no crea nada', async () => {
+        await trimestral();
+        assert.equal((await llamar(0, 0, DICIEMBRE)).length, 1);
+        const antes = await total();
+        assert.equal((await llamar(0, 0, DICIEMBRE)).length, 0);
+        assert.equal(await total(), antes);
+    });
+
+    test('con el interruptor desactivado no crea nada, salvo en la ejecución manual', async () => {
+        await trimestral();
+        await db.query("UPDATE ajustes_sistema SET valor = '0' WHERE clave = 'crear_recibos_automaticamente'");
+        const filas = await llamar(0, 0, DICIEMBRE);
+        assert.match(filas[0].aviso, /desactivada/);
+        assert.equal(await total(), 1);
+        assert.equal((await llamar(0, 1, DICIEMBRE)).length, 1);
+        assert.equal(await total(), 2);
+    });
+
+    test('la vista previa no escribe nada y muestra primera y última fecha', async () => {
+        const a = await trimestral();
+        const filas = await llamar(1, 1, DICIEMBRE);
+        assert.equal(filas.length, 1);
+        assert.equal(filas[0].origen_id, a);
+        assert.equal(filas[0].anio_nuevo, 2027);
+        assert.equal(filas[0].fechas, 4);
+        assert.equal(filas[0].primera, '2027-01-25');
+        assert.equal(filas[0].ultima, '2027-10-25');
+        assert.equal(filas[0].aviso, null);
+        assert.equal(await total(), 1);
+    });
+
+    test('la vista previa avisa si el mes del último pago no encaja con la cadencia', async () => {
+        await alta('H desfase', 'trimestral', '2026-01-09', [['2026-01-09', 'pendiente', null], ['2026-02-20', 'cargado', 30]]);
+        const filas = await llamar(1, 1, DICIEMBRE);
+        assert.equal(filas[0].primera, '2027-01-20');
+        assert.match(filas[0].aviso, /cadencia/);
+    });
+
+    test('se pone al día año a año sin pasar del año en curso', async () => {
+        const f = await alta('F anual antiguo', 'anual', '2024-05-10', [['2024-05-10', 'pendiente', null]]);
+        assert.equal((await llamar(0, 0, '2026-06-15 01:00:00')).length, 2); // 03:00 en Madrid (UTC+2)
+        const f1 = await sucesor(f);
+        const f2 = await sucesor(f1.id);
+        assert.equal(f1.fecha_inicial, '2025-05-10');
+        assert.equal(f2.fecha_inicial, '2026-05-10');
+        assert.equal(await sucesor(f2.id), undefined);
+        assert.equal(await total(), 3);
+    });
+
+    test('"hoy" se calcula en la zona horaria de los ajustes', async () => {
+        await alta('Z mensual', 'mensual', '2026-01-10', [['2026-01-10', 'pendiente', null]]);
+        // 22:30 UTC del 30 de noviembre: en Madrid todavía es 30 de noviembre
+        assert.equal((await llamar(0, 1, '2026-11-30 22:30:00')).length, 0);
+        // En Auckland (UTC+13) ya es 1 de diciembre
+        await db.query("UPDATE ajustes_sistema SET valor = 'Pacific/Auckland' WHERE clave = 'zona_horaria'");
+        assert.equal((await llamar(0, 1, '2026-11-30 22:30:00')).length, 1);
+    });
+
+    test('anota en mantenimiento_logs la ejecución que crea recibos', async () => {
+        await trimestral();
+        await llamar(0, 0, DICIEMBRE);
+        const [filas] = await db.query("SELECT detalles FROM mantenimiento_logs WHERE operacion = 'Generar recibos del anio'");
+        assert.equal(filas.length, 1);
+        assert.match(filas[0].detalles, /^1 recibos y 4 fechas creados hasta 2027/);
+    });
+
+    test('el evento existe, está activado y se lanza cada hora', async () => {
+        const [[evento]] = await db.query("SELECT STATUS AS estado, INTERVAL_VALUE AS valor, INTERVAL_FIELD AS campo FROM information_schema.EVENTS WHERE EVENT_SCHEMA = ? AND EVENT_NAME = 'generar_recibos_anio_evento'", [dbName]);
+        assert.equal(evento.estado, 'ENABLED');
+        assert.equal(Number(evento.valor), 1);
+        assert.equal(evento.campo, 'HOUR');
     });
 });
