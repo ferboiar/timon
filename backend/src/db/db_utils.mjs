@@ -831,8 +831,6 @@ async function deleteRecibo(id, fecha, periodicidad, hoy = new Date()) {
             throw new ErrorDeRecibo('No se puede borrar un recibo que tiene recibos de años posteriores.', 409);
         }
 
-        // Filas antiguas del historial: esta línea desaparece cuando se elimine la tabla
-        await connection.execute('DELETE FROM recibos_historico WHERE recibo_id = ?', [id]);
         const [result] = await connection.execute('DELETE FROM recibos WHERE id = ?', [id]);
         if (reciboOrigenId) {
             await connection.execute('UPDATE recibos SET replicar = 0 WHERE id = ?', [reciboOrigenId]);

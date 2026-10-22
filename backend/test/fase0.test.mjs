@@ -4,7 +4,7 @@
 // Requiere el servicio de docker-compose.test.yml (ver backend/test/README.md).
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
-import { after, before, describe, test } from 'node:test';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import mysql from 'mysql2/promise';
 
 const dbName = process.env.TEST_DB_NAME ?? 'conta_hogar_test';
@@ -73,15 +73,15 @@ describe('paridad con el entorno de referencia', () => {
 });
 
 describe('esquema de la línea base', () => {
-    test('14 tablas y 19 claves foráneas', async () => {
+    test('13 tablas y 18 claves foráneas', async () => {
         const [[v]] = await db.query(
             `SELECT
                (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?) AS tablas,
                (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY') AS fks`,
             [dbName, dbName]
         );
-        assert.equal(Number(v.tablas), 14);
-        assert.equal(Number(v.fks), 19);
+        assert.equal(Number(v.tablas), 13);
+        assert.equal(Number(v.fks), 18);
     });
 
     test('propietario_id es obligatorio y no tiene valor por defecto', async () => {
@@ -263,7 +263,7 @@ describe('DC-14 a DC-18: lógica de recibos con las funciones reales de la aplic
         assert.ok(cargos.every((c) => c.estado === 'pendiente' && c.importe === null));
     });
 
-    test('al pagar un cargo se guarda su importe y no se escribe en recibos_historico', async () => {
+    test('al pagar un cargo se guarda su importe y se conserva si cambia el del recibo', async () => {
         const concepto = 'DC15 pago e importe';
         const id = await crear(concepto, 'trimestral', '2026-01-09');
         let cargos = await cargosDe(id);
@@ -287,8 +287,6 @@ describe('DC-14 a DC-18: lógica de recibos con las funciones reales de la aplic
         cargos = await cargosDe(id);
         assert.equal(cargos[1].importe, null);
 
-        const [[historial]] = await db.query('SELECT COUNT(*) AS total FROM recibos_historico WHERE recibo_id = ?', [id]);
-        assert.equal(Number(historial.total), 0);
     });
 
     test('un cargo pendiente puede tener un importe propio; si coincide con el del recibo, lo sigue', async () => {
@@ -434,5 +432,66 @@ describe('DC-14 a DC-18: lógica de recibos con las funciones reales de la aplic
         assert.equal(await deleteRecibo(sucesor.insertId, null, 'anual'), true);
         const [[fila]] = await db.query('SELECT replicar FROM recibos WHERE id = ?', [origen]);
         assert.equal(fila.replicar, 0);
+    });
+});
+
+describe('Migración 0003: un recibo por año', () => {
+    let sqlMigracion;
+    const alta = async (concepto, periodicidad, fechaInicial, fechas) => {
+        const [r] = await db.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, cuenta_id, propietario_id, fecha_inicial) VALUES (?, ?, ?, 1, 1, 2, ?)', [concepto, periodicidad, 20, fechaInicial]);
+        for (const [fecha, estado] of fechas) {
+            await db.execute("INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, '', 1)", [r.insertId, fecha, estado]);
+        }
+        return r.insertId;
+    };
+    const fechasDe = async (id) => (await db.query("SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha FROM fechas_cargo WHERE recibo_id = ? ORDER BY fecha", [id]))[0].map((f) => f.fecha);
+    const recibos = async () => (await db.query("SELECT id, concepto, recibo_origen_id, DATE_FORMAT(fecha_inicial, '%Y-%m-%d') AS fecha_inicial FROM recibos ORDER BY id"))[0];
+
+    before(async () => {
+        sqlMigracion = await readFile(new URL('../src/db/migrations/0003_partir_recibos_por_anio.sql', import.meta.url), 'utf8');
+    });
+
+    beforeEach(async () => {
+        await db.query('DELETE FROM fechas_cargo');
+        await db.query('UPDATE recibos SET recibo_origen_id = NULL');
+        await db.query('DELETE FROM recibos');
+    });
+
+    test('parte un recibo que cruza de año en un recibo por año, enlazados y con sus fechas', async () => {
+        const x = await alta('X cruza año', 'trimestral', '2025-08-18', [['2025-08-18', 'cargado'], ['2025-11-18', 'pendiente'], ['2026-02-18', 'pendiente'], ['2026-05-18', 'pendiente']]);
+        const unico = await alta('Y un año', 'anual', '2025-05-26', [['2025-05-26', 'pendiente']]);
+        await db.query(sqlMigracion);
+
+        const filas = await recibos();
+        assert.equal(filas.length, 3);
+        const parte = filas.find((r) => r.recibo_origen_id === x);
+        assert.equal(parte.fecha_inicial, '2026-02-18');
+        assert.deepEqual(await fechasDe(x), ['2025-08-18', '2025-11-18']);
+        assert.deepEqual(await fechasDe(parte.id), ['2026-02-18', '2026-05-18']);
+        assert.deepEqual(await fechasDe(unico), ['2025-05-26']);
+        assert.equal(filas.find((r) => r.id === unico).recibo_origen_id, null);
+        const [[pagado]] = await db.query("SELECT COUNT(*) AS total FROM fechas_cargo WHERE recibo_id = ? AND estado = 'cargado'", [x]);
+        assert.equal(Number(pagado.total), 1);
+    });
+
+    test('en tres años cada trozo se enlaza con el anterior y la fecha inicial sigue la secuencia', async () => {
+        const x = await alta('X tres años', 'trimestral', '2025-11-30', [['2025-11-30', 'pendiente'], ['2026-02-28', 'pendiente'], ['2027-02-28', 'pendiente']]);
+        await db.query(sqlMigracion);
+
+        const filas = await recibos();
+        assert.equal(filas.length, 3);
+        const de2026 = filas.find((r) => r.recibo_origen_id === x);
+        const de2027 = filas.find((r) => r.recibo_origen_id === de2026.id);
+        assert.equal(de2026.fecha_inicial, '2026-02-28');
+        assert.equal(de2027.fecha_inicial, '2027-02-28');
+        assert.deepEqual(await fechasDe(de2027.id), ['2027-02-28']);
+    });
+
+    test('una segunda ejecución no cambia nada', async () => {
+        await alta('X cruza año', 'trimestral', '2025-08-18', [['2025-08-18', 'pendiente'], ['2026-02-18', 'pendiente']]);
+        await db.query(sqlMigracion);
+        const antes = await recibos();
+        await db.query(sqlMigracion);
+        assert.deepEqual(await recibos(), antes);
     });
 });
