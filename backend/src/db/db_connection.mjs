@@ -52,6 +52,7 @@ async function initPool() {
             ssl: {
                 rejectUnauthorized: false
             },
+            timezone: 'Z', // Las fechas y horas viajan en UTC; la zona horaria de la aplicación se aplica al calcular "hoy" y al mostrarlas (DC-25)
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0
@@ -66,6 +67,10 @@ async function initPool() {
         }
 
         pool = mysql.createPool(config);
+        // Cada conexión trabaja en UTC, sea cual sea la configuración del servidor de base de datos (DC-25)
+        pool.pool.on('connection', (conexion) => {
+            conexion.query("SET time_zone = '+00:00'");
+        });
         console.log('Conexión a la base de datos establecida correctamente');
     } catch (error) {
         console.error('Error al inicializar el pool de conexiones:', error);
