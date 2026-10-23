@@ -17,8 +17,10 @@ Las horas se guardan siempre en UTC (las conexiones del pool trabajan en UTC). L
 | `hoyEnZona(ahora)` | Fecha de hoy en esa zona, como `Date` con los campos locales de la zona |
 | `getCrearRecibosAutomaticamente()` / `setCrearRecibosAutomaticamente(activo)` | Interruptor del evento anual; persiste hasta que se cambie |
 | `reiniciarCacheAjustes()` | Vacía la memoria de la zona (pruebas) |
+| `getAjuste(clave)` / `guardarAjuste(clave, valor)` | Leen y escriben una clave de `ajustes_sistema` (el valor se guarda como texto; `getAjuste` devuelve `null` si falta). Los usan las funciones anteriores |
+| `ErrorDeAjuste` | Error con `status` HTTP, que las rutas de ajustes devuelven tal cual |
 
-Las utilidades puras (`esZonaValida`, `hoyEnZonaDe`, `hoyIsoEnZonaDe`) están en `backend/src/utils/tiempo.mjs`.
+Las utilidades puras (`esZonaValida`, `hoyEnZonaDe`, `hoyIsoEnZonaDe`) están en `backend/src/utils/tiempo.mjs` ([tiempo](../utils/tiempo.md)).
 
 ## Referencias
 

@@ -28,7 +28,7 @@ Este módulo implementa las rutas de la API REST para la gestión de usuarios en
 
 ## Seguridad
 
-- Todas las rutas están protegidas mediante el middleware `verifyToken`
+- Las rutas de gestión de usuarios (listado, alta, edición, contraseña y borrado) exigen administrador (`verifyAdmin`); las de preferencias de estilo solo exigen sesión (`verifyToken`), porque son del propio usuario
 - Las contraseñas se almacenan encriptadas, nunca en texto plano
 - Se utilizan medidas contra inyección SQL mediante consultas parametrizadas
 - Validación exhaustiva de datos de entrada para prevenir ataques
@@ -79,7 +79,7 @@ Soporta la eliminación individual o en lote mediante un array de IDs de usuario
 Las preferencias de estilo son específicas para cada usuario y se almacenan en formato JSON, permitiendo personalizar:
 - Tema visual (preset)
 - Modo de menú
-- Tema claro/oscuro
+- Apariencia general (`colorScheme`: `system`, `light` o `dark`)
 - Colores primarios y de superficie
 
 ## Referencias

@@ -1,5 +1,7 @@
 # Documentación del Sistema Timon
 
+Si retomas el proyecto, empieza por el [estado del proyecto](./mantenimiento/estado-del-proyecto.md).
+
 ## Introducción
 
 Timon es una aplicación financiera integral diseñada para la gestión eficiente de recursos económicos personales. Esta plataforma permite a los usuarios administrar sus finanzas a través de seis sistemas interconectados: recibos, anticipos, ahorros, categorías, cuentas y usuarios.
@@ -53,22 +55,22 @@ El sistema de recibos sigue una arquitectura de cuatro capas:
 1. **Interfaz de Usuario** - Componente Vue para la gestión de recibos y sus fechas de cargo
 2. **Servicios Cliente** - Clase que maneja la comunicación con el backend
 3. **Backend** - API REST y funciones de acceso a la base de datos
-4. **Persistencia de datos** - Base de datos ([SGBD](../db/schema/index.md))
+4. **Persistencia de datos** - Base de datos ([SGBD](./db/schema/index.md))
 
 ### Documentación de Recibos
 
 #### Interfaz de Usuario
 
-- [Componente ListBills](../components/ListBills.md) - Gestión completa de recibos y fechas de cargo
+- [Componente ListBills](./components/ListBills.md) - Gestión completa de recibos y fechas de cargo
 
 #### Servicios Cliente
 
-- [BillService](../services/BillService.md) - Cliente para la API de recibos
+- [BillService](./services/BillService.md) - Cliente para la API de recibos
 
 #### Backend
 
-- [API de Recibos](../routes/recibos.md) - Rutas REST para recibos y fechas de cargo
-- [Utilidades de Base de Datos](../db/db_utilsBill.md) - Funciones de acceso a datos de recibos
+- [API de Recibos](./routes/recibos.md) - Rutas REST para recibos y fechas de cargo
+- [Utilidades de Base de Datos](./db/db_utilsBill.md) - Funciones de acceso a datos de recibos
 
 ## Sistema de Anticipos
 
@@ -86,16 +88,16 @@ El sistema de anticipos está organizado en tres capas principales:
 
 #### Interfaz de Usuario
 
-- [Componente Advances](../components/Advances.md) - Gestión completa de anticipos y pagos
+- [Componente Advances](./components/Advances.md) - Gestión completa de anticipos y pagos
 
 #### Servicios Cliente
 
-- [AdvService](../services/AdvService.md) - Cliente para la API de anticipos
+- [AdvService](./services/AdvService.md) - Cliente para la API de anticipos
 
 #### Backend
 
-- [API de Anticipos](../routes/anticipos.md) - Rutas REST para anticipos y pagos
-- [Utilidades de Base de Datos](../db/db_utilsAdv.md) - Funciones de acceso y lógica de negocio
+- [API de Anticipos](./routes/anticipos.md) - Rutas REST para anticipos y pagos
+- [Utilidades de Base de Datos](./db/db_utilsAdv.md) - Funciones de acceso y lógica de negocio
 
 ## Sistema de Ahorros
 
@@ -113,16 +115,16 @@ El sistema de ahorros sigue la misma arquitectura de tres capas:
 
 #### Interfaz de Usuario
 
-- [Componente Savings](../components/Savings.md) - Gestión completa de ahorros y movimientos
+- [Componente Savings](./components/Savings.md) - Gestión completa de ahorros y movimientos
 
 #### Servicios Cliente
 
-- [SavService](../services/SavService.md) - Cliente para la API de ahorros
+- [SavService](./services/SavService.md) - Cliente para la API de ahorros
 
 #### Backend
 
-- [API de Ahorros](../routes/ahorros.md) - Rutas REST para ahorros y movimientos
-- [Utilidades de Base de Datos](../db/db_utilsSav.md) - Funciones de acceso a datos de ahorros
+- [API de Ahorros](./routes/ahorros.md) - Rutas REST para ahorros y movimientos
+- [Utilidades de Base de Datos](./db/db_utilsSav.md) - Funciones de acceso a datos de ahorros
 
 ## Sistema de Categorías
 
@@ -140,16 +142,16 @@ El sistema de categorías sigue la misma arquitectura de tres capas:
 
 #### Interfaz de Usuario
 
-- [Componente Categories](../components/Categories.md) - Gestión completa de categorías
+- [Componente Categories](./components/Categories.md) - Gestión completa de categorías
 
 #### Servicios Cliente
 
-- [CatsService](../services/CatsService.md) - Cliente para la API de categorías
+- [CatsService](./services/CatsService.md) - Cliente para la API de categorías
 
 #### Backend
 
-- [API de Categorías](../routes/categorias.md) - Rutas REST para categorías
-- [Utilidades de Base de Datos](../db/db_utilsCats.md) - Funciones de acceso a datos de categorías
+- [API de Categorías](./routes/categorias.md) - Rutas REST para categorías
+- [Utilidades de Base de Datos](./db/db_utilsCats.md) - Funciones de acceso a datos de categorías
 
 ## Sistema de Cuentas
 
@@ -167,16 +169,16 @@ El sistema de cuentas sigue la misma arquitectura de tres capas:
 
 #### Interfaz de Usuario
 
-- [Componente Accounts](../components/Accounts.md) - Gestión completa de cuentas financieras
+- [Componente Accounts](./components/Accounts.md) - Gestión completa de cuentas financieras
 
 #### Servicios Cliente
 
-- [AccService](../services/AccService.md) - Cliente para la API de cuentas
+- [AccService](./services/AccService.md) - Cliente para la API de cuentas
 
 #### Backend
 
-- [API de Cuentas](../routes/cuentas.md) - Rutas REST para cuentas
-- [Utilidades de Base de Datos](../db/db_utilsAcc.md) - Funciones de acceso a datos de cuentas
+- [API de Cuentas](./routes/cuentas.md) - Rutas REST para cuentas
+- [Utilidades de Base de Datos](./db/db_utilsAcc.md) - Funciones de acceso a datos de cuentas
 
 ## Sistema de Usuarios y Autenticación
 
@@ -206,6 +208,7 @@ Este sistema sigue una arquitectura multicapa:
 #### Gestión de Estado y Autorización
 - [Composable useAuth](./composables/useAuth.md) - Hook para gestión del estado de autenticación
 - [Directiva vRole](./directives/vRole.md) - Control de acceso declarativo en plantillas
+- [Composable useTheme](./composables/useTheme.md) y [useLayout](./composables/useLayout.md) - Temas y apariencia general
 
 #### Navegación Segura
 - [Guardias de Rutas](./router/routeGuards.md) - Protección de navegación basada en autenticación y roles
@@ -242,7 +245,7 @@ Este sistema sigue una arquitectura multicapa:
 
 #### Personalización de Interfaz
 - Preferencias de estilo por usuario
-- Temas claros y oscuros
+- Apariencia general: Sistema (sigue al navegador), Claro u Oscuro; se guarda por usuario y se recuerda en el navegador
 - Selección de colores primarios y de superficie
 - Configuración del modo de menú
 - Persistencia de preferencias en servidor
@@ -252,8 +255,10 @@ Este sistema sigue una arquitectura multicapa:
 ### Recibos
 - Creación y gestión de recibos periódicos
 - Configuración de periodicidades (mensual, bimestral, trimestral, anual)
-- Seguimiento de fechas de cargo y sus estados (pendiente, pagado, rechazado)
+- Seguimiento de fechas de cargo y sus estados (pendiente y cargado; `rechazado` queda pendiente de la migración de DC-01)
 - Filtrado avanzado por periodicidad, año y estado
+- Cada recibo es el de un año natural; el del año siguiente lo crea un proceso diario enlazado con el anterior (DC-14, DC-17)
+- Importe propio en cada fecha de cargo y ejercicio cerrado para los años anteriores (DC-15, DC-20)
 - Visualización expandible de fechas de cargo por recibo
 - Programación de fechas manual o automática (desde una fecha inicial); la edición parte siempre en manual y el modo automático solo reescribe las fechas pendientes
 - Exportación de datos a CSV
@@ -293,3 +298,34 @@ Este sistema sigue una arquitectura multicapa:
 - Creación, edición y eliminación de usuarios con diferentes niveles de acceso
 - Personalización de la interfaz con preferencias por usuario
 - Control de acceso granular a funcionalidades según rol del usuario
+
+## Ajustes, zona horaria y mantenimiento
+
+La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización de cada usuario y la administración del sistema: General, Usuarios, Aspecto, Administrar recibos y Base de Datos. Los administradores ven todas y abren en General; el resto solo ve Aspecto.
+
+### Documentación
+
+- [Componente ProfileSettings](./components/ProfileSettings.md) - Pantalla de Ajustes
+- [AjustesService](./services/AjustesService.md), [DbConfigService](./services/DbConfigService.md) y [MaintenanceDBService](./services/MaintenanceDBService.md) - Clientes de las APIs de ajustes, conexión y mantenimiento
+- [Composable useZonaHoraria](./composables/useZonaHoraria.md) - Zona horaria de la aplicación: «hoy», año y mes en curso, y formato de fechas y horas
+- [Composable useAjustesSesion](./composables/useAjustesSesion.md) - Ajustes que solo duran la sesión
+- [API de Ajustes](./routes/ajustes.md), [API de conexión](./routes/conexionDB.md) y [API de mantenimiento](./routes/mantenimientoDB.md)
+- [Ajustes del sistema (db_ajustes)](./db/db_ajustes.md), [Procedimiento de recibos del año](./db/generar_recibos_anio.md), [Conexión (db_utilsConn)](./db/db_utilsConn.md) y [Copias de seguridad (db_maintenance)](./db/db_maintenance.md)
+- [Utilidades de tiempo](./utils/tiempo.md) y [Configuración de entorno](./config/env.md)
+
+### Características clave
+
+- Zona horaria de la aplicación: las horas se guardan en UTC y el ajuste decide el día, el mes y el año en curso, y la hora con que se muestran las fechas y los registros
+- Creación automática de los recibos del año siguiente, con interruptor, vista previa y ejecución manual
+- Opción de sesión para que el administrador edite y borre recibos pagados de meses cerrados
+- Apariencia general (Sistema, Claro u Oscuro) por usuario, recordada también en el navegador para no parpadear al cargar
+
+## Otras pantallas
+
+- [Calendario](./components/Calendar.md) - Vista anual de los cargos y totales por mes
+- [Páginas vacías de la plantilla](./components/PaginasVacias.md) - Presupuestos, Transacciones, Automatización y Préstamos
+
+## Mantenimiento del proyecto
+
+- [Estado del proyecto](./mantenimiento/estado-del-proyecto.md) - Documento de relevo: cómo se trabaja, cómo funciona hoy y qué toca después
+- [Registro de hallazgos y decisiones](./mantenimiento/registro-hallazgos.md) - Decisiones (DC), hallazgos y plan por fases

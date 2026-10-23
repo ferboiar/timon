@@ -1,18 +1,32 @@
 # TAREAS PENDIENTES
-- [ ] Revisar sintaxis de colores en bloques de código en archivos markdown (SQL, PHP, Vue, etc.)
-- [ ] Implementar nueva funcionalidad de permisos y visibilidad en el proyecto
-- [ ] Rediseño de recibos por año (DC-14 a DC-18 del registro de mantenimiento): esquema, pago con importe real, evento anual y vistas por año
-- [ ] Ajustes, sección «Administrar recibos»: opción «Permitir editar/borrar recibos pagados» (DC-21), con interruptor desactivado por defecto que se desactiva al cerrar sesión; junto al botón del evento anual (DC-17)
-- [ ] Mejorar la interfaz de los diálogos para la gestión de fechas de cargo en ListBills.vue
-- [ ] Evaluar la utilidad de la función updateAllDates:
-        - Añadir diálogo de confirmación para evitar actualizaciones accidentales
-        - Considerar restringir su alcance o eliminarla por completo
 
-# IMPLEMENTADO:
-- [x] **Nuevos permisos de usuario**: Modificado el backend (users.mjs y db_utilsUsers.mjs) para soportar columnas perm_ en tabla users
-- [x] **Reorganización de cuenta_id**: Movido de la tabla fechas_cargo a la tabla recibos, con adaptaciones en la base de datos y lógica
-- [x] **Historial de recibos pagados**: al marcar un cargo como cargado se copia a recibos_historico (se sustituirá por el recibo por año, DC-14)
-- [x] **Generación de fechas desde la fecha inicial** al dar de alta un recibo; la generación al cambiar de año será un evento de la base de datos (DC-17)
-- [x] **Modos de gestión de fechas**: Implementada la creación de recibos con fechas manuales o automáticas basadas en fecha inicial y periodicidad
+Estado a 2026-10-23, tras el PR #28 y el PR de documentación. El plan por fases y los hallazgos están en `doc/mantenimiento/registro-hallazgos.md` (sección 10); el relevo para una conversación nueva, en `doc/mantenimiento/estado-del-proyecto.md`.
 
+## Siguiente (un PR por punto, en este orden)
+- [ ] Limpieza de «Actualizar fechas»: retirar `updateAllDates` y el botón comentado de `ListBills.vue`, `BillService.updateAllBillsDates`, la ruta `POST /api/recibos/actualizar-fechas` y, en `db_utils.mjs`, `actualizarFechasRecibos` y `generarNuevasFechasRecibo`; corregir los dos errores de `eslint` de `ListBills.vue`. Se conserva «Generar nuevas fechas» (`generateDates`, `completarFechasAnio`). Cierra F-11, F-23 y F-32.
+- [ ] Validación de un solo año al editar un recibo (DC-14): rechazar en el servidor y en la pantalla las fechas que no caigan en el año de la fecha inicial.
+- [ ] F-17: errata `re;` y `turn;` en `confirmDeleteAdvance` de `Advances.vue`.
 
+## Después (fase 1)
+- [ ] F-07, F-12, F-13 (`dateStrings`, DC-05) y F-27 (transacciones en `db_utilsAdv.mjs`), comprobados abiertos el 2026-10-23
+- [ ] F-08, F-09, F-10, F-14, F-16, F-19, F-20, F-21, F-28 (resto de pantallas), F-30 y F-31: sin comprobar contra el código
+- [ ] Migraciones de DC-01 (estado `rechazado`) y DC-02 (nombre de categoría único)
+- [ ] Revisar `README_en.md` y la nota de `backend/test/README.md` sobre los módulos de `backend/src/db`
+
+## Más adelante
+- [ ] Fase 2: permisos reales (S-01, S-04, S-06)
+- [ ] Fase 3: operación (S-02, S-03, S-07, O-01, S-08) y migración de la rutina de mantenimiento
+- [ ] Fase 4: limpieza de interfaz y de documentación (U-01 a U-08, D-01 a D-05; `Tech-documentation.vue` mantiene a mano la navegación de `doc/`)
+- [ ] Fase 5: dependencias (S-11)
+- [ ] Fase 6: hoja de ruta funcional (R-01 a R-04)
+- [ ] Revisar la sintaxis de colores en los bloques de código de los archivos markdown (SQL, PHP, Vue, etc.)
+- [ ] Mejorar la interfaz de los diálogos para la gestión de fechas de cargo en `ListBills.vue`
+
+# IMPLEMENTADO
+- [x] **Permisos de usuario**: columnas `perm_*` en `users` (`users.mjs`, `db_utilsUsers.mjs`); su aplicación en los endpoints de datos sigue pendiente (S-01)
+- [x] **Cuenta del recibo**: `cuenta_id` pasó de `fechas_cargo` a `recibos`
+- [x] **Recibo por año** (DC-14 a DC-25): esquema, importe por cargo, fechas del año, ejercicio cerrado, vista por año, migraciones 0002 y 0003, procedimiento `generar_recibos_anio` y evento diario (migración 0004)
+- [x] **Modos de fechas**: manual o automático desde la fecha inicial; la edición parte siempre en manual (DC-11)
+- [x] **Ajustes**: General (zona horaria, DC-25), Administrar recibos (interruptor de creación automática, opción de sesión para recibos pagados, vista previa y generación manual), Aspecto (apariencia general Sistema, Claro u Oscuro, DC-26) y Base de Datos
+- [x] **Zona horaria de la aplicación**: horas en UTC y «hoy» calculado en la zona de los ajustes (DC-25)
+- [x] **Correcciones de la fase 1**: F-01 a F-06, F-18, F-24, F-25, F-26, F-29, F-33, F-34, F-35 y F-36

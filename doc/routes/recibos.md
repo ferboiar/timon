@@ -11,7 +11,7 @@ Este módulo implementa las rutas de la API REST para la gestión de recibos y s
 | `GET` | `/api/recibos` | Obtiene recibos con filtros opcionales |
 | `POST` | `/api/recibos` | Crea o actualiza un recibo con sus fechas de cargo |
 | `DELETE` | `/api/recibos/:id` | Elimina un recibo o una fecha de cargo específica; 409 si hay cargos pagados o el recibo tiene sucesor |
-| `POST` | `/api/recibos/:id/generar-fechas` | Añade las fechas generables que faltan en el año en curso (las posteriores al último cargo y los huecos cuya fecha aún no ha llegado), siguiendo la secuencia del recibo (DC-22); responde 409 si el recibo no tiene fechas o su ejercicio está cerrado |
+| `POST` | `/api/recibos/:id/generar-fechas` | Añade las fechas generables que faltan en el año en curso (las posteriores al último cargo y los huecos cuya fecha aún no ha llegado), siguiendo la secuencia del recibo (DC-22); responde 404 si el recibo no existe y 409 si no tiene fechas o su ejercicio está cerrado |
 | `POST` | `/api/recibos/actualizar-fechas` | Aplica lo anterior a todos los recibos; solo administradores (403 en otro caso) |
 
 ## Características Principales
@@ -83,7 +83,7 @@ Esta ruta permite eliminar un recibo completo o solo una fecha de cargo específ
 - Si se proporcionan el ID y la fecha (la periodicidad es opcional):
   - Con `fecha`, se elimina solo ese cargo, sea cual sea la periodicidad.
   - Si era la última fecha de cargo, se elimina también el recibo.
-- Si el recibo (o la fecha indicada) tiene cargos pagados, responde 409 y no borra nada (DC-18). También responde 409 si el recibo tiene recibos de años posteriores. Al borrar un recibo que procede de otro, el origen queda con `replicar = 0`.
+- Si el recibo (o la fecha indicada) tiene cargos pagados, responde 409 y no borra nada (DC-18), salvo que un administrador envíe `permitirPagados=1` (DC-21). También responde 409 si el recibo tiene recibos de años posteriores. Al borrar un recibo que procede de otro, el origen queda con `replicar = 0`.
 
 #### Parámetros de consulta para DELETE:
 
@@ -91,6 +91,7 @@ Esta ruta permite eliminar un recibo completo o solo una fecha de cargo específ
 |-----------|------|-------------|-----------|
 | `fecha` | String | Fecha del cargo a eliminar | No |
 | `periodicidad` | String | Periodicidad del recibo | No |
+| `permitirPagados` | String | `1` para permitir borrar cargos pagados de meses cerrados; solo se aplica si el usuario es administrador (opción de sesión de Ajustes, DC-21) | No |
 
 ## Sistema de Propiedad y Acceso
 

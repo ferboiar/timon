@@ -1,5 +1,7 @@
 # Migración de estructura para Recibos y Cuentas
 
+> **Documento histórico (2026-10-23).** Describe una migración antigua de `cuenta_id` con un `estado` de `fechas_cargo` (`pendiente`, `pagado`, `rechazado`) que no coincide con el esquema actual (`cargado`, `pendiente`; ver D-09 y las migraciones de `backend/src/db/migrations`).
+
 Este documento detalla los cambios realizados en la estructura de la base de datos para la gestión de recibos y su relación con las cuentas bancarias.
 
 ## Contexto y Motivación

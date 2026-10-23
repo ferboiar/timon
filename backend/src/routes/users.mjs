@@ -4,7 +4,7 @@
  * Este módulo proporciona endpoints para administrar usuarios en la aplicación.
  * Permite obtener la lista de usuarios, crear nuevos usuarios, actualizar usuarios existentes,
  * cambiar contraseñas, eliminar usuarios y gestionar preferencias de estilo. Todas las rutas requieren autenticación
- * como administrador para garantizar la seguridad de las operaciones.
+ * como administrador, salvo las de preferencias de estilo, que solo exigen sesión (son del propio usuario).
  *
  * @module routes/users
  */
