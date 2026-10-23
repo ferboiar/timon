@@ -3,6 +3,8 @@ import { useAuth } from '@/composables/useAuth'; // Importar composable de auten
 import { AccService } from '@/service/AccService'; // Importar el servicio de cuentas
 import { BillService } from '@/service/BillService';
 import { CatsService } from '@/service/CatsService'; // Importar CatsService
+import { permitirEditarPagados } from '@/composables/useAjustesSesion';
+import { anioEnCurso, cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
@@ -47,8 +49,8 @@ const expandedRowsTrimestral = ref([]);
 const expandedRowsBimestral = ref([]);
 const expandedRowsMensual = ref([]);
 
-const currentYear = new Date().getFullYear();
-const selectedYear = ref(currentYear); // Año cuyos recibos se muestran (DC-18)
+const currentYear = computed(() => anioEnCurso()); // Año en curso en la zona horaria de los ajustes (DC-25)
+const selectedYear = ref(currentYear.value); // Año cuyos recibos se muestran (DC-18)
 
 const categorias = ref([]); // Inicializar como un array vacío
 const cuentas = ref([]); // Lista de cuentas disponibles
@@ -61,14 +63,13 @@ const periodicidad = ref([
 ]);
 
 // DC-18: un año anterior al actual es un ejercicio cerrado: solo se pueden editar los cargos que siguen pendientes
-const anioCerrado = computed(() => selectedYear.value < currentYear);
+const anioCerrado = computed(() => selectedYear.value < currentYear.value);
 
 // Un cargo pagado solo se puede editar o borrar durante el mes en que vence (para rectificar); después se considera cerrado.
-// Pendiente: la opción «Permitir editar/borrar recibos pagados» (Ajustes, Administrar recibos, DC-21) activará este interruptor.
-const permitirEditarPagados = ref(false);
+// Interruptor de sesión «Permitir editar/borrar recibos pagados» (Ajustes › Administrar recibos, DC-21)
 
 function esDelMesEnCurso(fecha) {
-    const hoy = new Date();
+    const hoy = hoyEnZona();
     return String(fecha).slice(0, 7) === hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
 }
 
@@ -86,15 +87,15 @@ function fechasFaltantesDelGrupo(grupo) {
         .map((b) => (b.fecha ? String(b.fecha).slice(0, 10) : null))
         .filter(Boolean)
         .sort();
-    if (!paso || !fechas.length || selectedYear.value !== currentYear) return [];
+    if (!paso || !fechas.length || selectedYear.value !== currentYear.value) return [];
     const indiceMes = (fecha) => {
         const [anio, mes] = fecha.split('-').map(Number);
         return anio * 12 + (mes - 1);
     };
     const existentes = new Set(fechas.map(indiceMes));
     const indiceUltimo = Math.max(...existentes);
-    if (Math.floor(indiceUltimo / 12) < currentYear) return [];
-    const hoy = new Date();
+    if (Math.floor(indiceUltimo / 12) < currentYear.value) return [];
+    const hoy = hoyEnZona();
     const hoyTexto = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
     const [anioAncla, mesAncla, diaAncla] = String(grupo.fecha_inicial ?? fechas[0])
         .slice(0, 10)
@@ -102,11 +103,11 @@ function fechasFaltantesDelGrupo(grupo) {
         .map(Number);
     const indiceAncla = anioAncla * 12 + (mesAncla - 1);
     const faltantes = [];
-    for (let indice = Math.max(indiceAncla, currentYear * 12); indice <= currentYear * 12 + 11; indice++) {
+    for (let indice = Math.max(indiceAncla, currentYear.value * 12); indice <= currentYear.value * 12 + 11; indice++) {
         if ((((indice - indiceAncla) % paso) + paso) % paso !== 0 || existentes.has(indice)) continue;
         const mes = (indice % 12) + 1;
-        const ultimoDia = new Date(Date.UTC(currentYear, mes, 0)).getUTCDate();
-        const fecha = currentYear + '-' + String(mes).padStart(2, '0') + '-' + String(Math.min(diaAncla, ultimoDia)).padStart(2, '0');
+        const ultimoDia = new Date(Date.UTC(currentYear.value, mes, 0)).getUTCDate();
+        const fecha = currentYear.value + '-' + String(mes).padStart(2, '0') + '-' + String(Math.min(diaAncla, ultimoDia)).padStart(2, '0');
         faltantes.push({ fecha, generable: indice > indiceUltimo || fecha > hoyTexto });
     }
     return faltantes;
@@ -124,7 +125,7 @@ function puedeGenerarFechas(grupo) {
 
 // DC-18: la vista muestra los cargos del año elegido y, en el año en curso, los pendientes de años anteriores (atrasados)
 async function fetchBills(periodicity) {
-    const [delAnio, atrasados] = await Promise.all([BillService.getBillsByPeriodicity(periodicity, selectedYear.value), selectedYear.value === currentYear ? BillService.getOverdueBills(periodicity, selectedYear.value) : Promise.resolve([])]);
+    const [delAnio, atrasados] = await Promise.all([BillService.getBillsByPeriodicity(periodicity, selectedYear.value), selectedYear.value === currentYear.value ? BillService.getOverdueBills(periodicity, selectedYear.value) : Promise.resolve([])]);
     return [...delAnio, ...atrasados.map((b) => ({ ...b, atrasado: true }))];
 }
 
@@ -161,13 +162,15 @@ function changeYear(delta) {
 }
 
 function resetYear() {
-    if (selectedYear.value !== currentYear) {
-        selectedYear.value = currentYear;
+    if (selectedYear.value !== currentYear.value) {
+        selectedYear.value = currentYear.value;
         reloadBills({ conservarExpansion: false });
     }
 }
 
 onMounted(async () => {
+    await cargarZonaHoraria(); // La zona horaria de los ajustes fija el año en curso (DC-25)
+    selectedYear.value = anioEnCurso();
     try {
         [annualBills.value, quarterlyBills.value, bimonthlyBills.value, monthlyBills.value, inactiveBills.value] = await Promise.all([
             fetchBills('anual'),
@@ -658,12 +661,12 @@ function editBill(prod, openFCDialog = false) {
         cuenta_id: prod.cuenta_id,
         importe: prod.importe,
         periodicidad: prod.periodicidad,
-        fecha_inicial: prod.fecha_inicial ? new Date(prod.fecha_inicial) : null,
+        fecha_inicial: prod.fecha_inicial ? fechaDeCalendario(prod.fecha_inicial) : null,
         cargo: [
             // Primer elemento con datos existentes
             {
                 id: prod.fc_id ?? null,
-                fecha: prod.fecha ? new Date(prod.fecha) : null,
+                fecha: prod.fecha ? fechaDeCalendario(prod.fecha) : null,
                 activo: prod.activo ?? 1,
                 estado: prod.estado ?? 'pendiente',
                 comentario: prod.comentario ?? '',
@@ -705,7 +708,7 @@ function confirmDeleteBill(prod) {
 async function deleteBill() {
     try {
         const periodicidad = bill.value.periodicidad;
-        await BillService.deleteBill(bill.value.id, bill.value.fecha, bill.value.periodicidad);
+        await BillService.deleteBill(bill.value.id, bill.value.fecha, bill.value.periodicidad, permitirEditarPagados.value);
         updateBills(periodicidad);
         updateBills('inactivo');
         deleteBillDialog.value = false;
@@ -775,7 +778,7 @@ async function deleteSelectedBills() {
             return;
         }
 
-        const deletePromises = selectedBills.map((bill) => BillService.deleteBill(bill.id, bill.fecha, bill.periodicidad));
+        const deletePromises = selectedBills.map((bill) => BillService.deleteBill(bill.id, bill.fecha, bill.periodicidad, permitirEditarPagados.value));
 
         await Promise.all(deletePromises);
 

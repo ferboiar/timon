@@ -115,7 +115,8 @@ router.delete('/:id', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { fecha, periodicidad } = req.query;
-        const success = await deleteRecibo(id, fecha, periodicidad);
+        const forzar = req.query.permitirPagados === '1' && req.user?.rol === 'admin'; // Opción de sesión del administrador (DC-21)
+        const success = await deleteRecibo(id, fecha, periodicidad, undefined, forzar);
         if (success) {
             res.status(200).send({ message: 'Recibo eliminado correctamente' });
         } else {

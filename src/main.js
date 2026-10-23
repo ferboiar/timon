@@ -7,6 +7,7 @@ import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
 import { vRole } from './directives/vRole'; // Importar directiva personalizada. Ver src/directives/vRole.js
+import { formatearFechaHora } from '@/composables/useZonaHoraria';
 
 import '@/assets/styles.scss';
 import '@/assets/tailwind.css';
@@ -84,6 +85,11 @@ app.config.globalProperties.$formatDate = function (date, separator = '/', adjus
     }
 
     // Convertir a objeto Date si es un string
+    // Una fecha sin hora (columna DATE) se muestra tal cual, sin convertirla a ninguna zona horaria
+    if (typeof date === 'string' && separator !== '-' && !adjustTimezone && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+        const [anio, mes, dia] = date.slice(0, 10).split('-');
+        return dia + separator + mes + separator + anio.slice(-2);
+    }
     let dateObj = typeof date === 'string' ? new Date(date) : date;
 
     // Ajustar zona horaria si se solicita
@@ -102,6 +108,14 @@ app.config.globalProperties.$formatDate = function (date, separator = '/', adjus
         const year = String(dateObj.getFullYear()).slice(-2);
         return `${day}${separator}${month}${separator}${year}`;
     }
+};
+
+/**
+ * Formatea un instante (ISO 8601 en UTC) en la zona horaria de la aplicación (ajustes, DC-25)
+ * En template se usa como $formatDateTime(registro.fecha)
+ */
+app.config.globalProperties.$formatDateTime = function (valor) {
+    return formatearFechaHora(valor);
 };
 
 app.mount('#app');

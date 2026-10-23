@@ -788,10 +788,11 @@ class ErrorDeRecibo extends Error {
  * - Con fecha solo se borra ese cargo, sea cual sea la periodicidad; si era el último, también el recibo.
  * - Si lo que se borra tiene cargos pagados, o el recibo tiene recibos de años posteriores, lanza un error con status 409.
  *   Excepción: un cargo pagado suelto sí se puede borrar durante el mes en que vence (para rectificar); los de meses anteriores están cerrados.
+ *   Con forzar = true (opción de sesión del administrador, DC-21) también se pueden borrar los cargos pagados de meses cerrados.
  * - Al borrar un recibo que procede de otro, el origen queda con replicar = 0 para que el evento anual no lo recree.
  * @returns {boolean} - false si el recibo no existe
  */
-async function deleteRecibo(id, fecha, periodicidad, hoy) {
+async function deleteRecibo(id, fecha, periodicidad, hoy, forzar = false) {
     let connection;
     try {
         connection = await getConnection();
@@ -814,7 +815,7 @@ async function deleteRecibo(id, fecha, periodicidad, hoy) {
         const filtroPagados = soloUnaFecha ? filtroFecha + " AND DATE_FORMAT(fecha, '%Y-%m') <> ?" : '';
         const parametrosPagados = soloUnaFecha ? [id, fechaFormateada, mesActual] : [id];
         const [[pagados]] = await connection.execute(`SELECT COUNT(*) AS total FROM fechas_cargo WHERE recibo_id = ? AND estado = 'cargado'${filtroPagados}`, parametrosPagados);
-        if (Number(pagados.total) > 0) {
+        if (!forzar && Number(pagados.total) > 0) {
             throw new ErrorDeRecibo(soloUnaFecha ? 'No se puede borrar un cargo pagado de un mes anterior: ese periodo está cerrado.' : 'No se puede borrar un recibo con cargos pagados.', 409);
         }
 

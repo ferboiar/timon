@@ -99,6 +99,7 @@ const docNavigation = [
                 children: [
                     { title: 'Componente ProfileSettings', path: 'components/ProfileSettings' },
                     { title: 'UsersService', path: 'services/UsersService' },
+                    { title: 'AjustesService', path: 'services/AjustesService' },
                     { title: 'Directiva vRole', path: 'directives/vRole' }
                 ]
             },
@@ -106,6 +107,7 @@ const docNavigation = [
                 title: 'Autenticación y Autorización',
                 children: [
                     { title: 'Composable useAuth', path: 'composables/useAuth' },
+                    { title: 'Composable useZonaHoraria', path: 'composables/useZonaHoraria' },
                     { title: 'API de Autenticación', path: 'routes/auth' },
                     { title: 'API de Usuarios', path: 'routes/users' },
                     { title: 'DB Utils Usuarios', path: 'db/db_utilsUsers' }
