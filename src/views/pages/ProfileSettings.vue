@@ -4,7 +4,10 @@ import { useTheme } from '@/composables/useTheme';
 import { useLayout } from '@/layout/composables/layout';
 import { DbConfigService } from '@/service/DbConfigService';
 import { MtoDBService } from '@/service/MaintenanceDBService';
+import { AjustesService } from '@/service/AjustesService';
 import { UsersService } from '@/service/UsersService';
+import { permitirEditarPagados } from '@/composables/useAjustesSesion';
+import { cargarZonaHoraria, establecerZonaHoraria } from '@/composables/useZonaHoraria';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 
@@ -445,11 +448,112 @@ watch(
     { immediate: true, deep: true }
 );
 
+// >>>> Ajustes generales: zona horaria (DC-25)
+const zonasHorarias = ref([]);
+const zonaSeleccionada = ref('Europe/Madrid');
+const zonaGuardada = ref('Europe/Madrid');
+const guardandoZona = ref(false);
+const zonaCambiada = computed(() => zonaSeleccionada.value !== zonaGuardada.value);
+const horaEnZonaSeleccionada = computed(() => {
+    try {
+        return new Intl.DateTimeFormat('es-ES', { timeZone: zonaSeleccionada.value, dateStyle: 'full', timeStyle: 'medium' }).format(new Date());
+    } catch {
+        return '';
+    }
+});
+
+async function cargarAjustesGenerales() {
+    const zona = await cargarZonaHoraria(true);
+    const lista = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : ['Europe/Madrid', 'UTC'];
+    zonasHorarias.value = lista.includes(zona) ? lista : [zona, ...lista];
+    zonaSeleccionada.value = zona;
+    zonaGuardada.value = zona;
+}
+
+async function guardarZona() {
+    guardandoZona.value = true;
+    try {
+        const ajustes = await AjustesService.saveZonaHoraria(zonaSeleccionada.value);
+        establecerZonaHoraria(ajustes.zona_horaria);
+        zonaGuardada.value = ajustes.zona_horaria;
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Zona horaria guardada. Se aplica a toda la aplicación.', life: 4000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
+    } finally {
+        guardandoZona.value = false;
+    }
+}
+// <<<<
+
+// >>>> Administrar recibos (DC-17, DC-21, DC-24)
+const crearRecibosAutomaticamente = ref(true);
+const dialogoCreacionAutomatica = ref(false);
+const valorPendienteCreacion = ref(true);
+const vistaPrevia = ref(null);
+const cargandoVistaPrevia = ref(false);
+const dialogoGenerar = ref(false);
+const generandoAhora = ref(false);
+
+async function cargarAjustesRecibos() {
+    try {
+        const ajustes = await AjustesService.getRecibos();
+        crearRecibosAutomaticamente.value = ajustes.crear_recibos_automaticamente;
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
+    }
+}
+
+function pedirCambioCreacionAutomatica(valor) {
+    valorPendienteCreacion.value = valor;
+    dialogoCreacionAutomatica.value = true;
+}
+
+async function confirmarCambioCreacionAutomatica() {
+    try {
+        const ajustes = await AjustesService.saveCrearRecibosAutomaticamente(valorPendienteCreacion.value);
+        crearRecibosAutomaticamente.value = ajustes.crear_recibos_automaticamente;
+        toast.add({ severity: 'success', summary: 'Éxito', detail: ajustes.crear_recibos_automaticamente ? 'Creación automática activada.' : 'Creación automática desactivada hasta que la actives de nuevo.', life: 4000 });
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
+    } finally {
+        dialogoCreacionAutomatica.value = false;
+    }
+}
+
+async function consultarVistaPrevia() {
+    cargandoVistaPrevia.value = true;
+    try {
+        const resultado = await AjustesService.generarRecibosAnio(true);
+        vistaPrevia.value = resultado.filas;
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
+    } finally {
+        cargandoVistaPrevia.value = false;
+    }
+}
+
+async function generarAhora() {
+    generandoAhora.value = true;
+    try {
+        const resultado = await AjustesService.generarRecibosAnio(false);
+        toast.add({ severity: 'success', summary: 'Recibos generados', detail: 'Se han creado ' + resultado.filas.length + ' recibos.', life: 5000 });
+        vistaPrevia.value = null;
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 7000 });
+    } finally {
+        generandoAhora.value = false;
+        dialogoGenerar.value = false;
+    }
+}
+// <<<<
+
 // Obtener usuarios y aplicar preferencias al montar el componente
 onMounted(() => {
     if (isAdmin.value) {
         fetchUsers();
         fetchDbConfig();
+        cargarAjustesGenerales();
+        cargarAjustesRecibos();
     }
 
     // Inicializar configuración temporal con los valores actuales
@@ -468,8 +572,10 @@ onMounted(() => {
         <Tabs value="Estilo">
             <TabList>
                 <Tab value="Estilo">Tema</Tab>
+                <Tab v-if="isAdmin" value="general">General</Tab>
                 <Tab v-if="isAdmin" value="usuarios">Usuarios</Tab>
                 <Tab v-if="isAdmin" value="db">Base de Datos</Tab>
+                <Tab v-if="isAdmin" value="recibos">Administrar recibos</Tab>
                 <Tab value="2">Header III</Tab>
             </TabList>
             <TabPanels>
@@ -596,6 +702,93 @@ onMounted(() => {
                             </div>
                         </div>
                     </div>
+                </TabPanel>
+                <TabPanel v-if="isAdmin" value="general">
+                    <div class="font-semibold text-xl mb-4">Ajustes generales</div>
+                    <div class="card">
+                        <div class="text-lg font-semibold mb-2">Zona horaria</div>
+                        <p>Las horas se guardan siempre en UTC. La zona horaria elegida decide qué día, mes y año son «hoy» y en qué hora se muestran las fechas y los registros en toda la aplicación, con el cambio de hora de verano incluido sin que tengas que tocar nada.</p>
+                        <div class="flex flex-col gap-2 mt-4" style="max-width: 26rem">
+                            <label for="zona-horaria" class="font-bold">Zona horaria de la aplicación</label>
+                            <Select id="zona-horaria" v-model="zonaSeleccionada" :options="zonasHorarias" filter placeholder="Selecciona una zona" fluid />
+                            <small class="text-muted-color">Ahora mismo en esa zona: {{ horaEnZonaSeleccionada }}</small>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <Button label="Guardar" icon="pi pi-save" :disabled="!zonaCambiada" :loading="guardandoZona" @click="guardarZona" />
+                            <Button label="Descartar" icon="pi pi-times" severity="secondary" :disabled="!zonaCambiada" @click="zonaSeleccionada = zonaGuardada" />
+                        </div>
+                    </div>
+                </TabPanel>
+                <TabPanel v-if="isAdmin" value="recibos">
+                    <div class="font-semibold text-xl mb-4">Administrar recibos</div>
+
+                    <div class="card">
+                        <div class="text-lg font-semibold mb-2">Crear recibos del año automáticamente</div>
+                        <p>Cada día a las 03:00 (en la zona horaria de Ajustes › General) la base de datos revisa si hay que crear recibos. Desde el 1 de diciembre crea, para cada recibo, el del año siguiente con sus fechas, el importe del último pago y las mismas características. También pone al día los años que falten si el servidor estuvo parado. Solo crea recibos nuevos: nunca modifica ni borra los existentes.</p>
+                        <p class="mt-2"><b>Riesgos.</b> Si lo desactivas, no se creará ningún recibo hasta que lo actives de nuevo a mano, aunque cierres la sesión. En enero el año nuevo estaría vacío hasta que generes los recibos con el botón de abajo, y los pendientes del año anterior seguirían viéndose como atrasados. Si lo reactivas después de mucho tiempo, creará de golpe todos los años pendientes hasta el límite; revisa antes la vista previa.</p>
+                        <div class="flex items-center gap-3 mt-4">
+                            <ToggleSwitch :modelValue="crearRecibosAutomaticamente" @update:modelValue="pedirCambioCreacionAutomatica" />
+                            <span>{{ crearRecibosAutomaticamente ? 'Activada' : 'Desactivada' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="text-lg font-semibold mb-2">Permitir editar/borrar recibos pagados</div>
+                        <p>Por defecto no se permite editar ni borrar los recibos pagados, salvo los del mes y año en curso: los de meses anteriores se consideran cerrados. Con esta opción activada puedes editar y borrar también los pagados de meses cerrados, por ejemplo para corregir un error antiguo.</p>
+                        <p class="mt-2"><b>Solo dura la sesión.</b> Se desactiva al cerrar sesión o al recargar la página. Úsala con cuidado: borrar un cargo pagado no se puede deshacer.</p>
+                        <div class="flex items-center gap-3 mt-4">
+                            <ToggleSwitch v-model="permitirEditarPagados" />
+                            <span>{{ permitirEditarPagados ? 'Activada' : 'Desactivada' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="text-lg font-semibold mb-2">Generar los recibos del año ahora</div>
+                        <p>Ejecuta a mano el mismo proceso que el automático, aunque la creación automática esté desactivada. La vista previa muestra qué se crearía sin escribir nada: el recibo de origen, el año, cuántas fechas lleva, la primera y la última, y un aviso si el mes del último pago no encaja con la cadencia de la fecha inicial.</p>
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <Button label="Vista previa" icon="pi pi-search" severity="secondary" :loading="cargandoVistaPrevia" @click="consultarVistaPrevia" />
+                            <Button label="Generar ahora" icon="pi pi-play" :disabled="!vistaPrevia || !vistaPrevia.length" @click="dialogoGenerar = true" />
+                        </div>
+                        <DataTable v-if="vistaPrevia" :value="vistaPrevia" stripedRows class="mt-4">
+                            <template #empty>
+                                <div class="text-center p-4">No hay recibos que crear ahora mismo. Desde el 1 de diciembre se crearán los del año siguiente.</div>
+                            </template>
+                            <Column field="concepto" header="Recibo" />
+                            <Column field="anio_nuevo" header="Año" />
+                            <Column field="fechas" header="Fechas" />
+                            <Column header="Primera">
+                                <template #body="p">{{ $formatDate(p.data.primera) }}</template>
+                            </Column>
+                            <Column header="Última">
+                                <template #body="p">{{ $formatDate(p.data.ultima) }}</template>
+                            </Column>
+                            <Column header="Aviso">
+                                <template #body="p"><Tag v-if="p.data.aviso" severity="warn" :value="p.data.aviso" /></template>
+                            </Column>
+                        </DataTable>
+                    </div>
+
+                    <Dialog v-model:visible="dialogoCreacionAutomatica" :style="{ width: '500px' }" header="Confirmar" :modal="true">
+                        <div class="flex items-center gap-4">
+                            <i class="pi pi-exclamation-triangle !text-3xl" />
+                            <span v-if="valorPendienteCreacion">¿Activar la creación automática de recibos? El proceso volverá a ejecutarse cada día a las 03:00 y, si faltan años, los creará.</span>
+                            <span v-else>¿Desactivar la creación automática de recibos? No se creará ningún recibo, ni siquiera en diciembre, hasta que la actives de nuevo a mano.</span>
+                        </div>
+                        <template #footer>
+                            <Button label="No" icon="pi pi-times" autofocus text @click="dialogoCreacionAutomatica = false" />
+                            <Button label="Sí" icon="pi pi-check" @click="confirmarCambioCreacionAutomatica" />
+                        </template>
+                    </Dialog>
+                    <Dialog v-model:visible="dialogoGenerar" :style="{ width: '500px' }" header="Confirmar" :modal="true">
+                        <div class="flex items-center gap-4">
+                            <i class="pi pi-exclamation-triangle !text-3xl" />
+                            <span>Se crearán los recibos de la vista previa ({{ vistaPrevia ? vistaPrevia.length : 0 }}). Solo se añaden recibos nuevos, no se modifica ni se borra nada. ¿Continuar?</span>
+                        </div>
+                        <template #footer>
+                            <Button label="No" icon="pi pi-times" autofocus text @click="dialogoGenerar = false" />
+                            <Button label="Sí" icon="pi pi-check" :loading="generandoAhora" @click="generarAhora" />
+                        </template>
+                    </Dialog>
                 </TabPanel>
                 <TabPanel value="2">
                     <p class="m-0">

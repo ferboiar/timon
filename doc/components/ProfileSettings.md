@@ -30,6 +30,11 @@ El componente `ProfileSettings` ofrece una interfaz completa para la gestión de
 - Validación de campos para garantizar datos correctos
 - Notificaciones de éxito/error mediante sistema de mensajes
 
+### Ajustes generales y administración de recibos (solo administradores)
+
+- **General:** selector de la zona horaria de la aplicación (DC-25). Las horas se guardan en UTC y la zona decide el día, mes y año en curso y la hora con que se muestran las fechas. Se guarda en la base de datos y se aplica a toda la aplicación.
+- **Administrar recibos:** interruptor «Crear recibos del año automáticamente» (persistente, con explicación y riesgos), interruptor «Permitir editar/borrar recibos pagados» (solo dura la sesión, DC-21) y vista previa con botón «Generar ahora» del proceso anual (DC-17, DC-24).
+
 ## Estados y Propiedades
 
 ### Estados para Configuración de Estilo
@@ -92,6 +97,8 @@ El componente `ProfileSettings` ofrece una interfaz completa para la gestión de
 
 El componente utiliza varios servicios para su funcionamiento:
 - `UsersService` para operaciones CRUD en usuarios
+- `AjustesService` y `useZonaHoraria` para la zona horaria y los ajustes de recibos
+- `useAjustesSesion` para el interruptor de recibos pagados, que se reinicia al cerrar sesión
 - `useAuth` para verificar permisos y roles
 - `useTheme` para aplicar cambios visuales
 - `useLayout` para gestionar configuración de diseño

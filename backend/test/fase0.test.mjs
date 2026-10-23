@@ -739,6 +739,16 @@ describe('Ajustes del sistema y zona horaria (DC-25)', () => {
         assert.equal(Number(total.n), 1);
     });
 
+    test('con forzar se borra un cargo pagado de un mes cerrado; sin forzar, no', async () => {
+        const [r] = await db.execute("INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, cuenta_id, propietario_id, fecha_inicial) VALUES ('Forzar', 'mensual', 10, 1, 1, 2, '2026-01-05')");
+        await db.execute("INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, '2026-01-05', 'cargado', '', 1), (?, '2026-02-05', 'pendiente', '', 1)", [r.insertId, r.insertId]);
+        const hoy = new Date(2026, 5, 15);
+        await assert.rejects(() => util.deleteRecibo(r.insertId, '2026-01-05', 'mensual', hoy), { status: 409 });
+        assert.equal(await util.deleteRecibo(r.insertId, '2026-01-05', 'mensual', hoy, true), true);
+        const [[restantes]] = await db.query('SELECT COUNT(*) AS n FROM fechas_cargo WHERE recibo_id = ?', [r.insertId]);
+        assert.equal(Number(restantes.n), 1);
+    });
+
     test('las conexiones de la aplicación trabajan en UTC', async () => {
         const { getConnection } = await import('../src/db/db_connection.mjs');
         const conexion = await getConnection();

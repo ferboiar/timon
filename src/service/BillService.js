@@ -74,11 +74,11 @@ export class BillService {
     }
 
     // Eliminar un recibo
-    static async deleteBill(id, fecha, periodicidad) {
+    static async deleteBill(id, fecha, periodicidad, permitirPagados = false) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await axios.delete(`${API_URL}/${id}`, {
-                params: { fecha, periodicidad },
+                params: { fecha, periodicidad, ...(permitirPagados ? { permitirPagados: 1 } : {}) },
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
             return response.data;

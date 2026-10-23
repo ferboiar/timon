@@ -1,7 +1,8 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
 import { BillService } from '@/service/BillService';
-import { computed, getCurrentInstance, ref } from 'vue';
+import { anioEnCurso, cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
+import { computed, getCurrentInstance, onMounted, ref } from 'vue';
 import VueCal from 'vue-cal';
 import 'vue-cal/dist/vuecal.css';
 
@@ -9,7 +10,7 @@ const { appContext } = getCurrentInstance();
 
 const formatDate = appContext.config.globalProperties.$formatDate; // Obtener la función global
 
-const selectedDate = ref(new Date()); // Initialize with a default date
+const selectedDate = ref(hoyEnZona()); // Hoy en la zona horaria de los ajustes (DC-25)
 const displayedYear = computed(() => selectedDate.value.getFullYear());
 
 // cachear los resultados dado que estos no cambian con frecuencia para evitar llamadas repetidas al servidor
@@ -48,7 +49,7 @@ const calcularTotales = (bills) => {
 
     // Procesar solo los recibos activos
     activeBills.forEach((bill) => {
-        const fecha = new Date(bill.fecha);
+        const fecha = fechaDeCalendario(bill.fecha);
         const mes = fecha.getMonth();
         const importe = parseFloat(bill.importe_cargo ?? bill.importe);
 
@@ -91,8 +92,12 @@ const fetchBillsByYear = async (year) => {
     }
 };
 
-// Llamar a fetchBillsByYear al cargar la página por primera vez
-fetchBillsByYear(displayedYear.value);
+// Al cargar la página: se conoce primero la zona horaria de los ajustes y se pide el año en curso en esa zona
+onMounted(async () => {
+    await cargarZonaHoraria();
+    selectedDate.value = hoyEnZona();
+    fetchBillsByYear(displayedYear.value);
+});
 
 const changeYear = (increment) => {
     selectedDate.value = new Date(selectedDate.value.getFullYear() + increment, selectedDate.value.getMonth(), selectedDate.value.getDate());
@@ -101,8 +106,8 @@ const changeYear = (increment) => {
 
 // Vuelve al año en curso al pulsar sobre el año (igual que en la vista de recibos)
 const resetYear = () => {
-    if (displayedYear.value !== new Date().getFullYear()) {
-        selectedDate.value = new Date();
+    if (displayedYear.value !== anioEnCurso()) {
+        selectedDate.value = hoyEnZona();
         fetchBillsByYear(displayedYear.value);
     }
 };

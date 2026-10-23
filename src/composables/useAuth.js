@@ -64,6 +64,7 @@
  */
 import { useTheme } from '@/composables/useTheme';
 import { API_BASE_URL } from '@/config/api';
+import { reiniciarAjustesSesion } from '@/composables/useAjustesSesion';
 import { useLayout } from '@/layout/composables/layout';
 import { UsersService } from '@/service/UsersService';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
@@ -312,6 +313,7 @@ export function useAuth() {
                 tokenVerificationInterval = null;
             }
 
+            reiniciarAjustesSesion(); // Los ajustes de sesión (DC-21) no sobreviven al cierre de sesión
             // Eliminar tokens y datos de usuario
             localStorage.removeItem('token');
             localStorage.removeItem('user');

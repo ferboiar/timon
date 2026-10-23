@@ -2,6 +2,7 @@
 import { AccService } from '@/service/AccService'; // Importar AccService
 import { AdvService } from '@/service/AdvService';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref } from 'vue';
 
@@ -37,8 +38,8 @@ const fetchAdvances = async () => {
         advances.value = data.map((adv) => ({
             ...adv,
             concepto: adv.concepto.charAt(0).toUpperCase() + adv.concepto.slice(1),
-            fecha_inicio: adv.fecha_inicio ? new Date(adv.fecha_inicio) : null,
-            fecha_fin_prevista: adv.fecha_fin_prevista ? new Date(adv.fecha_fin_prevista) : null
+            fecha_inicio: adv.fecha_inicio ? fechaDeCalendario(adv.fecha_inicio) : null,
+            fecha_fin_prevista: adv.fecha_fin_prevista ? fechaDeCalendario(adv.fecha_fin_prevista) : null
         }));
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los anticipos: ${error.message}`, life: 5000 });
@@ -86,7 +87,7 @@ function openNewAdvance() {
         concepto: '',
         importe_total: 0,
         pago_sugerido: 0,
-        fecha_inicio: new Date(), // Establecer la fecha de hoy por defecto
+        fecha_inicio: hoyEnZona(), // Hoy en la zona horaria de los ajustes (DC-25)
         fecha_fin_prevista: null,
         descripcion: '',
         estado: 'activo',
@@ -241,7 +242,7 @@ function openNewPago(anticipoId) {
     const pagosAnticipo = pagos.value[anticipoId] || [];
 
     // Calcular la fecha del nuevo pago (siguiente a la última fecha de los pagos existentes)
-    const ultimaFechaPago = pagosAnticipo.length > 0 ? new Date(Math.max(...pagosAnticipo.map((p) => new Date(p.fecha).getTime()))) : new Date();
+    const ultimaFechaPago = pagosAnticipo.length > 0 ? new Date(Math.max(...pagosAnticipo.map((p) => fechaDeCalendario(p.fecha).getTime()))) : hoyEnZona();
     ultimaFechaPago.setMonth(ultimaFechaPago.getMonth() + 1);
 
     // Precargar los datos del nuevo pago
@@ -260,7 +261,7 @@ function openNewPago(anticipoId) {
 }
 
 function editPago(p) {
-    pago.value = { ...p };
+    pago.value = { ...p, fecha: fechaDeCalendario(p.fecha) };
     originalImporte.value = parseFloat(p.importe); // Guardar el importe original
     advancePagoDialog.value = true;
 }
@@ -271,7 +272,7 @@ async function savePago() {
     try {
         if (pago.value.fecha) {
             if (!(pago.value.fecha instanceof Date)) {
-                pago.value.fecha = new Date(pago.value.fecha); //Convierte la fecha a un objeto Date
+                pago.value.fecha = fechaDeCalendario(pago.value.fecha); // Convierte la fecha a un objeto Date sin desplazar el día
             }
             const localFecha = new Date(pago.value.fecha.getTime() - pago.value.fecha.getTimezoneOffset() * 60000);
             pago.value.fecha = formatDate(localFecha, '-');
@@ -418,7 +419,12 @@ const recalculatePayments = async () => {
         const resultado = await AdvService.handlePaymentDeletion(selectedPayment.value.id, true);
         console.log('recalculatePayments - Resultado del reparto:', resultado);
 
-        toast.add({ severity: resultado.redistribuido ? 'success' : 'warn', summary: resultado.redistribuido ? 'Successful' : 'Sin cambios', detail: resultado.redistribuido ? `Pagos recalculados: ${resultado.pagosAjustados} ajustados hasta el pago sugerido y ${resultado.pagosCreados} nuevos.` : 'No había importe que colocar: el plan de pagos ya cubre el saldo del anticipo.', life: 5000 });
+        toast.add({
+            severity: resultado.redistribuido ? 'success' : 'warn',
+            summary: resultado.redistribuido ? 'Successful' : 'Sin cambios',
+            detail: resultado.redistribuido ? `Pagos recalculados: ${resultado.pagosAjustados} ajustados hasta el pago sugerido y ${resultado.pagosCreados} nuevos.` : 'No había importe que colocar: el plan de pagos ya cubre el saldo del anticipo.',
+            life: 5000
+        });
         await fetchAdvances(); // Actualizar la lista de anticipos
         await fetchAllPagos(); // Actualizar los pagos relacionados
         deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
@@ -437,7 +443,7 @@ const addNewPayment = async () => {
         const ultimoPago = pagosAnticipo.filter((p) => p.id !== selectedPayment.value.id).sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0];
 
         // Calcular la fecha del nuevo pago (mes siguiente al último pago)
-        const nuevaFecha = ultimoPago ? new Date(ultimoPago.fecha) : new Date();
+        const nuevaFecha = ultimoPago ? fechaDeCalendario(ultimoPago.fecha) : hoyEnZona();
         nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
 
         // Precargar los datos del nuevo pago
@@ -501,6 +507,7 @@ const isPagoFormValid = computed(() => {
 });
 
 onMounted(async () => {
+    await cargarZonaHoraria(); // La zona horaria de los ajustes decide qué día es "hoy" (DC-25)
     await fetchAdvances();
     await fetchPeriodicidades();
     await fetchAllPagos();
@@ -655,7 +662,7 @@ async function handleCreatePaymentPlan() {
                         <DataTable :value="pagos[slotProps.data.id]" sortField="fecha" :sortOrder="1" removableSort>
                             <Column field="fecha" header="Fecha" sortable style="min-width: 8rem">
                                 <template #body="pagoProps">
-                                    {{ new Date(pagoProps.data.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) }}
+                                    {{ fechaDeCalendario(pagoProps.data.fecha)?.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) }}
                                 </template>
                             </Column>
                             <Column field="tipo" header="Tipo" sortable style="min-width: 4rem" />
