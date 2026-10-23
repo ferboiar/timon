@@ -10,7 +10,7 @@
  */
 
 import * as dbUsers from '#backend/db/db_utilsUsers.mjs';
-import { verifyAdmin } from '#backend/middleware/auth.mjs';
+import { verifyAdmin, verifyToken } from '#backend/middleware/auth.mjs';
 import bcrypt from 'bcrypt';
 import express from 'express';
 
@@ -158,7 +158,7 @@ router.delete('/', verifyAdmin, async (req, res) => {
  * @route PUT /api/users/style-preferences
  * @access Privado - Requiere autenticación
  */
-router.put('/style-preferences', verifyAdmin, async (req, res) => {
+router.put('/style-preferences', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id; // ID del usuario autenticado
         const stylePrefs = req.body; // Objeto con preferencias de estilo
@@ -166,6 +166,10 @@ router.put('/style-preferences', verifyAdmin, async (req, res) => {
         // Validar que hay preferencias de estilo
         if (!stylePrefs || Object.keys(stylePrefs).length === 0) {
             return res.status(400).json({ message: 'No se proporcionaron preferencias de estilo' });
+        }
+
+        if (stylePrefs.colorScheme !== undefined && !['system', 'light', 'dark'].includes(stylePrefs.colorScheme)) {
+            return res.status(400).json({ message: 'La apariencia general debe ser system, light o dark' });
         }
 
         // Guardar las preferencias
@@ -182,7 +186,7 @@ router.put('/style-preferences', verifyAdmin, async (req, res) => {
  * @route GET /api/users/style-preferences
  * @access Privado - Requiere autenticación
  */
-router.get('/style-preferences', verifyAdmin, async (req, res) => {
+router.get('/style-preferences', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id; // ID del usuario autenticado
 

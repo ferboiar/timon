@@ -13,8 +13,8 @@ Este módulo implementa las rutas de la API REST para la gestión de usuarios en
 | `PUT` | `/api/users` | Actualiza un usuario existente |
 | `PUT` | `/api/users/password` | Cambia la contraseña de un usuario |
 | `DELETE` | `/api/users` | Elimina uno o más usuarios |
-| `PUT` | `/api/users/style-preferences` | Guarda preferencias de estilo del usuario |
-| `GET` | `/api/users/style-preferences` | Obtiene preferencias de estilo del usuario |
+| `PUT` | `/api/users/style-preferences` | Guarda las preferencias de estilo del propio usuario (cualquier usuario autenticado); valida `colorScheme` (`system`, `light` o `dark`) |
+| `GET` | `/api/users/style-preferences` | Obtiene las preferencias de estilo del propio usuario (cualquier usuario autenticado) |
 
 ## Características Principales
 

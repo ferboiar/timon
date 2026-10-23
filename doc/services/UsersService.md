@@ -75,7 +75,8 @@ Todos los métodos del servicio incluyen manejo de excepciones que:
 |-----------|------|-------------|
 | `preset` | String | Tema preestablecido ('Aura', 'Lara') |
 | `menuMode` | String | Modo de visualización del menú ('static', 'overlay') |
-| `darkTheme` | Boolean | Si el tema oscuro está activado |
+| `colorScheme` | String | Apariencia general: `system` (sigue el modo del navegador), `light` o `dark` |
+| `darkTheme` | Boolean | Si el modo oscuro estaba activo al guardar; los datos antiguos solo tienen este campo y se interpretan como `dark` o `light` |
 | `primary` | String | Color primario seleccionado (ej. 'emerald', 'blue') |
 | `surface` | String | Color de superficie seleccionado (ej. 'zinc', 'slate') |
 

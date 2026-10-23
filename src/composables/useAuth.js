@@ -79,7 +79,7 @@ export function useAuth() {
     const isAuthenticated = computed(() => !!currentUser.value); // Verifica si el usuario está autenticado
     const userRole = computed(() => currentUser.value?.rol || null); // Obtiene el rol del usuario actual
     const router = useRouter();
-    const { layoutConfig } = useLayout();
+    const { layoutConfig, applyColorScheme } = useLayout();
     const { applyFullTheme } = useTheme();
 
     // Intervalo para verificación periódica del token
@@ -109,9 +109,10 @@ export function useAuth() {
             layoutConfig.menuMode = prefs.menuMode;
         }
 
-        // Aplicar tema oscuro
-        if (typeof prefs.darkTheme === 'boolean') {
-            layoutConfig.darkTheme = prefs.darkTheme;
+        // Apariencia general (Sistema, Claro u Oscuro). Las preferencias antiguas solo guardan darkTheme (booleano)
+        const modo = ['system', 'light', 'dark'].includes(prefs.colorScheme) ? prefs.colorScheme : typeof prefs.darkTheme === 'boolean' ? (prefs.darkTheme ? 'dark' : 'light') : null;
+        if (modo) {
+            applyColorScheme(modo, true); // La preferencia del servidor manda y se recuerda en este navegador
         }
 
         // Aplicar color primario y superficie

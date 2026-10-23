@@ -11,10 +11,11 @@ import { cargarZonaHoraria, establecerZonaHoraria } from '@/composables/useZonaH
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 
-const { layoutConfig } = useLayout();
+const { layoutConfig, applyColorScheme } = useLayout();
 const { isAdmin, ROLES, currentUser, updateStylePreferences } = useAuth();
-const { primaryColors, surfaces, presetOptions, menuModeOptions, defaultConfig, applyFullTheme } = useTheme();
+const { primaryColors, surfaces, presetOptions, menuModeOptions, colorSchemeOptions, defaultConfig, applyFullTheme } = useTheme();
 const toast = useToast();
+const pestanaActiva = ref('Estilo'); // Los administradores abren Ajustes en General; el resto, en Aspecto
 
 // Convertir el objeto ROLES a un array para el dropdown
 const rolesArray = ref(Object.values(ROLES));
@@ -26,6 +27,7 @@ const menuMode = ref(layoutConfig.menuMode);
 const tempLayoutConfig = ref({
     preset: layoutConfig.preset,
     menuMode: layoutConfig.menuMode,
+    colorScheme: layoutConfig.colorScheme,
     darkTheme: layoutConfig.darkTheme,
     primary: layoutConfig.primary,
     surface: layoutConfig.surface
@@ -36,7 +38,7 @@ const hasUnsavedChanges = computed(() => {
     return (
         tempLayoutConfig.value.preset !== layoutConfig.preset ||
         tempLayoutConfig.value.menuMode !== layoutConfig.menuMode ||
-        tempLayoutConfig.value.darkTheme !== layoutConfig.darkTheme ||
+        tempLayoutConfig.value.colorScheme !== layoutConfig.colorScheme ||
         tempLayoutConfig.value.primary !== layoutConfig.primary ||
         tempLayoutConfig.value.surface !== layoutConfig.surface
     );
@@ -129,6 +131,7 @@ async function saveStylePreferences() {
         const stylePrefs = {
             preset: layoutConfig.preset,
             menuMode: layoutConfig.menuMode,
+            colorScheme: layoutConfig.colorScheme,
             darkTheme: layoutConfig.darkTheme,
             primary: layoutConfig.primary,
             surface: layoutConfig.surface
@@ -162,7 +165,7 @@ async function applyAndSaveStyles() {
     preset.value = tempLayoutConfig.value.preset;
     layoutConfig.menuMode = tempLayoutConfig.value.menuMode;
     menuMode.value = tempLayoutConfig.value.menuMode;
-    layoutConfig.darkTheme = tempLayoutConfig.value.darkTheme;
+    applyColorScheme(tempLayoutConfig.value.colorScheme, true); // Se recuerda en este navegador para pintar sin parpadeo
 
     // Los cambios ya se han aplicado visualmente gracias al watcher,
     // aquí solo actualizamos layoutConfig y guardamos en el servidor
@@ -189,6 +192,7 @@ function syncTempConfig() {
     tempLayoutConfig.value = {
         preset: layoutConfig.preset,
         menuMode: layoutConfig.menuMode,
+        colorScheme: layoutConfig.colorScheme,
         darkTheme: layoutConfig.darkTheme,
         primary: layoutConfig.primary,
         surface: layoutConfig.surface
@@ -554,6 +558,7 @@ onMounted(() => {
         fetchDbConfig();
         cargarAjustesGenerales();
         cargarAjustesRecibos();
+        pestanaActiva.value = 'general';
     }
 
     // Inicializar configuración temporal con los valores actuales
@@ -569,14 +574,13 @@ onMounted(() => {
 <template>
     <div className="card">
         <div class="font-semibold text-xl mb-4">Ajustes</div>
-        <Tabs value="Estilo">
+        <Tabs v-model:value="pestanaActiva">
             <TabList>
-                <Tab value="Estilo">Tema</Tab>
                 <Tab v-if="isAdmin" value="general">General</Tab>
                 <Tab v-if="isAdmin" value="usuarios">Usuarios</Tab>
-                <Tab v-if="isAdmin" value="db">Base de Datos</Tab>
+                <Tab value="Estilo">Aspecto</Tab>
                 <Tab v-if="isAdmin" value="recibos">Administrar recibos</Tab>
-                <Tab value="2">Header III</Tab>
+                <Tab v-if="isAdmin" value="db">Base de Datos</Tab>
             </TabList>
             <TabPanels>
                 <TabPanel value="Estilo">
@@ -619,8 +623,15 @@ onMounted(() => {
                             <SelectButton v-model="tempLayoutConfig.menuMode" :options="menuModeOptions" :allowEmpty="false" optionLabel="label" optionValue="value" />
                         </div>
                         <div class="flex flex-col gap-2">
-                            <span class="text-sm text-muted-color font-semibold">Modo oscuro por defecto</span>
-                            <ToggleSwitch v-model="tempLayoutConfig.darkTheme" />
+                            <span class="text-sm text-muted-color font-semibold">Apariencia general</span>
+                            <SelectButton v-model="tempLayoutConfig.colorScheme" :options="colorSchemeOptions" :allowEmpty="false" optionLabel="label" optionValue="value">
+                                <template #option="slotProps">
+                                    <div class="flex items-center gap-2">
+                                        <i :class="slotProps.option.icon" />
+                                        <span>{{ slotProps.option.label }}</span>
+                                    </div>
+                                </template>
+                            </SelectButton>
                         </div>
                         <div class="mt-6 flex flex-wrap gap-3">
                             <Button label="Reset" v-tooltip="'Restablece los ajustes de estilo'" icon="pi pi-refresh" severity="secondary" @click="resetToDefaults" />
@@ -707,7 +718,10 @@ onMounted(() => {
                     <div class="font-semibold text-xl mb-4">Ajustes generales</div>
                     <div class="card">
                         <div class="text-lg font-semibold mb-2">Zona horaria</div>
-                        <p>Las horas se guardan siempre en UTC. La zona horaria elegida decide qué día, mes y año son «hoy» y en qué hora se muestran las fechas y los registros en toda la aplicación, con el cambio de hora de verano incluido sin que tengas que tocar nada.</p>
+                        <p>
+                            Las horas se guardan siempre en UTC. La zona horaria elegida decide qué día, mes y año son «hoy» y en qué hora se muestran las fechas y los registros en toda la aplicación, con el cambio de hora de verano incluido sin que
+                            tengas que tocar nada.
+                        </p>
                         <div class="flex flex-col gap-2 mt-4" style="max-width: 26rem">
                             <label for="zona-horaria" class="font-bold">Zona horaria de la aplicación</label>
                             <Select id="zona-horaria" v-model="zonaSeleccionada" :options="zonasHorarias" filter placeholder="Selecciona una zona" fluid />
@@ -724,8 +738,14 @@ onMounted(() => {
 
                     <div class="card">
                         <div class="text-lg font-semibold mb-2">Crear recibos del año automáticamente</div>
-                        <p>Cada día a las 03:00 (en la zona horaria de Ajustes › General) la base de datos revisa si hay que crear recibos. Desde el 1 de diciembre crea, para cada recibo, el del año siguiente con sus fechas, el importe del último pago y las mismas características. También pone al día los años que falten si el servidor estuvo parado. Solo crea recibos nuevos: nunca modifica ni borra los existentes.</p>
-                        <p class="mt-2"><b>Riesgos.</b> Si lo desactivas, no se creará ningún recibo hasta que lo actives de nuevo a mano, aunque cierres la sesión. En enero el año nuevo estaría vacío hasta que generes los recibos con el botón de abajo, y los pendientes del año anterior seguirían viéndose como atrasados. Si lo reactivas después de mucho tiempo, creará de golpe todos los años pendientes hasta el límite; revisa antes la vista previa.</p>
+                        <p>
+                            Cada día a las 03:00 (en la zona horaria de Ajustes › General) la base de datos revisa si hay que crear recibos. Desde el 1 de diciembre crea, para cada recibo, el del año siguiente con sus fechas, el importe del último
+                            pago y las mismas características. También pone al día los años que falten si el servidor estuvo parado. Solo crea recibos nuevos: nunca modifica ni borra los existentes.
+                        </p>
+                        <p class="mt-2">
+                            <b>Riesgos.</b> Si lo desactivas, no se creará ningún recibo hasta que lo actives de nuevo a mano, aunque cierres la sesión. En enero el año nuevo estaría vacío hasta que generes los recibos con el botón de abajo, y los
+                            pendientes del año anterior seguirían viéndose como atrasados. Si lo reactivas después de mucho tiempo, creará de golpe todos los años pendientes hasta el límite; revisa antes la vista previa.
+                        </p>
                         <div class="flex items-center gap-3 mt-4">
                             <ToggleSwitch :modelValue="crearRecibosAutomaticamente" @update:modelValue="pedirCambioCreacionAutomatica" />
                             <span>{{ crearRecibosAutomaticamente ? 'Activada' : 'Desactivada' }}</span>
@@ -734,7 +754,10 @@ onMounted(() => {
 
                     <div class="card">
                         <div class="text-lg font-semibold mb-2">Permitir editar/borrar recibos pagados</div>
-                        <p>Por defecto no se permite editar ni borrar los recibos pagados, salvo los del mes y año en curso: los de meses anteriores se consideran cerrados. Con esta opción activada puedes editar y borrar también los pagados de meses cerrados, por ejemplo para corregir un error antiguo.</p>
+                        <p>
+                            Por defecto no se permite editar ni borrar los recibos pagados, salvo los del mes y año en curso: los de meses anteriores se consideran cerrados. Con esta opción activada puedes editar y borrar también los pagados de meses
+                            cerrados, por ejemplo para corregir un error antiguo.
+                        </p>
                         <p class="mt-2"><b>Solo dura la sesión.</b> Se desactiva al cerrar sesión o al recargar la página. Úsala con cuidado: borrar un cargo pagado no se puede deshacer.</p>
                         <div class="flex items-center gap-3 mt-4">
                             <ToggleSwitch v-model="permitirEditarPagados" />
@@ -744,7 +767,10 @@ onMounted(() => {
 
                     <div class="card">
                         <div class="text-lg font-semibold mb-2">Generar los recibos del año ahora</div>
-                        <p>Ejecuta a mano el mismo proceso que el automático, aunque la creación automática esté desactivada. La vista previa muestra qué se crearía sin escribir nada: el recibo de origen, el año, cuántas fechas lleva, la primera y la última, y un aviso si el mes del último pago no encaja con la cadencia de la fecha inicial.</p>
+                        <p>
+                            Ejecuta a mano el mismo proceso que el automático, aunque la creación automática esté desactivada. La vista previa muestra qué se crearía sin escribir nada: el recibo de origen, el año, cuántas fechas lleva, la primera y
+                            la última, y un aviso si el mes del último pago no encaja con la cadencia de la fecha inicial.
+                        </p>
                         <div class="flex flex-wrap gap-2 mt-4">
                             <Button label="Vista previa" icon="pi pi-search" severity="secondary" :loading="cargandoVistaPrevia" @click="consultarVistaPrevia" />
                             <Button label="Generar ahora" icon="pi pi-play" :disabled="!vistaPrevia || !vistaPrevia.length" @click="dialogoGenerar = true" />
@@ -789,12 +815,6 @@ onMounted(() => {
                             <Button label="Sí" icon="pi pi-check" :loading="generandoAhora" @click="generarAhora" />
                         </template>
                     </Dialog>
-                </TabPanel>
-                <TabPanel value="2">
-                    <p class="m-0">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-                        consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                    </p>
                 </TabPanel>
             </TabPanels>
         </Tabs>
