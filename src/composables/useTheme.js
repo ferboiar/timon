@@ -16,6 +16,7 @@ import { $t, updatePreset, updateSurfacePalette } from '@primevue/themes';
 import Aura from '@primevue/themes/aura';
 import Lara from '@primevue/themes/lara';
 import { ref } from 'vue';
+import { resolverModoOscuro } from '@/layout/composables/layout';
 
 export function useTheme() {
     // Presets disponibles
@@ -32,13 +33,21 @@ export function useTheme() {
         { label: 'Overlay', value: 'overlay' }
     ]);
 
+    // Opciones de apariencia general: Sistema sigue el modo claro u oscuro del navegador
+    const colorSchemeOptions = ref([
+        { label: 'Sistema', value: 'system', icon: 'pi pi-desktop' },
+        { label: 'Claro', value: 'light', icon: 'pi pi-sun' },
+        { label: 'Oscuro', value: 'dark', icon: 'pi pi-moon' }
+    ]);
+
     // Valores predeterminados para la configuración de estilo
     const defaultConfig = {
         preset: 'Aura',
         primary: 'emerald',
         surface: 'zinc',
         menuMode: 'static',
-        darkTheme: true
+        darkTheme: true,
+        colorScheme: 'dark'
     };
 
     // Configuración de colores primarios
@@ -220,7 +229,7 @@ export function useTheme() {
      */
     const applyFullTheme = (layoutConfig) => {
         // Aplicar tema oscuro
-        document.documentElement.classList.toggle('app-dark', layoutConfig.darkTheme);
+        document.documentElement.classList.toggle('app-dark', layoutConfig.colorScheme ? resolverModoOscuro(layoutConfig.colorScheme) : layoutConfig.darkTheme);
 
         // Encontrar los colores seleccionados
         const primaryColor = primaryColors.value.find((c) => c.name === layoutConfig.primary);
@@ -237,6 +246,7 @@ export function useTheme() {
         presets,
         presetOptions,
         menuModeOptions,
+        colorSchemeOptions,
         defaultConfig,
         primaryColors,
         surfaces,

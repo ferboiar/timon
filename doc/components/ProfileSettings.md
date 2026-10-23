@@ -15,7 +15,7 @@ El componente `ProfileSettings` ofrece una interfaz completa para la gestión de
 - Selección de colores de superficie para la interfaz
 - Cambio entre temas preestablecidos (Aura, Lara)
 - Configuración del modo de menú (estático o superpuesto)
-- Activación/desactivación del tema oscuro
+- Apariencia general: Sistema (sigue el modo claro u oscuro del navegador), Claro u Oscuro
 - Vista previa en tiempo real de los cambios de estilo
 - Guardado de preferencias asociadas al perfil del usuario
 - Opción para restaurar valores por defecto
