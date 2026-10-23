@@ -4,7 +4,7 @@ Gracias por ayudar a construir Timón. Esta guía te ayudará a empezar.
 
 ## Descripción General del Proyecto
 
-Timón es una aplicación de gestión financiera personal de pila completa construida con el stack VEM (Vue, Express, MySQL). Permite a los usuarios realizar un seguimiento de sus cuentas, recibos, ahorros y más.
+Timón es una aplicación de gestión financiera personal de pila completa construida con el stack VEM (Vue, Express, MariaDB). Permite a los usuarios realizar un seguimiento de sus cuentas, recibos, ahorros y más.
 
 ## Arquitectura
 
@@ -34,7 +34,7 @@ El frontend es una Aplicación de Página Única (SPA) que se comunica con el ba
 
 ### Base de Datos
 
-- **Sistema**: MySQL
+- **Sistema**: MariaDB 11.8 (DC-04)
 - **Esquema**: El esquema completo de la base de datos, incluyendo tablas y relaciones, se define en las migraciones de `backend/src/db/migrations/` (línea base `0001_baseline.sql` y una migración por cada cambio posterior).
 - **Conexión**: La configuración de la conexión a la base de datos se gestiona en `backend/src/db/db_connection.mjs` y se configura a través de `backend/src/db/.db_connection`.
 
@@ -68,7 +68,7 @@ Los scripts principales están definidos en `package.json`.
 - **Comunicación API**: El frontend se comunica con el backend a través de servicios dedicados en `src/service/`. Estos servicios usan `axios` para realizar peticiones HTTP a la API REST del backend.
 - **Autenticación**: La autenticación se implementa usando JSON Web Tokens (JWT). El composable `src/composables/useAuth.js` gestiona el estado de autenticación en el frontend. El middleware `backend/src/middleware/auth.mjs` protege las rutas del backend.
 - **Nomenclatura de Rutas**: Las rutas del backend siguen un patrón RESTful. Por ejemplo, para obtener todas las cuentas, la ruta es `GET /api/cuentas`.
-- **Manejo de la Base de Datos**: La lógica de las consultas a la base de datos está encapsulada en funciones dentro de los archivos `db_` (p.ej., `getAllCuentas` en `db_utilsAcc.mjs`). Esto mantiene los controladores de ruta limpios y centrados en la lógica de negocio.
+- **Manejo de la Base de Datos**: La lógica de las consultas a la base de datos está encapsulada en funciones dentro de los archivos `db_` (p.ej., `getAccounts` en `db_utilsAcc.mjs`). Esto mantiene los controladores de ruta limpios y centrados en la lógica de negocio.
 
 ## Archivos Clave
 
@@ -78,6 +78,12 @@ Los scripts principales están definidos en `package.json`.
 - `backend/src/db/migrations/`: Migraciones SQL, por orden, que crean y modifican la estructura de la base de datos.
 - `src/router/index.js`: Define todas las rutas del frontend y sus guardias de navegación.
 - `src/App.vue`: El componente principal de Vue que contiene la disposición general de la aplicación.
+
+## Documentación
+
+- Relevo del proyecto: `doc/mantenimiento/estado-del-proyecto.md`. Índice: `doc/index.md`. Hallazgos, decisiones (DC-xx) y plan: `doc/mantenimiento/registro-hallazgos.md`. Tareas: `TODO`.
+- Cada cambio actualiza `doc/`, `TODO` y el plan en el mismo PR (DC-27). Los documentos nuevos se añaden a la navegación de `src/views/pages/Tech-documentation.vue`.
+- No se añaden a un commit `backend/src/db/.db_connection` ni `.db_connection.backup`.
 
 ## Nomenclatura de archivos
 

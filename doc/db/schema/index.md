@@ -5,10 +5,11 @@ Esta sección documenta la estructura de la base de datos de Timón, organizada 
 ## Información General de la Base de Datos
 
 - **Nombre de la base de datos**: `conta_hogar`
-- **Versión del servidor**: MySQL 8.0.35
+- **Versión del servidor**: MariaDB 11.8 (DC-04)
 - **Charset principal**: utf8mb4
 - **Collation**: utf8mb4_spanish_ci
 - **Motor de almacenamiento**: InnoDB
+- **Fuente del esquema**: las migraciones de `backend/src/db/migrations` (DC-13); los documentos de esta carpeta son de diseño y pueden ir por detrás
 
 ## Configuración del Servidor
 
@@ -19,20 +20,23 @@ SET time_zone = "+00:00";
 
 ## Sistemas Principales
 
-1. [Sistema de Recibos](./recibos.md) - Gestión de pagos periódicos y sus fechas de cargo
-2. [Sistema de Anticipos](./anticipos.md) - Control de préstamos y sus planes de pago
-3. [Sistema de Ahorros](./ahorros.md) - Seguimiento de objetivos de ahorro y aportaciones
-4. [Sistema de Categorías](./categorias.md) - Clasificación de movimientos financieros
-5. [Sistema de Cuentas](./cuentas.md) - Administración de diferentes tipos de cuentas financieras
-6. [Sistema de Usuarios](./usuarios.md) - Control de acceso y personalización
+1. Recibos (`recibos`, `fechas_cargo`; un recibo por año, DC-14): [db_utilsBill](../db_utilsBill.md) y [generar_recibos_anio](../generar_recibos_anio.md)
+2. Anticipos (`anticipos`, `anticipos_pagos`): [db_utilsAdv](../db_utilsAdv.md)
+3. Ahorros (`ahorros`, `ahorros_movimientos`): [db_utilsSav](../db_utilsSav.md)
+4. Categorías (`categorias`): [db_utilsCats](../db_utilsCats.md)
+5. Cuentas (`cuentas`): [db_utilsAcc](../db_utilsAcc.md)
+6. Usuarios y preferencias de estilo (`users`, `users_style_preferences`): [db_utilsUsers](../db_utilsUsers.md)
 7. [Sistema de Presupuestos](./presupuestos.md) - Gestión de presupuestos y periodos
 8. [Sistema de Permisos](./permisos.md) - Control de acceso y visibilidad de datos
+9. Ajustes del sistema y mantenimiento (`ajustes_sistema`, `mantenimiento_logs`): [db_ajustes](../db_ajustes.md)
 
 ## Optimizaciones de la Base de Datos
 
 1. [Configuraciones y Optimizaciones](./optimizaciones.md) - Zona horaria, índices y mantenimiento automático
 
 ## Diagrama de Relaciones Principales
+
+> Diagrama de diseño: no incluye `recibo_origen_id` (un recibo por año) ni `ajustes_sistema`, `recibos_periodos` no existe (D-02) y `recibos_historico` se eliminó en la migración 0003.
 
 ```
 +------------+       +--------------+          +-------------+

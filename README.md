@@ -24,8 +24,8 @@ La integración entre estos sistemas permite una gestión financiera completa do
 
 ### Requisitos previos
 
-- Node.js (v16 o superior)
-- MySQL (v8 o superior)
+- Node.js 20.9 o superior de la serie 20 (`engines` de `package.json`)
+- MariaDB 11.8 (DC-04 del registro de mantenimiento)
 - Git
 - git-crypt (para el manejo seguro de archivos sensibles)
 
@@ -35,7 +35,7 @@ La integración entre estos sistemas permite una gestión financiera completa do
 
 ```bash
 sudo apt update
-sudo apt install nodejs npm mysql-server git
+sudo apt install nodejs npm mariadb-server git
 sudo apt install git-crypt
 ```
 
@@ -120,6 +120,11 @@ Si el usuario ya existe en la base de datos, el script restablecerá su contrase
 # Para el entorno de desarrollo (desde la raíz del proyecto)
 npm run dev
 ```
+
+## Documentación y pruebas
+
+- Empieza por `doc/mantenimiento/estado-del-proyecto.md`: cómo está montado el proyecto, cómo se trabaja y qué toca después. El índice de la documentación es `doc/index.md`; los hallazgos, las decisiones y el plan están en `doc/mantenimiento/registro-hallazgos.md` y la lista corta de tareas en `TODO`.
+- Pruebas del backend: `npm run test:backend`. Necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
 
 ## Entorno de desarrollo con GitHub Codespaces y git-crypt
 

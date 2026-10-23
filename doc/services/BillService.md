@@ -11,9 +11,11 @@ El servicio `BillService` actúa como intermediario entre la interfaz de usuario
 | Método | Descripción | Endpoint |
 |--------|-------------|----------|
 | `getBills()` | Obtiene todos los recibos disponibles | `GET /api/recibos` |
-| `getBillById(id)` | Obtiene un recibo específico por su ID | `GET /api/recibos/:id` |
+| `getBillById(id)` | Obtiene un recibo específico por su ID. El endpoint no existe en el servidor (F-20) | `GET /api/recibos/:id` |
 | `saveBill(bill)` | Crea o actualiza un recibo | `POST /api/recibos` |
-| `deleteBill(id, fecha, periodicidad)` | Elimina un recibo o una fecha de cargo específica. Si el servidor responde 409 (cargos pagados o recibo con sucesor), lanza un error con el mensaje del servidor | `DELETE /api/recibos/:id` |
+| `deleteBill(id, fecha, periodicidad, permitirPagados = false)` | Elimina un recibo o una fecha de cargo específica. Con `permitirPagados` envía `permitirPagados=1`, que el servidor solo acepta de un administrador (DC-21). Si el servidor responde 409 (cargos pagados o recibo con sucesor), lanza un error con el mensaje del servidor | `DELETE /api/recibos/:id` |
+| `generateBillDates(id)` | Añade a un recibo las fechas generables que le faltan (botón «Generar nuevas fechas», DC-22) | `POST /api/recibos/:id/generar-fechas` |
+| `updateAllBillsDates()` | Aplica la generación a todos los recibos (solo administrador). Sin uso en la pantalla: se retirará con la limpieza de «Actualizar fechas» | `POST /api/recibos/actualizar-fechas` |
 
 ### Filtrado de Recibos
 
@@ -98,4 +100,4 @@ Cada método relanza el error después de registrarlo para que pueda ser manejad
 
 - [Documentación del API de Recibos](../routes/recibos.md) - Detalles sobre los endpoints del backend
 - [Utilidades de Base de Datos para Recibos](../db/db_utilsBill.md) - Funciones de base de datos utilizadas por el backend
-- [Componente Recibos](../components/Recibos.md) - Interfaz de usuario que utiliza este servicio
+- [Componente ListBills](../components/ListBills.md) - Interfaz de usuario que utiliza este servicio

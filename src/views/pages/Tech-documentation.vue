@@ -100,6 +100,7 @@ const docNavigation = [
                     { title: 'Componente ProfileSettings', path: 'components/ProfileSettings' },
                     { title: 'UsersService', path: 'services/UsersService' },
                     { title: 'AjustesService', path: 'services/AjustesService' },
+                    { title: 'Componente Login', path: 'components/Login' },
                     { title: 'Directiva vRole', path: 'directives/vRole' }
                 ]
             },
@@ -108,9 +109,45 @@ const docNavigation = [
                 children: [
                     { title: 'Composable useAuth', path: 'composables/useAuth' },
                     { title: 'Composable useZonaHoraria', path: 'composables/useZonaHoraria' },
+                    { title: 'Composable useAjustesSesion', path: 'composables/useAjustesSesion' },
+                    { title: 'Composable useTheme', path: 'composables/useTheme' },
+                    { title: 'Composable useLayout', path: 'composables/useLayout' },
                     { title: 'API de Autenticación', path: 'routes/auth' },
                     { title: 'API de Usuarios', path: 'routes/users' },
-                    { title: 'DB Utils Usuarios', path: 'db/db_utilsUsers' }
+                    { title: 'DB Utils Usuarios', path: 'db/db_utilsUsers' },
+                    { title: 'Flujo de autenticación', path: 'auth/AuthenticationFlow' },
+                    { title: 'Caducidad del token', path: 'auth/TokenExpiration' },
+                    { title: 'Middleware de autenticación', path: 'middleware/auth' },
+                    { title: 'Guardias de rutas', path: 'router/routeGuards' },
+                    { title: 'Configuración de entorno', path: 'config/env' }
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Ajustes, base de datos y mantenimiento',
+        children: [
+            {
+                title: 'Base de datos y mantenimiento',
+                children: [
+                    { title: 'DbConfigService', path: 'services/DbConfigService' },
+                    { title: 'MaintenanceDBService', path: 'services/MaintenanceDBService' },
+                    { title: 'API de conexión', path: 'routes/conexionDB' },
+                    { title: 'API de mantenimiento', path: 'routes/mantenimientoDB' },
+                    { title: 'DB Utils Conexión', path: 'db/db_utilsConn' },
+                    { title: 'DB Utils Mantenimiento', path: 'db/db_maintenance' },
+                    { title: 'Utilidades de tiempo', path: 'utils/tiempo' },
+                    { title: 'Utilidad apiError', path: 'utils/apiError' },
+                    { title: 'Esquema de la base de datos', path: 'db/schema/index' }
+                ]
+            },
+            {
+                title: 'Otras pantallas y proyecto',
+                children: [
+                    { title: 'Calendario', path: 'components/Calendar' },
+                    { title: 'Páginas vacías de la plantilla', path: 'components/PaginasVacias' },
+                    { title: 'Estado del proyecto', path: 'mantenimiento/estado-del-proyecto' },
+                    { title: 'Registro de hallazgos', path: 'mantenimiento/registro-hallazgos' }
                 ]
             }
         ]

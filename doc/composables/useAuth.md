@@ -38,7 +38,7 @@ El composable `useAuth` proporciona una solución completa para manejar el estad
 |--------|-------------|
 | `hasRole(role)` | Verifica si el usuario actual tiene exactamente el rol especificado |
 | `hasAnyRole(roles)` | Verifica si el usuario tiene al menos uno de los roles en el array |
-| `logout()` | Cierra la sesión del usuario actual y redirecciona a la página de login |
+| `logout()` | Cierra la sesión del usuario actual, reinicia los ajustes de sesión (`reiniciarAjustesSesion`, DC-21) y redirecciona a la página de login |
 | `refreshUser()` | Actualiza los datos del usuario desde el almacenamiento local |
 | `updateStylePreferences(stylePrefs)` | Actualiza las preferencias de estilo del usuario |
 | `applyUserPreferences(prefs)` | Aplica las preferencias de estilo del usuario |
@@ -67,6 +67,10 @@ El composable gestiona las preferencias visuales del usuario:
 2. Proporciona métodos para actualizar preferencias
 3. Aplica los cambios visuales en tiempo real
 4. Sincroniza preferencias con el servidor
+
+### Apariencia general (DC-26)
+
+`colorScheme` vale `system` (sigue el modo claro u oscuro del navegador), `light` u `dark`. Si el servidor no lo trae, `applyUserPreferences` lo deduce del campo antiguo `darkTheme`. La preferencia del servidor manda sobre la copia que recuerda el navegador (`timon.colorScheme` en `localStorage`) y la actualiza; esa copia permite pintar sin parpadeo al cargar. Las rutas de preferencias de estilo exigen solo sesión, no ser administrador. Ver [useLayout](./useLayout.md) y [useTheme](./useTheme.md).
 
 ## Integración con Directiva vRole
 
