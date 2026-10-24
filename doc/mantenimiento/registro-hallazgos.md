@@ -142,6 +142,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | D-10 | Medio | Auditoría de `doc/` del 2026-10-23 (comprobación mecánica de nombres, rutas, enlaces y migraciones sobre los 45 documentos, y lectura de los que cambiaron en los PR #22 a #28). Corregido en el PR de documentación (DC-27): plan y `TODO` obsoletos; «Pendiente» ya hechos en DC-21, DC-23, `db_utilsBill.md` y `ListBills.md`; `permitirPagados` sin documentar; funciones inexistentes en `ListBills.md` (`fetchCategories`, `fetchAccounts`); `db_ajustes.md` atribuía a `db_ajustes` las funciones de `utils/tiempo`; 21 enlaces `../` de `doc/index.md` rotos en GitHub, 6 en `schema/index.md`, 1 en `middleware/auth.md` y 1 en `BillService.md`; MySQL y Aiven en `schema/index.md` y `optimizaciones.md`; `README.md` y `.github/copilot-instructions.md` con versiones y funciones desfasadas. Nuevos: `useTheme`, `useLayout`, `useAjustesSesion`, `tiempo`, `env`, `conexionDB`, `mantenimientoDB`, `DbConfigService`, `MaintenanceDBService`, `db_utilsConn`, `db_maintenance`, `Calendar` y `PaginasVacias`. |
 | D-11 | Medio | Cierre de la auditoría documental del 2026-10-23, tras PR #29. Contrastados los nueve documentos pendientes: Advances, Savings, AccService, AdvService, CatsService, SavService, UsersService, db_utilsAdv y db_utilsSav. Corregidas promesas de funciones que no ejecuta el código (inactivos, borrado múltiple, validaciones y transacciones), contratos de token/errores, saldo restante, algoritmos de recálculo y trazas. Se consolidan también las correcciones documentales de guardias, middleware, autenticación, privacidad/permisos, README inglés y pruebas. F-37 a F-40 quedan abiertos; F-07, F-08, F-14, F-16, F-19, F-27 y F-28 no se dan por corregidos. |
 | D-12 | Medio | Verificación del estado fusionado en f4f2328 (PR #30), 2026-10-24: corregidas pestañas inexistentes de Recibos, paginación de usuarios ausente, validaciones sobreafirmadas, restricciones de roles no aplicadas, precisión del rastro SQL e historial de PR. F-41 a F-43 y S-12 permanecen abiertos; R-05 a R-08 son propuestas, no compromisos aprobados. Se limpian referencias a scripts de la conversación. |
+| D-13 | Medio | Revisión de documentación de raíz omitida en los cierres previos (base da4250e/PR #31): package.json.md describía comandos y directorios inexistentes; DB_controlfinanciero.txt y DB_presupuestos.txt contenían SQL histórico sin delimitar su vigencia; presupuestos.txt mezclaba requisitos con capacidades actuales; categorías.txt era una lista de ejemplos, no una jerarquía. Se corrige/clasifica cada archivo, se recuperan R-09 a R-13 por prioridad y se sincronizan TODO, plan, índice y relevo. No se certifica que la auditoría integral del repositorio esté completa. |
 
 ## 8. Hoja de ruta funcional (alineación con el Excel; no se aborda hasta cerrar los fallos)
 
@@ -155,8 +156,16 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | R-06 | Propuesta de mejora, no aprobada ni implementada: clasificación transversal por categorías, coordinada con R-02 y presupuestos; evitar añadir relaciones aisladas sin modelo de movimientos común. |
 | R-07 | Propuesta de mejora, no aprobada ni implementada: informes básicos de saldo y plan de Anticipos, y aportaciones de Ahorros, con periodo y cifras trazables. CSV actual no equivale a informes. |
 | R-08 | Propuesta de mejora de prioridad baja: paginación y búsqueda de usuarios cuando el volumen lo justifique; el listado actual no pagina. |
+| R-09 | P2, requisito histórico a revalidar: automatización de aportaciones de Ahorros mediante reglas. Fuente DB_controlfinanciero.txt. No existe hoy; requiere idempotencia por regla/periodo, pausa, historial de ejecución, política de fallo y no duplicar aportaciones manuales. Depende de integridad F-27 y operación; no se resuelve solo ampliando F-37. |
+| R-10 | P2, requisito histórico a revalidar: cadencias adicionales de Anticipos, p. ej. semanal y cada cuatro meses, citadas en DB_controlfinanciero.txt. Afecta algoritmo, esquema, fechas de fin y UI; no basta con ampliar ENUM. Coordinar con F-40 y pruebas de calendario. |
+| R-11 | P2, requisito histórico a revalidar: presupuestos por periodo con importe asignado, gastado y disponible, y selector mes/año. Fuentes presupuestos.txt, DB_presupuestos.txt y DB_controlfinanciero.txt. Las tablas parciales no equivalen a API ni pantalla. Depende del modelo de movimientos R-02 y disponible R-03; evitar otra fuente de saldo. |
+| R-12 | P2, requisito histórico a revalidar: presupuesto especial de recibos con esperado, recibido, diferencia y pendientes. Fuente presupuestos.txt; relacionado con R-01. Definir efecto de diferencias y continuidad de pendientes sin duplicar fechas_cargo ni romper DC-14; depende de R-11/R-02. |
+| R-13 | P2, requisito histórico a revalidar: detalle de transacciones de un presupuesto y periodo al pulsar su concepto. Fuente presupuestos.txt (fase II). Depende de R-11 y del modelo de movimientos R-02, con trazabilidad y autorización de servidor. |
 
 ## 9. Cobertura de la revisión
+
+D-13 amplía el alcance a cinco documentos de raíz que faltaban en los inventarios anteriores. Corrige o clasifica sus afirmaciones y recupera requisitos priorizados, pero no acredita que la auditoría integral esté finalizada.
+
 
 Auditoría cerrada el 2026-10-23 sobre el código de los PR #14 a #28, el primer PR de documentación #29 y los ficheros entregados por el usuario. El historial se contrastó con cambios_por_pr.txt. Los adjuntos sustituyen las lecturas truncadas del conector.
 
@@ -169,6 +178,26 @@ Es una revisión estática, no una certificación de ausencia de defectos. No se
 La documentación describe los fallos como comportamiento actual y remite a F/S/U; cerrar la auditoría documental no cierra esos fallos. Informe y trazabilidad: [auditoria-documentacion.md](./auditoria-documentacion.md).
 
 ## 10. Plan por fases
+
+## Prioridad técnica de trabajo futuro (D-13)
+
+La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola los tres micro-PR ya acordados (Actualizar fechas, validación de un año y F-17); si se prepara un despliegue real, los riesgos P0/P1 deben resolverse antes de ampliaciones funcionales. P0 es la prioridad mayor.
+
+| Prioridad | Trabajo | Dependencias/criterio |
+|---|---|---|
+| P0 | S-01/S-06/S-12: autorización efectiva en servidor | reader no debe poder escribir; la ocultación de controles no es seguridad |
+| P1 | F-14/F-16/F-27 y S-02/S-03: saldos, transacciones, reintentos y recuperación | Evitar pérdidas, duplicados y operaciones parciales |
+| P1 | F-41/F-42/F-43 y entorno de tests | Validación coherente, respuestas claras y ejecución reproducible de pruebas |
+| P2 | R-02/R-03 y R-11: movimientos y presupuestos por periodo | Primero un modelo común, sin fuentes de saldo paralelas |
+| P2 | R-01/R-12: recepción de recibos y diferencias | Depende de presupuestos, respeta DC-14 y no duplica estados de pago |
+| P2 | R-09: reglas de aportación automática de Ahorros | Idempotencia, pausa, historial y política de fallos; distinto de uso manual/F-37 |
+| P2 | R-10: cadencias adicionales de Anticipos | Rediseño de calendario y pruebas, no solo ENUM; relacionado con F-40 |
+| P2 | R-13: detalle de transacciones por presupuesto/periodo | Depende de R-02/R-11 y de autorización efectiva |
+| P3 | R-05/R-07: progreso e informes básicos | Dependen de objetivos definidos y cifras conciliables |
+| P3 | R-08: paginación/búsqueda de usuarios | Solo si el volumen lo justifica |
+
+R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
+
 
 Estado al cierre de la auditoría documental del 2026-10-23, después del PR #29. Fuente de continuidad: [estado-del-proyecto.md](./estado-del-proyecto.md); lista corta en TODO. La documentación ya no queda aplazada como una lectura pendiente: se modifica con cada cambio de código.
 
@@ -186,6 +215,6 @@ Estado al cierre de la auditoría documental del 2026-10-23, después del PR #29
    - Migraciones de DC-01 (rechazado) y DC-02 (unicidad de categorías), todavía ausentes de 0001 a 0004.
 5. Fase 2: permisos reales y acceso (S-01, S-04, S-06). Los campos de permisos y la ocultación de controles no equivalen a autorización del servidor.
 6. Fase 3: operación (S-02, S-03, S-07, O-01, S-08/S-09) y migración nueva de mantenimiento. Unificar uso de API/estado de sesión e interceptores; confirmar el entorno de tests antes de presentar resultados.
-7. Fase 4: interfaz y funcionalidades de plantilla (U-01 a U-08), diseño pendiente (D-01 a D-05 en lo no resuelto) y mantenimiento automático de navegación/documentación. La auditoría actual de doc/ está cerrada; no se vuelve a listar como trabajo de lectura futura.
+7. Fase 4: interfaz y funcionalidades de plantilla (U-01 a U-08), diseño pendiente (D-01 a D-05 en lo no resuelto) y mantenimiento automático de navegación/documentación. El cierre de los contrastes D-11/D-12 no acredita una auditoría integral de todos los archivos del repositorio: D-13 incorpora documentos de raíz antes omitidos.
 8. Fase 5: dependencias (S-11), revisar las ramas Snyk antes de actualizar, con pruebas funcionales disponibles.
 9. Fase 6: hoja de ruta funcional del Excel (R-01 a R-04), que se conserva en la sección 8.

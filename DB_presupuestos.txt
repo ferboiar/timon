@@ -1,3 +1,10 @@
+ESTADO: BORRADOR SQL HISTÓRICO, NO MIGRACIÓN EJECUTABLE.
+Revisión D-13 (2026-10-24), base PR #31.
+Usa user_id y relaciones/cascadas que no son el contrato del esquema vigente. No aplicarlo sobre la base actual. Consultar las migraciones de backend/src/db/migrations y el hallazgo D-02.
+La funcionalidad de presupuestos por periodo sigue pendiente (R-11, relacionada con R-02/R-03). Este archivo describe diseño previo, no rutas ni pantallas operativas.
+
+--- COMIENZO DEL BORRADOR HISTÓRICO CONSERVADO ---
+
 -- ==================================================
 -- Tabla: presupuestos
 -- Propósito: Almacena la configuración base de los presupuestos

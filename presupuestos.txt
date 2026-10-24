@@ -1,3 +1,10 @@
+ESTADO: REQUISITOS HISTÓRICOS PENDIENTES DE REVALIDACIÓN E IMPLEMENTACIÓN.
+Revisión D-13 (2026-10-24), base PR #31.
+Budgets.vue sigue siendo un esqueleto. No hay vista operativa de presupuestado/gastado/disponible, recepción de recibos con diferencias ni detalle de transacciones por periodo.
+Se conservan como tareas futuras: R-11 (presupuestos), R-12 (recibos esperados/recibidos y diferencias) y R-13 (detalle por periodo), con dependencias R-01/R-02/R-03. El diseño debe respetar el recibo por año de DC-14 y evitar duplicar saldos o estados de pago.
+
+--- COMIENZO DE LOS REQUISITOS HISTÓRICOS CONSERVADOS ---
+
 necesito una nueva tabla en la bbdd MySQL para gestionar los presupuestos. Considero un presupuesto como una partida de dinero destinada a cubrir un gasto fijo y normalmente conocido (por ejemplo, dinero destinado a la comida mensual, dinero destinado a las vacaciones, dinero destinado a ocio un mes, dinero destinado a los recibos de un mes en concreto)
 
 la tabla presupuesto debe guardar información sobre:
@@ -36,4 +43,3 @@ si en el cambio de mes algún recibo queda por recepcionar estos recibos pasan a
 
 para una FASE II:
 cada concepto de la vista es pinchable y abrirá una nueva página que mostrará las transacciones registradas para ese presupuesto en ese periodo
-

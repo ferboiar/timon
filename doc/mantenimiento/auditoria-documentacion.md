@@ -1,4 +1,4 @@
-# Auditoría de documentación: cierre del 2026-10-23
+# Historial de revisiones documentales y límites de cobertura
 
 ## Base, alcance y límites
 
@@ -46,3 +46,21 @@ Base: f4f2328901f208d97965117a44c7429ab89e03f2, con PR #30. Se recibieron 59 doc
 La lectura funcional adicional corrigió estructura de Recibos, listado de usuarios, validaciones, roles y rastro del procedimiento. Los resultados se registran en D-12. Las sugerencias se separan de los fallos: F-41 a F-43 y S-12 son limitaciones verificadas; R-05 a R-08 son propuestas a evaluar.
 
 Sigue siendo una revisión estática. No se certifica ausencia de defectos ni una ejecución de UI/MariaDB satisfactoria. No confundir comprobación documental con prueba funcional.
+
+## Ampliación de alcance D-13: documentos de raíz
+
+Fecha: 2026-10-24. Base fija: `da4250e93a8746e1a465496d4d816537a62724ae` (PR #31).
+
+Las revisiones anteriores dejaron fuera cinco documentos de raíz. Esa omisión impide usar sus cierres como certificación de una auditoría integral. Se corrigen/classifican ahora:
+
+| Fichero | Contraste | Resultado |
+|---|---|---|
+| package.json.md | package.json: comandos, rutas de entrada y ubicación del frontend | Documento desfasado: se regenera la descripción desde el manifiesto actual |
+| DB_controlfinanciero.txt | Savings/Advances/Budgets, db_utilsSav/db_utilsAdv y migraciones | SQL histórico; se recuperan automatización, cadencias y presupuestos como R-09/R-10/R-11 |
+| DB_presupuestos.txt | Migración base, Budgets y ausencia de rutas de presupuestos | Borrador histórico; user_id/cascadas no son contrato vigente |
+| presupuestos.txt | Budgets/Transactions y modelo actual de recibos por año | Requisitos no implementados: R-11/R-12/R-13 |
+| categorías.txt | Categories, db_utilsCats y esquema de categorias | Ejemplos; no hay jerarquía implementada ni se propone una a partir de la lista |
+
+Las tareas se ordenan en TODO y en la sección 10 por P0/P1/P2/P3. Las nuevas de producto requieren revalidación antes de implementar. No cambian negocio, código de aplicación, datos ni esquema.
+
+D-13 resuelve estas discrepancias concretas. No significa que se haya completado una lectura exhaustiva fichero por fichero de todo el repositorio, ni que se haya ejecutado UI/build/tests. El fallo de entorno de MariaDB sigue sin equivaler a una prueba funcional en verde.

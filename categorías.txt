@@ -1,3 +1,9 @@
+ESTADO: EJEMPLOS DE CATEGORÍAS; NO ES UN CATÁLOGO FIJO NI UNA JERARQUÍA IMPLEMENTADA.
+Revisión D-13 (2026-10-24), base PR #31.
+La aplicación guarda categorías en una tabla plana, no una estructura padre-hijo. Los grupos de esta nota son ejemplos; no constituyen datos que deban importarse automáticamente ni un requisito de categorías anidadas. La clasificación transversal está propuesta en R-06.
+
+--- COMIENZO DE LOS EJEMPLOS CONSERVADOS ---
+
 1. **Vivienda**:
    - Hipoteca
    - Alquiler

@@ -1,5 +1,25 @@
 # TAREAS PENDIENTES
 
+## Prioridad técnica de trabajo futuro (D-13)
+
+La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola los tres micro-PR ya acordados (Actualizar fechas, validación de un año y F-17); si se prepara un despliegue real, los riesgos P0/P1 deben resolverse antes de ampliaciones funcionales. P0 es la prioridad mayor.
+
+| Prioridad | Trabajo | Dependencias/criterio |
+|---|---|---|
+| P0 | S-01/S-06/S-12: autorización efectiva en servidor | reader no debe poder escribir; la ocultación de controles no es seguridad |
+| P1 | F-14/F-16/F-27 y S-02/S-03: saldos, transacciones, reintentos y recuperación | Evitar pérdidas, duplicados y operaciones parciales |
+| P1 | F-41/F-42/F-43 y entorno de tests | Validación coherente, respuestas claras y ejecución reproducible de pruebas |
+| P2 | R-02/R-03 y R-11: movimientos y presupuestos por periodo | Primero un modelo común, sin fuentes de saldo paralelas |
+| P2 | R-01/R-12: recepción de recibos y diferencias | Depende de presupuestos, respeta DC-14 y no duplica estados de pago |
+| P2 | R-09: reglas de aportación automática de Ahorros | Idempotencia, pausa, historial y política de fallos; distinto de uso manual/F-37 |
+| P2 | R-10: cadencias adicionales de Anticipos | Rediseño de calendario y pruebas, no solo ENUM; relacionado con F-40 |
+| P2 | R-13: detalle de transacciones por presupuesto/periodo | Depende de R-02/R-11 y de autorización efectiva |
+| P3 | R-05/R-07: progreso e informes básicos | Dependen de objetivos definidos y cifras conciliables |
+| P3 | R-08: paginación/búsqueda de usuarios | Solo si el volumen lo justifica |
+
+R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
+
+
 Estado: cierre de la auditoría documental del 2026-10-23, después del PR #29. Referencias: doc/mantenimiento/registro-hallazgos.md (secciones 5 a 10), estado-del-proyecto.md y auditoria-documentacion.md. Revisión estática terminada; fallos funcionales abiertos, no corregidos por este PR.
 
 ## Siguiente (un PR por punto; mantener este orden)
@@ -61,3 +81,12 @@ No alteran el orden actual ni se dan por aprobadas:
 - [ ] R-08: paginación/búsqueda de usuarios si lo justifica el volumen; prioridad baja.
 
 No se propone añadir pestañas de Recibos: eran una descripción incorrecta, no un requisito.
+
+## Requisitos históricos recuperados de la raíz (D-13)
+
+- [ ] R-09 (P2): revalidar y diseñar reglas de aportación automática de Ahorros; idempotencia, pausa, historial y fallos. No confundir con F-37 ni con movimientos manuales sin patrón.
+- [ ] R-10 (P2): revalidar cadencias semanal y cada cuatro meses de Anticipos; actualizar algoritmo/esquema/UI y probar fechas, relacionado con F-40.
+- [ ] R-11 (P2): presupuestado, gastado y disponible por periodo, con selector mes/año; primero R-02/R-03.
+- [ ] R-12 (P2): recepción de recibos esperado/recibido/diferencia y pendientes, sin duplicar fechas_cargo ni romper DC-14; depende de R-11/R-02.
+- [ ] R-13 (P2): consulta de transacciones de un presupuesto/periodo; depende de R-11/R-02 y permisos.
+- [x] D-13: corregir package.json.md y clasificar las cuatro notas .txt de raíz. Esto no cierra una auditoría integral ni da por implementados los requisitos.

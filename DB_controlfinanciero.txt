@@ -1,3 +1,11 @@
+ESTADO: ESPECIFICACIÓN HISTÓRICA; NO ES EL ESQUEMA NI LA FUNCIONALIDAD ACTUAL.
+Revisión D-13 (2026-10-24), base PR #31.
+No ejecutar el SQL de este archivo como instalación o migración. La fuente del esquema es backend/src/db/migrations. Las cascadas de borrado, el principal original y las cadencias descritas aquí no deben darse por implementadas.
+Requisitos útiles recuperados: reglas automáticas de Ahorros (R-09), cadencias adicionales de Anticipos (R-10), presupuestos y gastos por periodo (R-11). Deben revalidarse antes de diseñar la implementación; no se activan por este cambio documental.
+Referencia: doc/mantenimiento/registro-hallazgos.md, TODO y doc/mantenimiento/estado-del-proyecto.md.
+
+--- COMIENZO DE LA NOTA HISTÓRICA CONSERVADA ---
+
 
             //partidas de dinero destinadas a cubrir gastos fijos (comida, ocio, peluqueria)
             { label: 'Presupuestos', icon: 'pi pi-fw pi-money-bill', to: '/pages/budgets' },
