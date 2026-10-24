@@ -1,32 +1,44 @@
 # TAREAS PENDIENTES
 
-Estado a 2026-10-23, tras el PR #28 y el PR de documentación. El plan por fases y los hallazgos están en `doc/mantenimiento/registro-hallazgos.md` (sección 10); el relevo para una conversación nueva, en `doc/mantenimiento/estado-del-proyecto.md`.
+Estado: cierre de la auditoría documental del 2026-10-23, después del PR #29. Referencias: doc/mantenimiento/registro-hallazgos.md (secciones 5 a 10), estado-del-proyecto.md y auditoria-documentacion.md. Revisión estática terminada; fallos funcionales abiertos, no corregidos por este PR.
 
-## Siguiente (un PR por punto, en este orden)
-- [ ] Limpieza de «Actualizar fechas»: retirar `updateAllDates` y el botón comentado de `ListBills.vue`, `BillService.updateAllBillsDates`, la ruta `POST /api/recibos/actualizar-fechas` y, en `db_utils.mjs`, `actualizarFechasRecibos` y `generarNuevasFechasRecibo`; corregir los dos errores de `eslint` de `ListBills.vue`. Se conserva «Generar nuevas fechas» (`generateDates`, `completarFechasAnio`). Cierra F-11, F-23 y F-32.
-- [ ] Validación de un solo año al editar un recibo (DC-14): rechazar en el servidor y en la pantalla las fechas que no caigan en el año de la fecha inicial.
-- [ ] F-17: errata `re;` y `turn;` en `confirmDeleteAdvance` de `Advances.vue`.
+## Siguiente (un PR por punto; mantener este orden)
+- [ ] F-11/F-23/F-32: retirar Actualizar fechas (updateAllDates, botón comentado, updateAllBillsDates, ruta global y dos funciones antiguas del backend); conservar generateDates/generateBillDates/completarFechasAnio. Corregir los dos errores de eslint de ListBills.
+- [ ] DC-14: rechazar en pantalla y servidor las fechas fuera del año del recibo al editar.
+- [ ] F-17: corregir re/turn de confirmDeleteAdvance.
 
-## Después (fase 1)
-- [ ] F-07, F-12, F-13 (`dateStrings`, DC-05) y F-27 (transacciones en `db_utilsAdv.mjs`), comprobados abiertos el 2026-10-23
-- [ ] F-08, F-09, F-10, F-14, F-16, F-19, F-20, F-21, F-28 (resto de pantallas), F-30 y F-31: sin comprobar contra el código
-- [ ] Migraciones de DC-01 (estado `rechazado`) y DC-02 (nombre de categoría único)
-- [ ] Revisar `README_en.md` y la nota de `backend/test/README.md` sobre los módulos de `backend/src/db`
+## Correcciones funcionales que deben abordarse después
+- [ ] F-07: no llamar a getCurrentInstance tras el await del borrado de Ahorros; distinguir error posterior de borrado fallido.
+- [ ] F-08: implementar filtro de inactivos y un control real para activo en Ahorros.
+- [ ] F-09/F-22: editar categorías por ID y añadir la unicidad aprobada, sin crear otra categoría al renombrar.
+- [ ] F-10: tratar borrados bloqueados por FK y mostrar el mensaje de negocio.
+- [ ] F-12/F-13/DC-05: corregir el calendario antiguo que aún usa pushRecibo, dateStrings y conversión de fechas; la limpieza global no cierra F-12.
+- [ ] F-14: corregir cambios del importe manteniendo pagado, reposición/reactivación al borrar un pago pagado y respuesta de saldo en la ruta DELETE antigua; decidir preservación del principal original.
+- [ ] F-16: preparar payloads sin convertir a texto las fechas del modelo vivo; verificar reintento tras error en Ahorros y Anticipos.
+- [ ] F-19: escapar CSV y neutralizar fórmulas, conservando IBAN como texto seguro.
+- [ ] F-20/F-21: resolver getBillById sin endpoint y no prometer saldo de cuentas calculado automáticamente.
+- [ ] F-27: transacciones para operaciones compuestas de Anticipos y sustitución de pago (hoy son dos peticiones).
+- [ ] F-28: aplicar mensajes del servidor de forma coherente; Advances solo usa apiError al recalcular y Savings sigue con error.message.
+- [ ] F-30/F-31: selección de trimestrales y nombre del diálogo de borrado de recibos; comprobar contra código antes de corregir.
+- [ ] F-37: opciones explícitas diaria/semanal y otras cadencias de Ahorros según requisito; conservar aportaciones manuales sin patrón, que ya existen con periodicidad NULL.
+- [ ] F-38: obtener token de ambos almacenes en saveUser/deleteUsers/changePassword; probar con y sin Recordarme.
+- [ ] F-39: completar confirmación, ejecución y recarga del borrado múltiple en Anticipos, o retirar temporalmente el botón.
+- [ ] F-40: unificar propuestas de fecha de pagos manuales con periodicidad o acordar excepción explícita; hoy siempre incrementan un mes.
+- [ ] DC-01: migración del estado rechazado; DC-02: índice único de categorías.
+- [ ] Anticipos: pruebas de invariantes de suma, redondeos, reducción mínima de 0,01 y ajuste al último pago en recalculatePostEditPayments; documentar los resultados, no presumir garantía de conciliación.
 
-## Más adelante
-- [ ] Fase 2: permisos reales (S-01, S-04, S-06)
-- [ ] Fase 3: operación (S-02, S-03, S-07, O-01, S-08) y migración de la rutina de mantenimiento
-- [ ] Fase 4: limpieza de interfaz y de documentación (U-01 a U-08, D-01 a D-05; `Tech-documentation.vue` mantiene a mano la navegación de `doc/`)
-- [ ] Fase 5: dependencias (S-11)
-- [ ] Fase 6: hoja de ruta funcional (R-01 a R-04)
-- [ ] Revisar la sintaxis de colores en los bloques de código de los archivos markdown (SQL, PHP, Vue, etc.)
-- [ ] Mejorar la interfaz de los diálogos para la gestión de fechas de cargo en `ListBills.vue`
+## Seguridad, operación e interfaz (fases posteriores)
+- [ ] Fase 2: permisos por módulo/propietario/privacidad y guardas reales de rutas (S-01/S-04/S-06).
+- [ ] Fase 3: backup/restore y configuración de conexión (S-02/S-03), sesión/cliente API/interceptores (S-07), despliegue O-01, ignorados/entorno S-08/S-09 y migración de mantenimiento.
+- [ ] Configurar la BD de pruebas con backend/test/README.md y reejecutar: la salida recibida dio ENOTFOUND mariadb-test; no hay evidencia nueva de integración en verde.
+- [ ] Fase 4: Dashboard/manual/páginas de plantilla, idiomas, calendario y resto U-01 a U-08. Mantener doc/ y navegación en cada PR, no aplazar su revisión actual.
+- [ ] Fase 5: dependencias (S-11) y ramas Snyk, con pruebas disponibles.
+- [ ] Fase 6: hoja funcional del Excel, R-01 a R-04.
+- [ ] Revisar presentación de bloques de código Markdown y diálogos de fechas de ListBills.
 
-# IMPLEMENTADO
-- [x] **Permisos de usuario**: columnas `perm_*` en `users` (`users.mjs`, `db_utilsUsers.mjs`); su aplicación en los endpoints de datos sigue pendiente (S-01)
-- [x] **Cuenta del recibo**: `cuenta_id` pasó de `fechas_cargo` a `recibos`
-- [x] **Recibo por año** (DC-14 a DC-25): esquema, importe por cargo, fechas del año, ejercicio cerrado, vista por año, migraciones 0002 y 0003, procedimiento `generar_recibos_anio` y evento diario (migración 0004)
-- [x] **Modos de fechas**: manual o automático desde la fecha inicial; la edición parte siempre en manual (DC-11)
-- [x] **Ajustes**: General (zona horaria, DC-25), Administrar recibos (interruptor de creación automática, opción de sesión para recibos pagados, vista previa y generación manual), Aspecto (apariencia general Sistema, Claro u Oscuro, DC-26) y Base de Datos
-- [x] **Zona horaria de la aplicación**: horas en UTC y «hoy» calculado en la zona de los ajustes (DC-25)
-- [x] **Correcciones de la fase 1**: F-01 a F-06, F-18, F-24, F-25, F-26, F-29, F-33, F-34, F-35 y F-36
+## Incorporado
+- [x] PR #14: fase 0, registro, migración base y tests.
+- [x] Correcciones de fase 1 consignadas en el registro; no confundirlas con los fallos abiertos anteriores.
+- [x] PR #22 a #28: recibos por año, Ajustes, zona horaria y Aspecto.
+- [x] PR #29: primer documento de relevo y puesta al día inicial.
+- [x] Cierre documental D-11: nueve documentos antes pendientes contrastados con código; README inglés, pruebas, autenticación y demás correcciones de p16 integradas. Sin cambios funcionales.

@@ -1,133 +1,51 @@
 # Componente Savings
 
-Este documento proporciona documentación detallada sobre el componente `Savings.vue`, encargado de gestionar los ahorros y sus movimientos asociados en la aplicación Timon.
+Fuente: `src/views/pages/Savings.vue`. Revisión estática completa: 2026-10-23.
 
-## Descripción General
+## Alcance real
 
-El componente `Savings` permite la administración completa de ahorros financieros, que representan objetivos de ahorro con sus correspondientes movimientos. Proporciona funcionalidad para:
-- Crear, editar y eliminar ahorros
-- Gestionar movimientos asociados a cada ahorro
-- Visualizar el progreso hacia objetivos de ahorro
-- Exportar datos a formato CSV
+Gestiona ahorros y movimientos individuales: crear, editar, borrar, expandir movimientos y exportarlos. Muestra concepto, descripción, ahorrado, fecha objetivo, periodicidad y ahorro sugerido. No calcula porcentaje de progreso ni genera una planificación automática de aportaciones.
 
-## Características principales
-- Listado de ahorros con concepto, descripción, monto y fecha objetivo
-- Creación y edición de ahorros mediante un diálogo modal
-- Eliminación individual y múltiple de ahorros
-- Visualización expandible de movimientos asociados a cada ahorro
-- Creación, edición y eliminación de movimientos
-- Filtrado para mostrar/ocultar ahorros inactivos
-- Exportación de datos a CSV
-- Soporte para periodicidades configurables
+## Estado
 
-## Datos y Propiedades
+`savings`, `selectedSavings` y `saving` contienen la lista, selección y formulario. `movimientos` relaciona IDs de ahorro con sus movimientos; `movimiento` contiene el formulario individual. Los diálogos son `savingDialog`, `deleteSavingDialog`, `deleteSelectedSavingsDialog` y `savingMovimientoDialog`.
 
-### Estados Principales
+`isFormValid` exige concepto no vacío. `isMovimientoFormValid` exige fecha y tipo, no un importe positivo. Las descripciones de ambos formularios están limitadas a 255 caracteres en pantalla. `savingHasMovimientos` impide editar Ahorrado cuando el ahorro tiene movimientos precargados; el backend vuelve a comprobar la restricción (DC-10).
 
-| Propiedad | Tipo | Descripción |
-|-----------|------|-------------|
-| `savings` | `ref([])` | Lista de ahorros recuperados de la base de datos |
-| `selectedSavings` | `ref([])` | Ahorros seleccionados en la tabla para operaciones en lote |
-| `saving` | `ref({})` | Objeto que almacena los datos del ahorro en edición |
-| `movimiento` | `ref({})` | Objeto que almacena los datos del movimiento en edición |
-| `movimientos` | `ref({})` | Objeto que mapea IDs de ahorro a sus movimientos asociados |
-| `periodicidades` | `ref([])` | Lista de periodicidades permitidas para los ahorros |
+## Carga y operaciones
 
-### Estados de Diálogos
+Al montar se ejecutan `fetchSavings`, `fetchPeriodicidades` y `fetchAllMovimientos`, secuencialmente. `fetchSavings` capitaliza el concepto y convierte fecha_objetivo a Date. `fetchAllMovimientos` usa Promise.all; `fetchMovimientos(id)` carga un ahorro y se utiliza al expandirlo.
 
-| Propiedad | Tipo | Descripción |
-|-----------|------|-------------|
-| `savingDialog` | `ref(false)` | Controla la visibilidad del diálogo de edición de ahorros |
-| `deleteSavingDialog` | `ref(false)` | Controla la visibilidad del diálogo de confirmación para eliminar un ahorro |
-| `deleteSelectedSavingsDialog` | `ref(false)` | Controla la visibilidad del diálogo para eliminar múltiples ahorros |
-| `savingMovimientoDialog` | `ref(false)` | Controla la visibilidad del diálogo de edición de movimientos |
+| Función | Comportamiento actual |
+|---|---|
+| `openNewSaving()` / `editSaving(sav)` | Preparan el formulario; el alta propone activo=1 |
+| `saveSaving()` | Convierte fecha_objetivo del propio formulario a texto; periodicidad vacía pasa a NULL; guarda, recarga ahorros y cierra |
+| `confirmDeleteSaving` / `deleteSaving()` | Piden confirmación y borran el ahorro; después del await se usa getCurrentInstance().refs, que puede fallar aunque el borrado haya funcionado (F-07) |
+| `confirmDeleteSelectedSavings` / `deleteSelectedSavings()` | Confirman y envían IDs en lote |
+| `updateSavings()` | Recarga solo la lista de ahorros, no todos sus movimientos |
+| `openNewMovimiento(id)` / `editMovimiento(mov)` | Preparan el movimiento nuevo o copiado |
+| `saveMovimiento()` | Normaliza la fecha, guarda un movimiento y lanza recargas de ahorros y movimientos |
+| `deleteMovimiento(mov)` | Borra sin diálogo de confirmación y lanza recargas |
 
-### Propiedades Computadas
+## Aportaciones periódicas o sin patrón
 
-| Propiedad | Descripción |
-|-----------|-------------|
-| `isFormValid` | Valida si el formulario de ahorro tiene todos los campos requeridos completados |
-| `isMovimientoFormValid` | Valida si el formulario de movimiento tiene los campos obligatorios |
-| `hasInactiveSavings` | Detecta si existen ahorros inactivos en el sistema |
-| `savingsWithMovements` | Calcula el número de ahorros que tienen movimientos asociados |
-| `savingHasMovimientos` | Indica si el ahorro en edición ya tiene movimientos; en ese caso el campo «Ahorrado» queda bloqueado |
+La periodicidad y el importe sugerido son campos descriptivos: no disparan movimientos automáticos. El selector obtiene opciones del servidor y añade una vacía; esta se guarda como NULL. Ya se pueden registrar manualmente movimientos con fechas e importes arbitrarios, positivos o negativos, sin elegir una periodicidad. Las etiquetas regular/extraordinario son seleccionadas por el usuario, no comprobadas contra un calendario.
 
-## Funciones Principales
+El requisito del usuario permite ahorros diarios, semanales, otras cadencias o puntuales. El código no los trata como recibos: las opciones explícitas disponibles dependen del esquema que consulta getPeriodicidades (F-37). No deben inferirse reglas de negocio de los registros de prueba.
 
-### Gestión de Ahorros
+## Expansión, inactivos y CSV
 
-| Función | Descripción |
-|---------|-------------|
-| `fetchSavings()` | Recupera la lista de ahorros desde el servidor |
-| `fetchPeriodicidades()` | Obtiene las periodicidades permitidas para los ahorros |
-| `openNewSaving()` | Inicializa un nuevo objeto ahorro y abre el diálogo de creación |
-| `editSaving(sav)` | Carga los datos de un ahorro existente para su edición |
-| `saveSaving()` | Guarda un ahorro nuevo o actualiza uno existente |
-| `deleteSaving()` | Elimina un ahorro seleccionado |
-| `deleteSelectedSavings()` | Elimina todos los ahorros seleccionados en la tabla |
+`expandedRows`, `expandedCount`, `isExpanded` y `savingsWithMovements` controlan la expansión; `onRowExpand`, `onRowCollapse` y `toggleExpandCollapseAll` la actualizan.
 
-### Gestión de Movimientos
+`toggleShowInactive` solo alterna `showInactive` y la etiqueta del botón. La tabla sigue enlazada a `savings`, sin filtrar. `hasInactiveSavings` solo habilita el botón; el formulario no ofrece un control para cambiar activo (F-08).
 
-| Función | Descripción |
-|---------|-------------|
-| `fetchMovimientos(ahorroId)` | Recupera los movimientos asociados a un ahorro específico |
-| `fetchAllMovimientos()` | Recupera todos los movimientos de todos los ahorros |
-| `openNewMovimiento(ahorroId)` | Inicializa un nuevo movimiento para un ahorro y abre el diálogo |
-| `editMovimiento(mov)` | Carga los datos de un movimiento existente para su edición |
-| `saveMovimiento()` | Guarda un movimiento nuevo o actualiza uno existente |
-| `deleteMovimiento(mov)` | Elimina un movimiento específico |
+`exportCSV` genera `savings.csv`, UTF-8 con BOM, separador `;` y coma decimal. Produce una fila por movimiento, repitiendo los datos del ahorro, o una fila si no hay movimientos. No escapa separadores, saltos, comillas ni fórmulas (F-19).
 
-### Otras Funciones
+## Limitaciones pendientes
 
-| Función | Descripción |
-|---------|-------------|
-| `toggleExpandCollapseAll()` | Expande o contrae todas las filas de ahorros |
-| `toggleShowInactive()` | Muestra u oculta los ahorros inactivos |
-| `exportCSV()` | Exporta los datos de ahorros y sus movimientos a formato CSV |
-| `onRowExpand(event)` | Maneja la expansión de una fila para mostrar movimientos |
-| `onRowCollapse(event)` | Maneja el colapso de una fila para ocultar movimientos |
-| `capitalizeFirstLetter(string)` | Convierte la primera letra de un texto a mayúscula |
+- F-07 y F-08: borrado individual con error posterior y controles de inactivos incompletos.
+- F-16: saveSaving muta fecha_objetivo a texto antes del POST; el reintento sin reabrir puede fallar. No es una garantía de reintento seguro.
+- F-28: los avisos usan error.message.
+- Borrar un padre con movimientos puede fallar por FK (F-10); no se afirma cascada.
 
-## Eventos y Estados
-
-- **Expansión de filas**: El componente mantiene un seguimiento de las filas expandidas a través de `expandedRows`, `expandedCount` e `isExpanded`
-- **Filtrado de inactivos**: La propiedad `showInactive` controla la visibilidad de los ahorros marcados como inactivos
-- **Validaciones**: Se realizan validaciones en tiempo real para los formularios de ahorros y movimientos
-
-## Ciclo de Vida
-
-En el evento `onMounted`, el componente:
-1. Carga la lista de ahorros mediante `fetchSavings()`
-2. Recupera las periodicidades permitidas mediante `fetchPeriodicidades()`
-3. Carga todos los movimientos asociados a los ahorros mediante `fetchAllMovimientos()`
-
-## Estructura del Template
-
-El template está estructurado en varias secciones:
-
-1. **Barra de herramientas superior**: Con botones para crear, eliminar y actualizar ahorros
-2. **Tabla principal de ahorros**: Muestra los ahorros con sus datos principales y permite expandir cada fila
-3. **Subtabla de movimientos**: Se muestra al expandir un ahorro, mostrando sus movimientos asociados
-4. **Diálogos**:
-   - Diálogo de edición de ahorros
-   - Diálogo de edición de movimientos
-   - Diálogos de confirmación para eliminar ahorros individuales o seleccionados
-
-## Características especiales
-
-- **Sistema de expansión**: Permite expandir/contraer todas las filas para ver/ocultar los movimientos
-- **Filtrado de inactivos**: Botón específico para mostrar/ocultar ahorros marcados como inactivos
-- **Exportación a CSV**: Incluye datos tanto de los ahorros como de sus movimientos asociados
-- **Formateo de fechas**: Utiliza funciones globales para formatear fechas y valores monetarios
-- **Corrección del saldo**: para corregir un ahorro que ya tiene movimientos se añade un movimiento positivo o negativo; así queda constancia de cada cambio
-
-## Validaciones
-
-- El concepto del ahorro es obligatorio
-- La fecha del movimiento y su tipo son obligatorios
-- La descripción tiene un límite de 255 caracteres
-- El campo «Ahorrado» se puede editar al crear el ahorro y mientras no tenga movimientos; con movimientos aparece deshabilitado y el servidor rechaza cualquier cambio (DC-10)
-
-## Dependencias
-
-El componente depende del servicio `SavService` para realizar todas las operaciones CRUD relacionadas con ahorros y movimientos.
+Ver [SavService](../services/SavService.md), [acceso a datos](../db/db_utilsSav.md) y [registro de hallazgos](../mantenimiento/registro-hallazgos.md).

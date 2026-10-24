@@ -2,7 +2,7 @@
 
 ## Descripción General
 
-Este módulo implementa las rutas de la API REST para gestionar la autenticación de usuarios en el sistema Timon. Proporciona endpoints para iniciar sesión mediante credenciales (username/password) y verificar la validez de tokens JWT. Al autenticarse exitosamente, devuelve un token JWT con información del usuario y sus permisos asociados.
+Este módulo implementa las rutas de la API REST para gestionar la autenticación de usuarios en el sistema Timon. Proporciona endpoints para iniciar sesión mediante credenciales (username/password) y verificar la validez de tokens JWT. Al autenticarse exitosamente, devuelve un JWT con identidad y rol; no contiene los permisos por módulo.
 
 ## Rutas Implementadas
 
@@ -73,3 +73,9 @@ Esta API se integra con los siguientes middlewares para proteger rutas:
 - [Composable useAuth](../composables/useAuth.md) - Hook de Vue para autenticación y autorización
 - [Servicio de Usuarios](../services/UsersService.md) - Servicio para gestión de usuarios
 - [API de Usuarios](./users.md) - API para gestión de usuarios autenticados
+
+## Códigos y validación reales
+
+POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 500 por fallo del servidor. GET /verify: 200 con identidad del token o 401 sin token/inválido/caducado. Verify valida directamente con jwt.verify, no utiliza verifyToken; este último devuelve 403 por token inválido/caducado.
+
+La validación criptográfica comprueba firma y caducidad; no consulta revocación, rol actualizado ni existencia actual del usuario en la base de datos.

@@ -8,7 +8,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 
 - Gestión completa de operaciones CRUD para usuarios
 - Autenticación y verificación de credenciales
-- Encriptación segura de contraseñas utilizando bcrypt
+- Verifica hashes con bcrypt; las rutas generan el hash antes de llamar a este módulo
 - Gestión de permisos granulares por módulo (recibos, presupuestos, ahorros, etc.)
 - Gestión de preferencias de estilo personalizadas
 - Manejo eficiente de conexiones a la base de datos
@@ -58,7 +58,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `getUserByEmail(email)` | Obtiene un usuario por su correo electrónico |
 | `createUser(userData)` | Crea un nuevo usuario con permisos específicos para cada módulo |
 | `updateUser(userId, userData)` | Actualiza los datos de un usuario existente, incluyendo sus permisos granulares |
-| `changePassword(userId, hashedPassword)` | Cambia la contraseña de un usuario |
+| `changePassword(userId, password)` | Cambia la contraseña de un usuario |
 | `deleteUsers(userIds)` | Elimina uno o más usuarios por sus IDs |
 | `verifyCredentials(username, password)` | Verifica las credenciales de un usuario para autenticación |
 
@@ -74,23 +74,23 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 ### Encriptación de Contraseñas
 
 El módulo utiliza la biblioteca bcrypt para el manejo seguro de contraseñas:
-- Encriptación de contraseñas al crear o actualizar usuarios
+- createUser y changePassword guardan el hash recibido de las rutas; no cifran su argumento
 - Verificación de contraseñas durante la autenticación
-- Generación automática de salt para mayor seguridad
+- Las rutas generan hash y salt con bcrypt.hash(password, 10), fuera de este módulo
 
 ### Validación de Datos
 
 Incluye validaciones robustas para garantizar la integridad de los datos:
 - Unicidad de nombres de usuario y correos electrónicos
-- Formato válido de correos electrónicos
+- No valida formato de correo en este módulo
 - Conversión de tipos para evitar errores de tipo
-- Validación específica para IDs de usuarios en operaciones en lote
+- deleteUsers usa DELETE WHERE id IN (?) sin validar por separado cada ID
 
 ### Manejo de Preferencias de Estilo
 
 El sistema permite almacenar y recuperar preferencias de interfaz personalizadas:
 - Almacenamiento en formato JSON para máxima flexibilidad
-- Actualización parcial de preferencias (actualiza solo los campos proporcionados)
+- Sustituye el JSON completo: no fusiona campos de preferencias
 - Conversión automática entre formatos string y objeto JSON
 
 ## Referencias

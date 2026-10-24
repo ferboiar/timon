@@ -28,7 +28,7 @@ La plataforma está organizada en seis sistemas interconectados que trabajan con
 
 4. **Sistema de Categorías**: Proporciona una estructura para clasificar los movimientos financieros, permitiendo un análisis detallado de gastos e ingresos según su naturaleza.
 
-5. **Sistema de Cuentas**: Facilita la administración de diferentes tipos de cuentas financieras (corrientes, ahorros, efectivo), mostrando saldos actualizados y registrando todos los movimientos.
+5. **Sistema de Cuentas**: administra las cuentas y un saldo introducido manualmente; no registra automáticamente el efecto de todos los módulos (F-21).
 
 6. **Sistema de Usuarios y Autenticación**: Proporciona control de acceso y seguridad para la aplicación, incluyendo gestión de usuarios, autenticación, autorización basada en roles y personalización de la interfaz.
 
@@ -39,7 +39,7 @@ Los sistemas funcionan de manera interconectada:
 - Los **anticipos** se vinculan a **cuentas** específicas para registrar origen y destino de los fondos
 - Los **ahorros** permiten una planificación financiera organizada que complementa la gestión de **cuentas**
 - Las **categorías** se aplican a los movimientos generados por **anticipos**, operaciones de **cuentas**, movimientos de **ahorros** y **recibos**
-- Las **cuentas** reflejan el impacto de los **recibos**, **anticipos** y **ahorros** en forma de movimientos categorizados
+- La integración de movimientos y conciliación entre cuentas sigue pendiente (R-02); las relaciones entre módulos no actualizan automáticamente saldo_actual
 - El sistema de **usuarios** controla qué personas pueden acceder a los diferentes recursos según sus roles
 
 Esta documentación técnica está dirigida principalmente a desarrolladores y administradores del sistema, proporcionando información detallada sobre la arquitectura, componentes, servicios y APIs que conforman cada uno de estos sistemas.
@@ -329,3 +329,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 
 - [Estado del proyecto](./mantenimiento/estado-del-proyecto.md) - Documento de relevo: cómo se trabaja, cómo funciona hoy y qué toca después
 - [Registro de hallazgos y decisiones](./mantenimiento/registro-hallazgos.md) - Decisiones (DC), hallazgos y plan por fases
+
+## Estado de implementación y cierre de revisión
+
+El informe de [auditoría documental](./mantenimiento/auditoria-documentacion.md) diferencia diseño, implementación y fallos conocidos. Campos de permisos no equivalen a autorización aplicada (S-01); saldos manuales no equivalen a conciliación automática; aportaciones con periodicidad no equivalen a generación automática de movimientos. La sección 10 del registro y TODO incluyen las correcciones pendientes con sus IDs.

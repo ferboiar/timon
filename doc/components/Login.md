@@ -77,7 +77,7 @@ Además, mantiene `rememberedUser` en localStorage incluso cuando no se marca "R
 ## Seguridad
 
 - No almacena la contraseña en ningún medio de almacenamiento
-- Comunica con el backend mediante HTTPS
+- Usa fetch contra VITE_API_URL; HTTPS depende del despliegue, no está impuesto por el componente
 - Elimina tokens inválidos automáticamente
 - Separa los tokens de sesión y permanentes en diferentes almacenamientos
 - Validación en servidor antes de aceptar el token

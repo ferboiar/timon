@@ -92,3 +92,7 @@ Este módulo depende directamente de las funciones de base de datos definidas en
 - [Documentación de AdvService](../services/AdvService.md) - Cliente que consume esta API
 - [Utilidades de Base de Datos para Anticipos](../db/db_utilsAdv.md) - Implementación de las funciones de base de datos
 - [Componente Advances](../components/Advances.md) - Interfaz de usuario que interactúa con esta API
+
+## Autorización implementada
+
+Las rutas exigen sesión (verifyToken), pero no aplican filtros de propietario, privacidad ni permisos por módulo (S-01). Tener columnas propietario_id, es_privado o perm_* no equivale a aplicar esos permisos.

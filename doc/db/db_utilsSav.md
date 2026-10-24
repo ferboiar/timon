@@ -23,10 +23,11 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `descripcion` | VARCHAR | Descripción detallada (opcional) |
 | `ahorrado` | DECIMAL | Valor inicial más la suma de los movimientos. Se edita a mano solo mientras el ahorro no tiene movimientos (DC-10) |
 | `fecha_objetivo` | DATE | Fecha objetivo para completar el ahorro (opcional) |
-| `periodicidad` | ENUM | Frecuencia de ahorro (diario, semanal, mensual, etc.) |
+| `periodicidad` | ENUM | Opciones consultadas al esquema por getPeriodicidades; no se deducen de filas de prueba. La opción vacía se guarda NULL. Cadencias explícitas diaria/semanal pendientes de ampliar respecto a 0001 (F-37) |
 | `importe_periodico` | DECIMAL | Cantidad sugerida a ahorrar por periodo |
 | `activo` | TINYINT | Estado del ahorro (1 activo, 0 inactivo) |
 | `propietario_id` | INT | Usuario que creó el ahorro; obligatorio al crear |
+| `es_privado` | TINYINT | Columna del esquema sin filtrado en los endpoints; en categorías no limita la visibilidad (S-01, DC-02) |
 
 ### Tabla `ahorros_movimientos`
 
@@ -68,7 +69,7 @@ El sistema implementa un mecanismo automático para actualizar los saldos de los
 2. Al eliminar un movimiento: el saldo del ahorro disminuye con el importe del movimiento eliminado
 3. Al editar un movimiento: solo se aplica la diferencia entre el importe nuevo y el anterior; si cambia solo la fecha o la descripción, el saldo no varía. El ahorro afectado se toma de la base de datos, no de lo que envíe el cliente
 
-Este enfoque garantiza que los saldos siempre estén sincronizados con los movimientos asociados.
+Estas operaciones mantienen el ajuste de saldo dentro de sus transacciones; no auditan datos preexistentes ni escrituras externas.
 
 ### Saldo inicial y bloqueo de `ahorrado`
 
@@ -82,14 +83,14 @@ Este enfoque garantiza que los saldos siempre estén sincronizados con los movim
 
 ### Gestión de Movimientos Regular y Extraordinarios
 
-El sistema permite diferenciar entre movimientos regulares (aquellos que siguen el plan periódico de ahorro) y extraordinarios (aportaciones adicionales no programadas), lo que facilita:
+regular y extraordinario son etiquetas elegidas por el usuario: no hay generación ni comprobación de un plan periódico. Esta clasificación puede facilitar:
 
 - El análisis del comportamiento de ahorro del usuario
 - La planificación financiera basada en ingresos regulares vs. extraordinarios
 
 ### Ordenamiento Cronológico
 
-Todos los movimientos son recuperados en orden cronológico, facilitando la visualización de la evolución del ahorro a lo largo del tiempo.
+getMovimientos ordena por fecha ASC; no establece desempate entre movimientos del mismo día.
 
 ## Validaciones y Manejo de Errores
 
@@ -104,7 +105,7 @@ Las funciones implementan validaciones para:
 
 ## Consideraciones de Rendimiento
 
-- Todas las consultas utilizan índices apropiados para optimizar el rendimiento
+- No se ha verificado un plan de ejecución ni medido rendimiento: no se garantiza que todas las consultas utilicen índices
 - La actualización de saldos se realiza en la misma transacción que la operación de movimiento, reduciendo el número de conexiones necesarias
 - Se implementa manejo eficiente de conexiones mediante un pool de conexiones
 
@@ -128,3 +129,13 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 - [API de Ahorros](../routes/ahorros.md) - Rutas que utilizan estas funciones
 - [Documentación de SavService](../services/SavService.md) - Cliente que eventualmente llama a estas funciones
 - [Componente Savings](../components/Savings.md) - Interfaz de usuario para ahorros y movimientos
+
+## Transacciones, validación y trazas verificadas
+
+Crear un ahorro es un INSERT sin transacción explícita. Editarlo bloquea la fila FOR UPDATE, cuenta sus movimientos y compara ahorrado redondeando a céntimos. Crear, editar o borrar movimientos sí usa transacción; cambiar solo descripción o fecha no varía el saldo. Al editar se conserva el ahorro original del movimiento, no se cambia por el ahorro_id enviado.
+
+pushMovimiento exige fecha y tipo y rechaza importe undefined, null o que convertido a número sea NaN; no es una validación exhaustiva de finitud ni de calendario. Los importes pueden ser negativos. deleteSavings solo borra padres y puede fallar por FK si quedan movimientos (F-10).
+
+Periodicidad e importe sugerido no generan aportaciones automáticas. Ya existe uso manual sin patrón con periodicidad NULL; las opciones diaria/semanal deben distinguirse del esquema de pruebas (F-37).
+
+Todas las trazas tabuladas existen: nuevo, edición con diferencia, rechazo, confirmación y reversión. Las funciones liberan la conexión en finally. No se ha hecho una prueba nueva de concurrencia ni de fallo del rollback.

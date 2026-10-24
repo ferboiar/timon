@@ -8,7 +8,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 
 - Gestión completa de operaciones CRUD para cuentas bancarias y financieras
 - Soporte para múltiples tipos de cuentas (corriente, ahorro, efectivo, etc.)
-- Validación de códigos IBAN para prevenir duplicidades
+- Normalización del IBAN (trim y vacío a NULL) y detección de duplicados por índice único; no valida dígitos de control ni formato
 - Control de estado de cuentas (activas e inactivas)
 - El saldo (`saldo_actual`) se edita a mano; ninguna operación lo actualiza (hallazgo F-21)
 
@@ -20,12 +20,13 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 |-------|------|-------------|
 | `id` | INT | Clave primaria |
 | `nombre` | VARCHAR | Nombre descriptivo de la cuenta |
-| `tipo` | ENUM | Tipo de cuenta (corriente, ahorro, efectivo, etc.) |
+| `tipo` | ENUM | Opciones obtenidas por getTipos del esquema, sin catálogo fijo en el frontend; no se infieren de las filas de prueba |
 | `iban` | VARCHAR | Código IBAN de la cuenta (opcional y único). Sin IBAN se guarda NULL, no una cadena vacía |
 | `saldo_actual` | DECIMAL | Saldo actual de la cuenta |
 | `descripcion` | TEXT | Descripción detallada (opcional) |
 | `activa` | TINYINT | Estado de la cuenta (1 activa, 0 inactiva) |
 | `propietario_id` | INT | Usuario que creó la cuenta; se guarda al crearla (F-01) |
+| `es_privado` | TINYINT | Columna del esquema sin filtrado en los endpoints; en categorías no limita la visibilidad (S-01, DC-02) |
 
 ## Funciones Principales
 
@@ -53,7 +54,7 @@ Las cuentas pueden marcarse como activas o inactivas, permitiendo a los usuarios
 ## Validaciones y Manejo de Errores
 
 - Detección de IBAN duplicado mediante el índice único, con un mensaje específico
-- Validación de campos obligatorios (nombre y tipo de cuenta)
+- La pantalla exige nombre y tipo; pushAccount no los valida explícitamente
 - Captura y reporte detallado de errores para facilitar la depuración
 - Mensajes específicos para cada tipo de error en las operaciones de base de datos
 

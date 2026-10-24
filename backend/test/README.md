@@ -58,4 +58,5 @@ Los valores por defecto corresponden a la opción B. En la opción A hay que ind
 - Las pruebas marcadas como `todo` reproducen hallazgos abiertos del registro y no hacen fallar la ejecución. Al corregir el hallazgo se quita la marca.
 - La prueba de configuración compara los valores globales del servidor. La sesión de `mysql2` añade `IGNORE_SPACE` al `sql_mode`, por lo que el valor de sesión no sirve para comparar.
 - El esquema se carga aplicando por orden todos los ficheros de `backend/src/db/migrations/`.
-- Todavía no se importan los módulos de `backend/src/db`, porque la conexión se lee de `.db_connection` y apuntaría a la base real. Eso cambia cuando S-03 permita configurar la conexión por variables de entorno.
+- Las pruebas fijan DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_DATABASE antes de importar dinámicamente db_connection.mjs y db_utils.mjs; dotenv no pisa esas variables y las funciones reales usan la base de pruebas.
+- fase0.test.mjs conserva su nombre histórico pero prueba también lógica de recibos por año y migraciones. ENOTFOUND mariadb-test impide iniciar la suite: no demuestra un fallo funcional ni pruebas superadas. Configura la opción A o arranca la B.

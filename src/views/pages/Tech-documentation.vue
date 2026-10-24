@@ -147,6 +147,7 @@ const docNavigation = [
                     { title: 'Calendario', path: 'components/Calendar' },
                     { title: 'Páginas vacías de la plantilla', path: 'components/PaginasVacias' },
                     { title: 'Estado del proyecto', path: 'mantenimiento/estado-del-proyecto' },
+                    { title: 'Auditoría de documentación', path: 'mantenimiento/auditoria-documentacion' },
                     { title: 'Registro de hallazgos', path: 'mantenimiento/registro-hallazgos' }
                 ]
             }

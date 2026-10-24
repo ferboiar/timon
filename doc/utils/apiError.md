@@ -26,7 +26,7 @@ try {
 
 ## Dónde se usa
 
-Por ahora solo en `Accounts.vue`. El resto de pantallas siguen mostrando `error.message` (hallazgo F-28 del registro de mantenimiento), salvo el guardado de recibos: `BillService.saveBill` ya relanza el mensaje del servidor.
+En `Accounts.vue` y, solo para el error de recalcular pagos, en `Advances.vue`. El resto de pantallas siguen mostrando `error.message` (hallazgo F-28 del registro de mantenimiento), salvo el guardado de recibos: `BillService.saveBill` ya relanza el mensaje del servidor.
 
 ## Referencias
 

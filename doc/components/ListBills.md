@@ -134,9 +134,9 @@ La propiedad de los recibos se maneja automáticamente a través del sistema de 
 
 1. **Asignación automática**: El campo `propietario_id` no se maneja explícitamente en el frontend, sino que se asigna automáticamente en el backend basándose en el token JWT del usuario autenticado.
 
-2. **Filtrado automático**: El componente solo muestra los recibos que pertenecen al usuario actual o que están marcados como no privados y el usuario tiene permisos para verlos.
+2. **Sin filtrado de propiedad implementado**: los endpoints devuelven registros sin aplicar propietario, es_privado ni permisos por módulo (S-01).
 
-3. **Transparencia para el usuario**: El sistema de propiedad funciona de manera transparente para el usuario final, quien solo ve y gestiona los recibos a los que tiene acceso.
+3. **Limitación**: no se garantiza acceso limitado a registros del usuario; la autorización real queda pendiente de fase 2 (S-01).
 
 ## Eventos y Estados
 

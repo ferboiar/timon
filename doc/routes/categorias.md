@@ -66,3 +66,7 @@ Este módulo depende directamente de las funciones de base de datos definidas en
 - [Documentación de CatsService](../services/CatsService.md) - Cliente que consume esta API
 - [Utilidades de Base de Datos para Categorías](../db/db_utilsCats.md) - Implementación de las funciones de base de datos
 - [Componente Categories](../components/Categories.md) - Interfaz de usuario que interactúa con esta API
+
+## Autorización implementada
+
+Las rutas exigen sesión (verifyToken), pero no aplican filtros de propietario, privacidad ni permisos por módulo (S-01). Tener columnas propietario_id, es_privado o perm_* no equivale a aplicar esos permisos.

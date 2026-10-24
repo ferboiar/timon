@@ -14,18 +14,18 @@ Timón is a comprehensive financial platform designed for efficient management o
 
 4. **Categories System**: Provides a structure to classify financial movements, allowing detailed analysis of expenses and income according to their nature.
 
-5. **Accounts System**: Facilitates the administration of different types of financial accounts (current, savings, cash), showing updated balances and recording all movements.
+5. **Accounts System**: Manages financial accounts and a manually entered balance. Automatic consolidated account movements and reconciliation are not implemented.
 
 6. **Users and Authentication System**: Provides access control and security for the application, including user management, authentication, role-based authorization, and interface customization.
 
-The integration between these systems allows for a complete financial management where each operation is properly reflected in the accounts and can be categorized for later analysis, thus offering a 360° view of personal finances.
+These modules do not yet provide automatic accounting integration or reconciliation. Implemented behavior, known limitations and the remaining plan are documented in doc/mantenimiento/estado-del-proyecto.md (Spanish).
 
 ## Installation on Linux
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
-- MySQL (v8 or higher)
+- Node.js 20.9 or higher in the 20 series (see package.json)
+- MariaDB 11.8 (DC-04)
 - Git
 - git-crypt (for secure handling of sensitive files)
 
@@ -35,7 +35,7 @@ The integration between these systems allows for a complete financial management
 
 ```bash
 sudo apt update
-sudo apt install nodejs npm mysql-server git
+sudo apt install nodejs npm mariadb-server git
 sudo apt install git-crypt
 ```
 
@@ -120,6 +120,10 @@ If the user already exists in the database, the script will reset their password
 # For development environment (from the project root)
 npm run dev
 ```
+
+## Documentation and tests
+
+Start with doc/mantenimiento/estado-del-proyecto.md; the current plan is in TODO and doc/mantenimiento/registro-hallazgos.md. Backend tests need a separate MariaDB test environment: see backend/test/README.md. Never point destructive tests at the application database.
 
 ## Development environment with GitHub Codespaces and git-crypt
 

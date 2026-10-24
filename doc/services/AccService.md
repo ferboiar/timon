@@ -18,7 +18,8 @@ El servicio `AccService` actúa como intermediario entre la interfaz de usuario 
 El servicio utiliza axios para realizar peticiones HTTP al backend y está configurado con la URL base:
 
 ```javascript
-const API_URL = 'http://localhost:3000/api/cuentas';
+import { API_BASE_URL } from '@/config/api';
+const API_URL = `${API_BASE_URL}/api/cuentas`;
 ```
 
 ## Uso Común
@@ -52,3 +53,9 @@ Todos los métodos del servicio incluyen manejo de excepciones que:
 - [Documentación del API de Cuentas](../routes/cuentas.md) - Detalles sobre los endpoints del backend
 - [Utilidades de Base de Datos para Cuentas](../db/db_utilsAcc.md) - Funciones de base de datos utilizadas por el backend
 - [Componente Accounts](../components/Accounts.md) - Interfaz de usuario que utiliza este servicio
+
+## Transporte y contrato comprobados
+
+Usa axios directamente, no apiClient: no pasa por sus interceptores (S-07). Construye la URL desde API_BASE_URL (`VITE_API_URL`, con respaldo `http://localhost:3000`). Cada método obtiene token de localStorage o sessionStorage, lo envía en Authorization y devuelve response.data. Registra y relanza el error original, sin convertirlo en un mensaje específico de negocio. No valida permisos en el cliente; estos deben comprobarse en el servidor.
+
+`deleteAccounts(ids)` envía `{ accounts: ids }` en el cuerpo del DELETE. `getTipos` obtiene opciones del esquema a través del servidor, no categorías inferidas de las cuentas de prueba.
