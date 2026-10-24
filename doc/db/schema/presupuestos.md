@@ -1,5 +1,7 @@
 # Sistema de Gestión de Presupuestos - Documentación Técnica
 
+> Estado de implementación al 2026-10-23: Diseño sin implementación de pantalla ni API. presupuestos y presupuesto_periodos existen en la línea base; transacciones y recibos_periodos no. Los SQL son propuestas y no se deben ejecutar como migraciones ni tomar como descripción del esquema vigente (D-02).
+
 ## Tabla de Contenidos
 1. [Estructura de la Base de Datos](#estructura-de-la-base-de-datos)  
    1.1 [Tabla: presupuestos](#tabla-presupuestos)  

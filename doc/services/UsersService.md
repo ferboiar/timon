@@ -25,7 +25,7 @@ El servicio `UsersService` actúa como intermediario entre la interfaz de usuari
 ## Características Principales
 
 - Gestión completa de operaciones CRUD para usuarios
-- Autenticación mediante tokens JWT con almacenamiento en localStorage o sessionStorage
+- getUsers y los métodos de preferencias consultan localStorage y sessionStorage; saveUser, deleteUsers y changePassword consultan solo localStorage (F-38)
 - Soporte para roles de usuario (admin, user, limited_user, reader)
 - Personalización de la interfaz mediante preferencias de estilo
 - Manejo de errores con mensajes descriptivos
@@ -52,10 +52,7 @@ async function cargarUsuarios() {
 
 ### Manejo de errores
 
-Todos los métodos del servicio incluyen manejo de excepciones que:
-1. Capturan y procesan errores de la API
-2. Proporcionan mensajes descriptivos para facilitar la depuración
-3. Re-lanzan la excepción para que pueda ser manejada por el componente que llama al servicio
+Usa fetch. Comprueba response.ok y, ante respuesta no satisfactoria, lee JSON y lanza Error(error.message o un texto de respaldo). No implementa bloques catch ni registro propio de todos los errores. Los errores de red y de JSON se propagan directamente.
 
 ## Estructura de datos
 
@@ -86,3 +83,7 @@ Todos los métodos del servicio incluyen manejo de excepciones que:
 - [Utilidades de Base de Datos para Usuarios](../db/db_utilsUsers.md) - Funciones de base de datos utilizadas por el backend
 - [Componente de Gestión de Usuarios](../components/ProfileSettings.md) - Interfaz de usuario que utiliza este servicio
 - [Composable useAuth](../composables/useAuth.md) - Hook de Vue para gestión de autenticación y autorización
+
+## Argumentos y autorización
+
+saveUser elige PUT si userData.id es verdadero; en otro caso POST. deleteUsers transmite el objeto de parámetros: la ruta espera `{ userIds: [...] }`; changePassword espera `{ id, password }`. La gestión de usuarios exige administrador. Las preferencias solo exigen sesión y se aplican al usuario del token. saveStylePreferences sustituye todo el JSON, no fusiona campos. El servicio no amplía la vigencia del token ni valida los datos completos de usuario.

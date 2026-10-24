@@ -60,3 +60,9 @@ El servicio captura y registra en consola todos los errores que ocurren durante 
 - [Documentación del API de Ahorros](../routes/ahorros.md) - Detalles sobre los endpoints del backend
 - [Utilidades de Base de Datos para Ahorros](../db/db_utilsSav.md) - Funciones de base de datos utilizadas por el backend
 - [Componente Savings](../components/Savings.md) - Interfaz de usuario que utiliza este servicio
+
+## Transporte y contrato comprobados
+
+Usa axios directamente, no apiClient: no pasa por sus interceptores (S-07). Construye la URL desde API_BASE_URL (`VITE_API_URL`, con respaldo `http://localhost:3000`). Cada método obtiene token de localStorage o sessionStorage, lo envía en Authorization y devuelve response.data. Registra y relanza el error original, sin convertirlo en un mensaje específico de negocio. No valida permisos en el cliente; estos deben comprobarse en el servidor.
+
+`deleteSavings(ids)` envía `{ savings: ids }`. `getPeriodicidades` obtiene opciones del esquema a través del servidor. `saveMovimiento` envía una aportación individual, no programa una secuencia.

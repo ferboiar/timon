@@ -1,5 +1,7 @@
 # Sistema de Permisos - Documentación Técnica
 
+> Estado de implementación al 2026-10-23: Diseño, no implementación de autorización en endpoints: las columnas existen, pero los filtros de propiedad, privacidad y permisos por módulo no se aplican (S-01). Las consultas propuestas aquí no son las consultas actuales de los módulos db_utils.
+
 ## Tabla de Contenidos
 1. [Introducción](#introducción)
 2. [Estructura de Base de Datos](#estructura-de-base-de-datos)

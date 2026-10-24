@@ -63,3 +63,7 @@ Este módulo depende directamente de las funciones de base de datos definidas en
 - [Documentación de AccService](../services/AccService.md) - Cliente que consume esta API
 - [Utilidades de Base de Datos para Cuentas](../db/db_utilsAcc.md) - Implementación de las funciones de base de datos
 - [Componente Accounts](../components/Accounts.md) - Interfaz de usuario que interactúa con esta API
+
+## Autorización implementada
+
+Las rutas exigen sesión (verifyToken), pero no aplican filtros de propietario, privacidad ni permisos por módulo (S-01). Tener columnas propietario_id, es_privado o perm_* no equivale a aplicar esos permisos.

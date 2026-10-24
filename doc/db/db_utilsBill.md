@@ -151,9 +151,9 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 
 ### Filtrado por propietario
 
-- Las consultas de recibos respetan automáticamente los permisos del usuario
-- El sistema filtra los recibos según el propietario cuando corresponde
-- Se aplican reglas adicionales de visibilidad según el campo `es_privado` cuando está presente
+- Las consultas actuales no aplican permisos por usuario (S-01)
+- No existe filtro por propietario en getRecibos; autenticar no equivale a limitar filas
+- es_privado no se aplica en estas consultas (S-01)
 
 ## Validaciones y Manejo de Errores
 

@@ -14,11 +14,11 @@ Timón es una plataforma financiera integral diseñada para la gestión eficient
 
 4. **Sistema de Categorías**: Proporciona una estructura para clasificar los movimientos financieros, permitiendo un análisis detallado de gastos e ingresos según su naturaleza.
 
-5. **Sistema de Cuentas**: Facilita la administración de diferentes tipos de cuentas financieras (corrientes, ahorros, efectivo), mostrando saldos actualizados y registrando todos los movimientos.
+5. **Sistema de Cuentas**: administra cuentas y su saldo manual. No existe integración contable automática ni conciliación de todos los movimientos (F-21, hoja de ruta R-02).
 
 6. **Sistema de Usuarios y Autenticación**: Proporciona control de acceso y seguridad para la aplicación, incluyendo gestión de usuarios, autenticación, autorización basada en roles y personalización de la interfaz.
 
-La integración entre estos sistemas permite una gestión financiera completa donde cada operación se refleja adecuadamente en las cuentas y puede categorizarse para un análisis posterior, ofreciendo así una visión 360° de las finanzas personales.
+Los módulos no ofrecen todavía integración contable completa ni conciliación automática. El funcionamiento real y las limitaciones se documentan en doc/mantenimiento/estado-del-proyecto.md y el registro de hallazgos.
 
 ## Instalación en Linux
 

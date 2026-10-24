@@ -97,3 +97,7 @@ El template está estructurado en varias secciones:
 ## Dependencias
 
 El componente depende del servicio `CatsService` para realizar todas las operaciones CRUD relacionadas con las categorías.
+
+## Límite de la edición
+
+La pantalla transmite el ID al servicio, pero el backend identifica por nombre. Cambiarlo puede crear otra fila en vez de renombrar la existente (F-09). La validación del formulario no sustituye esta limitación; no se debe interpretar CRUD como renombrado correcto.

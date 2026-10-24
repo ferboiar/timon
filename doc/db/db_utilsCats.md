@@ -22,6 +22,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `nombre` | VARCHAR | Nombre de la categoría (único) |
 | `descripcion` | VARCHAR | Descripción detallada (opcional) |
 | `propietario_id` | INT | Usuario que creó la categoría; no limita su visibilidad, las categorías son globales (DC-02) |
+| `es_privado` | TINYINT | Columna del esquema sin filtrado en los endpoints; en categorías no limita la visibilidad (S-01, DC-02) |
 
 ## Funciones Principales
 
@@ -45,8 +46,8 @@ La función `deleteCategorias()` incluye validación para asegurar que los IDs p
 
 ## Validaciones y Manejo de Errores
 
-- Verificación de unicidad de nombres de categorías
-- Comprobación de validez de IDs al realizar operaciones de eliminación
+- Busca por nombre y actualiza descripción si existe; no existe garantía concurrente de unicidad hasta la migración DC-02
+- Convierte IDs con Number, sin verificar explícitamente que sean válidos
 - Transformación automática de tipos de datos para asegurar compatibilidad con la base de datos
 - Manejo detallado de errores con mensajes específicos para facilitar la depuración
 
