@@ -2,7 +2,7 @@
 
 ## Base, alcance y límites
 
-Se parte de main tras PR #29 (no de una versión de p16 aplicada). Los cambios de desarrollo se reconstruyeron con cambios_por_pr.txt, PR #14 a #28; los ficheros grandes se leyeron desde los adjuntos, no desde los resultados truncados del conector.
+La primera parte de esta auditoría se preparó sobre main tras PR #29 y se incorporó mediante PR #30. Los cambios de desarrollo se reconstruyeron con cambios_por_pr.txt, PR #14 a #28; los ficheros grandes se leyeron desde los adjuntos, no desde los resultados truncados del conector.
 
 El cierre completa los nueve documentos expresamente pendientes y consolida las correcciones anteriores rechazadas por ser parciales. No cambia código de aplicación, esquemas, datos, reglas de negocio ni ejecuta migraciones. La revisión es estática; verificar que un parche se aplica no equivale a ejecutar Vue o MariaDB.
 
@@ -38,3 +38,11 @@ No se ha ejecutado la aplicación, build, lint ni una nueva suite MariaDB durant
 ## Relevo
 
 Leer [estado-del-proyecto.md](./estado-del-proyecto.md), el [registro](./registro-hallazgos.md) y TODO. Mantener esos tres puntos de continuidad en cada PR. Los fallos listados están documentados y pendientes de corregir, no cerrados por esta auditoría.
+
+## Verificación posterior del estado fusionado, 2026-10-24
+
+Base: f4f2328901f208d97965117a44c7429ab89e03f2, con PR #30. Se recibieron 59 documentos de doc/ más el registro y nueve archivos de raíz, configuración y visor. Los controles de enlaces, filas de identificadores y correspondencia de rutas no hallaron destinos inexistentes, IDs duplicados ni rutas documentadas sin implementación en las diez APIs.
+
+La lectura funcional adicional corrigió estructura de Recibos, listado de usuarios, validaciones, roles y rastro del procedimiento. Los resultados se registran en D-12. Las sugerencias se separan de los fallos: F-41 a F-43 y S-12 son limitaciones verificadas; R-05 a R-08 son propuestas a evaluar.
+
+Sigue siendo una revisión estática. No se certifica ausencia de defectos ni una ejecución de UI/MariaDB satisfactoria. No confundir comprobación documental con prueba funcional.

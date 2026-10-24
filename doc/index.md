@@ -22,7 +22,7 @@ La plataforma está organizada en seis sistemas interconectados que trabajan con
 
 1. **Sistema de Recibos**: Facilita el control de pagos periódicos (mensuales, bimestrales, trimestrales) con seguimiento detallado de fechas de cargo y estados de pago.
 
-2. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, seguimiento de avances y generación de reportes.
+2. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, consulta del saldo restante y exportación CSV; los informes estructurados son una propuesta pendiente (R-07).
 
 3. **Sistema de Ahorros**: Permite la creación y seguimiento de objetivos de ahorro con fechas objetivo, periodicidades configurables y registro detallado de movimientos de aportación.
 
@@ -38,7 +38,7 @@ Los sistemas funcionan de manera interconectada:
 - Los **recibos** ayudan a controlar pagos periódicos que afectan a las **cuentas** y se clasifican mediante **categorías**
 - Los **anticipos** se vinculan a **cuentas** específicas para registrar origen y destino de los fondos
 - Los **ahorros** permiten una planificación financiera organizada que complementa la gestión de **cuentas**
-- Las **categorías** se aplican a los movimientos generados por **anticipos**, operaciones de **cuentas**, movimientos de **ahorros** y **recibos**
+- Las categorías se asignan a recibos. Anticipos, cuentas y movimientos de ahorros no tienen clasificación por categoría implementada (R-06)
 - La integración de movimientos y conciliación entre cuentas sigue pendiente (R-02); las relaciones entre módulos no actualizan automáticamente saldo_actual
 - El sistema de **usuarios** controla qué personas pueden acceder a los diferentes recursos según sus roles
 
@@ -101,7 +101,7 @@ El sistema de anticipos está organizado en tres capas principales:
 
 ## Sistema de Ahorros
 
-El sistema de ahorros permite gestionar objetivos de ahorro con sus respectivos movimientos de aportación y consultar el progreso hacia metas financieras específicas.
+El sistema de ahorros permite gestionar objetivos de ahorro con sus respectivos movimientos de aportación y consultar el importe acumulado y la fecha objetivo; el cálculo de progreso es una propuesta pendiente (R-05).
 
 ### Estructura del Sistema de Ahorros
 
@@ -241,7 +241,7 @@ Este sistema sigue una arquitectura multicapa:
 - Creación y edición de usuarios con diferentes roles
 - Cambio de contraseñas con validación de seguridad
 - Eliminación individual y múltiple de usuarios
-- Listado paginado con operaciones en lote
+- Listado de usuarios con operaciones en lote, sin paginación (R-08)
 
 #### Personalización de Interfaz
 - Preferencias de estilo por usuario
@@ -281,7 +281,7 @@ Este sistema sigue una arquitectura multicapa:
 
 ### Categorías
 - Creación y gestión de categorías personalizadas
-- Asignación de categorías a elementos del sistema
+- Asignación de categorías a recibos; extenderlas a movimientos de otros módulos es una propuesta (R-06)
 - Organización alfabética con categoría "Otros" siempre al final
 - Operaciones de eliminación individual y múltiple
 
@@ -297,7 +297,7 @@ Este sistema sigue una arquitectura multicapa:
 - Panel de administración para gestión de usuarios (solo administradores)
 - Creación, edición y eliminación de usuarios con diferentes niveles de acceso
 - Personalización de la interfaz con preferencias por usuario
-- Control de acceso granular a funcionalidades según rol del usuario
+- Distinción administrativa por rol; restricciones de reader/limited_user y permisos granulares pendientes (S-01, S-12)
 
 ## Ajustes, zona horaria y mantenimiento
 

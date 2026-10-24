@@ -43,7 +43,7 @@ Las rutas de pagos permiten:
 
 ### Alta de anticipos y plan de pagos
 
-Al crear un anticipo, el propietario (`propietario_id`) se toma del usuario autenticado (`req.user.id`). El plan de pagos solo se genera si hay periodicidad y un pago sugerido mayor que 0. Si el plan superaría los 1.200 pagos, la petición falla con 400 y no se crea ningún pago.
+Al crear un anticipo, el propietario (`propietario_id`) se toma del usuario autenticado (`req.user.id`). El plan de pagos solo se genera si hay periodicidad y un pago sugerido mayor que 0. Si el plan superaría los 1.200 pagos, la petición falla con 400 y no se crea ningún pago, pero el anticipo puede haber quedado guardado al no existir transacción (F-27).
 
 ### Eliminar un pago con reparto (POST /api/anticipos/delete-payment)
 

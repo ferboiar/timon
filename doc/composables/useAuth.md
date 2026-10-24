@@ -8,8 +8,8 @@ El composable `useAuth` proporciona una solución completa para manejar el estad
 
 - Gestión del estado de autenticación (login/logout)
 - Persistencia de la sesión entre recargas de página
-- Sistema de verificación de roles y permisos basado en jerarquía
-- Métodos para comprobar permisos específicos (isAdmin, isUser, canRead)
+- Comparación de roles mediante listas explícitas; no hay una jerarquía general de permisos
+- Atajos de rol: isAdmin, isUser y canRead. No consultan perm_* ni la propiedad del registro
 - Gestión del cierre de sesión con redirección automática
 - Manejo de preferencias de estilo del usuario
 
@@ -54,11 +54,11 @@ Si encuentra un usuario, actualiza el estado y carga las preferencias de estilo 
 
 ## Sistema de Roles
 
-El sistema implementa una jerarquía de roles donde:
+Los valores siguientes expresan roles previstos, no restricciones completas implementadas. Hoy solo se distingue administrador del resto (S-12):
 - **admin**: Acceso completo a todas las funcionalidades
 - **user**: Usuario estándar con acceso a la mayoría de funcionalidades
-- **limited_user**: Usuario con acceso limitado
-- **reader**: Usuario con permisos solo de lectura
+- **limited_user**: previsto como acceso limitado; hoy no tiene restricciones de datos diferentes de user
+- **reader**: previsto como solo lectura, pero hoy puede invocar las operaciones de escritura protegidas únicamente por sesión
 
 ## Preferencias de Estilo
 
@@ -90,3 +90,11 @@ Este composable trabaja en conjunto con la directiva `vRole` para control de acc
 - [API de Autenticación](../routes/auth.md) - Endpoints para autenticación
 - [Servicio de Usuarios](../services/UsersService.md) - Servicio para operaciones con usuarios
 - [Componente ProfileSettings](../components/ProfileSettings.md) - Interfaz de gestión de usuarios
+
+## Comprobaciones y límites
+
+hasRole compara igualdad; hasAnyRole busca pertenencia a una lista. isUser acepta admin o user, y canRead acepta los cuatro roles, pero ninguno de esos dos atajos se utiliza para limitar las pantallas actuales. El menú utiliza hasRole y Ajustes utiliza isAdmin.
+
+verifySessionValidity llama con fetch a /api/auth/verify, cierra sesión ante rechazo y la mantiene ante error de red. La llaman la verificación periódica y AppLayout al montarse. refreshUser vuelve a leer el almacenamiento, no consulta un usuario actualizado al servidor.
+
+Cada invocación de useAuth mantiene su propio estado e intervalo (S-07). La existencia de vRole y de las columnas perm_* no garantiza autorización efectiva (S-01, S-12).

@@ -56,3 +56,5 @@ El servicio captura y registra en consola todos los errores que ocurren durante 
 Usa axios directamente, no apiClient: no pasa por sus interceptores (S-07). Construye la URL desde API_BASE_URL (`VITE_API_URL`, con respaldo `http://localhost:3000`). Cada método obtiene token de localStorage o sessionStorage, lo envía en Authorization y devuelve response.data. Registra y relanza el error original, sin convertirlo en un mensaje específico de negocio. No valida permisos en el cliente; estos deben comprobarse en el servidor.
 
 `deleteCategorias(ids)` envía `{ categoriaIds: ids }`. `saveCategoria` transmite el objeto, pero el backend decide por nombre, no ID: renombrar puede crear otra categoría (F-09).
+
+La pantalla de Categorías pasa un objeto al borrado, aunque el servicio espera el array: el servicio lo vuelve a envolver y la ruta lo desenvuelve. Normalizar esa forma de llamada es una tarea de limpieza, no un fallo de borrado demostrado.

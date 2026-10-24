@@ -125,9 +125,9 @@ Este campo asocia el recibo con una cuenta bancaria específica, lo que permite 
 
 La API implementa las siguientes validaciones:
 - El campo `cargo` debe ser un array
-- Los campos concepto, periodicidad, importe, categoría, cuenta_id y cargo son obligatorios
+- La ruta exige cuenta_id y cargo o fecha_inicial según el modo; pushRecibo comprueba concepto, periodicidad, importe y categoría. En automático cargo no es obligatorio
 - Si falta alguno de concepto, periodicidad, importe, categoría o cuenta, el error nombra exactamente los campos que faltan; un importe vacío o 0 cuenta como falta. El propietario no se envía: lo asigna el servidor desde el token
-- El campo `cuenta_id` debe hacer referencia a una cuenta existente 
+- La ruta comprueba presencia de cuenta_id; la existencia de la cuenta queda respaldada por la clave foránea 
 - El campo `propietario_id` se obtiene automáticamente del token JWT del usuario autenticado
 - Validaciones adicionales de tipos y formatos se realizan en las funciones de base de datos
 

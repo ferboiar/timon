@@ -70,3 +70,7 @@ Este módulo depende directamente de las funciones de base de datos definidas en
 ## Autorización implementada
 
 Las rutas exigen sesión (verifyToken), pero no aplican filtros de propietario, privacidad ni permisos por módulo (S-01). Tener columnas propietario_id, es_privado o perm_* no equivale a aplicar esos permisos.
+
+## Compatibilidad del borrado
+
+La ruta admite categoriaIds directamente y también el cuerpo anidado que produce actualmente la pantalla: { categoriaIds: { categoriaIds: [...] } }. Lo desenvuelve antes de exigir array no vacío. Esto no supone validación exhaustiva de cada ID.

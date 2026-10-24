@@ -1,6 +1,6 @@
 # Estado del proyecto Timón
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-10-23, cierre de auditoría D-11 sobre PR #29. No requiere ninguna versión anterior de p16.
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-10-24, verificación D-12 del estado fusionado en PR #30.
 
 ## 1. Qué es y cómo está montado
 
@@ -17,7 +17,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 
 - Una rama por cambio (`correccion/fase-1-<tema>`), un PR por rama, fusionado en `main`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
-- Una decisión nueva es una fila DC-nn en el registro. La siguiente libre es DC-28; la siguiente de hallazgos de documentación, D-12. Hallazgos funcionales libres desde F-41, tras F-37 a F-40 de esta auditoría.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-28, D-13, F-44, S-13 y R-09. Consultar siempre el registro antes de asignarlos.
 - Mensajes de commit: `tipo(IDs): resumen` y cuerpo en español. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend (`npm run test:backend`) necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
@@ -64,6 +64,8 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #26 | DC-25 | Zona horaria y rutas de ajustes en el servidor |
 | #27 | DC-21, DC-25 | Ajustes General y Administrar recibos; zona horaria en pantalla |
 | #28 | DC-26 | Ajustes › Aspecto con apariencia general y pestañas reordenadas |
+| #29 | DC-27, D-10 | Primera puesta al día documental, TODO y documento de relevo |
+| #30 | DC-27, D-11 | Cierre del contraste documental y tareas F-37 a F-40 |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
@@ -85,7 +87,7 @@ Pega este documento, las secciones 2 y 10 del registro, `TODO`, la salida de `gi
 
 ## Cierre de auditoría y fallos pendientes (2026-10-23)
 
-El primer PR de documentación fue #29. El cierre D-11 incorpora las correcciones de las versiones de p16 que no se aplicaron y completa el contraste de los nueve documentos que seguían pendientes. Informe: [auditoria-documentacion.md](./auditoria-documentacion.md). La auditoría documental es estática y queda cerrada; no significa que las funcionalidades estén corregidas ni que haya nuevas pruebas de integración en verde.
+El primer PR de documentación fue #29. El PR #30 incorporó el cierre D-11, completó los nueve documentos pendientes y registró los fallos F-37 a F-40. Informe: [auditoria-documentacion.md](./auditoria-documentacion.md). La auditoría documental es estática y queda cerrada; no significa que las funcionalidades estén corregidas ni que haya nuevas pruebas de integración en verde.
 
 Comportamiento actual que no debe prometerse como terminado:
 
@@ -96,3 +98,11 @@ Comportamiento actual que no debe prometerse como terminado:
 - Formularios que mutan fechas antes de éxito (F-16), CSV sin escape completo (F-19), avisos desiguales del servidor (F-28) y apiClient no usado por los servicios (S-07).
 
 Todos tienen tareas concretas en TODO y en la sección 10 del registro. Se mantiene el siguiente orden acordado: limpieza de Actualizar fechas, validación de un año al editar y F-17, antes de esas correcciones agrupadas.
+
+## Verificación del estado fusionado, 2026-10-24
+
+D-12 parte de f4f2328, que incorpora el PR #30. Corrige el historial, la terminología y las funcionalidades sobreafirmadas. No modifica la aplicación ni demuestra pruebas funcionales nuevas.
+
+Fallos abiertos añadidos: F-41 (longitud de descripción de Categorías), F-42 (validación de usuarios), F-43 (validación de borrados) y S-12 (restricciones efectivas de reader/limited_user).
+
+Propuestas a evaluar: R-05 (progreso de Ahorros), R-06 (categorías transversales), R-07 (informes) y R-08 (paginación de usuarios). No se añaden pestañas a Recibos solo por una descripción antigua incorrecta. Se mantiene el orden de correcciones ya acordado.

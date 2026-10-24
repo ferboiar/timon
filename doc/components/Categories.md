@@ -40,7 +40,7 @@ El componente `Categories` permite la administración completa de categorías en
 
 | Propiedad | Descripción |
 |-----------|-------------|
-| `isSaveDisabled` | Valida si el formulario de categoría tiene todos los campos requeridos completados |
+| `isSaveDisabled` | Deshabilita Guardar mientras el nombre esté vacío; no comprueba la descripción |
 
 ## Funciones Principales
 
@@ -92,7 +92,7 @@ El template está estructurado en varias secciones:
 ## Validaciones
 
 - El nombre de la categoría es obligatorio
-- La descripción tiene un límite de 255 caracteres
+- La descripción muestra un aviso por encima de 255 caracteres, pero el control admite hasta 260 y el aviso no impide guardar (F-41)
 
 ## Dependencias
 
@@ -101,3 +101,10 @@ El componente depende del servicio `CatsService` para realizar todas las operaci
 ## Límite de la edición
 
 La pantalla transmite el ID al servicio, pero el backend identifica por nombre. Cambiarlo puede crear otra fila en vez de renombrar la existente (F-09). La validación del formulario no sustituye esta limitación; no se debe interpretar CRUD como renombrado correcto.
+
+## Particularidades verificadas
+
+- La validación del botón Guardar solo comprueba el nombre.
+- El aviso de longitud de descripción y el máximo del control no coinciden (F-41).
+- La pantalla pasa un objeto a CatsService.deleteCategorias; el servicio lo envuelve otra vez. La ruta admite y desenvuelve ese cuerpo anidado. Funciona, pero conviene normalizar el contrato a un array.
+- El renombrado por ID no está implementado en el servidor: se busca por nombre (F-09).

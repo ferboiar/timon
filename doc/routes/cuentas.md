@@ -67,3 +67,7 @@ Este módulo depende directamente de las funciones de base de datos definidas en
 ## Autorización implementada
 
 Las rutas exigen sesión (verifyToken), pero no aplican filtros de propietario, privacidad ni permisos por módulo (S-01). Tener columnas propietario_id, es_privado o perm_* no equivale a aplicar esos permisos.
+
+## Validación del borrado
+
+DELETE /api/cuentas delega accounts directamente al módulo de datos. No comprueba de forma consistente presencia, array no vacío y validez de cada identificador antes de acceder a la base de datos (F-43).

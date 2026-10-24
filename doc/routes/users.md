@@ -31,7 +31,7 @@ Este módulo implementa las rutas de la API REST para la gestión de usuarios en
 - Las rutas de gestión de usuarios (listado, alta, edición, contraseña y borrado) exigen administrador (`verifyAdmin`); las de preferencias de estilo solo exigen sesión (`verifyToken`), porque son del propio usuario
 - Las contraseñas se almacenan encriptadas, nunca en texto plano
 - Se utilizan medidas contra inyección SQL mediante consultas parametrizadas
-- Validación exhaustiva de datos de entrada para prevenir ataques
+- Comprobación de presencia de campos; no hay validación exhaustiva de formato, longitud, fortaleza de contraseña ni catálogo de rol/perm_* antes de llegar a la base de datos (F-42)
 - No se devuelven contraseñas en las respuestas API
 
 ## Detalles de Implementación
