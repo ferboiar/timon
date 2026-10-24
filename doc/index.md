@@ -333,3 +333,17 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 ## Estado de implementación y cierre de revisión
 
 El informe de [auditoría documental](./mantenimiento/auditoria-documentacion.md) diferencia diseño, implementación y fallos conocidos. Campos de permisos no equivalen a autorización aplicada (S-01); saldos manuales no equivalen a conciliación automática; aportaciones con periodicidad no equivalen a generación automática de movimientos. La sección 10 del registro y TODO incluyen las correcciones pendientes con sus IDs.
+
+## Documentación de raíz y vigencia
+
+Además de doc/, hay documentación que debe consultarse en la copia del repositorio (no es contenido público del visor):
+
+| Archivo | Estado y fuente actual |
+|---|---|
+| `package.json.md` | Describe los comandos de `package.json`, no es un segundo manifiesto ejecutable |
+| `DB_controlfinanciero.txt` | Especificación histórica; SQL y funcionalidades no deben darse por vigentes. R-09/R-10/R-11 |
+| `DB_presupuestos.txt` | Borrador SQL histórico; la fuente de esquema son las migraciones. D-02/R-11 |
+| `presupuestos.txt` | Requisitos pendientes: R-11/R-12/R-13, no pantalla implementada |
+| `categorías.txt` | Ejemplos; ni catálogo impuesto ni jerarquía padre-hijo implementada |
+
+Estos cinco archivos quedan clasificados por D-13. Esa clasificación no certifica, por sí sola, toda la documentación restante.

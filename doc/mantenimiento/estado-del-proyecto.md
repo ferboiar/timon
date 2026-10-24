@@ -1,6 +1,6 @@
 # Estado del proyecto Timón
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-10-24, verificación D-12 del estado fusionado en PR #30.
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-10-24, corrección D-13 de documentación de raíz sobre PR #31.
 
 ## 1. Qué es y cómo está montado
 
@@ -17,7 +17,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 
 - Una rama por cambio (`correccion/fase-1-<tema>`), un PR por rama, fusionado en `main`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-28, D-13, F-44, S-13 y R-09. Consultar siempre el registro antes de asignarlos.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-28, D-14, F-44, S-13 y R-14. Consultar siempre el registro antes de asignarlos.
 - Mensajes de commit: `tipo(IDs): resumen` y cuerpo en español. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend (`npm run test:backend`) necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
@@ -66,6 +66,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #28 | DC-26 | Ajustes › Aspecto con apariencia general y pestañas reordenadas |
 | #29 | DC-27, D-10 | Primera puesta al día documental, TODO y documento de relevo |
 | #30 | DC-27, D-11 | Cierre del contraste documental y tareas F-37 a F-40 |
+| #31 | D-12 | Verificación de documentación, fallos F-41 a F-43/S-12 y propuestas R-05 a R-08 |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
@@ -87,7 +88,7 @@ Pega este documento, las secciones 2 y 10 del registro, `TODO`, la salida de `gi
 
 ## Cierre de auditoría y fallos pendientes (2026-10-23)
 
-El primer PR de documentación fue #29. El PR #30 incorporó el cierre D-11, completó los nueve documentos pendientes y registró los fallos F-37 a F-40. Informe: [auditoria-documentacion.md](./auditoria-documentacion.md). La auditoría documental es estática y queda cerrada; no significa que las funcionalidades estén corregidas ni que haya nuevas pruebas de integración en verde.
+El primer PR de documentación fue #29. El PR #30 incorporó el cierre D-11, completó los nueve documentos pendientes y registró los fallos F-37 a F-40. Informe: [auditoria-documentacion.md](./auditoria-documentacion.md). El contraste de esos nueve documentos fue estático; no significa que las funcionalidades estén corregidas, que haya pruebas de integración en verde ni que toda la documentación del repositorio haya pasado una auditoría integral.
 
 Comportamiento actual que no debe prometerse como terminado:
 
@@ -106,3 +107,11 @@ D-12 parte de f4f2328, que incorpora el PR #30. Corrige el historial, la termino
 Fallos abiertos añadidos: F-41 (longitud de descripción de Categorías), F-42 (validación de usuarios), F-43 (validación de borrados) y S-12 (restricciones efectivas de reader/limited_user).
 
 Propuestas a evaluar: R-05 (progreso de Ahorros), R-06 (categorías transversales), R-07 (informes) y R-08 (paginación de usuarios). No se añaden pestañas a Recibos solo por una descripción antigua incorrecta. Se mantiene el orden de correcciones ya acordado.
+
+## Alcance corregido de revisión: D-13
+
+Base: `da4250e93a8746e1a465496d4d816537a62724ae`, PR #31. Las notas de raíz también forman parte de la documentación: ver la sección «Documentación de raíz y vigencia» del índice y el informe de auditoría.
+
+Se clasifican las especificaciones antiguas y se recuperan R-09 a R-13, con prioridad y dependencias. No hay cambios funcionales ni migraciones. Los cierres D-10/D-11/D-12 no deben interpretarse como certificación de una auditoría global sin omisiones.
+
+D-13 corrige cinco documentos de raíz y sincroniza sus tareas. La auditoría integral solicitada no se da por terminada mediante este cambio. No se repiten falsas garantías de «sin fisuras» o de pruebas en verde.
