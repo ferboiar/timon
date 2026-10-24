@@ -55,3 +55,7 @@ app.directive('role', vRole);
 - [Composable useAuth](../composables/useAuth.md) - Proporciona la lógica de verificación de roles
 - [API de Autenticación](../routes/auth.md) - Sistema de autenticación backend
 - [Componentes UI](../components/ProfileSettings.md) - Ejemplos de uso de esta directiva
+
+## Uso actual
+
+La directiva está registrada en main.js, pero ninguna plantilla auditada usa v-role. El menú filtra con hasRole y las pestañas administrativas con isAdmin. Es una utilidad disponible, no una protección desplegada de todos los controles.

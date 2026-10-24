@@ -29,7 +29,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 
 ### Gestión de Usuarios (solo administradores)
 
-- Listado paginado de todos los usuarios del sistema
+- Listado de todos los usuarios del sistema, sin paginador (mejora propuesta R-08)
 - Creación de nuevos usuarios con asignación de roles
 - Edición de usuarios existentes (nombre, correo, rol)
 - Cambio de contraseñas de usuario
@@ -107,7 +107,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 
 ## Validación y Seguridad
 
-- Validación de formato de correo electrónico
+- La pantalla comprueba únicamente que el correo contenga @; el servidor no valida su formato (F-42)
 - Validación de coincidencia en confirmación de contraseñas
 - Comprobación de campos requeridos
 - Control de acceso basado en roles mediante `isAdmin`
@@ -120,7 +120,7 @@ El componente utiliza varios servicios para su funcionamiento:
 - `UsersService` para operaciones CRUD en usuarios
 - `AjustesService` y `useZonaHoraria` para la zona horaria y los ajustes de recibos
 - `useAjustesSesion` para el interruptor de recibos pagados, que se reinicia al cerrar sesión
-- `useAuth` para verificar permisos y roles
+- `useAuth` para comprobar isAdmin, obtener ROLES y guardar las preferencias de estilo; no aplica permisos por módulo
 - `useTheme` para aplicar cambios visuales
 - `useLayout` para gestionar configuración de diseño
 - `useToast` para notificaciones al usuario
@@ -137,3 +137,14 @@ El componente utiliza varios servicios para su funcionamiento:
 - [API de Ajustes](../routes/ajustes.md) - Zona horaria y recibos
 - [API de conexión](../routes/conexionDB.md) y [API de mantenimiento](../routes/mantenimientoDB.md) - Pestaña Base de Datos
 - [Registro de hallazgos y decisiones](../mantenimiento/registro-hallazgos.md) - DC-21, DC-25 y DC-26
+
+## Estado y validaciones auxiliares
+
+- isSaveDisabled exige username, email, un correo con @ y contraseña al crear.
+- isPasswordChangeDisabled exige contraseña no vacía y confirmación idéntica; no comprueba fortaleza.
+- rolesArray alimenta el selector de rol; no hay controles para editar perm_*.
+- hasUnsavedChanges compara preset, menú, apariencia, primario y superficie.
+- Los observadores aplican la vista previa del estilo y el menú. Reset aplica y guarda inmediatamente los valores por defecto.
+- zonaCambiada habilita Guardar y Descartar; horaEnZonaSeleccionada muestra la hora al evaluar la selección, no un reloj con temporizador.
+- isDbConfigChanged compara host, puerto, usuario y base, o detecta una contraseña escrita.
+- La confirmación y ejecución del borrado de usuarios, de restauración de conexión y de restauración del volcado son operaciones distintas.

@@ -7,7 +7,7 @@ Este documento proporciona documentación detallada sobre el componente `ListBil
 El componente `ListBills` permite la administración completa de recibos periódicos, que representan pagos regulares con fechas de cargo asociadas. Proporciona funcionalidad para:
 - Crear, editar y eliminar recibos
 - Gestionar fechas de cargo asociadas a cada recibo
-- Filtrar recibos por diferentes criterios (periodicidad, año, estado)
+- Buscar texto en cada tabla, mostrar u ocultar inactivos y cambiar el año; las periodicidades se muestran en tablas separadas
 - Visualizar el estado de los recibos y sus fechas de cargo
 
 ## Características principales
@@ -15,7 +15,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 - Creación y edición de recibos mediante diálogos modales específicos según periodicidad
 - Eliminación individual de recibos completos o fechas de cargo específicas
 - Visualización expandible de fechas de cargo asociadas a cada recibo trimestral, bimestral o mensual
-- Filtrado por periodicidad y estado de actividad
+- Búsqueda de texto por tabla y filtro de actividad; no hay un selector específico del estado de pago
 - Selector de año en la barra superior: se muestran los cargos del año elegido (por defecto el actual) y, en el año en curso, los cargos pendientes de años anteriores marcados como «Atrasado» (DC-18)
 - Importe propio en cada fecha de cargo, editable desde el lápiz de la fecha (DC-15)
 - Ejercicio cerrado (año anterior al actual): no se puede añadir ni editar el recibo, y solo se pueden editar los cargos que siguen pendientes; los botones se ven deshabilitados (DC-20)
@@ -141,7 +141,7 @@ La propiedad de los recibos se maneja automáticamente a través del sistema de 
 ## Eventos y Estados
 
 - **Expansión/contracción**: El componente permite expandir filas individuales o todas las filas para mostrar las fechas de cargo
-- **Filtrado**: Implementa filtrado dinámico por periodicidad y estado de actividad
+- **Filtrado**: búsqueda global de texto por tabla y filtro activo. La periodicidad se representa mediante tarjetas separadas
 - **Selección**: Permite seleccionar múltiples recibos para operaciones en lote
 
 ## Ciclo de vida
@@ -156,8 +156,8 @@ En el evento `onMounted`, el componente primero carga la zona horaria de los aju
 
 El template está estructurado en varias secciones:
 
-1. **Pestañas de periodicidad**: Permiten cambiar entre las diferentes vistas de recibos (mensuales, bimestrales, trimestrales, anuales)
-2. **Tarjetas por periodicidad**: Cada periodicidad se muestra en una tarjeta independiente con su propia barra de herramientas
+1. **Barra superior y selector de año**: no existen pestañas de periodicidad. Las vistas se muestran en tarjetas separadas
+2. **Tarjetas**: Anuales, Trimestrales, Bimestrales, Mensuales e Inactivos. Las cuatro primeras tienen un menú de tres puntos; Inactivos muestra 8 filas por página cuando hay más de 8
 3. **Tablas de recibos**: Muestran los recibos con sus datos principales, con la opción de expandir para ver las fechas de cargo
 4. **Diálogos de edición**: Varios diálogos específicos según la periodicidad y operación (crear, editar, eliminar)
 5. **Selectores de cuenta**: En los diálogos de creación/edición para asociar el recibo a una cuenta bancaria
@@ -173,3 +173,15 @@ Antes de enviar, `guardarRecibo()` comprueba concepto, periodicidad, importe (ma
 - [Utilidades de Base de Datos](../db/db_utilsBill.md) - Funciones de acceso a datos de recibos
 - [Composable useZonaHoraria](../composables/useZonaHoraria.md) - Zona horaria de la aplicación
 - [Composable useAjustesSesion](../composables/useAjustesSesion.md) - Opción de sesión para recibos pagados
+
+## Comportamiento auxiliar de la pantalla
+
+- toggleCardMenu construye las opciones Añadir, Actualizar, Multiselección y Exportar; en trimestrales, bimestrales y mensuales añade Expandir y Contraer.
+- showSelector alterna la columna de selección múltiple. Las tablas trimestral y bimestral comparten selección por error (F-30).
+- agruparPorRecibo agrupa filas por ID y controla la visibilidad de inactivos; groupedInactiveBills se construye aparte.
+- copiarExpansion y restaurarExpansion conservan las filas abiertas al recargar; el cambio de año las contrae.
+- expandir, contraer, toggleExpandCollapseAll y checkGlobalExpandState controlan la expansión global y por tabla.
+- toggleComment, saveComment y hideComment gestionan las ventanas emergentes de comentarios.
+- exportCSV admite una periodicidad o all; el botón superior exporta todas a allBills.csv. Usa el importe del cargo si existe, BOM UTF-8, separador punto y coma y coma decimal, sin escape completo (F-19).
+- El botón Actualizar fechas y el botón Cargar están comentados en la plantilla.
+- El diálogo de borrado usa bill.name en vez de concepto (F-31).

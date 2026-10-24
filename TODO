@@ -19,7 +19,7 @@ Estado: cierre de la auditoría documental del 2026-10-23, después del PR #29. 
 - [ ] F-20/F-21: resolver getBillById sin endpoint y no prometer saldo de cuentas calculado automáticamente.
 - [ ] F-27: transacciones para operaciones compuestas de Anticipos y sustitución de pago (hoy son dos peticiones).
 - [ ] F-28: aplicar mensajes del servidor de forma coherente; Advances solo usa apiError al recalcular y Savings sigue con error.message.
-- [ ] F-30/F-31: selección de trimestrales y nombre del diálogo de borrado de recibos; comprobar contra código antes de corregir.
+- [ ] F-30/F-31: corregir selección compartida de trimestrales/bimestrales y bill.name en el borrado; ambos confirmados contra código.
 - [ ] F-37: opciones explícitas diaria/semanal y otras cadencias de Ahorros según requisito; conservar aportaciones manuales sin patrón, que ya existen con periodicidad NULL.
 - [ ] F-38: obtener token de ambos almacenes en saveUser/deleteUsers/changePassword; probar con y sin Recordarme.
 - [ ] F-39: completar confirmación, ejecución y recarga del borrado múltiple en Anticipos, o retirar temporalmente el botón.
@@ -41,4 +41,23 @@ Estado: cierre de la auditoría documental del 2026-10-23, después del PR #29. 
 - [x] Correcciones de fase 1 consignadas en el registro; no confundirlas con los fallos abiertos anteriores.
 - [x] PR #22 a #28: recibos por año, Ajustes, zona horaria y Aspecto.
 - [x] PR #29: primer documento de relevo y puesta al día inicial.
-- [x] Cierre documental D-11: nueve documentos antes pendientes contrastados con código; README inglés, pruebas, autenticación y demás correcciones de p16 integradas. Sin cambios funcionales.
+- [x] PR #30, D-11: nueve documentos antes pendientes contrastados con código; README inglés, pruebas y autenticación actualizados. Sin cambios funcionales.
+
+## Incorporado por verificación documental D-12 (2026-10-24)
+
+- [ ] F-41: unificar el límite de descripción de Categorías entre control, validación y columna.
+- [ ] F-42: validación coherente de usuarios en servidor y pantalla: correo, longitudes, contraseña y catálogos; errores 400 claros.
+- [ ] F-43: validar cuerpos e identificadores de borrado de cuentas/ahorros antes de consultar la base de datos.
+- [ ] S-12, junto a S-01/S-06: matriz de permisos efectiva para reader/limited_user, aplicada primero en servidor.
+- [ ] Limpieza de Categorías: pasar el array directamente a CatsService.deleteCategorias y retirar el doble envoltorio cuando deje de necesitarse.
+
+### Propuestas útiles pendientes de evaluación
+
+No alteran el orden actual ni se dan por aprobadas:
+
+- [ ] R-05: objetivo monetario y progreso de Ahorros, si resulta útil al usuario.
+- [ ] R-06: categorías transversales dentro del modelo común de movimientos de R-02.
+- [ ] R-07: informes básicos de Anticipos/Ahorros con periodos y cifras trazables.
+- [ ] R-08: paginación/búsqueda de usuarios si lo justifica el volumen; prioridad baja.
+
+No se propone añadir pestañas de Recibos: eran una descripción incorrecta, no un requisito.

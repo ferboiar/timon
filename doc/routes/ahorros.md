@@ -19,7 +19,7 @@ Este módulo implementa las rutas de la API REST para la gestión de ahorros y s
 ## Características Principales
 
 - Gestión completa de ahorros y sus movimientos asociados 
-- Validación de parámetros obligatorios
+- La ruta delega las comprobaciones en pushSaving/pushMovimiento; el borrado no valida de forma consistente el cuerpo ni los identificadores (F-43)
 - Manejo detallado de errores con mensajes descriptivos
 - Soporte para operaciones en lote (eliminación múltiple)
 - Endpoints específicos para obtener valores enumerados (periodicidades)

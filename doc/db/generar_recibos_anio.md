@@ -24,7 +24,7 @@ Las horas se guardan en UTC. El ajuste `zona_horaria` de `ajustes_sistema` (por 
 - **Cadencia:** los meses salen de la secuencia anclada en la fecha inicial del origen; el día del mes es el del último cargo pagado (si no hay ninguno, el de la fecha inicial), ajustado al último día del mes cuando no existe. La fecha inicial del recibo nuevo es la primera de las fechas del año nuevo, con lo que la cadencia se conserva año tras año.
 - **Estado:** los cargos nacen pendientes y con el mismo `activo` que el último cargo del origen.
 - **Seguridad:** un recibo tiene como mucho un sucesor (restricción única), un bloqueo (`GET_LOCK`) evita ejecuciones simultáneas y cada serie va en su propia transacción.
-- **Rastro:** se anota en `mantenimiento_logs` cada ejecución que crea algo, falla o se lanza a mano.
+- **Rastro:** solo se registra una ejecución real, no simulada, si crea recibos, cuenta errores o se ejecuta con forzar=1.
 
 ## Vista previa
 
@@ -37,3 +37,7 @@ La clave `crear_recibos_automaticamente` de `ajustes_sistema` (1 por defecto) ac
 ## Referencias
 
 - [Utilidades de Base de Datos para Recibos](db_utilsBill.md)
+
+## Resultados sin generación
+
+También puede devolver una sola fila con aviso, sin las columnas ordinarias: automatización desactivada, fuera de la hora o bloqueo ocupado. Las dos primeras condiciones se omiten con forzar=1; el bloqueo no. No debe interpretarse cualquier fila como un recibo creado.
