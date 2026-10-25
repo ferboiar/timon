@@ -1,5 +1,11 @@
 # TAREAS PENDIENTES
 
+## Punto de reanudación (D-14)
+
+El siguiente PR de código acordado es limpiar Actualizar fechas (F-11/F-23/F-32); después, validación de un solo año al editar (DC-14), y luego F-17. La prioridad técnica del backlog no los sustituye por decisión del asistente.
+
+Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 de doc/mantenimiento/estado-del-proyecto.md. No considerar /tmp ni _adjuntos parte del relevo persistente.
+
 ## Prioridad técnica de trabajo futuro (D-13)
 
 La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola los tres micro-PR ya acordados (Actualizar fechas, validación de un año y F-17); si se prepara un despliegue real, los riesgos P0/P1 deben resolverse antes de ampliaciones funcionales. P0 es la prioridad mayor.
@@ -20,7 +26,7 @@ La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola lo
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
 
-Estado: cierre de la auditoría documental del 2026-10-23, después del PR #29. Referencias: doc/mantenimiento/registro-hallazgos.md (secciones 5 a 10), estado-del-proyecto.md y auditoria-documentacion.md. Revisión estática terminada; fallos funcionales abiertos, no corregidos por este PR.
+Estado operativo: 2026-10-24, PR #32 incorporado y relevo D-14 preparado. El cierre de cada contraste documental tiene un alcance concreto; no acredita auditoría integral ni ejecución funcional en verde. Referencias: doc/mantenimiento/estado-del-proyecto.md y registro-hallazgos.md.
 
 ## Siguiente (un PR por punto; mantener este orden)
 - [ ] F-11/F-23/F-32: retirar Actualizar fechas (updateAllDates, botón comentado, updateAllBillsDates, ruta global y dos funciones antiguas del backend); conservar generateDates/generateBillDates/completarFechasAnio. Corregir los dos errores de eslint de ListBills.
