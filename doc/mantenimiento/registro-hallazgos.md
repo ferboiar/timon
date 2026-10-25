@@ -2,6 +2,14 @@
 
 Línea base de la fase 0 (2026-10-17). Documento vivo: se actualiza en cada iteración, y cada corrección cita su ID en el commit y actualiza `doc/`, `TODO`, el plan de la sección 10 y [estado-del-proyecto.md](./estado-del-proyecto.md) en el mismo PR.
 
+## 0. Reanudación operativa (D-14)
+
+Fecha: 2026-10-24. PR #32 fusionado, base e748d516eb327cb25b8198dcf490befae4406b4d. Tras guardar el relevo, el siguiente trabajo acordado es limpieza de Actualizar fechas (F-11/F-23/F-32), después validación de un solo año al editar recibos (DC-14) y luego F-17, en PR separados. La tabla de riesgo del backlog no sustituye automáticamente esa secuencia.
+
+Limpieza: retirar updateAllDates, updateAllBillsDates, POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo, y comprobar importaciones/exportaciones/consumidores y lint pendiente. Conservar generateDates/generateBillDates, POST /:id/generar-fechas, completarFechasAnio y el procedimiento/evento anual. Conservar generarFechasFuturas, porque pushRecibo aún la usa: F-12 sigue abierto.
+
+La sección 8 de estado-del-proyecto.md contiene el relevo completo, aceptación, entorno y reglas del usuario. No marcar una prueba o corrección como verificada por el mero hecho de generar o aplicar un parche. Las pruebas requieren una base *_test y no deben tocar conta_hogar.
+
 ## 1. Método
 
 Revisión estática de backend, frontend y documentación, contrastada con el volcado de la BD viva y con pruebas puntuales contra MariaDB. Certeza: Confirmado (leído en código o esquema, o reproducido) o Probable (depende de entorno o driver; reproducir con un test). Severidad: Crítico (rompe un flujo o pierde datos), Alto, Medio, Bajo.
@@ -143,6 +151,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | D-11 | Medio | Cierre de la auditoría documental del 2026-10-23, tras PR #29. Contrastados los nueve documentos pendientes: Advances, Savings, AccService, AdvService, CatsService, SavService, UsersService, db_utilsAdv y db_utilsSav. Corregidas promesas de funciones que no ejecuta el código (inactivos, borrado múltiple, validaciones y transacciones), contratos de token/errores, saldo restante, algoritmos de recálculo y trazas. Se consolidan también las correcciones documentales de guardias, middleware, autenticación, privacidad/permisos, README inglés y pruebas. F-37 a F-40 quedan abiertos; F-07, F-08, F-14, F-16, F-19, F-27 y F-28 no se dan por corregidos. |
 | D-12 | Medio | Verificación del estado fusionado en f4f2328 (PR #30), 2026-10-24: corregidas pestañas inexistentes de Recibos, paginación de usuarios ausente, validaciones sobreafirmadas, restricciones de roles no aplicadas, precisión del rastro SQL e historial de PR. F-41 a F-43 y S-12 permanecen abiertos; R-05 a R-08 son propuestas, no compromisos aprobados. Se limpian referencias a scripts de la conversación. |
 | D-13 | Medio | Revisión de documentación de raíz omitida en los cierres previos (base da4250e/PR #31): package.json.md describía comandos y directorios inexistentes; DB_controlfinanciero.txt y DB_presupuestos.txt contenían SQL histórico sin delimitar su vigencia; presupuestos.txt mezclaba requisitos con capacidades actuales; categorías.txt era una lista de ejemplos, no una jerarquía. Se corrige/clasifica cada archivo, se recuperan R-09 a R-13 por prioridad y se sincronizan TODO, plan, índice y relevo. No se certifica que la auditoría integral del repositorio esté completa. |
+| D-14 | Medio | Relevo operativo tras PR #32: fija la secuencia de próximos PR, alcance y exclusiones de Actualizar fechas, aceptación, entorno de tests, distinción entre prioridad técnica y orden acordado, reglas del usuario y arranque de otro chat. Sin cambios de negocio ni nuevas pruebas funcionales. |
 
 ## 8. Hoja de ruta funcional (alineación con el Excel; no se aborda hasta cerrar los fallos)
 
@@ -179,7 +188,7 @@ La documentación describe los fallos como comportamiento actual y remite a F/S/
 
 ## 10. Plan por fases
 
-## Prioridad técnica de trabajo futuro (D-13)
+### Prioridad técnica de trabajo futuro (D-13)
 
 La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola los tres micro-PR ya acordados (Actualizar fechas, validación de un año y F-17); si se prepara un despliegue real, los riesgos P0/P1 deben resolverse antes de ampliaciones funcionales. P0 es la prioridad mayor.
 
