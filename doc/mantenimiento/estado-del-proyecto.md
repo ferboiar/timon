@@ -4,7 +4,9 @@ Documento de relevo: léelo primero si retomas el proyecto o abres una conversac
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-10-24, main en e748d516eb327cb25b8198dcf490befae4406b4d (PR #32 fusionado). Este relevo D-14 solo añade contexto persistente; no corrige funcionalidad.
+Corte operativo: 2026-10-27, main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4 (PR #35 fusionado). Este relevo D-15 actualiza el punto de reanudación y la regla de commit remoto delegado; no corrige funcionalidad.
+
+**Próxima tarea (D-15):** leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante necesita actualización o mejora tras el error de contrato de esta iteración (se usó editor.reemplazar, que no existe). Es previa al PR de limpieza y no lo sustituye.
 
 **Siguiente PR acordado:** limpieza de Actualizar fechas (F-11/F-23/F-32). Después: validar un solo año al editar recibos (DC-14), y luego F-17, separados. La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
@@ -78,6 +80,9 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #30 | DC-27, D-11 | Cierre del contraste documental y tareas F-37 a F-40 |
 | #31 | D-12 | Verificación de documentación, fallos F-41 a F-43/S-12 y propuestas R-05 a R-08 |
 | #32 | D-13 | Documentación de raíz clasificada y requisitos R-09 a R-13 priorizados |
+| #33 | D-14 | Relevo operativo: punto de reanudación, alcance del primer PR y protocolo de otro chat |
+| #34 | DC-27 | Editor de parches reforzado en dev/utils/ayudas.mjs con pruebas |
+| #35 | — | Instrucción persistente de funcionamiento incorporada a doc/mantenimiento (sin ID de hallazgo) |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
@@ -121,7 +126,7 @@ Mi git status --short, rama y últimos commits son:
 
 ## 8. Relevo operativo completo
 
-Fecha de preparación: 2026-10-24. Base confirmada: main en e748d516eb327cb25b8198dcf490befae4406b4d, merge del PR #32. Los PR #29 a #32 son documentación; no constituyen nuevas correcciones funcionales. Confirmar el HEAD y estado del workspace al retomar, no suponer que la rama local está actualizada.
+Fecha de preparación: 2026-10-27. Base confirmada: main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4, merge del PR #35. Los PR #29 a #32 son documentación; no constituyen nuevas correcciones funcionales. Confirmar el HEAD y estado del workspace al retomar, no suponer que la rama local está actualizada.
 
 ### Objetivo y siguiente trabajo
 

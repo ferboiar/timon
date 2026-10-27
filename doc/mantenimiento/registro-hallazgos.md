@@ -2,9 +2,9 @@
 
 Línea base de la fase 0 (2026-10-17). Documento vivo: se actualiza en cada iteración, y cada corrección cita su ID en el commit y actualiza `doc/`, `TODO`, el plan de la sección 10 y [estado-del-proyecto.md](./estado-del-proyecto.md) en el mismo PR.
 
-## 0. Reanudación operativa (D-14)
+## 0. Reanudación operativa (D-15)
 
-Fecha: 2026-10-24. PR #32 fusionado, base e748d516eb327cb25b8198dcf490befae4406b4d. Tras guardar el relevo, el siguiente trabajo acordado es limpieza de Actualizar fechas (F-11/F-23/F-32), después validación de un solo año al editar recibos (DC-14) y luego F-17, en PR separados. La tabla de riesgo del backlog no sustituye automáticamente esa secuencia.
+Fecha: 2026-10-27. PR #35 fusionado, base 4d73e0692accd7e71c5c1e9e238b2c012f5910c4. Tras guardar el relevo, el siguiente trabajo acordado es limpieza de Actualizar fechas (F-11/F-23/F-32), después validación de un solo año al editar recibos (DC-14) y luego F-17, en PR separados. La tabla de riesgo del backlog no sustituye automáticamente esa secuencia.
 
 Limpieza: retirar updateAllDates, updateAllBillsDates, POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo, y comprobar importaciones/exportaciones/consumidores y lint pendiente. Conservar generateDates/generateBillDates, POST /:id/generar-fechas, completarFechasAnio y el procedimiento/evento anual. Conservar generarFechasFuturas, porque pushRecibo aún la usa: F-12 sigue abierto.
 
@@ -152,6 +152,7 @@ Revisión estática de backend, frontend y documentación, contrastada con el vo
 | D-12 | Medio | Verificación del estado fusionado en f4f2328 (PR #30), 2026-10-24: corregidas pestañas inexistentes de Recibos, paginación de usuarios ausente, validaciones sobreafirmadas, restricciones de roles no aplicadas, precisión del rastro SQL e historial de PR. F-41 a F-43 y S-12 permanecen abiertos; R-05 a R-08 son propuestas, no compromisos aprobados. Se limpian referencias a scripts de la conversación. |
 | D-13 | Medio | Revisión de documentación de raíz omitida en los cierres previos (base da4250e/PR #31): package.json.md describía comandos y directorios inexistentes; DB_controlfinanciero.txt y DB_presupuestos.txt contenían SQL histórico sin delimitar su vigencia; presupuestos.txt mezclaba requisitos con capacidades actuales; categorías.txt era una lista de ejemplos, no una jerarquía. Se corrige/clasifica cada archivo, se recuperan R-09 a R-13 por prioridad y se sincronizan TODO, plan, índice y relevo. No se certifica que la auditoría integral del repositorio esté completa. |
 | D-14 | Medio | Relevo operativo tras PR #32: fija la secuencia de próximos PR, alcance y exclusiones de Actualizar fechas, aceptación, entorno de tests, distinción entre prioridad técnica y orden acordado, reglas del usuario y arranque de otro chat. Sin cambios de negocio ni nuevas pruebas funcionales. |
+| D-15 | Bajo | Actualización del punto de reanudación a base 4d73e06 (PR #35) tras fusionar #33 (D-14), #34 (DC-27) y #35; añade regla en §3 de la instrucción persistente sobre commit remoto delegado con contenido erróneo o marcador no sustituido. Sin cambios de negocio. |
 
 ## 8. Hoja de ruta funcional (alineación con el Excel; no se aborda hasta cerrar los fallos)
 
