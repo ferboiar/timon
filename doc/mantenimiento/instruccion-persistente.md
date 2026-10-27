@@ -198,6 +198,8 @@ Ante errores o matices:
 Una excepción de verificación requiere autorización expresa y quedar documentada.
 No se presenta como pruebas superadas.
 
+Si un commit remoto delegado contiene contenido erróneo o un marcador no sustituido, no lo reintentes con otro marcador: corrige con un commit nuevo que incluya el contenido íntegro, y registra ambos SHA en el informe.
+
 FASE B — CIERRE
 
 Comienza cuando se cumplen las condiciones del apartado 14.

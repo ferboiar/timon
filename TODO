@@ -1,6 +1,6 @@
 # TAREAS PENDIENTES
 
-## Punto de reanudación (D-14)
+## Punto de reanudación (D-15)
 
 El siguiente PR de código acordado es limpiar Actualizar fechas (F-11/F-23/F-32); después, validación de un solo año al editar (DC-14), y luego F-17. La prioridad técnica del backlog no los sustituye por decisión del asistente.
 
@@ -26,9 +26,10 @@ La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola lo
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
 
-Estado operativo: 2026-10-24, PR #32 incorporado y relevo D-14 preparado. El cierre de cada contraste documental tiene un alcance concreto; no acredita auditoría integral ni ejecución funcional en verde. Referencias: doc/mantenimiento/estado-del-proyecto.md y registro-hallazgos.md.
+Estado operativo: 2026-10-27, PR #35 incorporado y relevo D-15 preparado (base 4d73e06). El cierre de cada contraste documental tiene un alcance concreto; no acredita auditoría integral ni ejecución funcional en verde. Referencias: doc/mantenimiento/estado-del-proyecto.md y registro-hallazgos.md.
 
 ## Siguiente (un PR por punto; mantener este orden)
+- [ ] D-15 (tarea previa): leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante o su documentación necesitan actualización o mejora tras el error de contrato (editor.reemplazar inexistente). No sustituye el PR de Actualizar fechas.
 - [ ] F-11/F-23/F-32: retirar Actualizar fechas (updateAllDates, botón comentado, updateAllBillsDates, ruta global y dos funciones antiguas del backend); conservar generateDates/generateBillDates/completarFechasAnio. Corregir los dos errores de eslint de ListBills.
 - [ ] DC-14: rechazar en pantalla y servidor las fechas fuera del año del recibo al editar.
 - [ ] F-17: corregir re/turn de confirmDeleteAdvance.
@@ -68,6 +69,10 @@ Estado operativo: 2026-10-24, PR #32 incorporado y relevo D-14 preparado. El cie
 - [x] PR #22 a #28: recibos por año, Ajustes, zona horaria y Aspecto.
 - [x] PR #29: primer documento de relevo y puesta al día inicial.
 - [x] PR #30, D-11: nueve documentos antes pendientes contrastados con código; README inglés, pruebas y autenticación actualizados. Sin cambios funcionales.
+- [x] PR #33, D-14: relevo operativo y protocolo de otro chat.
+- [x] PR #34, DC-27: editor de parches reforzado en dev/utils/ayudas.mjs.
+- [x] PR #35: instrucción persistente de funcionamiento incorporada a doc/mantenimiento (sin ID de hallazgo).
+- [x] D-15: actualización del punto de reanudación a base 4d73e06 y regla de commit remoto delegado erróneo en §3.
 
 ## Incorporado por verificación documental D-12 (2026-10-24)
 
