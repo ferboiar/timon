@@ -10,7 +10,7 @@
  */
 
 // Importamos Router de express para crear rutas
-import { actualizarFechasRecibos, completarFechasAnio, deleteRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
+import { completarFechasAnio, deleteRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
 import { verifyToken } from '#backend/middleware/auth.mjs';
 import { Router } from 'express';
 
@@ -144,29 +144,6 @@ router.post('/:id/generar-fechas', verifyToken, async (req, res) => {
             return res.status(error.status).json({ error: error.message });
         }
         res.status(500).json({ error: 'Error al generar nuevas fechas', details: error.message });
-    }
-});
-
-// Ruta para actualizar fechas de todos los recibos
-router.post('/actualizar-fechas', verifyToken, async (req, res) => {
-    try {
-        // Verificar que el usuario sea admin
-        if (req.user.rol !== 'admin') {
-            return res.status(403).json({
-                error: 'No tienes permisos para realizar esta acción'
-            });
-        }
-
-        const resultado = await actualizarFechasRecibos();
-        res.status(200).json({
-            message: 'Proceso de actualización completado',
-            resultado
-        });
-    } catch (error) {
-        res.status(500).json({
-            error: 'Error al actualizar fechas de recibos',
-            details: error.message
-        });
     }
 });
 

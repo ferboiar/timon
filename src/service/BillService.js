@@ -169,22 +169,4 @@ export class BillService {
             throw error;
         }
     }
-
-    // Actualizar fechas de todos los recibos (solo admin)
-    static async updateAllBillsDates() {
-        try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(
-                `${API_URL}/actualizar-fechas`,
-                {},
-                {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {}
-                }
-            );
-            return response.data;
-        } catch (error) {
-            console.error('BillService. Error al actualizar fechas de todos los recibos: ', error);
-            throw error;
-        }
-    }
 }

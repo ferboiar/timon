@@ -12,7 +12,6 @@ Este módulo implementa las rutas de la API REST para la gestión de recibos y s
 | `POST` | `/api/recibos` | Crea o actualiza un recibo con sus fechas de cargo |
 | `DELETE` | `/api/recibos/:id` | Elimina un recibo o una fecha de cargo específica; 409 si hay cargos pagados o el recibo tiene sucesor |
 | `POST` | `/api/recibos/:id/generar-fechas` | Añade las fechas generables que faltan en el año en curso (las posteriores al último cargo y los huecos cuya fecha aún no ha llegado), siguiendo la secuencia del recibo (DC-22); responde 404 si el recibo no existe y 409 si no tiene fechas o su ejercicio está cerrado |
-| `POST` | `/api/recibos/actualizar-fechas` | Aplica lo anterior a todos los recibos; solo administradores (403 en otro caso) |
 
 ## Características Principales
 
