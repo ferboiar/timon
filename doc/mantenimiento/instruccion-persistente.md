@@ -1,1 +1,1 @@
-[prompt completo de la última versión]
+[prompt completo de la última versión, texto íntegro]
