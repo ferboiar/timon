@@ -38,6 +38,16 @@ Si falla, intenta recuperar; informa copia/restaurados/noRestaurados si procede 
 
 No es una transacción global ante apagados ni protección frente a escritores hostiles entre comprobaciones. No analiza sintaxis ni garantiza idempotencia universal; el parche debe fijar sus precondiciones y ejecutar sus controles. Es más estricto que el original: revisar scripts antiguos antes de reutilizarlos.
 
+## Errores comunes
+
+- **`TypeError: editor.reemplazar is not a function`**: el método correcto para sustitución literal única es `sustituir(archivo, de, a, opcional)`, no `reemplazar`. Revisa la lista completa de métodos en «Contrato».
+- **`Se esperaba 1 coincidencia, hay 0`**: el texto de búsqueda no existe en el archivo. Comprueba mayúsculas, espacios y saltos de línea.
+- **`Se esperaba 1 coincidencia, hay N`**: el ancla aparece más de una vez. Hazla única o usa `regexUnico` con recuento explícito.
+- **`Destino sensible/protegido`**: la ruta apunta a `.git`, `.env*`, `.db_connection*` o un certificado. El ayudante lo bloquea por diseño.
+- **`Ruta fuera de la raíz`**: el archivo está fuera del directorio raíz indicado en `crearEditor({ raiz })` o la ruta usa `../`.
+- **`El archivo cambió desde la lectura`**: algo modificó el archivo entre la carga y la aplicación. Revisa el diff antes de reintentar; el ayudante no sobrescribe cambios ajenos.
+- **Importación desde `/tmp`**: usa la ruta absoluta versionada, por ejemplo `import { crearEditor } from '/workspaces/timon/dev/utils/ayudas.mjs';`. Un import relativo se resuelve desde el script, no desde el directorio del terminal.
+
 ## Pruebas
 
 `node --test dev/utils/ayudas.test.mjs`; sintaxis con `node --check` de módulo/tests.
