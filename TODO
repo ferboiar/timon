@@ -2,7 +2,7 @@
 
 ## Punto de reanudación (D-15)
 
-El siguiente PR de código acordado es limpiar Actualizar fechas (F-11/F-23/F-32); después, validación de un solo año al editar (DC-14), y luego F-17. La prioridad técnica del backlog no los sustituye por decisión del asistente.
+El siguiente PR de código acordado es validación de un solo año al editar recibos (DC-14); después, F-17. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27. La prioridad técnica del backlog no los sustituye por decisión del asistente.
 
 Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 de doc/mantenimiento/estado-del-proyecto.md. No considerar /tmp ni _adjuntos parte del relevo persistente.
 
@@ -30,7 +30,7 @@ Estado operativo: 2026-10-27, PR #35 incorporado y relevo D-15 preparado (base 4
 
 ## Siguiente (un PR por punto; mantener este orden)
 - [ ] D-15 (tarea previa): leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante o su documentación necesitan actualización o mejora tras el error de contrato (editor.reemplazar inexistente). No sustituye el PR de Actualizar fechas.
-- [ ] F-11/F-23/F-32: retirar Actualizar fechas (updateAllDates, botón comentado, updateAllBillsDates, ruta global y dos funciones antiguas del backend); conservar generateDates/generateBillDates/completarFechasAnio. Corregir los dos errores de eslint de ListBills.
+- [x] F-11/F-23/F-32: Actualizar fechas retirado el 2026-10-27 (updateAllDates, botón comentado, updateAllBillsDates, ruta global y dos funciones antiguas del backend); los dos errores de eslint de ListBills corregidos. Conservados generateDates/generateBillDates/completarFechasAnio.
 - [ ] DC-14: rechazar en pantalla y servidor las fechas fuera del año del recibo al editar.
 - [ ] F-17: corregir re/turn de confirmDeleteAdvance.
 

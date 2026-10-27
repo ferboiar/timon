@@ -1,5 +1,4 @@
 <script setup>
-import { useAuth } from '@/composables/useAuth'; // Importar composable de autenticación para verificar permisos de administrador
 import { AccService } from '@/service/AccService'; // Importar el servicio de cuentas
 import { BillService } from '@/service/BillService';
 import { CatsService } from '@/service/CatsService'; // Importar CatsService
@@ -212,30 +211,6 @@ async function generateDates(reciboId) {
         console.error('generateDates(). Error:', error);
     }
 }
-
-// Función para actualizar todas las fechas de recibos (solo admin)
-// Esta función regenera las fechas para todos los recibos que usan el modo automático
-// Útil cuando se han añadido o modificado múltiples recibos
-async function updateAllDates() {
-    try {
-        const response = await BillService.updateAllBillsDates();
-        toast.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: `Proceso completado: ${response.actualizados} de ${response.total} recibos actualizados`,
-            life: 5000
-        });
-        // Actualizar la lista de recibos para mostrar las fechas actualizadas
-        updateBills('all');
-    } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar fechas: ${error.message}`, life: 5000 });
-        console.error('updateAllDates(). Error:', error);
-    }
-}
-
-// Obtener el estado de administrador desde el composable de autenticación
-// Esta referencia se usa para mostrar/ocultar opciones administrativas
-const { isAdmin } = useAuth();
 
 // >>>> Menú de la tarjeta
 const cardMenu = ref([]);
@@ -907,13 +882,6 @@ const inactiveBillsCount = (periodicity) => {
                         :disabled="!selectedAnualBills?.length && !selectedQuarterlyBills?.length && !selectedBimonthlyBills?.length && !selectedMonthlyBills?.length"
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
-                    <!-- Botón para actualizar todas las fechas, solo visible para administradores -->
-                    <!-- De momento desactivo el botón, me parece muy peligroso. Su proposito es actualizar las fechas 
-                         de cargo en aquellos recibos para los que se ha definido una fecha_inicial. Puede ser útil 
-                         al inicio de un nuevo año fiscal o después de cambios en la configuración del sistema
-                         Pero de momento lo mantengo desactivado por si a futuro lo retomo
-                    <Button v-if="isAdmin" label="Actualizar fechas" icon="pi pi-calendar" severity="secondary" class="mr-2" @click="updateAllDates" v-tooltip="'Actualizar fechas de todos los recibos'" />
--->
                     <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
                     <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
                 </template>

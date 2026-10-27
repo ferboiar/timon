@@ -8,7 +8,7 @@ Corte operativo: 2026-10-27, main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4 (P
 
 **Próxima tarea (D-15):** leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante necesita actualización o mejora tras el error de contrato de esta iteración (se usó editor.reemplazar, que no existe). Es previa al PR de limpieza y no lo sustituye.
 
-**Siguiente PR acordado:** limpieza de Actualizar fechas (F-11/F-23/F-32). Después: validar un solo año al editar recibos (DC-14), y luego F-17, separados. La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**Siguiente PR acordado:** validación de un solo año al editar recibos (DC-14). Después: F-17, separados. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, todavía usada por pushRecibo (F-12). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -90,10 +90,10 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 El siguiente trabajo acordado tras este relevo es **limpiar Actualizar fechas (F-11/F-23/F-32)**, no implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
-1. Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Comprobar referencias/importaciones/exportaciones y el lint pendiente.
+1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo aún la usa, y F-12 sigue abierto.
 3. Actualizar documentación, registro y TODO en ese mismo PR; comprobar UI y pruebas donde sea posible, sin certificar lo no ejecutado.
-4. Después, en PR separados: validación de un solo año al editar recibos (DC-14) y errata F-17 de Advances.
+4. Siguiente, en PR separados: validación de un solo año al editar recibos (DC-14) y errata F-17 de Advances.
 
 El relevo operativo más abajo fija archivos, exclusiones, aceptación, entorno y cómo retomar en otro chat. La prioridad de seguridad antes de producción no altera silenciosamente este siguiente paso ya acordado.
 
@@ -132,7 +132,7 @@ Fecha de preparación: 2026-10-27. Base confirmada: main en 4d73e0692accd7e71c5c
 
 Después de guardar este relevo, continuar el mantenimiento de código de la fase 1, en este orden acordado, un PR por punto:
 
-1. Limpieza de Actualizar fechas: F-11, F-23 y F-32.
+1. [x] Limpieza de Actualizar fechas: F-11, F-23 y F-32 (hecha el 2026-10-27).
 2. Validación de un solo año al editar un recibo: DC-14, servidor y pantalla.
 3. F-17: re; turn; en confirmDeleteAdvance de Advances.vue.
 

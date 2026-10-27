@@ -72,10 +72,8 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `completarFechasAnio(reciboId, anioActual, hoy)` | Añade a un recibo las fechas generables de `fechasFaltantes` (botón «Generar nuevas fechas»). Devuelve cuántas añadió; error 404 si el recibo no existe y 409 si no tiene fechas o su ejercicio está cerrado. El año en curso se calcula en la zona horaria de los ajustes |
 | `generarRecibosAnio(simular)` | Lanza el procedimiento que crea los recibos del año siguiente (vista previa si `simular`); lo usa la ruta de administración (DC-24) |
 | `importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo)` | Importe que debe guardarse en un cargo: si está «cargado», el indicado, el que ya tuviera o el del recibo; si está pendiente, solo uno personalizado (si coincide con el del recibo queda vacío) (DC-15) |
-| `generarNuevasFechasRecibo(reciboId)` | Genera un nuevo ciclo de fechas cuando no quedan fechas pendientes activas, a partir de la última fecha. Nunca modifica las existentes. Sin fechas previas parte de `fecha_inicial` y crea siempre 4 (F-32). Obsoleta: solo la usa `actualizarFechasRecibos` y se retirará con ella en el rediseño de recibos por año; el botón «Generar nuevas fechas» usa `completarFechasAnio` |
-| `actualizarFechasRecibos()` | Aplica `generarNuevasFechasRecibo` a todos los recibos con fechas activas y devuelve `total` y `actualizados`. Obsoleta: la sustituirá el evento anual de creación de recibos (DC-17) |
 | `getValidValues(column, table)` | Función interna (no se exporta): obtiene valores válidos para campos ENUM o categorías |
-| `generarFechasFuturas(fechaInicial, periodicidad, cantidad)` | Función interna (no se exporta) que suma meses a la fecha inicial. La usan `pushRecibo`, al reescribir fechas en modo automático, y `generarNuevasFechasRecibo`; no sigue la secuencia anclada de DC-16 y desborda con los días 29 a 31 (F-12) |
+| `generarFechasFuturas(fechaInicial, periodicidad, cantidad)` | Función interna (no se exporta) que suma meses a la fecha inicial. La usa `pushRecibo`, al reescribir fechas en modo automático; no sigue la secuencia anclada de DC-16 y desborda con los días 29 a 31 (F-12) |
 
 ## Un recibo por año (DC-14, DC-23)
 
