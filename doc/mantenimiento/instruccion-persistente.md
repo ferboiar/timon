@@ -20,7 +20,7 @@ Al iniciar un chat nuevo, lee:
 
 1. doc/mantenimiento/instruccion-persistente.md y todas sus partes obligatorias.
 2. doc/mantenimiento/estado-del-proyecto.md y sus partes.
-3. doc/mantenimiento/registro-hallazgos.md y todas las partes del registro.
+3. doc/mantenimiento/registro-hallazgos.md (entrada) y todas las partes que liste (registro-hallazgos_1deN.md, _2deN.md, etc.), leídas completas y en orden.
 4. TODO.
 5. El último informe de iteración pertinente.
 6. doc/index.md.
@@ -668,7 +668,7 @@ No quedan como órdenes permanentes de reorganización automática.
 
 MENSAJE DE ARRANQUE
 
-“Retomamos ferboiar/timon. Lee instruccion-persistente.md y todas sus partes, el relevo, TODO, el registro y el informe pertinente. Comprueba primero el acceso. Si no puedes leer el contexto crítico completo, dímelo y no modifiques el proyecto: aportaré lo que falte. Mientras tanto: nada es verificado sin evidencia; sin secretos en el chat; no preparar .db_connection ni su copia; no git add -A, reset --hard ni push forzado; no escribas en el repositorio por conectores salvo que te lo pida expresamente. Reconstruye la fase actual y continúa con el siguiente paso acordado.”
+“Retomamos ferboiar/timon. Lee instruccion-persistente.md y todas sus partes, el relevo, TODO, el registro (entrada y todas sus partes, en orden) y el informe pertinente. Comprueba primero el acceso. Si no puedes leer el contexto crítico completo, dímelo y no modifiques el proyecto: aportaré lo que falte. Mientras tanto: nada es verificado sin evidencia; sin secretos en el chat; no preparar .db_connection ni su copia; no git add -A, reset --hard ni push forzado; no escribas en el repositorio por conectores salvo que te lo pida expresamente. Reconstruye la fase actual y continúa con el siguiente paso acordado.”
 
 13. RESPUESTAS Y ETIQUETAS
 

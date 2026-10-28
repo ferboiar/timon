@@ -1,6 +1,6 @@
 # Pruebas del backend
 
-Usan `node:test` y una base MariaDB con la configuración de referencia (`doc/mantenimiento/registro-hallazgos.md`, sección 3). Se ejecutan con `npm run test:backend`.
+Usan `node:test` y una base MariaDB con la configuración de referencia (`doc/mantenimiento/registro-hallazgos_1de3.md`, sección 3). Se ejecutan con `npm run test:backend`.
 
 ## Opción A: tu MariaDB existente (la usada en la fase 0)
 

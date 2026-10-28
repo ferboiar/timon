@@ -2,229 +2,40 @@
 
 Línea base de la fase 0 (2026-10-17). Documento vivo: se actualiza en cada iteración, y cada corrección cita su ID en el commit y actualiza `doc/`, `TODO`, el plan de la sección 10 y [estado-del-proyecto.md](./estado-del-proyecto.md) en el mismo PR.
 
-## 0. Reanudación operativa (D-15)
+## Propósito y orden de lectura
 
-Fecha: 2026-10-27. PR #35 fusionado, base 4d73e0692accd7e71c5c1e9e238b2c012f5910c4. Tras guardar el relevo, el siguiente trabajo acordado es limpieza de Actualizar fechas (F-11/F-23/F-32), después validación de un solo año al editar recibos (DC-14) y luego F-17, en PR separados. La tabla de riesgo del backlog no sustituye automáticamente esa secuencia.
+Este archivo es la entrada del registro. El contenido está dividido por secciones completas en 3 partes (DC-28) para que cada una se pueda leer entera. Léelas todas, completas y en este orden: [parte 1 de 3](./registro-hallazgos_1de3.md) · [parte 2 de 3](./registro-hallazgos_2de3.md) · [parte 3 de 3](./registro-hallazgos_3de3.md). Una referencia a «la sección N» del registro se resuelve con la tabla siguiente.
 
-Limpieza completada el 2026-10-27: retirados updateAllDates, updateAllBillsDates, POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo. Conservados generateDates/generateBillDates, POST /:id/generar-fechas, completarFechasAnio, el procedimiento/evento anual y generarFechasFuturas (pushRecibo la sigue usando: F-12 abierto). Siguiente: validación de un solo año al editar (DC-14).
+## Partes
 
-La sección 8 de estado-del-proyecto.md contiene el relevo completo, aceptación, entorno y reglas del usuario. No marcar una prueba o corrección como verificada por el mero hecho de generar o aplicar un parche. Las pruebas requieren una base *_test y no deben tocar conta_hogar.
-
-## 1. Método
-
-Revisión estática de backend, frontend y documentación, contrastada con el volcado de la BD viva y con pruebas puntuales contra MariaDB. Certeza: Confirmado (leído en código o esquema, o reproducido) o Probable (depende de entorno o driver; reproducir con un test). Severidad: Crítico (rompe un flujo o pierde datos), Alto, Medio, Bajo.
-
-## 2. Decisiones
-
-| ID | Decisión |
-|---|---|
-| DC-01 | `fechas_cargo.estado` = `cargado`, `pendiente`, `rechazado`. `rechazado` significa que el banco devolvió el recibo: no genera historial, cuenta como pendiente en el disponible y puede volver a `pendiente`. Pendiente: la migración; el esquema (0001) solo admite `cargado` y `pendiente` (D-09). |
-| DC-02 | `categorias.nombre` único global (`UNIQUE KEY uq_categorias_nombre (nombre)`). Las categorías son visibles para todos; `propietario_id` es el creador y `es_privado` no tiene efecto en esa tabla. Pendiente: la migración; ninguna de 0001 a 0004 crea el índice único (F-22). |
-| DC-03 | Precedencia ante discrepancias: 1) el Excel del usuario como criterio de aceptación, 2) la documentación de diseño (`doc/db/schema`), 3) la BD viva como línea base migrable, 4) el código. |
-| DC-04 | BD en MariaDB 11.8 local. Misma configuración en desarrollo, tests y producción (sección 3). |
-| DC-05 | Servidor y sesión en `+00:00` (hecho: la conexión usa `timezone: 'Z'` y `SET time_zone = '+00:00'`). Pendiente: `dateStrings` en `mysql2` para que `DATE` llegue como texto; hoy llega como `Date` y la pantalla lo normaliza con `fechaDeCalendario` (DC-25). El evento de recibos del año ya no se define en `Europe/Madrid`: actúa a las 03:00 de la zona de los ajustes (DC-24). |
-| DC-06 | Usuarios de BD: `timon_app` (SELECT, INSERT, UPDATE, DELETE) y `timon_admin` (ALL) sobre `conta_hogar`, host `172.20.0.%`. La aplicación usa `timon_admin` hasta separar el mantenimiento (S-02). Las pruebas usan `timon_test`, con permisos solo sobre `conta_hogar_test`. |
-| DC-07 | Desde 2026-10-18 la aplicación usa la BD local `conta_hogar` en `mariadb01`. Aiven queda fuera de uso; ninguna de las dos bases estaba en producción y tenían los mismos datos. |
-| DC-08 | Al borrar un pago y elegir «Recalcular pagos», su importe se reparte entre los pagos pendientes con la misma lógica que al editar un pago: primero se suben los que estén por debajo del pago sugerido y el resto se reparte a partes iguales. Para el borrado queda sustituida por DC-12; sigue vigente para la edición de un pago. |
-| DC-09 | Toda operación nueva o modificada deja trazas en el log del backend con el formato «módulo - acción: datos» (`console.log`), como las existentes. Las acciones que no se realizan, por ejemplo un plan de pagos no generado, también se registran con su motivo. |
-| DC-10 | `ahorros.ahorrado` es el valor inicial más la suma de los movimientos. Se puede editar a mano solo mientras el ahorro no tiene movimientos (para corregir un valor inicial erróneo). Con movimientos queda bloqueado en la pantalla y el servidor rechaza el cambio; se corrige añadiendo un movimiento positivo o negativo. |
-| DC-11 | Al editar un recibo, el modo de fechas es siempre manual; el modo automático solo se activa si el usuario lo elige en el diálogo, que avisa de que se reescribirán las fechas pendientes. El servidor solo reescribe las fechas en estado `pendiente` y conserva las demás, dejando traza del antes y el después de cada fecha. |
-| DC-12 | Al borrar un pago y elegir «Recalcular pagos», su importe se coloca así: primero se suben los pagos pendientes que estén por debajo del pago sugerido hasta ese tope y, si aún queda importe, se crean pagos nuevos de hasta el pago sugerido, a continuación del último pago y según la periodicidad. Ningún pago supera el sugerido. Exige pago sugerido y periodicidad, y el botón solo se deshabilita si faltan. |
-| DC-13 | El esquema de la base de datos se define solo en `backend/src/db/migrations`. No se mantienen scripts SQL sueltos ni volcados como fuente del esquema; los cambios entran como migraciones nuevas, verificadas por las pruebas. |
-| DC-14 | Cada recibo es el recibo de un año natural: todas sus fechas de cargo caen dentro del año de su `fecha_inicial`. Al cambiar de año se crea un recibo nuevo (fila nueva en `recibos` y filas nuevas en `fechas_cargo`) enlazado con el anterior mediante `recibo_origen_id`. Los recibos de años pasados no se modifican nunca. Esto sustituye a `recibos_historico`, que se retirará. |
-| DC-15 | `fechas_cargo.importe` guarda el importe real de cada cargo: vacío mientras está pendiente (se usa el del recibo) y fijado al pagarlo. El recibo del año nuevo toma el importe del último cargo pagado del año anterior, o el del recibo si no hubo ninguno. |
-| DC-16 | Las fechas siguen un patrón anclado en la `fecha_inicial` original y la periodicidad. El recibo de un año contiene las fechas de la secuencia que caen en ese año, y su `fecha_inicial` es la primera de ellas. Al dar de alta un recibo solo se generan las fechas desde su `fecha_inicial` hasta el 31 de diciembre de ese año: ninguna anterior ni del año siguiente. Si un día no existe en un mes (por ejemplo el 31), se usa el último día del mes. |
-| DC-17 | Un evento diario de la base de datos crea los recibos del año siguiente. Solo inserta: nunca modifica ni borra. Cada recibo tiene como mucho un sucesor (restricción única). Nunca crea recibos de un año posterior al actual, salvo desde el 1 de diciembre, que permite el año siguiente. Se replican los recibos activos e inactivos, salvo los marcados con `replicar = 0`. Cada ejecución se anota en `mantenimiento_logs`. Un botón en Ajustes, en «Administrar recibos», permite lanzarlo a mano, con vista previa. |
-| DC-18 | La vista de recibos muestra el año en curso y los cargos pendientes de años anteriores, que dejan de verse al pagarse pero se conservan. No se pueden borrar recibos con cargos pagados. Al borrar el recibo de un año que tiene origen se marca `replicar = 0` en su origen, para que el evento no lo recree. |
-| DC-19 | En la vista de recibos, los mensuales se agrupan por recibo como los bimestrales y trimestrales, con una tabla de fechas que muestra importe, estado y comentario. Todas las tablas agrupan por recibo, no por concepto. El importe de cada fecha se puede editar: en un cargo pagado queda fijado y en uno pendiente solo se guarda si difiere del importe del recibo. La vista muestra el año elegido (por defecto el actual) y, en el año en curso, los cargos pendientes de años anteriores como «Atrasado». |
-| DC-20 | En la vista de recibos, un año anterior al actual es un ejercicio cerrado: no se puede añadir ni editar el recibo, y solo se pueden editar los cargos que sigan pendientes. «+» y «Generar nuevas fechas» están activos solo si faltan fechas para completar el año de la última fecha del recibo y ese año no está cerrado; añaden las fechas siguientes de la secuencia anclada en la fecha inicial (refinado por DC-22). |
-| DC-21 | Un cargo pagado solo se puede editar o borrar durante el mes en que vence (para rectificar); los de meses anteriores se consideran cerrados. Hecho en DC-25: en Ajustes › Administrar recibos, el interruptor «Permitir editar/borrar recibos pagados» está desactivado por defecto, solo dura la sesión (se desactiva al cerrar sesión o recargar) y permite al administrador editar y borrar cargos pagados de meses cerrados. El servidor solo acepta el borrado forzado (`permitirPagados=1`) de un administrador y, con él, `deleteRecibo` omite la comprobación de cargos pagados (también en recibos completos); el 409 por recibos de años posteriores se mantiene. |
-| DC-22 | Una fecha falta si ningún cargo del recibo cae en ese mes de la secuencia anclada en su fecha inicial; solo cuentan los meses del año en curso, nunca los anteriores a la fecha inicial ni los de un ejercicio cerrado. «+» está activo si falta cualquier fecha, incluso una ya pasada. «Generar nuevas fechas» solo añade las posteriores al último cargo y los huecos intermedios cuya fecha aún no ha llegado; si no hay ninguna, queda deshabilitado. |
-| DC-23 | La migración 0003 parte los recibos cuyas fechas caen en más de un año en un recibo por año, enlazados con `recibo_origen_id`; la fecha inicial de cada trozo es la primera de la secuencia anclada en la del recibo original, y no se crean fechas que no existían. También elimina `recibos_historico`. Es repetible. El procedimiento, el evento diario, el interruptor «Crear recibos del año automáticamente» y «Administrar recibos» se hicieron después (DC-24, DC-25). |
-| DC-24 | El procedimiento `generar_recibos_anio(simular, forzar, ahora)` crea los recibos del año siguiente (desde el 1 de diciembre) y pone al día los que falten; solo inserta y es repetible. Cadencia: los meses salen de la fecha inicial del origen y el día, del último cargo pagado (si no hay, el de la fecha inicial). La vista previa devuelve primera y última fecha por recibo y un aviso si el mes del último pago no encaja con la cadencia. El evento `generar_recibos_anio_evento` lo lanza cada hora y solo actúa a las 03:00 de la zona horaria de los ajustes. El interruptor `crear_recibos_automaticamente` está en `ajustes_sistema` (activado por defecto, persistente); desactivado, el evento no hace nada pero la ejecución manual sigue funcionando. Detalles en `doc/db/generar_recibos_anio.md`. |
-| DC-25 | Zona horaria de la aplicación: el ajuste `zona_horaria` (`ajustes_sistema`, por defecto `Europe/Madrid`, sección Ajustes › General) rige toda la aplicación. La base de datos guarda las horas en UTC y la aplicación y los procedimientos calculan «hoy», el año y el mes en curso y las horas mostradas, registros incluidos, en esa zona, con el cambio de hora automático. Hecho: el procedimiento, el servicio de zona horaria del servidor (`db_ajustes` y `utils/tiempo`), las rutas `/api/ajustes` y las conexiones en UTC; el servidor calcula «hoy» en esa zona. Hecho también: Ajustes › General (zona horaria) y Administrar recibos (interruptor de la creación automática, interruptor de sesión «Permitir editar/borrar recibos pagados» con borrado forzado para el administrador, vista previa y generación manual), `useZonaHoraria` y su uso en ListBills y Calendar. Las fechas sin hora se muestran sin convertir de zona y `$formatDateTime` muestra los instantes UTC en la zona de los ajustes. Advances, ListBills y Calendar usan también `fechaDeCalendario` para que los días de las columnas DATE no se desplacen según la zona del navegador. |
-| DC-26 | Ajustes: la pestaña «Tema» pasa a «Aspecto» y el orden es General, Usuarios, Aspecto, Administrar recibos y Base de Datos; se elimina la pestaña de relleno «Header III». «Modo oscuro por defecto» pasa a «Apariencia general» con tres opciones (Sistema, Claro, Oscuro): «Sistema» sigue el modo claro u oscuro del navegador, también en directo cuando este cambia. Se guarda por usuario en sus preferencias de estilo (campo `colorScheme`; los datos antiguos con solo `darkTheme` se leen como Claro u Oscuro). La preferencia se guarda en el servidor (por usuario, vale en cualquier equipo) y se recuerda en el navegador (`timon.colorScheme`) para pintar sin parpadeo: al cargar se aplica lo recordado y, cuando llegan las preferencias del servidor, estas mandan y actualizan la copia; el botón de la barra no la modifica. Los administradores abren Ajustes en General y el resto en Aspecto. Las rutas de preferencias de estilo exigen solo sesión (antes administrador, parte de S-04) y validan `colorScheme`. |
-| DC-27 | La documentación se mantiene al día en cada PR: `doc/`, `TODO`, el plan de la sección 10 y `doc/mantenimiento/estado-del-proyecto.md` cambian en el mismo PR que el código. El visor de la aplicación (`Tech-documentation.vue`) carga `doc/**/*.md` y su navegación (`docNavigation`) se escribe a mano: todo documento nuevo se añade ahí. Los enlaces entre documentos son relativos a su carpeta, para que funcionen en GitHub y en el visor. `backend/src/db/.db_connection` y `.db_connection.backup` no se añaden nunca a un commit (la pestaña Base de Datos los reescribe). |
-
-## 3. Entorno de referencia
-
-- MariaDB 11.8.8 (imagen linuxserver, Alpine). Configuración en `/config/custom.cnf` con modo 644: MariaDB ignora los ficheros de configuración escribibles por todos.
-- Opciones: `transaction_isolation=READ-COMMITTED`, `character-set-server=utf8mb4`, `collation-server=utf8mb4_spanish_ci`, `sql_mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION`, `max_connections=100`, `event_scheduler=ON`, `default-time-zone='+00:00'`.
-- Tablas de zonas horarias cargadas con `mariadb-tzinfo-to-sql`. Base creada con `COLLATE utf8mb4_spanish_ci`.
-- Conexión: Node (contenedor `timon`, red Docker `backend`) hacia `mariadb01:3306`. TLS disponible (`have_ssl=YES`).
-- Sesión de la aplicación: `mysql2` activa la bandera de cliente `IGNORE_SPACE`, así que el `sql_mode` de cada sesión lleva `IGNORE_SPACE` aunque el valor global no. Las pruebas comparan los valores globales.
-- Origen de los datos: volcado de Aiven (MySQL 8.4.8). Restaurado con dos retoques manuales (se quitó el `DEFINER` y se recreó la rutina con comillas invertidas) y verificado: 14 tablas, 18 claves foráneas y el mismo recuento de filas.
-
-## 4. Casos de aceptación (Excel del usuario)
-
-- Octubre 2026: nómina 2.115,45 €; recibos del mes 1.239,89 € (786,40 mensuales + 110,00 bimestrales + 218,00 trimestrales + 125,49 anuales); gastos del mes 581,81 €; previstos netos de reservas 356,48 €; disponible −62,73 €.
-- Año 2026: recibos 12.072,40 €, media 1.006,03 € al mes.
-
-## 5. Hallazgos funcionales (F)
-
-| ID | Sev. | Dónde | Hallazgo | Certeza |
-|---|---|---|---|---|
-| F-01 | Crítico | `db_utilsSav/Adv/Acc/Cats.mjs` | Los INSERT de ahorros, anticipos, cuentas y categorías omiten `propietario_id` (NOT NULL sin default). Reproducido contra la BD real: ER_NO_DEFAULT_FOR_FIELD. Regresión de la migración de permisos. Corregido en la fase 1: las rutas pasan el id del token a las funciones de alta. Verificado con las pruebas y creando los cuatro registros desde la aplicación (2026-10-18). | Confirmado |
-| F-02 | Crítico | `recalculatePaymentPlan`, `Advances.vue` | `mysql2` devuelve DECIMAL como string. Con `pago_sugerido = '0.00'` (valor por defecto al crear) el bucle inserta pagos de 0 € sin fin; la guarda de la UI (`=== 0`) no salta. Indicio: `anticipos_pagos` tiene AUTO_INCREMENT 5501 con 32 filas (salto de id 124 a 5499). Corregido en la fase 1: el pago sugerido se convierte a número y se valida (mayor que 0 y como máximo 1200 pagos) antes de crear ningún pago, al guardar el anticipo y al generar el plan; la pantalla también lo valida como número. | Probable |
-| F-03 | Alto | `pushMovimiento` | Editar un movimiento suma el importe completo a `ahorrado`. `ahorrado` es editable a mano (dos fuentes de verdad) y las tres sentencias no van en transacción. Corregido en la fase 1: al editar solo se aplica la diferencia de importe, las sentencias van en una transacción, el ahorro se toma de la base de datos y `ahorrado` tolera valores nulos. La edición manual de `ahorrado` se rige por DC-10. | Confirmado |
-| F-04 | Alto | `ListBills.vue`, `pushRecibo` | `editBill` abre en modo auto si hay `fecha_inicial`, y todos los recibos la tienen. Al guardar en auto se reescriben las fechas y se pisan las manuales. Alcance real: solo los recibos anuales y mensuales llegan al diálogo con `fecha_inicial` (las filas agrupadas de trimestrales y bimestrales no la llevan), así que solo ellos se abrían en auto. Corregido en la fase 1 (DC-11): la edición parte siempre en manual, el diálogo avisa al elegir auto y el servidor solo reescribe las fechas pendientes, con traza del antes y el después. | Confirmado |
-| F-05 | Alto | `add_recibos_historico.sql` | Crea `recibos_historico` con columnas distintas de las que usa el código y de la tabla viva (`pagado`, `notas`): con ella, marcar un cargo como «cargado» fallaría al escribir el historial. Corregido en la fase 1 (DC-13, DC-14): se eliminan el script y `setup_auto_dates.sh`, que solo lo citaba, y el esquema queda definido por las migraciones; `recibos_historico` desaparecerá con el rediseño de recibos por año. | Confirmado |
-| F-06 | Alto | `cuentas`, `Accounts.vue` | `UNIQUE(iban)` más el formulario enviando `''` hace fallar la segunda cuenta sin IBAN. Corregido en la fase 1: el servidor guarda NULL cuando el IBAN llega vacío o con solo espacios (`UNIQUE` admite varios NULL pero no varias cadenas vacías), la pantalla envía NULL y la exportación CSV deja vacía la columna en vez de escribir «null». Las cuentas ya guardadas con IBAN vacío se pasan a NULL con `UPDATE cuentas SET iban = NULL WHERE iban = '';`. El aviso de IBAN repetido indica ahora la cuenta que ya lo tiene (código 409; ver F-28). | Confirmado |
-| F-07 | Medio | `Savings.vue` |`deleteSaving` llama a `getCurrentInstance().refs` tras un await: TypeError tras borrar con éxito. Comprobado el 2026-10-23: sigue abierto. Auditado de nuevo: el error puede ocurrir después de borrar correctamente; no confundirlo con fallo del DELETE. | Confirmado |
-| F-08 | Medio | `Savings.vue` |Mostrar u ocultar inactivos no filtra nada y `activo` no es editable. Confirmado en el cierre: la tabla usa savings sin filtrar y el formulario no edita activo. | Confirmado |
-| F-09 | Medio | Categorías | El API ignora `id` y busca por nombre: renombrar crea otra categoría. | Confirmado |
-| F-10 | Medio | Borrados con FK | Las FK reales no tienen cascada; borrar algo en uso da un 500 y la UI muestra el mensaje genérico de axios. | Confirmado |
-| F-11 | Medio | `actualizarFechasRecibos` | Corregido el 2026-10-27: función retirada con el flujo global de «Actualizar fechas». | Confirmado |
-| F-12 | Medio | `generarFechasFuturas` | `setMonth` desborda con los días 29 a 31. Comprobado el 2026-10-23: sigue abierto; `pushRecibo` usa `generarFechasFuturas` al reescribir fechas en modo automático, así que la limpieza de «Actualizar fechas» no lo cierra. | Confirmado |
-| F-13 | Bajo | Fechas | `DATE` como `Date` local más `toISOString()` desplaza un día si Node corre fuera de UTC. En el contenedor de desarrollo Node corre en UTC, así que es latente. Solución: `dateStrings` (DC-05). Comprobado el 2026-10-23: sigue abierto; la conexión usa `timezone: 'Z'` pero no `dateStrings`. | Confirmado |
-| F-14 | Medio | Anticipos |`importe_total` es el saldo restante y se pierde el importe original (verificado con los datos). Editar el importe de un pago `pagado` no ajusta el saldo, y hay dos endpoints para borrar un pago. Cierre documental: importe_total es saldo restante; cambiar importe manteniendo pagado no ajusta saldo; borrar pagado repone saldo pero no reactiva completado; deletePago no retorna el saldo que intenta incluir su ruta. | Confirmado |
-| F-15 | Medio | Recibos | Se escribe «Fecha inicial» en la primera fecha de cada tanda; `deleteRecibo` en mensuales borra el recibo entero; el historial queda huérfano al revertir un cargo. Comprobado el 2026-10-23: el historial ya no existe (DC-14) y `deleteRecibo` borra solo la fecha indicada (DC-18); sigue escribiéndose «Fecha inicial» en la primera fecha. | Confirmado |
-| F-16 | Medio | `Savings.vue`, `Advances.vue` |Se muta el modelo a texto antes del POST; si falla, el reintento revienta. Se conserva abierto: preparar el payload sin mutar las fechas del formulario antes del éxito, y probar reintentos. | Confirmado |
-| F-17 | Bajo | `Advances.vue` | `re; turn;` en lugar de `return` en `confirmDeleteAdvance`. Comprobado el 2026-10-23: sigue abierto. | Confirmado |
-| F-18 | Bajo | `ListBills.vue` | `openNew()` no reinicia `modoFechas` ni `fecha_inicial`. Corregido junto con F-04. | Confirmado |
-| F-19 | Bajo | Exportaciones CSV | No se escapan `;`, comillas, saltos de línea ni `=`, `+`, `-`, `@`. La exportación de cuentas envuelve el IBAN en `="…"` a propósito, para que Excel no lo convierta en número; al corregir F-19 hay que conservar ese efecto con otro método. | Confirmado |
-| F-20 | Bajo | `BillService.getBillById` | Llama a `GET /api/recibos/:id`, que no existe. | Confirmado |
-| F-21 | Bajo | Cuentas | `saldo_actual` es manual y nada lo actualiza. | Confirmado |
-| F-22 | Medio | `categorias` | `nombre` no es único y los recibos resuelven la categoría por nombre con una subconsulta. Se cierra con DC-02; la migración sigue pendiente. | Confirmado |
-| F-23 | Medio | `generarNuevasFechasRecibo` | Corregido el 2026-10-27: función retirada; el SQL con comillas dobles desaparece con ella. | Confirmado |
-| F-24 | Alto | `recalculatePaymentPlan` | Al regenerar el plan desde la base de datos, el saldo y el pago sugerido son cadenas y se comparan como texto (por ejemplo «100.00» resulta menor que «40.00»): se crea un único pago por el total en lugar de cuotas. Corregido junto con F-02 al convertir los importes a número. | Probable |
-| F-25 | Medio | `Advances.vue` (`savePago`, `addNewPayment`) | «Añadirlo en uno nuevo» tras borrar un pago: la bandera `isReplacingPayment` no se consultaba y el pago a sustituir seguía contando en la suma de pendientes, así que salía «los pagos pendientes incluidos ya cubren el anticipo» y no dejaba guardar. Aunque pasara, el pago antiguo no se borraba. Corregido: se excluye de la suma y se elimina tras guardar el nuevo. | Confirmado |
-| F-26 | Medio | `Advances.vue` (`recalculatePayments`) | «Recalcular pagos» tras borrar un pago volvía a generar el plan y añadía un pago nuevo al final en vez de repartir el importe. Corregido según DC-08. `recalculatePendingPayments` (prorrateo igualitario) no la usa ninguna ruta. | Confirmado |
-| F-27 | Medio | `db_utilsAdv.mjs` |Las operaciones compuestas de anticipos (borrar un pago y repartir, editar un pago y recalcular, regenerar el plan) ejecutan varias sentencias sin transacción; un fallo intermedio deja el plan a medias. Comprobado: el módulo no usa `beginTransaction` (también el 2026-10-23). Se conserva abierto; la sustitución de pago además son dos peticiones independientes. | Confirmado |
-| F-28 | Medio | Pantallas (`*.vue`) |Los avisos de error muestran el `error.message` de axios («Request failed with status code 400») y no el mensaje que devuelve el servidor en `response.data.error`. Excepción: `BillService.saveBill` ya relanza el mensaje del servidor, así que el guardado de recibos lo muestra bien. Corregido en la fase 1 solo en `Accounts.vue`, con el ayudante `src/utils/apiError.js`; el resto de pantallas queda pendiente (incluye lo descrito en F-10). Cierre: Advances usa apiError solo en el error de recalculatePayments; Savings sigue usando error.message. | Confirmado |
-| F-29 | Bajo | `ListBills.vue` | El botón «Nuevo» de la barra llama a `openNew` con el evento del clic como periodicidad, así que el recibo nuevo nace con un objeto en `periodicidad` y hay que elegirla a mano en el desplegable. Corregido en la fase 1: el botón llama a `openNew('')`. | Confirmado |
-| F-30 | Bajo | `ListBills.vue` | La tabla de trimestrales enlaza su selección a `selectedBimonthlyBills` y comparte estado con la de bimestrales; `selectedQuarterlyBills` no se llena nunca. | Confirmado |
-| F-31 | Bajo | `ListBills.vue` | El diálogo de borrado muestra `bill.name`, que no existe (el campo es `concepto`): el mensaje sale sin nombre. | Confirmado |
-| F-32 | Bajo | `generarNuevasFechasRecibo` | Corregido el 2026-10-27: función retirada con el flujo global de «Actualizar fechas». | Confirmado |
-| F-33 | Bajo | `Advances.vue` | El botón «Recalcular pagos» del diálogo de borrado se deshabilita cuando queda un solo pago pendiente (`pagosPendientesCount <= 1`), aunque el servidor sabe repartir el importe sobre uno; por eso el aviso «Sin pagos pendientes» no se puede alcanzar desde la pantalla. Resuelto con DC-12 en la fase 1: «Recalcular pagos» completa los pagos hasta el sugerido y crea los que falten, y solo se deshabilita si el anticipo no tiene pago sugerido y periodicidad. | Confirmado |
-| F-34 | Bajo | `pushRecibo`, `ListBills.vue` | Al faltar un campo obligatorio, el aviso enumeraba siempre los seis campos (incluido el propietario, que no se introduce) sin indicar cuál faltaba. Corregido en la fase 1: la pantalla avisa antes de enviar y el servidor nombra los campos que faltan. | Confirmado |
-| F-35 | Bajo | `pushRecibo` | Cambiar en modo manual la fecha de un cargo ya pagado deja `recibos_historico.fecha_pago` con la fecha antigua: el historial solo se escribe al pasar a «cargado» (ver también F-15). Resuelto por DC-14 y DC-23: `recibos_historico` ya no existe. | Confirmado |
-| F-36 | Bajo | `recalculatePaymentPlan` | El saldo restante se resta en coma flotante sin redondear; con céntimos puede quedar un residuo del orden de 1e-15 que crea un último pago de 0,00 € (por ejemplo, 20,10 € en pagos de 6,70 € genera 4 pagos en vez de 3). Corregido en la fase 1: el saldo se redondea a céntimos en cada paso. | Confirmado |
-| F-37 | Medio | Ahorros: opciones de periodicidad | El requisito del usuario admite aportaciones diarias, semanales, otras cadencias y uso puntual. getPeriodicidades lee el ENUM del esquema; 0001 no ofrece diaria/semanal. Savings sí permite periodicidad vacía (NULL) y movimientos manuales sin patrón: ese caso no está ausente. Tarea: ampliar/definir opciones según el requisito sin trasladar reglas de recibos ni deducirlas de registros de prueba. | Confirmado por revisión estática |
-| F-38 | Medio | UsersService: sesión temporal | saveUser, deleteUsers y changePassword leen solo localStorage; getUsers y preferencias consultan también sessionStorage. Con sesión temporal esos tres métodos envían un token incorrecto. Tarea: unificar obtención del token y probar CRUD/cambio de contraseña con y sin Recordarme. | Confirmado por revisión estática |
-| F-39 | Medio | Advances: borrado múltiple | El botón Borrar de la barra activa deleteSelectedAdvancesDialog, pero el template no contiene el diálogo ni un flujo de ejecución de borrado múltiple conectado. La API sí admite IDs en lote. Tarea: completar confirmación, llamada, recarga y errores, o retirar el botón hasta implementarlo. | Confirmado por revisión estática |
-| F-40 | Bajo | Advances: fecha propuesta manual | openNewPago y addNewPayment suman siempre un mes al último pago (o a hoy), incluso si la periodicidad es bimestral, trimestral o anual. El plan automático usa getMonthsFromPeriodicidad. Tarea: unificar el criterio de la propuesta manual con el plan o documentar una decisión explícita; no cambiar el negocio en este PR de documentación. | Confirmado por revisión estática |
-| F-41 | Bajo | Categories: longitud de descripción | El control permite 260 caracteres, avisa por encima de 255 y Guardar depende solo del nombre; la columna es VARCHAR(255). Unificar control, validación y mensaje. Abierto; comprobado estáticamente. | Confirmado |
-| F-42 | Medio | Validación de usuarios | La pantalla solo comprueba @ en el correo y presencia/coincidencia de contraseña; el servidor comprueba presencia pero no formato, longitudes, fortaleza ni catálogos de rol/perm_*. Definir y aplicar validación coherente, con respuestas 400. Abierto. | Confirmado |
-| F-43 | Medio | Validación de borrados | Cuentas y ahorros delegan cuerpos/IDs sin validación consistente y pueden devolver 500 por entradas mal formadas. Validar presencia, forma, array no vacío e IDs antes de consultar la BD. Abierto. | Confirmado |
-
-## 6. Seguridad y operación (S)
-
-| ID | Sev. | Hallazgo | Certeza |
+| Parte | Archivo | Secciones | Contenido |
 |---|---|---|---|
-| S-01 | Alto | Ningún endpoint de datos filtra por `propietario_id`, `es_privado` ni `perm_*`; editar un recibo ajeno lo reasigna al editor. `permisos.md` lo presenta como implementado. | Confirmado |
-| S-02 | Alto | `db_maintenance.mjs` monta comandos de shell por interpolación: contraseñas con símbolos rompen backup y restore y la contraseña queda en `ps` y en el log. Validación de restore cosmética, sin backup previo, sin límite de tamaño. | Confirmado |
-| S-03 | Alto | `saveDbConfig` escribe claves sin validar, el pool no se recrea tras el cambio, `initPool` no memoiza, el TLS va fijo con `rejectUnauthorized:false` y `GET /api/db-config/password` devuelve la contraseña. | Confirmado |
-| S-04 | Medio | JWT de 24 h con rol embebido y sin revocación; sin rate limiting en `/login`; borrar o degradar admins sin guardas. | Confirmado |
-| S-05 | Medio | `error.stack` devuelto al cliente, `console.log` masivo y CORS abierto. | Confirmado |
-| S-06 | Medio | `/tech-docs` y `/documentation` solo se ocultan en el menú; ninguna ruta define `requiresAdmin`. | Confirmado |
-| S-07 | Medio | Los servicios usan `axios` crudo, no `apiClient`; el interceptor llama a `useAuth()` fuera de componente; dependencia circular `api.js` y `useAuth.js`; cada `useAuth()` crea su estado e intervalo. | Confirmado |
-| S-08 | Bajo | `.gitignore` no cubre `.db_connection.backup` ni `*.sql`; `engines` Node >=20.9 <21 frente a README Node 16+; scripts con rutas `/workspaces`; sin herramienta de migraciones (la línea base 0001 y las pruebas de la fase 0 son el primer paso). | Confirmado |
-| S-09 | Bajo | El contenedor de desarrollo no trae `git-crypt` aunque el README lo exige; añadirlo a `.devcontainer/Dockerfile`. | Confirmado |
-| S-10 | Cerrado | El `.env` de la raíz solo contiene `VITE_API_URL`; no hay secretos. `backend/.env` y `backend/src/db/.db_connection` figuran cifrados. | Confirmado |
-| S-11 | Alto | Dependencias: Dependabot informa de 108 vulnerabilidades en `main` el 2026-10-17 (3 críticas, 59 altas, 38 moderadas, 8 bajas) y hay cinco ramas `snyk-fix-*` sin fusionar. Actualizar en una fase propia, con las pruebas en verde. | Confirmado |
-| S-12 | Alto | reader y limited_user están definidos pero no limitan escritura en los endpoints de datos. isUser/canRead y vRole no se usan para imponer esas restricciones. Definir la matriz de autorización y aplicarla en servidor y UI; vinculado a S-01 y S-06. Abierto. | Confirmado |
-| O-01 | Bajo | `VITE_API_URL=http://localhost:3000`: el frontend no alcanzará el backend desde otros equipos de la red; configurar en el despliegue. | Confirmado |
+| 1 de 3 | [registro-hallazgos_1de3.md](./registro-hallazgos_1de3.md) | 0 a 4 | Reanudación operativa, método, decisiones (DC), entorno de referencia y casos de aceptación |
+| 2 de 3 | [registro-hallazgos_2de3.md](./registro-hallazgos_2de3.md) | 5 | Hallazgos funcionales (F) |
+| 3 de 3 | [registro-hallazgos_3de3.md](./registro-hallazgos_3de3.md) | 6 a 10 | Seguridad y operación (S, O), interfaz y documentación (U, D), hoja de ruta (R), cobertura de la revisión y plan por fases |
 
-## 7. Interfaz y documentación (U, D)
+## Dónde está cada sección
 
-| ID | Sev. | Hallazgo |
+| Sección | Contenido | Parte |
 |---|---|---|
-| U-01 | Alto | El Dashboard (página de inicio) es el de la plantilla Sakai. |
-| U-02 | Medio | `/manual` y `/documentation` cargan la misma página (plantilla Sakai en inglés); no existe manual de usuario. |
-| U-03 | Medio | El menú muestra «UI Components», «Pages» y «Hierarchy» a todos; Presupuestos, Transacciones y Automatización son páginas vacías. |
-| U-04 | Medio | `className` en vez de `class` en `Budgets.vue` y `ProfileSettings.vue`. La pestaña «Header III» con Lorem ipsum se eliminó en DC-26; `className` sigue en ambos (2026-10-23). |
-| U-05 | Bajo | Idioma mezclado (Cancel, Save, Yes, Confirm, Successful, Warning). |
-| U-06 | Bajo | Formato inconsistente: saldo sin moneda en Cuentas; «Importe periódico» frente a «Ahorro sugerido»; «Importe total» de Anticipos es el saldo. |
-| U-07 | Bajo | Calendario: no pinta mensuales pero los suma; mensual manual con una fecha cuenta un solo mes; tooltip solo del primer evento. |
-| U-08 | Bajo | Servicios de demo (`CustomerService.js` de 284 KB y otros) y `views/uikit` en el repositorio. |
-| D-01 | Medio | Estados y `comentario` de `fechas_cargo` en la doc no coinciden con la BD. Resuelto en diseño por DC-01. |
-| D-02 | Medio | `presupuestos.md` usa `transacciones`, `periodo_id` y `recibos_periodos`, que no existen; `DB_presupuestos.txt` usa `user_id`. |
-| D-03 | Medio | Documentados en la fase 1: `historial`, `generar-fechas`, `actualizar-fechas`, `fecha_inicial` y `modoFechas`. Documentados el 2026-10-23: `/api/db-config*`, `/api/db/backup|restore` y la página Calendar; Budgets, Transactions, Automation y Loans son páginas vacías de la plantilla (U-03). |
-| D-04 | Bajo | `db_utilsBill.md` apunta a un módulo inexistente; faltan `anual` y otros valores; `Tech-documentation.vue` duplica a mano `doc/`. |
-| D-05 | Bajo | Los planes de anticipos de los datos empiezan un periodo después de `fecha_inicio`; el código actual empieza en `fecha_inicio`. Aclarar el comportamiento. |
-| D-06 | Medio | `db_utilsSav.md` y `db_utilsAdv.md` afirmaban que las operaciones usaban transacciones y ninguna lo hacía. Corregido en la fase 1: el de ahorros describe las transacciones de F-03 y el de anticipos avisa de que no las usa (F-27). Puesta al día de F-01, F-02, F-03, F-24, F-25 y F-26 en `doc/db`, `doc/routes`, `doc/components`, `doc/services` e `index.md`. |
-| D-07 | Bajo | `db_utilsAcc.md` decía que los saldos se mantenían automáticamente y que el IBAN se verificaba antes de insertar; el saldo es manual (F-21) y el duplicado lo detecta el índice único. Corregido en la fase 1 junto con F-06. |
-| D-08 | Bajo | `README.md`, `README_en.md` y `.github/copilot-instructions.md` presentaban `DB_estructura.txt` (volcado antiguo con datos de ejemplo) como fuente del esquema, y el `TODO` citaba una función inexistente (`actualizarFechasCargoPagado`) y un histórico por depurar. Corregido en la fase 1 (DC-13). |
-| D-09 | Bajo | La documentación de `fechas_cargo` y de la API de recibos decía que `estado` admite «pagado» y «rechazado»; el esquema solo admite «pendiente» y «cargado». Corregido en la fase 1 junto con el PR de backend de DC-14. |
-| D-10 | Medio | Auditoría de `doc/` del 2026-10-23 (comprobación mecánica de nombres, rutas, enlaces y migraciones sobre los 45 documentos, y lectura de los que cambiaron en los PR #22 a #28). Corregido en el PR de documentación (DC-27): plan y `TODO` obsoletos; «Pendiente» ya hechos en DC-21, DC-23, `db_utilsBill.md` y `ListBills.md`; `permitirPagados` sin documentar; funciones inexistentes en `ListBills.md` (`fetchCategories`, `fetchAccounts`); `db_ajustes.md` atribuía a `db_ajustes` las funciones de `utils/tiempo`; 21 enlaces `../` de `doc/index.md` rotos en GitHub, 6 en `schema/index.md`, 1 en `middleware/auth.md` y 1 en `BillService.md`; MySQL y Aiven en `schema/index.md` y `optimizaciones.md`; `README.md` y `.github/copilot-instructions.md` con versiones y funciones desfasadas. Nuevos: `useTheme`, `useLayout`, `useAjustesSesion`, `tiempo`, `env`, `conexionDB`, `mantenimientoDB`, `DbConfigService`, `MaintenanceDBService`, `db_utilsConn`, `db_maintenance`, `Calendar` y `PaginasVacias`. |
-| D-11 | Medio | Cierre de la auditoría documental del 2026-10-23, tras PR #29. Contrastados los nueve documentos pendientes: Advances, Savings, AccService, AdvService, CatsService, SavService, UsersService, db_utilsAdv y db_utilsSav. Corregidas promesas de funciones que no ejecuta el código (inactivos, borrado múltiple, validaciones y transacciones), contratos de token/errores, saldo restante, algoritmos de recálculo y trazas. Se consolidan también las correcciones documentales de guardias, middleware, autenticación, privacidad/permisos, README inglés y pruebas. F-37 a F-40 quedan abiertos; F-07, F-08, F-14, F-16, F-19, F-27 y F-28 no se dan por corregidos. |
-| D-12 | Medio | Verificación del estado fusionado en f4f2328 (PR #30), 2026-10-24: corregidas pestañas inexistentes de Recibos, paginación de usuarios ausente, validaciones sobreafirmadas, restricciones de roles no aplicadas, precisión del rastro SQL e historial de PR. F-41 a F-43 y S-12 permanecen abiertos; R-05 a R-08 son propuestas, no compromisos aprobados. Se limpian referencias a scripts de la conversación. |
-| D-13 | Medio | Revisión de documentación de raíz omitida en los cierres previos (base da4250e/PR #31): package.json.md describía comandos y directorios inexistentes; DB_controlfinanciero.txt y DB_presupuestos.txt contenían SQL histórico sin delimitar su vigencia; presupuestos.txt mezclaba requisitos con capacidades actuales; categorías.txt era una lista de ejemplos, no una jerarquía. Se corrige/clasifica cada archivo, se recuperan R-09 a R-13 por prioridad y se sincronizan TODO, plan, índice y relevo. No se certifica que la auditoría integral del repositorio esté completa. |
-| D-14 | Medio | Relevo operativo tras PR #32: fija la secuencia de próximos PR, alcance y exclusiones de Actualizar fechas, aceptación, entorno de tests, distinción entre prioridad técnica y orden acordado, reglas del usuario y arranque de otro chat. Sin cambios de negocio ni nuevas pruebas funcionales. |
-| D-15 | Bajo | Actualización del punto de reanudación a base 4d73e06 (PR #35) tras fusionar #33 (D-14), #34 (DC-27) y #35; añade regla en §3 de la instrucción persistente sobre commit remoto delegado con contenido erróneo o marcador no sustituido. Sin cambios de negocio. |
+| 0 | Reanudación operativa | [1 de 3](./registro-hallazgos_1de3.md) |
+| 1 | Método | [1 de 3](./registro-hallazgos_1de3.md) |
+| 2 | Decisiones (DC) | [1 de 3](./registro-hallazgos_1de3.md) |
+| 3 | Entorno de referencia | [1 de 3](./registro-hallazgos_1de3.md) |
+| 4 | Casos de aceptación (Excel del usuario) | [1 de 3](./registro-hallazgos_1de3.md) |
+| 5 | Hallazgos funcionales (F) | [2 de 3](./registro-hallazgos_2de3.md) |
+| 6 | Seguridad y operación (S, O) | [3 de 3](./registro-hallazgos_3de3.md) |
+| 7 | Interfaz y documentación (U, D) | [3 de 3](./registro-hallazgos_3de3.md) |
+| 8 | Hoja de ruta funcional (R) | [3 de 3](./registro-hallazgos_3de3.md) |
+| 9 | Cobertura de la revisión | [3 de 3](./registro-hallazgos_3de3.md) |
+| 10 | Plan por fases | [3 de 3](./registro-hallazgos_3de3.md) |
 
-## 8. Hoja de ruta funcional (alineación con el Excel; no se aborda hasta cerrar los fallos)
+Familias de identificadores: DC en la parte 1; F en la parte 2; S, O, U, D y R en la parte 3. Antes de asignar un ID nuevo, comprueba la parte que corresponde a su familia.
 
-| ID | Necesidad del Excel |
-|---|---|
-| R-01 | Reserva mensual de recibos no mensuales, con marca de pagado o pendiente. |
-| R-02 | Movimientos con saldo corrido y conciliación entre cuentas. |
-| R-03 | Disponible del mes = nómina − recibos − gastos − previstos netos de reservas. |
-| R-04 | Reparto de sueldos entre dos personas (políticas A, B y C). |
-| R-05 | Propuesta de mejora, no aprobada ni implementada: progreso de Ahorros. Decidir si hace falta importe objetivo además de fecha y cómo medir avance; no equiparar fecha objetivo a objetivo monetario. |
-| R-06 | Propuesta de mejora, no aprobada ni implementada: clasificación transversal por categorías, coordinada con R-02 y presupuestos; evitar añadir relaciones aisladas sin modelo de movimientos común. |
-| R-07 | Propuesta de mejora, no aprobada ni implementada: informes básicos de saldo y plan de Anticipos, y aportaciones de Ahorros, con periodo y cifras trazables. CSV actual no equivale a informes. |
-| R-08 | Propuesta de mejora de prioridad baja: paginación y búsqueda de usuarios cuando el volumen lo justifique; el listado actual no pagina. |
-| R-09 | P2, requisito histórico a revalidar: automatización de aportaciones de Ahorros mediante reglas. Fuente DB_controlfinanciero.txt. No existe hoy; requiere idempotencia por regla/periodo, pausa, historial de ejecución, política de fallo y no duplicar aportaciones manuales. Depende de integridad F-27 y operación; no se resuelve solo ampliando F-37. |
-| R-10 | P2, requisito histórico a revalidar: cadencias adicionales de Anticipos, p. ej. semanal y cada cuatro meses, citadas en DB_controlfinanciero.txt. Afecta algoritmo, esquema, fechas de fin y UI; no basta con ampliar ENUM. Coordinar con F-40 y pruebas de calendario. |
-| R-11 | P2, requisito histórico a revalidar: presupuestos por periodo con importe asignado, gastado y disponible, y selector mes/año. Fuentes presupuestos.txt, DB_presupuestos.txt y DB_controlfinanciero.txt. Las tablas parciales no equivalen a API ni pantalla. Depende del modelo de movimientos R-02 y disponible R-03; evitar otra fuente de saldo. |
-| R-12 | P2, requisito histórico a revalidar: presupuesto especial de recibos con esperado, recibido, diferencia y pendientes. Fuente presupuestos.txt; relacionado con R-01. Definir efecto de diferencias y continuidad de pendientes sin duplicar fechas_cargo ni romper DC-14; depende de R-11/R-02. |
-| R-13 | P2, requisito histórico a revalidar: detalle de transacciones de un presupuesto y periodo al pulsar su concepto. Fuente presupuestos.txt (fase II). Depende de R-11 y del modelo de movimientos R-02, con trazabilidad y autorización de servidor. |
+## Reglas de mantenimiento
 
-## 9. Cobertura de la revisión
-
-D-13 amplía el alcance a cinco documentos de raíz que faltaban en los inventarios anteriores. Corrige o clasifica sus afirmaciones y recupera requisitos priorizados, pero no acredita que la auditoría integral esté finalizada.
-
-
-Auditoría cerrada el 2026-10-23 sobre el código de los PR #14 a #28, el primer PR de documentación #29 y los ficheros entregados por el usuario. El historial se contrastó con cambios_por_pr.txt. Los adjuntos sustituyen las lecturas truncadas del conector.
-
-La revisión combina lectura de los documentos, contraste de afirmaciones con los caminos del código, tablas y restricciones de las migraciones, endpoints, cuerpos y respuestas, formularios, exportaciones y trazas; no es solo una comparación de nombres. Se completó expresamente la revisión de Advances.md, Savings.md, AccService.md, AdvService.md, CatsService.md, SavService.md, UsersService.md, db_utilsAdv.md y db_utilsSav.md. No queda la anterior lista de documentos pendientes de lectura.
-
-Los documentos históricos y de diseño de schema/ se identifican como tales: no se presentan como funcionalidades implementadas ni como scripts de instalación vigentes. Las filas de una BD de pruebas no son requisitos de negocio. Los ENUM del esquema sí limitan lo que la implementación actual ofrece, pero no deciden por sí solos el diseño deseado. En Ahorros ya existe uso manual con periodicidad NULL; ampliar opciones explícitas es F-37.
-
-Es una revisión estática, no una certificación de ausencia de defectos. No se han ejecutado de nuevo UI, build, lint ni pruebas de integración contra MariaDB en esta auditoría. La salida recibida de npm run test:backend falló durante preparación por ENOTFOUND mariadb-test, sin una ejecución funcional satisfactoria. Resolver el entorno y volver a ejecutar la suite queda como tarea operativa, no como corrección de documentación pendiente.
-
-La documentación describe los fallos como comportamiento actual y remite a F/S/U; cerrar la auditoría documental no cierra esos fallos. Informe y trazabilidad: [auditoria-documentacion.md](./auditoria-documentacion.md).
-
-## 10. Plan por fases
-
-### Prioridad técnica de trabajo futuro (D-13)
-
-La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola los tres micro-PR ya acordados (Actualizar fechas, validación de un año y F-17); si se prepara un despliegue real, los riesgos P0/P1 deben resolverse antes de ampliaciones funcionales. P0 es la prioridad mayor.
-
-| Prioridad | Trabajo | Dependencias/criterio |
-|---|---|---|
-| P0 | S-01/S-06/S-12: autorización efectiva en servidor | reader no debe poder escribir; la ocultación de controles no es seguridad |
-| P1 | F-14/F-16/F-27 y S-02/S-03: saldos, transacciones, reintentos y recuperación | Evitar pérdidas, duplicados y operaciones parciales |
-| P1 | F-41/F-42/F-43 y entorno de tests | Validación coherente, respuestas claras y ejecución reproducible de pruebas |
-| P2 | R-02/R-03 y R-11: movimientos y presupuestos por periodo | Primero un modelo común, sin fuentes de saldo paralelas |
-| P2 | R-01/R-12: recepción de recibos y diferencias | Depende de presupuestos, respeta DC-14 y no duplica estados de pago |
-| P2 | R-09: reglas de aportación automática de Ahorros | Idempotencia, pausa, historial y política de fallos; distinto de uso manual/F-37 |
-| P2 | R-10: cadencias adicionales de Anticipos | Rediseño de calendario y pruebas, no solo ENUM; relacionado con F-40 |
-| P2 | R-13: detalle de transacciones por presupuesto/periodo | Depende de R-02/R-11 y de autorización efectiva |
-| P3 | R-05/R-07: progreso e informes básicos | Dependen de objetivos definidos y cifras conciliables |
-| P3 | R-08: paginación/búsqueda de usuarios | Solo si el volumen lo justifica |
-
-R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
-
-
-Estado al cierre de la auditoría documental del 2026-10-23, después del PR #29. Fuente de continuidad: [estado-del-proyecto.md](./estado-del-proyecto.md); lista corta en TODO. La documentación ya no queda aplazada como una lectura pendiente: se modifica con cada cambio de código.
-
-1. Fase 0 completada: línea base, registro y pruebas iniciales. La ejecución actual requiere configurar el entorno de backend/test/README.md.
-2. Fase 1 en curso: ya están incorporados el rediseño de recibos por año, Ajustes, zona horaria y Aspecto (PR #22 a #28), además de las correcciones F-01 a F-06, F-18, F-24 a F-26, F-29, F-33 a F-36 según el registro (F-35 dejó de aplicar al retirar el histórico).
-3. Siguiente, un PR por punto, sin alterar el orden acordado:
-   - [x] Retirar Actualizar fechas (hecho 2026-10-27): updateAllDates y botón comentado, BillService.updateAllBillsDates, ruta /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo retirados; los dos errores de eslint de ListBills corregidos. Cierra F-11, F-23 y F-32, no F-12.
-   - Validación de un solo año al editar recibos (DC-14), servidor y pantalla.
-   - F-17: errata re/turn en confirmDeleteAdvance.
-4. Resto de fase 1, agrupado para no perder fallos de la auditoría:
-   - F-07/F-08: borrado e inactivos de Ahorros; F-09/F-22: edición e índice único de categorías; F-10: errores de FK.
-   - F-12/F-13 y DC-05: calendario/normalización de DATE; F-14: saldo, cambios de pagado, reactivación al borrar y respuesta de la ruta antigua de pagos.
-   - F-16: no mutar fechas de los formularios antes de confirmar éxito; F-19: CSV seguro; F-20/F-21: endpoint inexistente y saldo de cuentas manual; F-27: atomicidad de operaciones y sustitución de pagos; F-28: mensajes del servidor; F-30/F-31: selección y texto de borrado en recibos; F-15 solo en lo no sustituido por el rediseño.
-   - F-37: opciones explícitas de cadencia de Ahorros, conservando uso manual sin patrón; F-38: token de sesión temporal en UsersService; F-39: borrado múltiple de Anticipos; F-40: propuesta de fechas manuales.
-   - Migraciones de DC-01 (rechazado) y DC-02 (unicidad de categorías), todavía ausentes de 0001 a 0004.
-5. Fase 2: permisos reales y acceso (S-01, S-04, S-06). Los campos de permisos y la ocultación de controles no equivalen a autorización del servidor.
-6. Fase 3: operación (S-02, S-03, S-07, O-01, S-08/S-09) y migración nueva de mantenimiento. Unificar uso de API/estado de sesión e interceptores; confirmar el entorno de tests antes de presentar resultados.
-7. Fase 4: interfaz y funcionalidades de plantilla (U-01 a U-08), diseño pendiente (D-01 a D-05 en lo no resuelto) y mantenimiento automático de navegación/documentación. El cierre de los contrastes D-11/D-12 no acredita una auditoría integral de todos los archivos del repositorio: D-13 incorpora documentos de raíz antes omitidos.
-8. Fase 5: dependencias (S-11), revisar las ramas Snyk antes de actualizar, con pruebas funcionales disponibles.
-9. Fase 6: hoja de ruta funcional del Excel (R-01 a R-04), que se conserva en la sección 8.
+- Cada contenido vive en una sola parte; esta entrada no duplica filas ni decisiones y no se edita como fuente de datos. No existe una copia monolítica.
+- Los cambios del registro (decisiones, hallazgos, plan) se hacen en la parte que contiene la sección, en el mismo PR que el código, junto con `doc/`, `TODO` y `estado-del-proyecto.md`.
+- Las partes se dividen por secciones completas, sin cortar filas, decisiones ni bloques de código. Los tamaños son orientativos: en las lecturas del conector se ha observado truncamiento hacia los 40 000 caracteres. Si una parte se acerca a los 30 000, se propone un nuevo reparto como tarea aparte y aprobada.
+- Un cambio de reparto (partes nuevas o movidas) exige actualizar esta tabla, las referencias, `doc/index.md`, `docNavigation` en `Tech-documentation.vue`, el relevo y la instrucción persistente.
+- Las referencias a secciones numeradas se mantienen válidas gracias a la tabla de arriba.
