@@ -459,6 +459,77 @@ describe('DC-14 a DC-18: lógica de recibos con las funciones reales de la aplic
     });
 });
 
+describe('DC-14: un recibo no puede tener fechas de más de un año', () => {
+    const crear = async (concepto, periodicidad, fechaInicial) => {
+        await pushRecibo(undefined, concepto, periodicidad, 35, 'General', undefined, 2, 1, fechaInicial, 'auto');
+        const [[fila]] = await db.query('SELECT id FROM recibos WHERE concepto = ?', [concepto]);
+        return fila.id;
+    };
+    const fechasDe = async (reciboId) => (await db.query("SELECT id, DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha FROM fechas_cargo WHERE recibo_id = ? ORDER BY fecha", [reciboId]))[0];
+    const fechaInicialDe = async (reciboId) => (await db.query("SELECT DATE_FORMAT(fecha_inicial, '%Y-%m-%d') AS fecha FROM recibos WHERE id = ?", [reciboId]))[0][0].fecha;
+    const guardar = (id, concepto, periodicidad, cargo, fechaInicial, modo, permitirFueraDeAnio) => pushRecibo(id, concepto, periodicidad, 35, 'General', cargo, 2, 1, fechaInicial, modo, permitirFueraDeAnio);
+    const cargoDe = (fecha, extra = {}) => ({ fecha, estado: 'pendiente', comentario: '', activo: 1, ...extra });
+
+    test('un alta manual con fechas de dos años se rechaza y no crea nada', async () => {
+        await assert.rejects(() => guardar(undefined, 'DC14 alta dos años', 'bimestral', [cargoDe('2026-11-07'), cargoDe('2027-01-07')], undefined, 'manual'), /deben ser del año 2026.*2027-01-07/);
+        const [[recibos]] = await db.query('SELECT COUNT(*) AS total FROM recibos WHERE concepto = ?', ['DC14 alta dos años']);
+        assert.equal(Number(recibos.total), 0);
+    });
+
+    test('un alta manual con todas las fechas del mismo año se admite', async () => {
+        await guardar(undefined, 'DC14 alta un año', 'bimestral', [cargoDe('2026-11-07'), cargoDe('2026-12-07')], undefined, 'manual');
+        const [[fila]] = await db.query('SELECT id FROM recibos WHERE concepto = ?', ['DC14 alta un año']);
+        assert.deepEqual((await fechasDe(fila.id)).map((c) => c.fecha), ['2026-11-07', '2026-12-07']);
+    });
+
+    test('en la edición manual no se puede llevar un cargo a otro año, pero sí moverlo dentro del año', async () => {
+        const id = await crear('DC14 mover cargo', 'trimestral', '2026-01-09');
+        const cargos = await fechasDe(id);
+        await assert.rejects(() => guardar(id, 'DC14 mover cargo', 'trimestral', [cargoDe('2027-01-09', { id: cargos[3].id })], undefined, 'manual'), /deben ser del año 2026.*2027-01-09/);
+        assert.deepEqual((await fechasDe(id)).map((c) => c.fecha), ['2026-01-09', '2026-04-09', '2026-07-09', '2026-10-09']);
+
+        await guardar(id, 'DC14 mover cargo', 'trimestral', [cargoDe('2026-12-09', { id: cargos[3].id })], undefined, 'manual');
+        assert.deepEqual((await fechasDe(id)).map((c) => c.fecha), ['2026-01-09', '2026-04-09', '2026-07-09', '2026-12-09']);
+    });
+
+    test('la fecha inicial de un recibo existente no puede cambiar de año', async () => {
+        const id = await crear('DC14 fecha inicial', 'anual', '2026-03-15');
+        const [cargo] = await fechasDe(id);
+        await assert.rejects(() => guardar(id, 'DC14 fecha inicial', 'anual', [cargoDe('2026-03-15', { id: cargo.id })], '2027-03-15', 'manual'), /deben ser del año 2026.*2027-03-15/);
+        assert.equal(await fechaInicialDe(id), '2026-03-15');
+    });
+
+    test('en automático no se reescriben fechas pendientes fuera del año; dentro del año sí', async () => {
+        const id = await crear('DC14 automatico', 'mensual', '2026-10-05');
+        await assert.rejects(() => guardar(id, 'DC14 automatico', 'mensual', undefined, '2026-11-05', 'auto'), /deben ser del año 2026.*2027-01-05/);
+        assert.deepEqual((await fechasDe(id)).map((c) => c.fecha), ['2026-10-05', '2026-11-05', '2026-12-05']);
+        assert.equal(await fechaInicialDe(id), '2026-10-05');
+
+        const resultado = await guardar(id, 'DC14 automatico', 'mensual', undefined, '2026-10-06', 'auto');
+        assert.deepEqual(resultado, { fechasReescritas: 3, fechasConservadas: 0 });
+        assert.deepEqual((await fechasDe(id)).map((c) => c.fecha), ['2026-10-06', '2026-11-06', '2026-12-06']);
+    });
+
+    test('un cargo sin fecha (solo comentario o estado) no se valida contra el año', async () => {
+        const id = await crear('DC14 comentario', 'trimestral', '2026-01-09');
+        const cargos = await fechasDe(id);
+        await guardar(id, 'DC14 comentario', 'trimestral', [{ id: cargos[0].id, comentario: 'solo comentario', estado: 'pendiente', activo: 1 }], undefined, 'manual');
+        const [[fila]] = await db.query('SELECT comentario FROM fechas_cargo WHERE id = ?', [cargos[0].id]);
+        assert.equal(fila.comentario, 'solo comentario');
+    });
+
+    test('con permitirFueraDeAnio se admiten fechas de otro año en el alta y en la edición (DC-29)', async () => {
+        await guardar(undefined, 'DC29 alta dos años', 'bimestral', [cargoDe('2026-11-07'), cargoDe('2027-01-07')], undefined, 'manual', true);
+        const [[alta]] = await db.query('SELECT id FROM recibos WHERE concepto = ?', ['DC29 alta dos años']);
+        assert.deepEqual((await fechasDe(alta.id)).map((c) => c.fecha), ['2026-11-07', '2027-01-07']);
+
+        const id = await crear('DC29 mover cargo', 'trimestral', '2026-01-09');
+        const cargos = await fechasDe(id);
+        await guardar(id, 'DC29 mover cargo', 'trimestral', [cargoDe('2027-01-09', { id: cargos[3].id })], undefined, 'manual', true);
+        assert.deepEqual((await fechasDe(id)).map((c) => c.fecha), ['2026-01-09', '2026-04-09', '2026-07-09', '2027-01-09']);
+    });
+});
+
 describe('Migración 0003: un recibo por año', () => {
     let sqlMigracion;
     const alta = async (concepto, periodicidad, fechaInicial, fechas) => {

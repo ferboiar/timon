@@ -65,7 +65,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getRecibos(filters)` | Obtiene recibos aplicando filtros opcionales (periodicidad, fecha, año, etc.). Cada fila incluye `importe` (el del recibo) e `importe_cargo` (el real del cargo, vacío si está pendiente) |
-| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas)` | Crea o actualiza un recibo con sus fechas de cargo. En modo `auto` genera las fechas desde `fecha_inicial` hasta el 31 de diciembre de ese año (DC-16); al actualizar solo reescribe las pendientes. Al pasar un cargo a «cargado» guarda su importe (DC-15). Devuelve `{ fechasReescritas, fechasConservadas }` |
+| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio = false)` | Crea o actualiza un recibo con sus fechas de cargo. En modo `auto` genera las fechas desde `fecha_inicial` hasta el 31 de diciembre de ese año (DC-16); al actualizar solo reescribe las pendientes. Al pasar un cargo a «cargado» guarda su importe (DC-15). Rechaza las fechas que no sean del año natural del recibo, salvo con `permitirFueraDeAnio` (DC-14, DC-29). Devuelve `{ fechasReescritas, fechasConservadas }` |
 | `deleteRecibo(id, fecha, periodicidad, hoy, forzar)` | Elimina un recibo completo o solo una fecha de cargo específica. Si el recibo tiene cargos pagados, o la fecha indicada está pagada y es de un mes anterior al actual, o el recibo tiene sucesor, lanza un error con `status` 409 y no borra nada; una fecha pagada del mes en curso sí puede borrarse (para rectificar). Con `forzar` (la ruta lo activa solo para el administrador con `permitirPagados=1`, DC-21) se omite la comprobación de cargos pagados. Al borrar un recibo con origen, marca `replicar = 0` en el origen (DC-18) |
 | `generarFechasDelAnio(fechaInicial, periodicidad)` | Devuelve las fechas de la secuencia anclada en `fechaInicial` que caen en su mismo año natural (DC-16). Si el día no existe en un mes, usa el último día |
 | `fechasFaltantes(fechaInicial, periodicidad, fechasExistentes, anioActual, hoy)` | Devuelve los meses de la secuencia anclada en `fechaInicial` que no tienen cargo en el año en curso, nunca antes de `fechaInicial` ni en un ejercicio cerrado. Cada fecha lleva `generable`: verdadero si es posterior al último cargo o un hueco cuya fecha aún no ha llegado (DC-22) |
@@ -82,6 +82,17 @@ Cada recibo es el recibo de un año natural: todas sus fechas de cargo caen dent
 La migración `0003_partir_recibos_por_anio.sql` parte los recibos que tenían fechas en más de un año en un recibo por año, enlazados entre sí. Cada trozo conserva solo las fechas que ya tenía y su `fecha_inicial` es la primera fecha de la secuencia en ese año, anclada en la del recibo original. Es repetible: si ya no quedan recibos con fechas en dos años, no modifica nada.
 
 El procedimiento `generar_recibos_anio` y el evento diario que crean los recibos del año siguiente existen (DC-17, DC-24); ver [generar_recibos_anio](./generar_recibos_anio.md).
+
+## Validación del año al guardar (DC-14, DC-29)
+
+`pushRecibo` rechaza (lanza un error que la ruta devuelve como 400) cualquier fecha que caiga fuera del año natural del recibo. El año del recibo es:
+
+- En un recibo nuevo: el de `fecha_inicial` o, en modo manual sin ella, el de la primera fecha de cargo.
+- En un recibo existente: el de su `fecha_inicial` guardada (si no la tiene, el de su primer cargo).
+
+Se comprueban las fechas de cargo recibidas en modo manual, la `fecha_inicial` recibida al editar y, al editar en modo automático, las fechas pendientes que se reescribirían (una `fecha_inicial` que desplace la secuencia al año siguiente se rechaza). Los cargos sin fecha (solo estado o comentario) no se comprueban. El error nombra el año y las fechas que sobran, y el recibo no se modifica. Para trabajar en otro año se usa otro recibo (lo crea el evento anual, DC-17).
+
+Con `permitirFueraDeAnio = true` la comprobación se omite y se deja una traza con las fechas admitidas. La ruta solo lo activa si el cuerpo trae `permitirFueraDeAnio: true` y quien guarda es administrador (interruptor de sesión «Permitir declarar fechas fuera del año en curso» de Ajustes, DC-29).
 
 ## Algoritmos Clave
 
@@ -159,6 +170,7 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 - Validación de tipos y rangos (importe positivo, longitud máxima para concepto)
 - Comprobación de valores permitidos (categorías existentes, periodicidades válidas)
 - Verificación de formato de fechas
+- Verificación de que las fechas caen en el año natural del recibo (DC-14), salvo `permitirFueraDeAnio` (DC-29)
 - Manejo detallado de errores con mensajes descriptivos para facilitar la depuración
 
 ## Consideraciones de Rendimiento
@@ -170,7 +182,7 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 
 ## Trazas en el log
 
-Al guardar en modo automático un recibo con fechas, `pushRecibo` deja trazas con el formato «módulo - acción: datos» (DC-09):
+`pushRecibo` deja trazas con el formato «módulo - acción: datos» (DC-09): en modo automático para las fechas de un recibo con fechas y, siempre, al rechazar o admitir fechas fuera de año:
 
 | Traza | Cuándo |
 |-------|--------|
@@ -178,6 +190,8 @@ Al guardar en modo automático un recibo con fechas, `pushRecibo` deja trazas co
 | `pushRecibo - Recibo …: fecha … conservada por estar …` | La fecha no está pendiente y no se toca |
 | `pushRecibo - Recibo …: fecha … sin cambios` | La fecha pendiente ya coincidía con la calculada |
 | `pushRecibo - Recibo …: modo automático, N fechas reescritas y M conservadas` | Resumen al terminar |
+| `pushRecibo - Recibo …: fechas fuera del año …` | Se rechazan fechas fuera del año del recibo (DC-14) |
+| `pushRecibo - Recibo …: fechas fuera del año … admitidas por permitirFueraDeAnio` | Un administrador las admitió con el interruptor de sesión (DC-29) |
 
 ## Referencias
 

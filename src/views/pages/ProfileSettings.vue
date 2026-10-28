@@ -6,7 +6,7 @@ import { DbConfigService } from '@/service/DbConfigService';
 import { MtoDBService } from '@/service/MaintenanceDBService';
 import { AjustesService } from '@/service/AjustesService';
 import { UsersService } from '@/service/UsersService';
-import { permitirEditarPagados } from '@/composables/useAjustesSesion';
+import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { cargarZonaHoraria, establecerZonaHoraria } from '@/composables/useZonaHoraria';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
@@ -753,19 +753,6 @@ onMounted(() => {
                     </div>
 
                     <div class="card">
-                        <div class="text-lg font-semibold mb-2">Permitir editar/borrar recibos pagados</div>
-                        <p>
-                            Por defecto no se permite editar ni borrar los recibos pagados, salvo los del mes y año en curso: los de meses anteriores se consideran cerrados. Con esta opción activada puedes editar y borrar también los pagados de meses
-                            cerrados, por ejemplo para corregir un error antiguo.
-                        </p>
-                        <p class="mt-2"><b>Solo dura la sesión.</b> Se desactiva al cerrar sesión o al recargar la página. Úsala con cuidado: borrar un cargo pagado no se puede deshacer.</p>
-                        <div class="flex items-center gap-3 mt-4">
-                            <ToggleSwitch v-model="permitirEditarPagados" />
-                            <span>{{ permitirEditarPagados ? 'Activada' : 'Desactivada' }}</span>
-                        </div>
-                    </div>
-
-                    <div class="card">
                         <div class="text-lg font-semibold mb-2">Generar los recibos del año ahora</div>
                         <p>
                             Ejecuta a mano el mismo proceso que el automático, aunque la creación automática esté desactivada. La vista previa muestra qué se crearía sin escribir nada: el recibo de origen, el año, cuántas fechas lleva, la primera y
@@ -792,6 +779,41 @@ onMounted(() => {
                                 <template #body="p"><Tag v-if="p.data.aviso" severity="warn" :value="p.data.aviso" /></template>
                             </Column>
                         </DataTable>
+                    </div>
+
+                    <div class="card">
+                        <div class="text-lg font-semibold mb-2">Permitir editar/borrar recibos pagados</div>
+                        <p>
+                            Por defecto no se permite editar ni borrar los recibos pagados, salvo los del mes y año en curso: los de meses anteriores se consideran cerrados. Con esta opción activada puedes editar y borrar también los pagados de meses
+                            cerrados, por ejemplo para corregir un error antiguo.
+                        </p>
+                        <p class="mt-2"><b>Solo dura la sesión.</b> Se desactiva al cerrar sesión o al recargar la página. Úsala con cuidado: borrar un cargo pagado no se puede deshacer.</p>
+                        <div class="flex items-center gap-3 mt-4">
+                            <ToggleSwitch v-model="permitirEditarPagados" />
+                            <span>{{ permitirEditarPagados ? 'Activada' : 'Desactivada' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="text-lg font-semibold mb-2">Permitir declarar fechas fuera del año en curso</div>
+                        <p>
+                            Cada recibo es de un año natural: todas sus fechas de cargo deben caer en el año de su fecha inicial. Por defecto, al guardar un recibo la pantalla avisa y el servidor rechaza cualquier fecha de otro año. Para tener un
+                            recibo de otro año se usa otro recibo, el que crea cada año el proceso automático.
+                        </p>
+                        <p class="mt-2">
+                            <b>Qué ocurre al activarla.</b> Mientras esté activada, al guardar un recibo se admiten fechas de cargo y fecha inicial de cualquier año: la pantalla no avisa y el servidor no las rechaza (solo lo acepta si quien guarda es
+                            administrador). El recibo se guarda con esas fechas tal cual; no se crea ningún recibo nuevo ni se mueve ninguna fecha existente. No cambia las demás reglas: los cargos pagados de meses cerrados siguen necesitando la
+                            opción «Permitir editar/borrar recibos pagados» y los ejercicios cerrados siguen sin poder editarse.
+                        </p>
+                        <p class="mt-2">
+                            <b>Úsala con cuidado.</b> Un recibo con fechas de más de un año deja de cumplir la regla de un recibo por año (DC-14): «Generar nuevas fechas» y el proceso que crea los recibos del año siguiente no están pensados para él.
+                            Actívala solo para corregir un caso concreto y desactívala después.
+                        </p>
+                        <p class="mt-2"><b>Solo dura la sesión.</b> Se desactiva automáticamente al cerrar sesión o al recargar la página, y vuelve a estar desactivada la próxima vez que entres.</p>
+                        <div class="flex items-center gap-3 mt-4">
+                            <ToggleSwitch v-model="permitirFechasFueraDeAnio" />
+                            <span>{{ permitirFechasFueraDeAnio ? 'Activada' : 'Desactivada' }}</span>
+                        </div>
                     </div>
 
                     <Dialog v-model:visible="dialogoCreacionAutomatica" :style="{ width: '500px' }" header="Confirmar" :modal="true">
