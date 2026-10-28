@@ -137,8 +137,7 @@ function confirmDeleteAdvance(adv) {
     // Verificar si el anticipo tiene un ID válido
     if (!adv || !adv.id) {
         console.error('El anticipo seleccionado no tiene un ID válido:', adv);
-        re; // Convertir el objeto Proxy en un objeto plano
-        turn;
+        return;
     }
     // Convertir el objeto Proxy en un objeto plano
     advance.value = JSON.parse(JSON.stringify(adv));
@@ -350,7 +349,6 @@ async function savePago() {
 
 const deletePaymentDialog = ref(false);
 const selectedPayment = ref(null);
-const saldoRestante = ref(0);
 const pagosPendientesCount = ref(0); // Contador de pagos pendientes
 const puedeRecalcular = ref(false); // El anticipo tiene pago sugerido y periodicidad (F-33, DC-12)
 const dialogMessage = ref(''); // Mensaje dinámico para el cuadro de diálogo
