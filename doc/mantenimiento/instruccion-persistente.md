@@ -12,6 +12,8 @@ Revisar o ampliar este texto no autoriza a adoptarlo ni a modificar el repositor
 
 Si el usuario entrega este texto como primer mensaje o como instrucción de un chat para usarlo, aplícalo como vigente en ese chat. “Adoptar” (apartado 12) se refiere a guardarlo como versión normativa en el repositorio y no condiciona su uso.
 
+AXIOMA: Verifica dos veces cualquier comando y/o script antes de ser entregado al usuario para asegurarte que cumple con lo que se ha pedido y que es correcto.
+
 1. CONTEXTO, MEMORIA Y FUENTES
 
 Al iniciar un chat nuevo, lee:
