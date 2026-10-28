@@ -2,7 +2,7 @@
 import { AccService } from '@/service/AccService'; // Importar el servicio de cuentas
 import { BillService } from '@/service/BillService';
 import { CatsService } from '@/service/CatsService'; // Importar CatsService
-import { permitirEditarPagados } from '@/composables/useAjustesSesion';
+import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { anioEnCurso, cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
@@ -43,6 +43,7 @@ const billDialogTB_FC = ref(false);
 // 'manual': El usuario establece cada fecha manualmente
 // 'auto': Las fechas se generan automáticamente a partir de fecha_inicial
 const modoFechas = ref('manual');
+const anioReciboGuardado = ref(null); // DC-14: año natural del recibo en edición (el de su fecha_inicial guardada); null en un alta
 
 const expandedRowsTrimestral = ref([]);
 const expandedRowsBimestral = ref([]);
@@ -446,6 +447,7 @@ function openNew(periodicity) {
     };
     submitted.value = false;
     modoFechas.value = 'manual'; // F-18: cada alta empieza en modo manual y sin fecha inicial
+    anioReciboGuardado.value = null;
     billDialog.value = true;
 }
 
@@ -527,6 +529,26 @@ async function guardarRecibo() {
         }
     }
 
+    // 4b. DC-14: un recibo es de un año natural; no se envía nada si alguna fecha cae fuera del año del recibo (DC-29: salvo con el interruptor de Ajustes)
+    const anioDeTexto = (fecha) => Number(String(fecha).slice(0, 4));
+    const fechasDelRecibo = [...(bill.value.fecha_inicial ? [bill.value.fecha_inicial] : []), ...(modoFechas.value === 'manual' ? bill.value.cargo.filter((c) => c.fecha).map((c) => c.fecha) : [])];
+    const anioDelRecibo = anioReciboGuardado.value ?? anioDeTexto(fechasDelRecibo[0]);
+    const fechasFueraDeAnio = fechasDelRecibo.filter((f) => Number.isFinite(anioDeTexto(f)) && anioDeTexto(f) !== anioDelRecibo);
+    if (Number.isFinite(anioDelRecibo) && fechasFueraDeAnio.length > 0) {
+        if (permitirFechasFueraDeAnio.value) {
+            console.log(`guardarRecibo - fechas fuera del año ${anioDelRecibo} admitidas por el interruptor de Ajustes: ${fechasFueraDeAnio.join(', ')}`);
+        } else {
+            console.log(`guardarRecibo - fechas fuera del año ${anioDelRecibo}: ${fechasFueraDeAnio.join(', ')}`);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: `Todas las fechas de un recibo deben ser del mismo año (${anioDelRecibo}). Fuera de ese año: ${fechasFueraDeAnio.map((f) => f.split('-').reverse().join('/')).join(', ')}. Para otro año se usa otro recibo.`,
+                life: 7000
+            });
+            return;
+        }
+    }
+
     console.log('guardarRecibo(). Recibo a guardar:', bill.value);
 
     // 5. VERIFICACIÓN FINAL antes de guardar
@@ -543,7 +565,8 @@ async function guardarRecibo() {
             // Importante: Por defecto enviamos el objeto completo sin filtrar nada
             const billToSave = {
                 ...bill.value,
-                modoFechas: modoFechas.value // Enviamos el modo al backend para que sepa cómo procesar las fechas
+                modoFechas: modoFechas.value, // Enviamos el modo al backend para que sepa cómo procesar las fechas
+                permitirFueraDeAnio: permitirFechasFueraDeAnio.value // DC-29: solo lo respeta el servidor si quien guarda es administrador
             };
 
             // 7. CASOS ESPECIALES
@@ -663,6 +686,8 @@ function editBill(prod, openFCDialog = false) {
     // Al editar, el modo de fechas es siempre manual (F-04, DC-11): el modo automático reescribe las fechas pendientes
     // a partir de fecha_inicial, así que solo se activa si el usuario lo elige en el diálogo, nunca por inferencia
     modoFechas.value = 'manual';
+    // DC-14: el año del recibo es el de su fecha_inicial guardada
+    anioReciboGuardado.value = bill.value.fecha_inicial ? Number(String(formatDate(bill.value.fecha_inicial, '-', true)).slice(0, 4)) : null;
 
     console.log('Recibo a editar: ', bill.value);
 

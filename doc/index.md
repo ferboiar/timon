@@ -317,7 +317,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 
 - Zona horaria de la aplicación: las horas se guardan en UTC y el ajuste decide el día, el mes y el año en curso, y la hora con que se muestran las fechas y los registros
 - Creación automática de los recibos del año siguiente, con interruptor, vista previa y ejecución manual
-- Opción de sesión para que el administrador edite y borre recibos pagados de meses cerrados
+- Opciones de sesión para que el administrador edite y borre recibos pagados de meses cerrados y declare fechas fuera del año del recibo (DC-21, DC-29)
 - Apariencia general (Sistema, Claro u Oscuro) por usuario, recordada también en el navegador para no parpadear al cargar
 
 ## Otras pantallas

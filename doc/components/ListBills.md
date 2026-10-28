@@ -45,6 +45,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `categorias` | `ref([])` | Lista de categorías disponibles para asignar a los recibos |
 | `cuentas` | `ref([])` | Lista de cuentas bancarias disponibles para asociar a los recibos |
 | `modoFechas` | `ref('manual')` | Modo de programación de fechas del recibo en edición: `manual` (el usuario fija cada fecha) o `auto` (se generan desde `fecha_inicial`) |
+| `anioReciboGuardado` | `ref(null)` | Año natural del recibo en edición, el de su `fecha_inicial` guardada (la fija `editBill`); `null` en un alta (DC-14) |
 
 ### Estados de Diálogos
 
@@ -81,8 +82,8 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `puedeEditarCargo(cargo)` | Indica si el lápiz y la papelera de un cargo están activos: siempre si está pendiente; si está pagado, solo durante su mes o con la opción de sesión «Permitir editar/borrar recibos pagados» de Ajustes (DC-21) |
 | `puedeAnadirFecha(grupo)` / `puedeGenerarFechas(grupo)` | Activan el «+» (falta cualquier fecha) y «Generar nuevas fechas» (faltan fechas generables); replican `fechasFaltantes` del backend |
 | `openNew(periodicity)` | Inicializa un nuevo objeto recibo para la periodicidad indicada, en modo manual y sin fecha inicial (F-18) |
-| `guardarRecibo()` | Guarda un recibo nuevo o actualiza uno existente |
-| `editBill(prod, openFCDialog)` | Carga los datos de un recibo existente para su edición, siempre en modo de fechas manual (F-04) |
+| `guardarRecibo()` | Guarda un recibo nuevo o actualiza uno existente; antes de enviar comprueba que todas las fechas sean del año del recibo (DC-14) y envía `permitirFueraDeAnio` (DC-29) |
+| `editBill(prod, openFCDialog)` | Carga los datos de un recibo existente para su edición, siempre en modo de fechas manual (F-04); guarda el año de su `fecha_inicial` en `anioReciboGuardado` (DC-14) |
 | `confirmDeleteBill(prod)` | Prepara la eliminación de un recibo |
 | `deleteBill()` | Elimina un recibo seleccionado |
 | `confirmDeleteSelected()` | Prepara la eliminación de recibos seleccionados |
@@ -165,6 +166,8 @@ El template está estructurado en varias secciones:
 ## Validaciones
 
 Antes de enviar, `guardarRecibo()` comprueba concepto, periodicidad, importe (mayor que 0), categoría y cuenta, y muestra un aviso con los campos que faltan. El servidor repite la comprobación y también nombra los que faltan. El propietario no se introduce: lo asigna el servidor a partir del usuario autenticado.
+
+Antes de enviar, `guardarRecibo()` comprueba también que todas las fechas sean del mismo año (DC-14): en un recibo que se edita, el de su `fecha_inicial` guardada (`anioReciboGuardado`); en un alta, el de la primera fecha. Si alguna cae fuera, muestra un aviso con esas fechas y no envía nada. El servidor repite la comprobación, también para el modo automático, cuyas fechas la pantalla no calcula. Con el interruptor de sesión «Permitir declarar fechas fuera del año en curso» (`permitirFechasFueraDeAnio` de [useAjustesSesion](../composables/useAjustesSesion.md), DC-29) la pantalla no avisa y la petición lleva `permitirFueraDeAnio: true`; el servidor solo lo respeta si quien guarda es administrador.
 
 ## Referencias
 

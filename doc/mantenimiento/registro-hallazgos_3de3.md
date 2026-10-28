@@ -110,9 +110,9 @@ Estado al cierre de la auditoría documental del 2026-10-23, después del PR #29
 2. Fase 1 en curso: ya están incorporados el rediseño de recibos por año, Ajustes, zona horaria y Aspecto (PR #22 a #28), además de las correcciones F-01 a F-06, F-18, F-24 a F-26, F-29, F-33 a F-36 según el registro (F-35 dejó de aplicar al retirar el histórico).
 3. Siguiente, un PR por punto, sin alterar el orden acordado:
    - [x] Retirar Actualizar fechas (hecho 2026-10-27): updateAllDates y botón comentado, BillService.updateAllBillsDates, ruta /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo retirados; los dos errores de eslint de ListBills corregidos. Cierra F-11, F-23 y F-32, no F-12.
-   - [x] Dividir el registro en partes (D-16, DC-28): preparado el 2026-10-28 en la rama `mantenimiento/dividir-registro-hallazgos`, pendiente de revisión y fusión. Va antes de DC-14 porque ese PR edita el registro y añade una decisión.
-   - Validación de un solo año al editar recibos (DC-14), servidor y pantalla.
-   - Alcance añadido a DC-14 (acordado el 2026-10-28): interruptor de sesión «Permitir declarar fechas fuera del año en curso» en Ajustes › Administrar recibos, bajo «Permitir editar/borrar recibos pagados», con explicación y desactivación al cerrar sesión; y «Generar los recibos del año ahora» pasa justo debajo de «Crear recibos del año automáticamente».
+   - [x] Dividir el registro en partes (D-16, DC-28): incorporado el 2026-10-28 (PR #38). Fue antes de DC-14 porque ese PR edita el registro y añade una decisión.
+   - [x] Validación de un solo año al editar recibos (DC-14, DC-29), servidor y pantalla, con el interruptor de sesión «Permitir declarar fechas fuera del año en curso»: preparada el 2026-10-28 en la rama `correccion/fase-1-dc14-validacion-un-ano`, pendiente de revisión y fusión.
+   - Incluye la recolocación de «Generar los recibos del año ahora» justo debajo de «Crear recibos del año automáticamente» en Ajustes › Administrar recibos.
    - F-17: errata re/turn en confirmDeleteAdvance.
 4. Resto de fase 1, agrupado para no perder fallos de la auditoría:
    - F-07/F-08: borrado e inactivos de Ahorros; F-09/F-22: edición e índice único de categorías; F-10: errores de FK.

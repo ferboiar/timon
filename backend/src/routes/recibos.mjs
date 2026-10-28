@@ -37,7 +37,7 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 router.post('/', verifyToken, async (req, res) => {
-    const { id, concepto, periodicidad, importe, categoria, cargo, cuenta_id, fecha_inicial, modoFechas } = req.body;
+    const { id, concepto, periodicidad, importe, categoria, cargo, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio } = req.body;
 
     // Si estamos en modo automático y no se proporciona fecha_inicial, error
     if (modoFechas === 'auto' && !fecha_inicial) {
@@ -95,7 +95,11 @@ router.post('/', verifyToken, async (req, res) => {
                 console.log('API recibos.mjs: Segunda fecha en cargo:', JSON.stringify(cargo[1]));
             }
         }
-        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas);
+        const fueraDeAnioPermitido = permitirFueraDeAnio === true && req.user?.rol === 'admin'; // DC-29: solo un administrador puede saltarse la regla del año del recibo
+        if (permitirFueraDeAnio === true && !fueraDeAnioPermitido) {
+            console.log('API recibos.mjs: permitirFueraDeAnio ignorado: el usuario no es administrador');
+        }
+        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido);
         console.log('API recibos.mjs: pushRecibo completado con éxito para ID:', id);
         console.log('API recibos.mjs: ==== FIN PETICIÓN POST /recibos (ÉXITO) ====');
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente', ...resultado });

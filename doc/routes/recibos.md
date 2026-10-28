@@ -54,6 +54,7 @@ Esta ruta permite crear un nuevo recibo o actualizar uno existente si se proporc
 | `cargo` | Array | Lista de fechas de cargo con sus estados | Sí |
 | `fecha_inicial` | String | Fecha desde la que se generan las fechas de cargo en modo automático (YYYY-MM-DD). Obligatoria con `modoFechas` = `auto` | No |
 | `modoFechas` | String | `manual` o `auto`. Con `auto` el servidor genera las fechas; sin este campo solo las genera si no llega `cargo` | No |
+| `permitirFueraDeAnio` | Boolean | `true` para no rechazar fechas fuera del año del recibo (DC-14). Solo se respeta si quien guarda es administrador; de otro usuario se ignora y se deja una traza (DC-29) | No |
 
 Cada elemento del array `cargo` debe contener:
 
@@ -73,6 +74,12 @@ Cada elemento del array `cargo` debe contener:
 - `auto` al actualizar un recibo con fechas: se reescriben solo las fechas en estado `pendiente`, siguiendo la secuencia generada desde `fecha_inicial`. Las fechas con cualquier otro estado no se tocan (DC-11) y el log registra cada cambio.
 
 La respuesta 201 incluye, además de `message`, `fechasReescritas` y `fechasConservadas`: ambos valen 0 salvo en modo automático sobre un recibo con fechas.
+
+#### Año del recibo (DC-14, DC-29)
+
+Todas las fechas de un recibo deben caer en su año natural (el de su `fecha_inicial`; en un alta manual sin ella, el de la primera fecha de `cargo`). Si alguna cae fuera —una fecha de `cargo`, una `fecha_inicial` de otro año al editar, o fechas pendientes que el modo `auto` desplazaría al año siguiente—, `pushRecibo` lanza un error y la ruta responde 400 con el mensaje «Todas las fechas de un recibo deben ser del año AAAA…» en el campo `error`, sin modificar el recibo. Para otro año se usa otro recibo.
+
+Excepción: con `permitirFueraDeAnio: true` en el cuerpo, la ruta omite la comprobación solo si el usuario del token es administrador (`rol` = `admin`). La pantalla lo envía cuando está activo el interruptor de sesión «Permitir declarar fechas fuera del año en curso» (Ajustes › Administrar recibos).
 
 ### Eliminar un recibo (DELETE /api/recibos/:id)
 
@@ -129,6 +136,7 @@ La API implementa las siguientes validaciones:
 - La ruta comprueba presencia de cuenta_id; la existencia de la cuenta queda respaldada por la clave foránea 
 - El campo `propietario_id` se obtiene automáticamente del token JWT del usuario autenticado
 - Validaciones adicionales de tipos y formatos se realizan en las funciones de base de datos
+- Todas las fechas deben caer en el año natural del recibo (DC-14): si no, 400 con el mensaje que nombra las fechas fuera de año; un administrador puede omitirlo con `permitirFueraDeAnio` (DC-29)
 
 ## Manejo de Errores
 

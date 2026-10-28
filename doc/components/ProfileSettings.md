@@ -7,7 +7,7 @@ El componente `ProfileSettings` ofrece una interfaz completa para la gestión de
 1. **Configuración de estilo**: Permite a cualquier usuario personalizar la apariencia visual de la aplicación
 2. **Gestión de usuarios**: Disponible solo para administradores, permite crear, editar y eliminar usuarios del sistema
 3. **Zona horaria de la aplicación** (pestaña General): solo administradores (DC-25)
-4. **Administración de recibos** (pestaña Administrar recibos): creación automática de recibos del año y opción de sesión para editar recibos pagados, solo administradores (DC-17, DC-21, DC-24)
+4. **Administración de recibos** (pestaña Administrar recibos): creación automática de recibos del año y opciones de sesión para editar recibos pagados y declarar fechas fuera del año, solo administradores (DC-17, DC-21, DC-24, DC-29)
 5. **Base de datos** (pestaña Base de Datos): solo administradores; configuración de la conexión, copia de seguridad y restauración
 
 ## Características principales
@@ -40,7 +40,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 ### Ajustes generales y administración de recibos (solo administradores)
 
 - **General:** selector de la zona horaria de la aplicación (DC-25). Las horas se guardan en UTC y la zona decide el día, mes y año en curso y la hora con que se muestran las fechas. Se guarda en la base de datos y se aplica a toda la aplicación.
-- **Administrar recibos:** interruptor «Crear recibos del año automáticamente» (persistente, con explicación y riesgos), interruptor «Permitir editar/borrar recibos pagados» (solo dura la sesión, DC-21) y vista previa con botón «Generar ahora» del proceso anual (DC-17, DC-24).
+- **Administrar recibos**, en este orden: interruptor «Crear recibos del año automáticamente» (persistente, con explicación y riesgos); «Generar los recibos del año ahora», con vista previa y botón «Generar ahora» del proceso anual (DC-17, DC-24); interruptor «Permitir editar/borrar recibos pagados» (solo dura la sesión, DC-21); e interruptor «Permitir declarar fechas fuera del año en curso» (solo dura la sesión, con explicación de sus efectos, DC-29).
 
 ## Estados y Propiedades
 
@@ -119,7 +119,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 El componente utiliza varios servicios para su funcionamiento:
 - `UsersService` para operaciones CRUD en usuarios
 - `AjustesService` y `useZonaHoraria` para la zona horaria y los ajustes de recibos
-- `useAjustesSesion` para el interruptor de recibos pagados, que se reinicia al cerrar sesión
+- `useAjustesSesion` para los interruptores de sesión (recibos pagados y fechas fuera del año), que se reinician al cerrar sesión
 - `useAuth` para comprobar isAdmin, obtener ROLES y guardar las preferencias de estilo; no aplica permisos por módulo
 - `useTheme` para aplicar cambios visuales
 - `useLayout` para gestionar configuración de diseño
@@ -136,7 +136,7 @@ El componente utiliza varios servicios para su funcionamiento:
 - [Composable useTheme](../composables/useTheme.md) y [useLayout](../composables/useLayout.md) - Temas y apariencia general
 - [API de Ajustes](../routes/ajustes.md) - Zona horaria y recibos
 - [API de conexión](../routes/conexionDB.md) y [API de mantenimiento](../routes/mantenimientoDB.md) - Pestaña Base de Datos
-- [Registro de hallazgos y decisiones](../mantenimiento/registro-hallazgos.md) - DC-21, DC-25 y DC-26
+- [Registro de hallazgos y decisiones](../mantenimiento/registro-hallazgos.md) - DC-21, DC-25, DC-26 y DC-29
 
 ## Estado y validaciones auxiliares
 

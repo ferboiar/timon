@@ -8,9 +8,11 @@ Corte operativo: 2026-10-27, main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4 (P
 
 **Próxima tarea (D-15):** leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante necesita actualización o mejora tras el error de contrato de esta iteración (se usó editor.reemplazar, que no existe). Es previa al PR de limpieza y no lo sustituye.
 
-**Siguiente PR acordado:** validación de un solo año al editar recibos (DC-14). Después: F-17, separados. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**Siguiente PR acordado:** F-17 (errata de `confirmDeleteAdvance`), separado. La validación de un solo año (DC-14, DC-29) está preparada y pendiente de fusión. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
-**Trabajo preparado, sin fusionar:** división del registro en partes (D-16, DC-28), rama `mantenimiento/dividir-registro-hallazgos`, 2026-10-28. Va antes de DC-14 porque ese PR edita el registro y añade una decisión. El alcance de DC-14 incluye ahora el interruptor de sesión «Permitir declarar fechas fuera del año en curso» en Ajustes › Administrar recibos (ver TODO).
+**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28.
+
+**Trabajo preparado, sin fusionar:** validación de un solo año al editar recibos (DC-14, DC-29), rama `correccion/fase-1-dc14-validacion-un-ano`, 2026-10-28, con el interruptor de sesión «Permitir declarar fechas fuera del año en curso» y «Generar los recibos del año ahora» movido bajo «Crear recibos del año automáticamente» en Ajustes › Administrar recibos.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, todavía usada por pushRecibo (F-12). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -31,7 +33,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 
 - Una rama por cambio (`correccion/fase-1-<tema>`), un PR por rama, fusionado en `main`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-29, D-17, F-44, S-13 y R-14. Consultar siempre el registro antes de asignarlos.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-30, D-17, F-44, S-13 y R-14. Consultar siempre el registro antes de asignarlos.
 - Mensajes de commit: `tipo(IDs): resumen` y cuerpo en español. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend (`npm run test:backend`) necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
@@ -46,6 +48,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 - Las fechas siguen un patrón anclado en la `fecha_inicial` y la periodicidad (DC-16). Cada fecha de cargo tiene estado (`pendiente` o `cargado`; `rechazado` espera a DC-01) e importe propio opcional (DC-15).
 - La pantalla muestra el año elegido y, en el año en curso, los pendientes de años anteriores como «Atrasado» (DC-18, DC-19). Un año anterior es un ejercicio cerrado (DC-20). Un cargo pagado solo se edita el mes en que vence, salvo con la opción de sesión del administrador (DC-21). «+» y «Generar nuevas fechas» siguen DC-22.
 - Al editar, el modo de fechas es siempre manual; el automático solo reescribe las fechas pendientes (DC-11).
+- Todas las fechas de un recibo deben caer en su año natural (DC-14): la pantalla avisa antes de enviar y el servidor responde 400. Excepción para el administrador: el interruptor de sesión «Permitir declarar fechas fuera del año en curso» de Ajustes › Administrar recibos (DC-29).
 - El procedimiento `generar_recibos_anio` crea los recibos del año siguiente. Un evento horario actúa a las 03:00 en la zona horaria de los ajustes. Solo inserta, y el interruptor `crear_recibos_automaticamente` lo activa o desactiva. Ajustes › Administrar recibos permite vista previa y ejecución manual (DC-17, DC-24).
 
 ### Otros módulos
@@ -95,7 +98,7 @@ El siguiente trabajo acordado tras este relevo es **limpiar Actualizar fechas (F
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo aún la usa, y F-12 sigue abierto.
 3. Actualizar documentación, registro y TODO en ese mismo PR; comprobar UI y pruebas donde sea posible, sin certificar lo no ejecutado.
-4. Siguiente, en PR separados: validación de un solo año al editar recibos (DC-14) y errata F-17 de Advances.
+4. [x] Validación de un solo año al editar recibos (DC-14, DC-29): preparada, pendiente de fusión. Siguiente, en PR separado: errata F-17 de Advances.
 
 El relevo operativo más abajo fija archivos, exclusiones, aceptación, entorno y cómo retomar en otro chat. La prioridad de seguridad antes de producción no altera silenciosamente este siguiente paso ya acordado.
 
@@ -135,7 +138,7 @@ Fecha de preparación: 2026-10-27. Base confirmada: main en 4d73e0692accd7e71c5c
 Después de guardar este relevo, continuar el mantenimiento de código de la fase 1, en este orden acordado, un PR por punto:
 
 1. [x] Limpieza de Actualizar fechas: F-11, F-23 y F-32 (hecha el 2026-10-27).
-2. Validación de un solo año al editar un recibo: DC-14, servidor y pantalla.
+2. [x] Validación de un solo año al editar un recibo: DC-14, DC-29, servidor y pantalla (preparada en la rama `correccion/fase-1-dc14-validacion-un-ano`; pendiente de fusión).
 3. F-17: re; turn; en confirmDeleteAdvance de Advances.vue.
 
 La tabla P0/P1/P2/P3 ordena el backlog por riesgo; no ha sustituido ese siguiente paso expresamente acordado. Antes de desplegar de verdad, autorización, integridad y recuperación son prioritarias. Los requisitos recuperados de notas históricas no están automáticamente aprobados para implementar.
