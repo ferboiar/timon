@@ -8,11 +8,11 @@ Corte operativo: 2026-10-27, main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4 (P
 
 **Próxima tarea (D-15):** leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante necesita actualización o mejora tras el error de contrato de esta iteración (se usó editor.reemplazar, que no existe). Es previa al PR de limpieza y no lo sustituye.
 
-**Siguiente PR acordado:** F-17 (errata de `confirmDeleteAdvance`), separado. La validación de un solo año (DC-14, DC-29) está preparada y pendiente de fusión. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**Siguiente PR acordado:** ninguno fijado tras F-17; el orden de las correcciones agrupadas de la fase 1 está por acordar con el usuario. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
-**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28.
+**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28.
 
-**Trabajo preparado, sin fusionar:** validación de un solo año al editar recibos (DC-14, DC-29), rama `correccion/fase-1-dc14-validacion-un-ano`, 2026-10-28, con el interruptor de sesión «Permitir declarar fechas fuera del año en curso» y «Generar los recibos del año ahora» movido bajo «Crear recibos del año automáticamente» en Ajustes › Administrar recibos.
+**Trabajo preparado, sin fusionar:** F-17 (`return` en `confirmDeleteAdvance` de `Advances.vue`) y, con aprobación del usuario, retirada de `saldoRestante` (variable no usada), rama `correccion/fase-1-f17-return-confirmdeleteadvance`, 2026-10-28. F-14 sigue abierto.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, todavía usada por pushRecibo (F-12). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -88,6 +88,8 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #33 | D-14 | Relevo operativo: punto de reanudación, alcance del primer PR y protocolo de otro chat |
 | #34 | DC-27 | Editor de parches reforzado en dev/utils/ayudas.mjs con pruebas |
 | #35 | — | Instrucción persistente de funcionamiento incorporada a doc/mantenimiento (sin ID de hallazgo) |
+| #38 | D-16, DC-28 | Registro de hallazgos dividido en partes |
+| #39 | DC-14, DC-29 | Un recibo no puede tener fechas de otro año; interruptor de sesión en Ajustes |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
@@ -98,7 +100,7 @@ El siguiente trabajo acordado tras este relevo es **limpiar Actualizar fechas (F
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo aún la usa, y F-12 sigue abierto.
 3. Actualizar documentación, registro y TODO en ese mismo PR; comprobar UI y pruebas donde sea posible, sin certificar lo no ejecutado.
-4. [x] Validación de un solo año al editar recibos (DC-14, DC-29): preparada, pendiente de fusión. Siguiente, en PR separado: errata F-17 de Advances.
+4. [x] Validación de un solo año al editar recibos (DC-14, DC-29): incorporada (PR #39). [x] Errata F-17 de Advances: preparada en la rama `correccion/fase-1-f17-return-confirmdeleteadvance`, pendiente de fusión.
 
 El relevo operativo más abajo fija archivos, exclusiones, aceptación, entorno y cómo retomar en otro chat. La prioridad de seguridad antes de producción no altera silenciosamente este siguiente paso ya acordado.
 
@@ -138,8 +140,8 @@ Fecha de preparación: 2026-10-27. Base confirmada: main en 4d73e0692accd7e71c5c
 Después de guardar este relevo, continuar el mantenimiento de código de la fase 1, en este orden acordado, un PR por punto:
 
 1. [x] Limpieza de Actualizar fechas: F-11, F-23 y F-32 (hecha el 2026-10-27).
-2. [x] Validación de un solo año al editar un recibo: DC-14, DC-29, servidor y pantalla (preparada en la rama `correccion/fase-1-dc14-validacion-un-ano`; pendiente de fusión).
-3. F-17: re; turn; en confirmDeleteAdvance de Advances.vue.
+2. [x] Validación de un solo año al editar un recibo: DC-14, DC-29, servidor y pantalla (incorporada, PR #39).
+3. [x] F-17: re; turn; en confirmDeleteAdvance de Advances.vue (preparada en la rama `correccion/fase-1-f17-return-confirmdeleteadvance`; pendiente de fusión).
 
 La tabla P0/P1/P2/P3 ordena el backlog por riesgo; no ha sustituido ese siguiente paso expresamente acordado. Antes de desplegar de verdad, autorización, integridad y recuperación son prioritarias. Los requisitos recuperados de notas históricas no están automáticamente aprobados para implementar.
 

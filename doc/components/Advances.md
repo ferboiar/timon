@@ -8,7 +8,7 @@ Gestiona anticipos y sus pagos: alta, edición, borrado individual, generación 
 
 ## Estado y carga
 
-`advances`, `selectedAdvances` y `advance` contienen la lista, la selección y el formulario. `pagos` relaciona cada ID de anticipo con sus pagos; `pago` es el formulario de pago. `originalImporte` e `isImporteModificado` detectan cambios de importe. `selectedPayment`, `isReplacingPayment`, `puedeRecalcular`, `dialogMessage` y `pagosPendientesCount` controlan el diálogo de borrado.
+`advances`, `selectedAdvances` y `advance` contienen la lista, la selección y el formulario. `pagos` relaciona cada ID de anticipo con sus pagos; `pago` es el formulario de pago. `originalImporte` e `isImporteModificado` detectan cambios de importe. `selectedPayment`, `isReplacingPayment`, `puedeRecalcular`, `dialogMessage` y `pagosPendientesCount` controlan el diálogo de borrado. `saldoRestante` se retiró por no usarse (F-17 ampliado).
 
 Los diálogos son `advanceDialog`, `advancePagoDialog`, `deleteAdvanceDialog`, `deletePaymentDialog` y `confirmPaymentPlanDialog`. Existe también `deleteSelectedAdvancesDialog`, pero no hay un diálogo correspondiente en el template (F-39).
 
@@ -21,7 +21,7 @@ Al montar: `cargarZonaHoraria`, `fetchAdvances`, `fetchPeriodicidades`, `fetchAl
 | `openNewAdvance()` | Inicializa el formulario con fecha de hoy y valores vacíos o cero |
 | `editAdvance(adv)` | Copia el anticipo al formulario |
 | `saveAdvance()` | Convierte las fechas del formulario a texto, convierte periodicidad vacía a NULL y llama a `AdvService.saveAdvance`; después recarga anticipos y pagos |
-| `confirmDeleteAdvance(adv)` / `deleteAdvance()` | Preparan y ejecutan el borrado individual; el camino sin ID conserva la errata `re; turn;` (F-17) |
+| `confirmDeleteAdvance(adv)` / `deleteAdvance()` | Preparan y ejecutan el borrado individual; si el anticipo no tiene ID válido, `confirmDeleteAdvance` registra el error en consola y termina con `return` sin abrir el diálogo (F-17 corregido) |
 | `confirmCreatePaymentPlan(id)` / `handleCreatePaymentPlan()` | Piden confirmación y llaman a `createPaymentPlan` |
 | `createPaymentPlan(id)` | Exige anticipo existente y pago sugerido numérico mayor que cero, llama a `recalculatePaymentPlan` del servicio y recarga listas |
 
@@ -53,7 +53,7 @@ La sustitución excluye el pago antiguo del cálculo de pendientes, guarda el nu
 ## Fallos y límites documentados, no corregidos aquí
 
 - F-14: saldo restante y edición del importe manteniendo pagado; no se debe prometer conciliación automática en todos los caminos.
-- F-16 y F-17: mutación del formulario y errata antes de borrar.
+- F-16: las fechas del formulario se mutan antes de confirmar el éxito, y un reintento tras fallo puede fallar por tipo.
 - F-27: operaciones del backend sin transacción; la sustitución también son dos peticiones.
 - F-28: salvo el error de recalcular, los avisos siguen usando `error.message`.
 - F-39: botón de borrado múltiple sin diálogo/ejecución completos.

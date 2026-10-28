@@ -111,9 +111,9 @@ Estado al cierre de la auditoría documental del 2026-10-23, después del PR #29
 3. Siguiente, un PR por punto, sin alterar el orden acordado:
    - [x] Retirar Actualizar fechas (hecho 2026-10-27): updateAllDates y botón comentado, BillService.updateAllBillsDates, ruta /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo retirados; los dos errores de eslint de ListBills corregidos. Cierra F-11, F-23 y F-32, no F-12.
    - [x] Dividir el registro en partes (D-16, DC-28): incorporado el 2026-10-28 (PR #38). Fue antes de DC-14 porque ese PR edita el registro y añade una decisión.
-   - [x] Validación de un solo año al editar recibos (DC-14, DC-29), servidor y pantalla, con el interruptor de sesión «Permitir declarar fechas fuera del año en curso»: preparada el 2026-10-28 en la rama `correccion/fase-1-dc14-validacion-un-ano`, pendiente de revisión y fusión.
+   - [x] Validación de un solo año al editar recibos (DC-14, DC-29), servidor y pantalla, con el interruptor de sesión «Permitir declarar fechas fuera del año en curso»: incorporada el 2026-10-28 (PR #39).
    - Incluye la recolocación de «Generar los recibos del año ahora» justo debajo de «Crear recibos del año automáticamente» en Ajustes › Administrar recibos.
-   - F-17: errata re/turn en confirmDeleteAdvance.
+   - [x] F-17: errata re/turn en confirmDeleteAdvance: preparada el 2026-10-28 en la rama `correccion/fase-1-f17-return-confirmdeleteadvance`, pendiente de revisión y fusión. Después, el orden de las correcciones agrupadas del punto 4 está por acordar. Alcance ampliado con aprobación del usuario: retirar `saldoRestante`, variable no usada de `Advances.vue`; F-14 sigue abierto.
 4. Resto de fase 1, agrupado para no perder fallos de la auditoría:
    - F-07/F-08: borrado e inactivos de Ahorros; F-09/F-22: edición e índice único de categorías; F-10: errores de FK.
    - F-12/F-13 y DC-05: calendario/normalización de DATE; F-14: saldo, cambios de pagado, reactivación al borrar y respuesta de la ruta antigua de pagos.
