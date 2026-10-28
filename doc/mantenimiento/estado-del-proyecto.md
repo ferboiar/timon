@@ -10,6 +10,8 @@ Corte operativo: 2026-10-27, main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4 (P
 
 **Siguiente PR acordado:** validación de un solo año al editar recibos (DC-14). Después: F-17, separados. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
+**Trabajo preparado, sin fusionar:** división del registro en partes (D-16, DC-28), rama `mantenimiento/dividir-registro-hallazgos`, 2026-10-28. Va antes de DC-14 porque ese PR edita el registro y añade una decisión. El alcance de DC-14 incluye ahora el interruptor de sesión «Permitir declarar fechas fuera del año en curso» en Ajustes › Administrar recibos (ver TODO).
+
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, todavía usada por pushRecibo (F-12). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
 La rama local, archivos sin confirmar y la ejecución de pruebas no se pueden deducir del estado remoto: comprobarlos al retomar.
@@ -21,7 +23,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 - Frontend: Vue 3 con Vite y PrimeVue 4 (plantilla Sakai) en `src/`: pantallas en `src/views/pages`, servicios de API en `src/service`, composables en `src/composables` y `src/layout/composables`.
 - Backend: Node con Express (módulos `.mjs`) en `backend/src`: rutas en `routes`, acceso a datos en `db`, middleware en `middleware`, utilidades en `utils`. Autenticación con JWT y contraseñas con `bcrypt`.
 - Base de datos: MariaDB 11.8, base `conta_hogar` en el host `mariadb01` (DC-04, DC-07). El esquema se define solo en `backend/src/db/migrations` (DC-13): 0001 línea base, 0002 esquema de recibo por año, 0003 partición de recibos por año y retirada de `recibos_historico`, 0004 tabla `ajustes_sistema`, procedimiento `generar_recibos_anio` y evento diario.
-- Documentación: `doc/`, con índice en `doc/index.md`. Hallazgos, decisiones (DC) y plan: `doc/mantenimiento/registro-hallazgos.md`. Lista corta de tareas: `TODO`.
+- Documentación: `doc/`, con índice en `doc/index.md`. Hallazgos, decisiones (DC) y plan: `doc/mantenimiento/registro-hallazgos.md` (entrada y mapa; el contenido está en `registro-hallazgos_1de3.md`, `_2de3.md` y `_3de3.md`, DC-28). Lista corta de tareas: `TODO`.
 - Visor de la documentación: la pantalla `Tech-documentation.vue` carga `doc/**/*.md` y su navegación se mantiene a mano (`docNavigation`).
 - Desarrollo: contenedor en `/workspaces/timon`; repositorio `ferboiar/timon`. Node 20.9 o superior de la serie 20.
 
@@ -29,7 +31,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 
 - Una rama por cambio (`correccion/fase-1-<tema>`), un PR por rama, fusionado en `main`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-28, D-15, F-44, S-13 y R-14. Consultar siempre el registro antes de asignarlos.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-29, D-17, F-44, S-13 y R-14. Consultar siempre el registro antes de asignarlos.
 - Mensajes de commit: `tipo(IDs): resumen` y cuerpo en español. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend (`npm run test:backend`) necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
@@ -103,18 +105,18 @@ El relevo operativo más abajo fija archivos, exclusiones, aceptación, entorno 
 - `components/`: una página por pantalla (Accounts, Advances, Calendar, Categories, ListBills, Login, ProfileSettings, Savings y las páginas vacías).
 - `services/`, `composables/`, `utils/`, `config/`, `directives/`, `router/`, `middleware/`, `auth/`: frontend y utilidades de backend.
 - `routes/`: API por módulo. `db/`: acceso a datos, procedimiento de recibos y `schema/` (diseño; la fuente del esquema son las migraciones).
-- `mantenimiento/`: el registro y este documento.
+- `mantenimiento/`: el registro (entrada y tres partes `registro-hallazgos_NdeN.md`) y este documento.
 
 ## 7. Retomar en una conversación nueva
 
-No hace falta reconstruir la memoria del chat. Leer este documento (en especial secciones 0, 5 y 8), TODO y el registro completo, no solo un resultado truncado. Adjuntar la salida actual de git status --short, git branch --show-current y git log --oneline -5. Si hay cambios locales posteriores, revisarlos antes de cambiar de rama. Los archivos /tmp y _adjuntos de otro equipo no son accesibles automáticamente desde un chat nuevo.
+No hace falta reconstruir la memoria del chat. Leer este documento (en especial secciones 0, 5 y 8), TODO y el registro (entrada y todas sus partes), no solo un resultado truncado. Adjuntar la salida actual de git status --short, git branch --show-current y git log --oneline -5. Si hay cambios locales posteriores, revisarlos antes de cambiar de rama. Los archivos /tmp y _adjuntos de otro equipo no son accesibles automáticamente desde un chat nuevo.
 
 Texto recomendado para el primer mensaje:
 
 ```text
 Estamos retomando el mantenimiento de ferboiar/timon, no empezando un proyecto nuevo.
 
-Lee primero doc/mantenimiento/estado-del-proyecto.md, incluido el relevo operativo, TODO y doc/mantenimiento/registro-hallazgos.md completo. Si una herramienta trunca un fichero, completa su lectura antes de afirmar que lo has revisado. Comprueba el estado real de la rama y los últimos commits; no borres cambios locales.
+Lee primero doc/mantenimiento/estado-del-proyecto.md, incluido el relevo operativo, TODO y doc/mantenimiento/registro-hallazgos.md (entrada) con todas sus partes registro-hallazgos_1de3.md a registro-hallazgos_3de3.md, en orden. Si una herramienta trunca un fichero, completa su lectura antes de afirmar que lo has revisado. Comprueba el estado real de la rama y los últimos commits; no borres cambios locales.
 
 El siguiente PR acordado después de la documentación es limpiar Actualizar fechas (F-11/F-23/F-32), conservando Generar nuevas fechas y el procedimiento/evento anual. No borres generarFechasFuturas: aún la usa pushRecibo y F-12 sigue abierto. Después vienen la validación de un solo año al editar (DC-14) y F-17, en PR separados.
 
@@ -199,7 +201,7 @@ La lista completa de fallos está en el registro, no en esta síntesis. DC-01 (r
 ### Protocolo para arrancar otro chat
 
 1. Leer este relevo y comprobar git status --short, rama y git log --oneline -5. No recrear una rama que ya exista ni asumir que el trabajo no confirmado en local está fusionado.
-2. Leer doc/mantenimiento/estado-del-proyecto.md, TODO y registro-hallazgos.md completo (decisiones, entorno, aceptación, hallazgos y plan). No limitarse a dos secciones de un resultado truncado.
+2. Leer doc/mantenimiento/estado-del-proyecto.md, TODO y el registro: registro-hallazgos.md (entrada) y sus tres partes, en orden (decisiones, entorno, aceptación, hallazgos y plan). No limitarse a dos secciones de un resultado truncado.
 3. Si la rama actual tiene trabajo posterior, localizarlo y respetarlo antes de cambiar de rama. Las dos modificaciones de conexión conocidas no son permiso para ignorar cualquier otro cambio.
 4. Si no hay otro trabajo en curso, empezar el PR de limpieza descrito arriba. Leer las funciones actuales y todos sus consumidores antes de proponer el parche.
 5. Distinguir siempre decisiones del usuario, propuestas a revalidar, fallos abiertos y cambios probados.

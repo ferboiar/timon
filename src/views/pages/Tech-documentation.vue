@@ -148,7 +148,10 @@ const docNavigation = [
                     { title: 'Páginas vacías de la plantilla', path: 'components/PaginasVacias' },
                     { title: 'Estado del proyecto', path: 'mantenimiento/estado-del-proyecto' },
                     { title: 'Auditoría de documentación', path: 'mantenimiento/auditoria-documentacion' },
-                    { title: 'Registro de hallazgos', path: 'mantenimiento/registro-hallazgos' }
+                    { title: 'Registro de hallazgos (entrada)', path: 'mantenimiento/registro-hallazgos' },
+                    { title: 'Registro: parte 1 de 3', path: 'mantenimiento/registro-hallazgos_1de3' },
+                    { title: 'Registro: parte 2 de 3', path: 'mantenimiento/registro-hallazgos_2de3' },
+                    { title: 'Registro: parte 3 de 3', path: 'mantenimiento/registro-hallazgos_3de3' }
                 ]
             }
         ]

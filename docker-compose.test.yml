@@ -1,5 +1,5 @@
 # MariaDB efímero para las pruebas del backend.
-# Reproduce la configuración de referencia (doc/mantenimiento/registro-hallazgos.md, sección 3).
+# Reproduce la configuración de referencia (doc/mantenimiento/registro-hallazgos_1de3.md, sección 3).
 # Solo para pruebas: los datos viven en memoria y se pierden al parar el servicio.
 services:
   mariadb-test:
