@@ -6,7 +6,7 @@ Documento de relevo: léelo primero si retomas el proyecto o abres una conversac
 
 Corte operativo: 2026-10-29, main en 4b8aad10fef052f96773c35a32036cfc7e475d37 (PR #41 fusionado). Este relevo registra la división de la instrucción persistente (D-17, DC-33) y actualiza el punto de reanudación; no corrige funcionalidad.
 
-**Próxima tarea (D-15):** leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante necesita actualización o mejora tras el error de contrato de esta iteración (se usó editor.reemplazar, que no existe). Es previa al PR de limpieza y no lo sustituye.
+**D-15 (cerrada el 2026-10-30):** ayudante revisado; sin cambios necesarios. Protege `.db_connection`/`.env*` por diseño, verifica identidad y contenido, y crea copias antes de escribir. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
 
 **PR en curso:** homogeneidad del front (U-09, U-10, F-44, U-11 parcial y U-12), implementado y verificado funcionalmente el 2026-10-30 en la rama `correccion/fase-1-U09-U10-F44-homogeneidad-front`, pendiente de commit y PR. Después, el resto de la agrupación de la fase 1 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 

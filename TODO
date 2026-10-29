@@ -29,7 +29,7 @@ R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas par
 Estado operativo: 2026-10-27, PR #35 incorporado y relevo D-15 preparado (base 4d73e06). El cierre de cada contraste documental tiene un alcance concreto; no acredita auditoría integral ni ejecución funcional en verde. Referencias: doc/mantenimiento/estado-del-proyecto.md y registro-hallazgos.md.
 
 ## Siguiente (un PR por punto; mantener este orden)
-- [ ] D-15 (tarea previa): leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante o su documentación necesitan actualización o mejora tras el error de contrato (editor.reemplazar inexistente). No sustituye el PR de Actualizar fechas.
+- [x] D-15 (tarea previa): ayudante revisado el 2026-10-30 (ayudas.mjs, pruebas y README). Sin cambios necesarios: protege `.db_connection` y `.env*` por diseño, verifica identidad/contenido antes de escribir y hace copia previa. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
 - [x] F-11/F-23/F-32: Actualizar fechas retirado el 2026-10-27 (updateAllDates, botón comentado, updateAllBillsDates, ruta global y dos funciones antiguas del backend); los dos errores de eslint de ListBills corregidos. Conservados generateDates/generateBillDates/completarFechasAnio.
 - [x] D-16/DC-28: registro dividido en partes (PR #38, incorporado el 2026-10-28).
 - [x] DC-14/DC-29: rechazar en pantalla y servidor las fechas fuera del año del recibo (PR #39, incorporado el 2026-10-28). Incluye el interruptor de sesión «Permitir declarar fechas fuera del año en curso» y mover «Generar los recibos del año ahora» bajo «Crear recibos del año automáticamente» en Ajustes › Administrar recibos.
