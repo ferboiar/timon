@@ -332,6 +332,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 
 - [Estado del proyecto](./mantenimiento/estado-del-proyecto.md) - Documento de relevo: cómo se trabaja, cómo funciona hoy y qué toca después
 - [Registro de hallazgos y decisiones](./mantenimiento/registro-hallazgos.md) - Entrada y mapa del registro (decisiones DC, hallazgos y plan por fases), dividido en 3 partes que se leen en orden: [1 de 3](./mantenimiento/registro-hallazgos_1de3.md), [2 de 3](./mantenimiento/registro-hallazgos_2de3.md), [3 de 3](./mantenimiento/registro-hallazgos_3de3.md)
+- [Instrucción persistente](./mantenimiento/instruccion-persistente.md) - Reglas de trabajo del asistente en el proyecto (entrada y 4 partes que se leen en orden): [1 de 4](./mantenimiento/instruccion-persistente_1de4.md), [2 de 4](./mantenimiento/instruccion-persistente_2de4.md), [3 de 4](./mantenimiento/instruccion-persistente_3de4.md), [4 de 4](./mantenimiento/instruccion-persistente_4de4.md)
 
 ## Estado de implementación y cierre de revisión
 

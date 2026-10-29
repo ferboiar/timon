@@ -43,7 +43,7 @@ El requisito del usuario permite ahorros diarios, semanales, otras cadencias o p
 
 ## Limitaciones pendientes
 
-- F-07 y F-08 corregidos en la rama `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias` (2026-10-29), pendientes de revisión y fusión.
+- F-07 y F-08 corregidos el 2026-10-29 (PR #41).
 - U-09 y U-10: el diálogo de movimientos no avisa de «guardar sin cambios» (DC-30) y la vista de inactivos aún no es idéntica a la de Recibos.
 - F-16: saveSaving muta fecha_objetivo a texto antes del POST; el reintento sin reabrir puede fallar. No es una garantía de reintento seguro.
 - F-28: los avisos de borrado usan `getApiErrorMessage`; el resto usa error.message.

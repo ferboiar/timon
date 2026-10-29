@@ -151,7 +151,12 @@ const docNavigation = [
                     { title: 'Registro de hallazgos (entrada)', path: 'mantenimiento/registro-hallazgos' },
                     { title: 'Registro: parte 1 de 3', path: 'mantenimiento/registro-hallazgos_1de3' },
                     { title: 'Registro: parte 2 de 3', path: 'mantenimiento/registro-hallazgos_2de3' },
-                    { title: 'Registro: parte 3 de 3', path: 'mantenimiento/registro-hallazgos_3de3' }
+                    { title: 'Registro: parte 3 de 3', path: 'mantenimiento/registro-hallazgos_3de3' },
+                    { title: 'Instrucción persistente (entrada)', path: 'mantenimiento/instruccion-persistente' },
+                    { title: 'Instrucción: parte 1 de 4', path: 'mantenimiento/instruccion-persistente_1de4' },
+                    { title: 'Instrucción: parte 2 de 4', path: 'mantenimiento/instruccion-persistente_2de4' },
+                    { title: 'Instrucción: parte 3 de 4', path: 'mantenimiento/instruccion-persistente_3de4' },
+                    { title: 'Instrucción: parte 4 de 4', path: 'mantenimiento/instruccion-persistente_4de4' }
                 ]
             }
         ]
