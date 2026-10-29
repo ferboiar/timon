@@ -123,6 +123,7 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 | `pushSaving - Nuevo ahorro: …` | Al crear un ahorro |
 | `pushSaving - Ahorro … sin movimientos: valor inicial de ahorrado A -> B` | Al corregir el valor inicial |
 | `pushSaving - Rechazado: …` | Al intentar cambiar `ahorrado` con movimientos |
+| `deleteSavings - Rechazado: …` | Si el borrado falla por una clave foránea (defensivo, F-10) |
 
 ## Referencias
 
@@ -134,7 +135,7 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 
 Crear un ahorro es un INSERT sin transacción explícita. Editarlo bloquea la fila FOR UPDATE, cuenta sus movimientos y compara ahorrado redondeando a céntimos. Crear, editar o borrar movimientos sí usa transacción; cambiar solo descripción o fecha no varía el saldo. Al editar se conserva el ahorro original del movimiento, no se cambia por el ahorro_id enviado.
 
-pushMovimiento exige fecha y tipo y rechaza importe undefined, null o que convertido a número sea NaN; no es una validación exhaustiva de finitud ni de calendario. Los importes pueden ser negativos. deleteSavings solo borra padres y puede fallar por FK si quedan movimientos (F-10).
+pushMovimiento exige fecha y tipo y rechaza importe undefined, null o que convertido a número sea NaN; no es una validación exhaustiva de finitud ni de calendario. Los importes pueden ser negativos. deleteSavings borra solo la fila padre; `ahorros_movimientos` tiene ON DELETE CASCADE en 0001 (comprobado en la migración), así que sus movimientos se borran con el ahorro y no hay fallo por FK. La traducción de ER_ROW_IS_REFERENCED_2 a «No se puede eliminar el ahorro porque tiene registros asociados» (409) es defensiva y no se ha provocado (F-10).
 
 Periodicidad e importe sugerido no generan aportaciones automáticas. Ya existe uso manual sin patrón con periodicidad NULL; las opciones diaria/semanal deben distinguirse del esquema de pruebas (F-37).
 

@@ -53,7 +53,7 @@ Al crear un ahorro, el propietario (`propietario_id`) se toma del usuario autent
 
 ### Eliminar ahorros (DELETE /api/ahorros)
 
-Esta ruta permite eliminar uno o más ahorros basándose en sus IDs. Acepta un array de IDs en el cuerpo de la petición bajo la propiedad `savings`.
+Esta ruta permite eliminar uno o más ahorros basándose en sus IDs. Acepta un array de IDs en el cuerpo de la petición bajo la propiedad `savings`. Si la base de datos rechaza el borrado por una clave foránea, responde 409 (F-10).
 
 ### Obtener periodicidades (GET /api/ahorros/periodicidades)
 
@@ -78,7 +78,7 @@ Las operaciones sobre ahorros y movimientos escriben sus pasos en el log del bac
 
 Todas las rutas implementan manejo de errores que:
 1. Capturan excepciones que puedan ocurrir durante el procesamiento
-2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 500)
+2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 409, 500)
 3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
 
 ## Dependencias

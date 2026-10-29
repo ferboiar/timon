@@ -25,12 +25,12 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 router.post('/', verifyToken, async (req, res) => {
-    const { nombre, descripcion } = req.body;
+    const { id, nombre, descripcion } = req.body;
     if (!nombre) {
         return res.status(400).json({ error: 'El nombre de la categoría es obligatorio' });
     }
     try {
-        await pushCategoria(nombre, descripcion, req.user.id);
+        await pushCategoria(id, nombre, descripcion, req.user.id);
         res.status(201).json({ message: 'Categoría insertada o actualizada correctamente' });
     } catch (error) {
         res.status(400).json({ error: `Error al insertar o actualizar la categoría: ${error.message}`, details: error.stack });
@@ -71,7 +71,8 @@ router.delete('/', verifyToken, async (req, res) => {
         await deleteCategorias(numericCategoriaIds);
         res.status(200).json({ message: 'Categoría(s) eliminada(s) correctamente' });
     } catch (error) {
-        res.status(500).json({ error: `Error al eliminar la(s) categoría(s): ${error.message}`, details: error.stack });
+        const status = error.message.startsWith('No se puede eliminar') ? 409 : 500;
+        res.status(status).json({ error: `Error al eliminar la(s) categoría(s): ${error.message}`, details: error.stack });
     }
 });
 

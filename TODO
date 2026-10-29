@@ -2,7 +2,7 @@
 
 ## Punto de reanudación (D-15)
 
-La validación de un solo año al editar recibos (DC-14, DC-29) se incorporó el 2026-10-28 (PR #39). F-17 está preparada en la rama `correccion/fase-1-f17-return-confirmdeleteadvance`, pendiente de revisión y fusión; después, el orden de las correcciones agrupadas de la fase 1 está por acordar. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27. La prioridad técnica del backlog no los sustituye por decisión del asistente.
+La validación de un solo año al editar recibos (DC-14, DC-29) se incorporó el 2026-10-28 (PR #39). F-17 se incorporó el 2026-10-28 (PR #40). F-07, F-08, F-09, F-22 y F-10 están preparadas en la rama `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias`, pendientes de revisión y fusión; a continuación, los PR intercalados D-17 (dividir la instrucción persistente) y de homogeneidad del front (U-09, U-10, F-44), y después el resto de la agrupación acordada (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27. La prioridad técnica del backlog no los sustituye por decisión del asistente.
 
 Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 de doc/mantenimiento/estado-del-proyecto.md. No considerar /tmp ni _adjuntos parte del relevo persistente.
 
@@ -33,20 +33,33 @@ Estado operativo: 2026-10-27, PR #35 incorporado y relevo D-15 preparado (base 4
 - [x] F-11/F-23/F-32: Actualizar fechas retirado el 2026-10-27 (updateAllDates, botón comentado, updateAllBillsDates, ruta global y dos funciones antiguas del backend); los dos errores de eslint de ListBills corregidos. Conservados generateDates/generateBillDates/completarFechasAnio.
 - [x] D-16/DC-28: registro dividido en partes (PR #38, incorporado el 2026-10-28).
 - [x] DC-14/DC-29: rechazar en pantalla y servidor las fechas fuera del año del recibo (PR #39, incorporado el 2026-10-28). Incluye el interruptor de sesión «Permitir declarar fechas fuera del año en curso» y mover «Generar los recibos del año ahora» bajo «Crear recibos del año automáticamente» en Ajustes › Administrar recibos.
-- [x] F-17: corregir re/turn de confirmDeleteAdvance (2026-10-28, rama `correccion/fase-1-f17-return-confirmdeleteadvance`; pendiente de revisión y fusión). Alcance ampliado con aprobación del usuario: retirar `saldoRestante`, variable no usada de `Advances.vue`; F-14 sigue abierto.
+- [x] F-17: corregir re/turn de confirmDeleteAdvance (2026-10-28, rama `correccion/fase-1-f17-return-confirmdeleteadvance`; PR #40, incorporado). Alcance ampliado con aprobación del usuario: retirar `saldoRestante`, variable no usada de `Advances.vue`; F-14 sigue abierto.
+
+## PR intercalados acordados (2026-10-29)
+
+Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
+
+- [ ] D-17: dividir `doc/mantenimiento/instruccion-persistente.md` en partes, como el registro (D-16/DC-28), y revisar los .md próximos al límite de lectura del conector (p. ej. `estado-del-proyecto.md`, 26 KB). Rama `mantenimiento/dividir-instruccion-persistente`.
+- [ ] U-09: aplicar DC-30 («No se ha cambiado nada.» al guardar sin cambios) en el resto de diálogos; hecho en Ahorros y Categorías.
+- [ ] U-10: homogeneizar la vista de inactivos de Ahorros con la de Recibos (botón, filtrado, tarjeta «Inactivos»); leer antes las líneas de `ListBills.vue`.
+- [ ] F-44 / DC-31: base de datos en minúsculas y capitalización solo en pantalla para el resto de entidades (Ahorros `concepto`, recibos, anticipos, cuentas).
+- [ ] U-11 / DC-32: homogeneizar las vistas de listado (Recibos, Ahorros, Anticipos, Cuentas, Categorías, Presupuestos…): activo/inactivo por entrada y botón «Mostrar/Ocultar inactivos» como en Recibos, con la selección coherente con lo visible. Antes, inventario de qué entidades tienen ya `activo` (o equivalente) y cuáles necesitan migración. Incluye U-10. Orden por acordar.
+- [x] Verificado a mano el 2026-10-29: «Borrar» actuaba sobre filas de Ahorros ocultas con «Ocultar inactivos» (`selectedSavings`). Corregido en la misma rama con un `watch` sobre `visibleSavings` (pendiente de revisión y fusión).
 
 ## Correcciones funcionales que deben abordarse después
-- [ ] F-07: no llamar a getCurrentInstance tras el await del borrado de Ahorros; distinguir error posterior de borrado fallido.
-- [ ] F-08: implementar filtro de inactivos y un control real para activo en Ahorros.
-- [ ] F-09/F-22: editar categorías por ID y añadir la unicidad aprobada, sin crear otra categoría al renombrar.
-- [ ] F-10: tratar borrados bloqueados por FK y mostrar el mensaje de negocio.
+- [x] F-07: no llamar a getCurrentInstance tras el await del borrado de Ahorros (2026-10-29, rama `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias`; pendiente de revisión y fusión).
+- [x] F-08: filtro de inactivos e interruptor «Ahorro activo» en Ahorros (2026-10-29, misma rama; pendiente de revisión y fusión). Homogeneidad con Recibos: U-10.
+- [x] F-09: editar categorías por ID, sin crear otra al renombrar, y nombre en minúsculas (DC-31) (2026-10-29, misma rama; pendiente de revisión y fusión).
+- [ ] F-22: el servidor rechaza nombres duplicados, pero falta el índice único de la migración DC-02.
+- [x] F-10 en categorías: borrado bloqueado por FK con mensaje de negocio y 409 (2026-10-29, misma rama; pendiente de revisión y fusión). En ahorros solo hay una traducción defensiva: `ahorros_movimientos` tiene ON DELETE CASCADE.
+- [ ] F-10 pendiente en el resto de borrados con FK (cuentas, anticipos, recibos).
 - [ ] F-12/F-13/DC-05: corregir el calendario antiguo que aún usa pushRecibo, dateStrings y conversión de fechas; la limpieza global no cierra F-12.
 - [ ] F-14: corregir cambios del importe manteniendo pagado, reposición/reactivación al borrar un pago pagado y respuesta de saldo en la ruta DELETE antigua; decidir preservación del principal original.
 - [ ] F-16: preparar payloads sin convertir a texto las fechas del modelo vivo; verificar reintento tras error en Ahorros y Anticipos.
 - [ ] F-19: escapar CSV y neutralizar fórmulas, conservando IBAN como texto seguro.
 - [ ] F-20/F-21: resolver getBillById sin endpoint y no prometer saldo de cuentas calculado automáticamente.
 - [ ] F-27: transacciones para operaciones compuestas de Anticipos y sustitución de pago (hoy son dos peticiones).
-- [ ] F-28: aplicar mensajes del servidor de forma coherente; Advances solo usa apiError al recalcular y Savings sigue con error.message.
+- [ ] F-28: aplicar mensajes del servidor de forma coherente; Advances solo usa apiError al recalcular; Savings y Categories lo usan en el borrado (Categories también al guardar) y el resto sigue con error.message.
 - [ ] F-30/F-31: corregir selección compartida de trimestrales/bimestrales y bill.name en el borrado; ambos confirmados contra código.
 - [ ] F-37: opciones explícitas diaria/semanal y otras cadencias de Ahorros según requisito; conservar aportaciones manuales sin patrón, que ya existen con periodicidad NULL.
 - [ ] F-38: obtener token de ambos almacenes en saveUser/deleteUsers/changePassword; probar con y sin Recordarme.

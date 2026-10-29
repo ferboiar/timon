@@ -31,7 +31,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getCategorias()` | Obtiene todas las categorías ordenadas alfabéticamente, con "Otros" al final |
-| `pushCategoria(nombre, descripcion)` | Crea una nueva categoría o actualiza una existente |
+| `pushCategoria(id, nombre, descripcion, propietario_id)` | Con `id` actualiza esa categoría (nombre y descripción); sin `id` crea una nueva. Normaliza el nombre a minúsculas (DC-31) y lanza un error si otra categoría ya tiene ese nombre (F-22) |
 | `deleteCategorias(categoriaIds)` | Elimina una o más categorías por sus IDs |
 
 ## Características Especiales
@@ -46,8 +46,10 @@ La función `deleteCategorias()` incluye validación para asegurar que los IDs p
 
 ## Validaciones y Manejo de Errores
 
-- Busca por nombre y actualiza descripción si existe; no existe garantía concurrente de unicidad hasta la migración DC-02
+- Normaliza el nombre (trim y minúsculas) y comprueba si otra categoría lo tiene antes de insertar o actualizar; sin índice único no hay garantía ante concurrencia hasta la migración DC-02 (F-22)
 - Convierte IDs con Number, sin verificar explícitamente que sean válidos
+- Si el borrado choca con una clave foránea (ER_ROW_IS_REFERENCED_2), lanza «No se puede eliminar la categoría porque está en uso (recibos, presupuestos u otros registros)» (F-10)
+- Trazas (DC-09): `pushCategoria - Nueva categoría: …`, `pushCategoria - Categoría ID: nombre A -> B`, `pushCategoria - Rechazado: …` y `deleteCategorias - Rechazado: …`
 - Transformación automática de tipos de datos para asegurar compatibilidad con la base de datos
 - Manejo detallado de errores con mensajes específicos para facilitar la depuración
 

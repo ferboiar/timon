@@ -14,13 +14,13 @@ Gestiona ahorros y movimientos individuales: crear, editar, borrar, expandir mov
 
 ## Carga y operaciones
 
-Al montar se ejecutan `fetchSavings`, `fetchPeriodicidades` y `fetchAllMovimientos`, secuencialmente. `fetchSavings` capitaliza el concepto y convierte fecha_objetivo a Date. `fetchAllMovimientos` usa Promise.all; `fetchMovimientos(id)` carga un ahorro y se utiliza al expandirlo.
+Al montar se ejecutan `fetchSavings`, `fetchPeriodicidades` y `fetchAllMovimientos`, secuencialmente. `fetchSavings` capitaliza el concepto y convierte fecha_objetivo a Date. La capitalización es solo de pantalla, pero `editSaving` reenvía el concepto capitalizado al guardar (F-44, DC-31). `fetchAllMovimientos` usa Promise.all; `fetchMovimientos(id)` carga un ahorro y se utiliza al expandirlo.
 
 | Función | Comportamiento actual |
 |---|---|
-| `openNewSaving()` / `editSaving(sav)` | Preparan el formulario; el alta propone activo=1 |
-| `saveSaving()` | Convierte fecha_objetivo del propio formulario a texto; periodicidad vacía pasa a NULL; guarda, recarga ahorros y cierra |
-| `confirmDeleteSaving` / `deleteSaving()` | Piden confirmación y borran el ahorro; después del await se usa getCurrentInstance().refs, que puede fallar aunque el borrado haya funcionado (F-07) |
+| `openNewSaving()` / `editSaving(sav)` | Preparan el formulario; el alta propone activo=1. `editSaving` guarda una copia (`savingOriginal`, calculada con `snapshotSaving`) para detectar «guardar sin cambios» (DC-30) |
+| `saveSaving()` | Si se edita un ahorro y no se ha cambiado nada, avisa «No se ha cambiado nada.» y cierra sin enviar nada (DC-30). Si no, convierte fecha_objetivo del propio formulario a texto; periodicidad vacía pasa a NULL; guarda, recarga ahorros y cierra |
+| `confirmDeleteSaving` / `deleteSaving()` | Piden confirmación y borran el ahorro; tras borrar recargan la lista y cierran el diálogo, sin acceder a `getCurrentInstance().refs` (F-07). Los errores de borrado muestran el mensaje del servidor con `getApiErrorMessage` (F-10) |
 | `confirmDeleteSelectedSavings` / `deleteSelectedSavings()` | Confirman y envían IDs en lote |
 | `updateSavings()` | Recarga solo la lista de ahorros, no todos sus movimientos |
 | `openNewMovimiento(id)` / `editMovimiento(mov)` | Preparan el movimiento nuevo o copiado |
@@ -37,15 +37,16 @@ El requisito del usuario permite ahorros diarios, semanales, otras cadencias o p
 
 `expandedRows`, `expandedCount`, `isExpanded` y `savingsWithMovements` controlan la expansión; `onRowExpand`, `onRowCollapse` y `toggleExpandCollapseAll` la actualizan.
 
-`toggleShowInactive` solo alterna `showInactive` y la etiqueta del botón. La tabla sigue enlazada a `savings`, sin filtrar. `hasInactiveSavings` solo habilita el botón; el formulario no ofrece un control para cambiar activo (F-08).
+`toggleShowInactive` alterna `showInactive`; `visibleSavings` (computed) muestra solo los ahorros con `activo = 1` salvo que `showInactive` sea verdadero, y la tabla se enlaza a `visibleSavings` (F-08). `hasInactiveSavings` habilita el botón solo cuando hay algún ahorro inactivo. El diálogo de edición incluye el interruptor «Ahorro activo / inactivo», que guarda `activo` como 1 o 0. Un `watch` sobre `visibleSavings` quita de `selectedSavings` las filas que dejan de verse (inactivos ocultos o ahorro recién desactivado), para que «Borrar» no actúe sobre ellas.
 
 `exportCSV` genera `savings.csv`, UTF-8 con BOM, separador `;` y coma decimal. Produce una fila por movimiento, repitiendo los datos del ahorro, o una fila si no hay movimientos. No escapa separadores, saltos, comillas ni fórmulas (F-19).
 
 ## Limitaciones pendientes
 
-- F-07 y F-08: borrado individual con error posterior y controles de inactivos incompletos.
+- F-07 y F-08 corregidos en la rama `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias` (2026-10-29), pendientes de revisión y fusión.
+- U-09 y U-10: el diálogo de movimientos no avisa de «guardar sin cambios» (DC-30) y la vista de inactivos aún no es idéntica a la de Recibos.
 - F-16: saveSaving muta fecha_objetivo a texto antes del POST; el reintento sin reabrir puede fallar. No es una garantía de reintento seguro.
-- F-28: los avisos usan error.message.
-- Borrar un padre con movimientos puede fallar por FK (F-10); no se afirma cascada.
+- F-28: los avisos de borrado usan `getApiErrorMessage`; el resto usa error.message.
+- F-10: `ahorros_movimientos` tiene ON DELETE CASCADE en 0001 (comprobado en la migración): borrar un ahorro con movimientos también borra sus movimientos y no falla por FK. La traducción de ER_ROW_IS_REFERENCED_2 a «No se puede eliminar el ahorro porque tiene registros asociados» (409) es defensiva, por si una tabla futura referencia `ahorros` sin cascada; no se ha provocado.
 
 Ver [SavService](../services/SavService.md), [acceso a datos](../db/db_utilsSav.md) y [registro de hallazgos](../mantenimiento/registro-hallazgos.md).

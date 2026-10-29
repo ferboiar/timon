@@ -28,25 +28,27 @@ Esta ruta devuelve un array con todas las categorías registradas en el sistema.
 
 ### Crear o actualizar una categoría (POST /api/categorias)
 
-Esta ruta permite crear una nueva categoría o actualizar una existente si ya existe una con el mismo nombre.
+Esta ruta crea una nueva categoría (sin `id`) o actualiza la categoría indicada por `id`, incluido su nombre (F-09). El servidor guarda el nombre en minúsculas (DC-31) y responde 400 si otra categoría ya lo tiene (F-22).
 
 #### Campos del cuerpo de la solicitud:
 
 | Campo | Tipo | Descripción | Requerido |
 |-------|------|-------------|-----------|
-| `nombre` | String | Nombre de la categoría | Sí |
+| `id` | Number | ID de la categoría a actualizar (vacío para crear una nueva) | No |
+| `nombre` | String | Nombre de la categoría (se guarda en minúsculas, DC-31) | Sí |
 | `descripcion` | String | Descripción de la categoría | No |
 
 Al crear una categoría, el propietario (`propietario_id`) se toma del usuario autenticado (`req.user.id`); las categorías son visibles para todos (DC-02).
 
 ### Eliminar categorías (DELETE /api/categorias)
 
-Esta ruta permite eliminar una o más categorías basándose en sus IDs. Acepta un array de IDs en el cuerpo de la petición bajo la propiedad `categoriaIds`.
+Esta ruta permite eliminar una o más categorías basándose en sus IDs. Acepta un array de IDs en el cuerpo de la petición bajo la propiedad `categoriaIds`. Si una categoría está en uso (clave foránea), responde 409 con el mensaje «No se puede eliminar la categoría porque está en uso…» (F-10).
 
 ## Validaciones
 
 La API implementa las siguientes validaciones:
 - El nombre de la categoría es obligatorio para crear o actualizar
+- Un nombre que ya tiene otra categoría se rechaza con 400 (F-22); sin índice único en la base de datos hasta DC-02
 - Los IDs de categoría deben ser proporcionados como un array para eliminar
 - No se permite enviar un array vacío de IDs para eliminar
 
@@ -54,7 +56,7 @@ La API implementa las siguientes validaciones:
 
 Todas las rutas implementan manejo de errores que:
 1. Capturan excepciones que puedan ocurrir durante el procesamiento
-2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 500)
+2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 409, 500)
 3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
 
 ## Dependencias

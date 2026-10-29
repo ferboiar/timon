@@ -118,6 +118,10 @@ async function deleteSavings(savings) {
         console.log(`Delete realizado correctamente en tabla ahorros. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('Error al eliminar los ahorros:', error);
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            console.log('deleteSavings - Rechazado: el ahorro tiene registros asociados: ' + String(savings));
+            throw new Error('No se puede eliminar el ahorro porque tiene registros asociados');
+        }
         throw error;
     } finally {
         if (connection) connection.release();

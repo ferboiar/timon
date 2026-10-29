@@ -1,7 +1,8 @@
 <script setup>
 import { SavService } from '@/service/SavService';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { useToast } from 'primevue/usetoast';
-import { computed, getCurrentInstance, onMounted, ref } from 'vue';
+import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 
 const savings = ref([]);
 const selectedSavings = ref([]);
@@ -22,6 +23,18 @@ const saving = ref({
 });
 
 const savingDialog = ref(false);
+
+// DC-30: copia del ahorro al abrir el diálogo de edición, para avisar si se guarda sin cambios
+const savingOriginal = ref(null);
+const snapshotSaving = (s) => ({
+    concepto: (s.concepto ?? '').trim(),
+    descripcion: s.descripcion ?? '',
+    ahorrado: Number(s.ahorrado ?? 0),
+    fecha_objetivo: s.fecha_objetivo ? new Date(s.fecha_objetivo).getTime() : null,
+    periodicidad: s.periodicidad || null,
+    importe_periodico: Number(s.importe_periodico ?? 0),
+    activo: s.activo
+});
 const deleteSavingDialog = ref(false);
 const deleteSelectedSavingsDialog = ref(false);
 
@@ -78,7 +91,7 @@ const deleteSelectedSavings = async () => {
         toast.add({ severity: 'success', summary: 'Borrado', detail: 'Ahorros borrados con éxito.', life: 3000 });
         deleteSelectedSavingsDialog.value = false;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al borrar los ahorros: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al borrar los ahorros: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al borrar los ahorros:', error);
     }
 };
@@ -94,6 +107,7 @@ function openNewSaving() {
         importe_periodico: 0,
         activo: 1
     };
+    savingOriginal.value = null;
     savingDialog.value = true;
 }
 
@@ -105,6 +119,12 @@ function hideDialog() {
 
 async function saveSaving() {
     try {
+        // DC-30: guardar sin haber tocado nada no envía nada: avisa y cierra el diálogo
+        if (saving.value.id && savingOriginal.value && JSON.stringify(snapshotSaving(saving.value)) === JSON.stringify(savingOriginal.value)) {
+            toast.add({ severity: 'success', summary: 'Sin cambios', detail: 'No se ha cambiado nada.', life: 3000 });
+            hideDialog();
+            return;
+        }
         // Ajustar la zona horaria para fecha_objetivo si está definida
         if (saving.value.fecha_objetivo) {
             const fechaLocal = new Date(saving.value.fecha_objetivo.getTime() - saving.value.fecha_objetivo.getTimezoneOffset() * 60000);
@@ -137,6 +157,7 @@ function editSaving(sav) {
         importe_periodico: sav.importe_periodico,
         activo: sav.activo
     };
+    savingOriginal.value = snapshotSaving(saving.value);
     savingDialog.value = true;
 }
 
@@ -151,13 +172,8 @@ async function deleteSaving() {
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Ahorro eliminado', life: 3000 });
         fetchSavings();
         hideDialog();
-        // Actualizar la tabla dt_ahorros
-        const dtAhorros = getCurrentInstance().refs.dt_ahorros;
-        if (dtAhorros) {
-            dtAhorros.reset();
-        }
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el ahorro: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el ahorro: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al eliminar el ahorro:', error);
     }
 }
@@ -168,6 +184,17 @@ const isFormValid = computed(() => {
 
 const expandedRows = ref({});
 const showInactive = ref(false);
+const visibleSavings = computed(() => (showInactive.value ? savings.value : savings.value.filter((saving) => saving.activo === 1)));
+
+// F-08: las filas que dejan de verse (inactivos ocultos o ahorro recién desactivado) salen de la selección:
+// «Borrar» no debe actuar sobre ahorros que el usuario ya no ve
+watch(visibleSavings, (visibles) => {
+    const ids = new Set(visibles.map((s) => s.id));
+    const seleccion = selectedSavings.value.filter((s) => ids.has(s.id));
+    if (seleccion.length !== selectedSavings.value.length) {
+        selectedSavings.value = seleccion;
+    }
+});
 const savingMovimientoDialog = ref(false);
 const movimiento = ref({
     id: null,
@@ -374,7 +401,7 @@ onMounted(async () => {
             <DataTable
                 ref="dt_ahorros"
                 v-model:selection="selectedSavings"
-                :value="savings"
+                :value="visibleSavings"
                 dataKey="id"
                 responsiveLayout="scroll"
                 selectionMode="multiple"
@@ -521,6 +548,10 @@ onMounted(async () => {
                     <label for="importe_periodico" class="block font-bold mb-3">Importe periódico</label>
                     <InputNumber id="importe_periodico" v-model="saving.importe_periodico" mode="currency" currency="EUR" locale="es-ES" fluid />
                 </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <ToggleSwitch inputId="activo" :modelValue="saving.activo === 1" @update:modelValue="(value) => (saving.activo = value ? 1 : 0)" />
+                <label for="activo" class="font-bold">{{ saving.activo === 1 ? 'Ahorro activo' : 'Ahorro inactivo' }}</label>
             </div>
         </div>
 
