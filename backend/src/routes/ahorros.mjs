@@ -40,7 +40,8 @@ router.delete('/', verifyToken, async (req, res) => {
         await deleteSavings(savings);
         res.status(200).json({ message: 'Ahorro(s) eliminado(s) correctamente' });
     } catch (error) {
-        res.status(500).json({ error: `Error al eliminar el/los ahorro(s): ${error.message}`, details: error.stack });
+        const status = error.message.startsWith('No se puede eliminar') ? 409 : 500;
+        res.status(status).json({ error: `Error al eliminar el/los ahorro(s): ${error.message}`, details: error.stack });
     }
 });
 

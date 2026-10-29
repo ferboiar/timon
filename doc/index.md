@@ -276,6 +276,7 @@ Este sistema sigue una arquitectura multicapa:
 - Configuración de fechas objetivo y periodicidades
 - Registro de movimientos de aportación regulares y extraordinarios
 - Saldo `ahorrado` = valor inicial más movimientos; el valor inicial se puede corregir solo mientras no hay movimientos
+- Ahorros activos o inactivos: interruptor «Ahorro activo» en el formulario y botón para mostrar u ocultar los inactivos; las filas que dejan de verse salen de la selección
 - Visualización expandible de movimientos por objetivo
 - Exportación de datos a CSV
 
@@ -284,6 +285,8 @@ Este sistema sigue una arquitectura multicapa:
 - Asignación de categorías a recibos; extenderlas a movimientos de otros módulos es una propuesta (R-06)
 - Organización alfabética con categoría "Otros" siempre al final
 - Operaciones de eliminación individual y múltiple
+- Renombrado por ID sin crear otra categoría; el nombre se guarda en minúsculas (DC-31) y un nombre repetido se rechaza (F-22); el índice único sigue pendiente (DC-02)
+- Borrar una categoría en uso por un recibo muestra un aviso claro (F-10)
 
 ### Cuentas
 - Creación y gestión de cuentas financieras

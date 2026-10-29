@@ -48,6 +48,7 @@ async function ejecutarMigracion(conexion, sql) {
 let db;
 let cerrarPool;
 let completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo;
+let deleteCategorias, deleteSavings, pushCategoria;
 
 before(async () => {
     const admin = await mysql.createConnection(conexion);
@@ -67,6 +68,8 @@ before(async () => {
     Object.assign(process.env, { DB_HOST: conexion.host, DB_PORT: String(conexion.port), DB_USER: conexion.user, DB_PASSWORD: conexion.password, DB_DATABASE: dbName });
     ({ closePool: cerrarPool } = await import('../src/db/db_connection.mjs'));
     ({ completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo } = await import('../src/db/db_utils.mjs'));
+    ({ deleteCategorias, pushCategoria } = await import('../src/db/db_utilsCats.mjs'));
+    ({ deleteSavings } = await import('../src/db/db_utilsSav.mjs'));
 });
 
 after(async () => {
@@ -456,6 +459,112 @@ describe('DC-14 a DC-18: lógica de recibos con las funciones reales de la aplic
         assert.equal(await deleteRecibo(sucesor.insertId, null, 'anual'), true);
         const [[fila]] = await db.query('SELECT replicar FROM recibos WHERE id = ?', [origen]);
         assert.equal(fila.replicar, 0);
+    });
+});
+
+describe('F-09, F-22, F-10, DC-31: categorías y borrados con las funciones reales', () => {
+    const idDe = async (nombre) => {
+        const [filas] = await db.query('SELECT id FROM categorias WHERE nombre = ?', [nombre]);
+        return filas.length ? filas[0].id : null;
+    };
+    const total = async () => Number((await db.query('SELECT COUNT(*) AS total FROM categorias'))[0][0].total);
+    const borrar = (...nombres) => db.query('DELETE FROM categorias WHERE nombre IN (?)', [nombres]);
+
+    test('DC-31: el nombre se guarda sin espacios sobrantes y en minúsculas', async () => {
+        try {
+            await pushCategoria(undefined, '  ZZ Prueba Alta  ', 'descripción', 2);
+            const [[fila]] = await db.query('SELECT nombre, descripcion FROM categorias WHERE nombre = ?', ['zz prueba alta']);
+            assert.equal(fila.nombre, 'zz prueba alta');
+            assert.equal(fila.descripcion, 'descripción');
+        } finally {
+            await borrar('zz prueba alta');
+        }
+    });
+
+    test('F-09: renombrar por ID conserva el id y no crea otra categoría', async () => {
+        try {
+            await pushCategoria(undefined, 'zz-ren-origen', 'texto', 2);
+            const id = await idDe('zz-ren-origen');
+            const antes = await total();
+            await pushCategoria(id, 'ZZ-Ren-Nuevo', null, 2);
+            assert.equal(await total(), antes);
+            assert.equal(await idDe('zz-ren-origen'), null);
+            const [[fila]] = await db.query('SELECT nombre, descripcion FROM categorias WHERE id = ?', [id]);
+            assert.deepEqual({ ...fila }, { nombre: 'zz-ren-nuevo', descripcion: 'texto' });
+        } finally {
+            await borrar('zz-ren-origen', 'zz-ren-nuevo');
+        }
+    });
+
+    test('F-09: cambiar solo la descripción no cambia el nombre', async () => {
+        try {
+            await pushCategoria(undefined, 'zz-desc', 'antes', 2);
+            const id = await idDe('zz-desc');
+            await pushCategoria(id, 'zz-desc', 'después', 2);
+            const [[fila]] = await db.query('SELECT nombre, descripcion FROM categorias WHERE id = ?', [id]);
+            assert.deepEqual({ ...fila }, { nombre: 'zz-desc', descripcion: 'después' });
+        } finally {
+            await borrar('zz-desc');
+        }
+    });
+
+    test('F-09: un ID que no existe se rechaza sin crear una categoría', async () => {
+        const antes = await total();
+        await assert.rejects(() => pushCategoria(999999, 'zz-fantasma', null, 2), /no encontrada/);
+        assert.equal(await total(), antes);
+    });
+
+    test('F-22: un alta con un nombre existente se rechaza y no crea otra categoría', async () => {
+        try {
+            await pushCategoria(undefined, 'zz-dup', null, 2);
+            const antes = await total();
+            await assert.rejects(() => pushCategoria(undefined, 'ZZ-DUP', null, 2), /Ya existe otra categoría con el nombre zz-dup/);
+            assert.equal(await total(), antes);
+        } finally {
+            await borrar('zz-dup');
+        }
+    });
+
+    test('F-22: renombrar a un nombre que tiene otra categoría se rechaza y no modifica nada', async () => {
+        try {
+            await pushCategoria(undefined, 'zz-a', 'a', 2);
+            await pushCategoria(undefined, 'zz-b', 'b', 2);
+            const idB = await idDe('zz-b');
+            await assert.rejects(() => pushCategoria(idB, 'zz-a', 'cambio', 2), /Ya existe otra categoría/);
+            const [[fila]] = await db.query('SELECT nombre, descripcion FROM categorias WHERE id = ?', [idB]);
+            assert.deepEqual({ ...fila }, { nombre: 'zz-b', descripcion: 'b' });
+        } finally {
+            await borrar('zz-a', 'zz-b');
+        }
+    });
+
+    test('F-10: no se borra una categoría en uso por un recibo y el mensaje es de negocio', async () => {
+        let reciboId;
+        try {
+            await pushCategoria(undefined, 'zz-en-uso', null, 2);
+            const id = await idDe('zz-en-uso');
+            const [recibo] = await db.execute('INSERT INTO recibos (concepto, periodicidad, importe, cuenta_id, categoria_id, propietario_id, fecha_inicial) VALUES (?, ?, ?, ?, ?, ?, ?)', ['F10 categoría en uso', 'anual', 10, 1, id, 2, '2026-03-15']);
+            reciboId = recibo.insertId;
+            await assert.rejects(() => deleteCategorias([id]), /No se puede eliminar la categoría porque está en uso/);
+            assert.equal(await idDe('zz-en-uso'), id);
+        } finally {
+            if (reciboId) await db.query('DELETE FROM recibos WHERE id = ?', [reciboId]);
+            await borrar('zz-en-uso');
+        }
+    });
+
+    test('F-10: borrar un ahorro con movimientos borra también sus movimientos (ON DELETE CASCADE)', async () => {
+        const [ahorro] = await db.execute('INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', ['zz-F10 ahorro', null, 0, null, null, 0, 1, 2]);
+        try {
+            await db.execute('INSERT INTO ahorros_movimientos (ahorro_id, importe, fecha, tipo) VALUES (?, ?, ?, ?)', [ahorro.insertId, 25, '2026-10-01', 'regular']);
+            await deleteSavings([ahorro.insertId]);
+            const [[a]] = await db.query('SELECT COUNT(*) AS total FROM ahorros WHERE id = ?', [ahorro.insertId]);
+            const [[m]] = await db.query('SELECT COUNT(*) AS total FROM ahorros_movimientos WHERE ahorro_id = ?', [ahorro.insertId]);
+            assert.equal(Number(a.total), 0);
+            assert.equal(Number(m.total), 0);
+        } finally {
+            await db.query('DELETE FROM ahorros WHERE id = ?', [ahorro.insertId]);
+        }
     });
 });
 

@@ -8,11 +8,11 @@ Corte operativo: 2026-10-27, main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4 (P
 
 **Próxima tarea (D-15):** leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante necesita actualización o mejora tras el error de contrato de esta iteración (se usó editor.reemplazar, que no existe). Es previa al PR de limpieza y no lo sustituye.
 
-**Siguiente PR acordado:** ninguno fijado tras F-17; el orden de las correcciones agrupadas de la fase 1 está por acordar con el usuario. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**Siguiente PR acordado:** fusión de la rama de Ahorros y categorías; después, los PR intercalados D-17 (dividir la instrucción persistente) y de homogeneidad del front (U-09, U-10, F-44), y el resto de la agrupación de la fase 1 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
-**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28.
+**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28.
 
-**Trabajo preparado, sin fusionar:** F-17 (`return` en `confirmDeleteAdvance` de `Advances.vue`) y, con aprobación del usuario, retirada de `saldoRestante` (variable no usada), rama `correccion/fase-1-f17-return-confirmdeleteadvance`, 2026-10-28. F-14 sigue abierto.
+**Trabajo preparado, sin fusionar:** F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), rama `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias`, 2026-10-29: borrado de ahorros sin error posterior, filtro de inactivos con interruptor «Ahorro activo», renombrado de categorías por ID con nombre en minúsculas (DC-31) y sin duplicados, mensajes de borrado bloqueado por FK y aviso «No se ha cambiado nada.» al guardar sin cambios (DC-30). F-22 sin índice único (DC-02); F-10 solo en categorías. F-14 sigue abierto.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, todavía usada por pushRecibo (F-12). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -33,7 +33,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 
 - Una rama por cambio (`correccion/fase-1-<tema>`), un PR por rama, fusionado en `main`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-30, D-17, F-44, S-13 y R-14. Consultar siempre el registro antes de asignarlos.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-33, D-18, F-45, S-13, R-14 y U-12. Consultar siempre el registro antes de asignarlos.
 - Mensajes de commit: `tipo(IDs): resumen` y cuerpo en español. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend (`npm run test:backend`) necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
@@ -55,7 +55,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 - Anticipos: planes de pago. Al borrar un pago, «Recalcular pagos» sigue DC-12; el pago sugerido se valida como número (F-02). No usa transacciones (F-27).
 - Ahorros: `ahorrado` es el valor inicial más los movimientos y solo se edita a mano sin movimientos (DC-10).
 - Cuentas: un IBAN vacío se guarda como NULL (F-06). El saldo es manual (F-21).
-- Categorías: el nombre debería ser único (DC-02), pero la migración no existe todavía.
+- Categorías: el servidor guarda el nombre en minúsculas (DC-31), edita por ID y rechaza duplicados (F-09, F-22); el índice único (DC-02) no existe todavía.
 - Calendario: vista anual de los cargos y totales por mes (`doc/components/Calendar.md`). Presupuestos, Transacciones, Automatización y Préstamos son páginas vacías de la plantilla.
 - Usuarios: roles `admin`, `user`, `limited_user` y `reader`, y permisos `perm_*` por módulo. Los endpoints de datos todavía no aplican esos permisos (S-01, fase 2). Las rutas de `/api/users` exigen administrador; las de preferencias de estilo, solo sesión.
 
@@ -100,7 +100,7 @@ El siguiente trabajo acordado tras este relevo es **limpiar Actualizar fechas (F
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo aún la usa, y F-12 sigue abierto.
 3. Actualizar documentación, registro y TODO en ese mismo PR; comprobar UI y pruebas donde sea posible, sin certificar lo no ejecutado.
-4. [x] Validación de un solo año al editar recibos (DC-14, DC-29): incorporada (PR #39). [x] Errata F-17 de Advances: preparada en la rama `correccion/fase-1-f17-return-confirmdeleteadvance`, pendiente de fusión.
+4. [x] Validación de un solo año al editar recibos (DC-14, DC-29): incorporada (PR #39). [x] Errata F-17 de Advances: incorporada (PR #40).
 
 El relevo operativo más abajo fija archivos, exclusiones, aceptación, entorno y cómo retomar en otro chat. La prioridad de seguridad antes de producción no altera silenciosamente este siguiente paso ya acordado.
 
@@ -141,7 +141,7 @@ Después de guardar este relevo, continuar el mantenimiento de código de la fas
 
 1. [x] Limpieza de Actualizar fechas: F-11, F-23 y F-32 (hecha el 2026-10-27).
 2. [x] Validación de un solo año al editar un recibo: DC-14, DC-29, servidor y pantalla (incorporada, PR #39).
-3. [x] F-17: re; turn; en confirmDeleteAdvance de Advances.vue (preparada en la rama `correccion/fase-1-f17-return-confirmdeleteadvance`; pendiente de fusión).
+3. [x] F-17: re; turn; en confirmDeleteAdvance de Advances.vue (incorporada, PR #40).
 
 La tabla P0/P1/P2/P3 ordena el backlog por riesgo; no ha sustituido ese siguiente paso expresamente acordado. Antes de desplegar de verdad, autorización, integridad y recuperación son prioritarias. Los requisitos recuperados de notas históricas no están automáticamente aprobados para implementar.
 
@@ -219,7 +219,7 @@ El primer PR de documentación fue #29. El PR #30 incorporó el cierre D-11, com
 
 Comportamiento actual que no debe prometerse como terminado:
 
-- Ahorros: inactivos no filtra ni hay edición visible de activo (F-08); el borrado individual puede fallar después de borrar (F-07). No hay generación de aportaciones ni porcentaje de progreso. Ya admite movimientos manuales sin periodicidad; opciones explícitas de diaria/semanal son F-37.
+- Ahorros: el filtro de inactivos, el interruptor «Ahorro activo» (F-08) y el borrado individual (F-07) están corregidos en la rama de Ahorros y categorías, pendiente de fusión; el concepto se envía capitalizado al guardar (F-44). No hay generación de aportaciones ni porcentaje de progreso. Ya admite movimientos manuales sin periodicidad; opciones explícitas de diaria/semanal son F-37.
 - Anticipos: importe_total es saldo restante (F-14); mantener pagado al cambiar importe no ajusta saldo; borrar pagado no reactiva por sí solo el anticipo completado. Recalcular tras editar no equivale al algoritmo de completar tras borrar. Operaciones sin transacción (F-27).
 - Botón de borrado múltiple de Anticipos sin flujo conectado (F-39); propuestas manuales de fecha de pago suman un mes fijo (F-40).
 - saveUser/deleteUsers/changePassword solo leen token de localStorage (F-38); una sesión temporal no tiene el mismo soporte en esos métodos.

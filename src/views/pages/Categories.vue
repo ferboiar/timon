@@ -1,5 +1,6 @@
 <script setup>
 import { CatsService } from '@/service/CatsService';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
@@ -14,6 +15,11 @@ const category = ref({
 });
 
 const categoryDialog = ref(false);
+
+// DC-30: copia de la categoría al abrir el diálogo de edición, para avisar si se guarda sin cambios
+// (el nombre se compara en minúsculas: en la base de datos va en minúsculas, DC-31)
+const categoryOriginal = ref(null);
+const snapshotCategory = (c) => ({ nombre: (c.nombre ?? '').trim().toLowerCase(), descripcion: c.descripcion ?? '' });
 const deleteCategoryDialog = ref(false);
 const deleteSelectedCategoriesDialog = ref(false);
 
@@ -51,7 +57,7 @@ const deleteSelectedCategories = async () => {
         toast.add({ severity: 'success', summary: 'Borrada', detail: 'Categorías borradas con exito.', life: 3000 });
         deleteSelectedCategoriesDialog.value = false;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al borrar las categorias: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al borrar las categorias: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al borrar las categorias:', error);
     }
 };
@@ -80,6 +86,7 @@ function openNewCategory() {
         nombre: '',
         descripcion: ''
     };
+    categoryOriginal.value = null;
     categoryDialog.value = true;
 }
 
@@ -91,18 +98,25 @@ function hideDialog() {
 
 async function saveCategory() {
     try {
+        // DC-30: guardar sin haber tocado nada no envía nada: avisa y cierra el diálogo
+        if (category.value.id && categoryOriginal.value && JSON.stringify(snapshotCategory(category.value)) === JSON.stringify(categoryOriginal.value)) {
+            toast.add({ severity: 'success', summary: 'Sin cambios', detail: 'No se ha cambiado nada.', life: 3000 });
+            hideDialog();
+            return;
+        }
         await CatsService.saveCategoria(category.value);
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Categoría guardada!', life: 5000 });
         fetchCategories();
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar la categoría: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar la categoría: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al guardar la categoría:', error);
     }
 }
 
 function editCategory(cat) {
     category.value = { ...cat, descripcion: cat.descripcion || '' };
+    categoryOriginal.value = snapshotCategory(category.value);
     categoryDialog.value = true;
 }
 
@@ -118,7 +132,7 @@ async function deleteCategory() {
         fetchCategories();
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar la categoría: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar la categoría: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al eliminar la categoría:', error);
     }
 }
