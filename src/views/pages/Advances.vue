@@ -4,9 +4,23 @@ import { AdvService } from '@/service/AdvService';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
 import { useToast } from 'primevue/usetoast';
-import { computed, getCurrentInstance, onMounted, ref } from 'vue';
+import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 
 const advances = ref([]);
+
+// U-11: por defecto solo se ven los anticipos activos; el botón muestra u oculta pausados, cancelados y completados
+const showInactive = ref(false);
+const visibleAdvances = computed(() => (showInactive.value ? advances.value : advances.value.filter((a) => a.estado === 'activo')));
+const hasInactiveAdvances = computed(() => advances.value.some((a) => a.estado !== 'activo'));
+const toggleShowInactive = () => {
+    showInactive.value = !showInactive.value;
+};
+
+// U-11: los anticipos que dejan de verse salen de la selección (F-08 en Ahorros)
+watch(visibleAdvances, (visibles) => {
+    const ids = new Set(visibles.map((a) => a.id));
+    selectedAdvances.value = selectedAdvances.value.filter((a) => ids.has(a.id));
+});
 const selectedAdvances = ref([]);
 const toast = useToast();
 
@@ -27,6 +41,10 @@ const advance = ref({
 });
 
 const advanceDialog = ref(false);
+
+// DC-30: copia del anticipo al abrir el diálogo de edición, para avisar si se guarda sin cambios
+const advanceOriginal = ref(null);
+const snapshotAdvance = (a) => JSON.parse(JSON.stringify(a));
 const deleteAdvanceDialog = ref(false);
 const deleteSelectedAdvancesDialog = ref(false);
 const periodicidades = ref([{ label: '', value: '' }]);
@@ -94,6 +112,7 @@ function openNewAdvance() {
         cuenta_origen_id: null,
         periodicidad: ''
     };
+    advanceOriginal.value = null;
     advanceDialog.value = true;
 }
 
@@ -105,6 +124,12 @@ function hideDialog() {
 
 async function saveAdvance() {
     try {
+        // DC-30: guardar sin haber tocado nada no envía nada: avisa y cierra el diálogo
+        if (advance.value.id && advanceOriginal.value && JSON.stringify(advance.value) === JSON.stringify(advanceOriginal.value)) {
+            toast.add({ severity: 'success', summary: 'Sin cambios', detail: 'No se ha cambiado nada.', life: 3000 });
+            hideDialog();
+            return;
+        }
         if (advance.value.fecha_inicio) {
             const localFecha = new Date(advance.value.fecha_inicio.getTime() - advance.value.fecha_inicio.getTimezoneOffset() * 60000);
             advance.value.fecha_inicio = formatDate(localFecha, '-');
@@ -130,6 +155,7 @@ async function saveAdvance() {
 
 function editAdvance(adv) {
     advance.value = { ...adv };
+    advanceOriginal.value = snapshotAdvance(advance.value);
     advanceDialog.value = true;
 }
 
@@ -566,6 +592,7 @@ async function handleCreatePaymentPlan() {
                     <Button label="Borrar" icon="pi pi-trash" severity="secondary" class="mr-2" @click="deleteSelectedAdvancesDialog = true" :disabled="!selectedAdvances.length" />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateAdvances" />
                     <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
+                    <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" :disabled="!hasInactiveAdvances" />
                 </template>
                 <template #end>
                     <Button label="Exportar" icon="pi pi-upload" severity="secondary" @click="exportCSV" />
@@ -574,13 +601,13 @@ async function handleCreatePaymentPlan() {
         </div>
 
         <div class="card">
-            <div class="font-semibold text-xl mb-4">
-                Anticipos <small class="text-gray-500">(dinero adelantado que ha de ser devuelto poco a poco, normalmente por gastos grandes no asumibles desde la cuenta principal (veterinario, ropa niños, dentista))</small>
+            <div class="font-semibold text-xl mb-4 flex items-center gap-2">
+                Anticipos <i class="pi pi-question-circle" v-tooltip.top="'Dinero adelantado que ha de ser devuelto poco a poco, normalmente por gastos grandes no asumibles desde la cuenta principal (veterinario, ropa niños, dentista)'"></i>
             </div>
             <DataTable
                 ref="dt_anticipos"
                 v-model:selection="selectedAdvances"
-                :value="advances"
+                :value="visibleAdvances"
                 dataKey="id"
                 responsiveLayout="scroll"
                 selectionMode="multiple"

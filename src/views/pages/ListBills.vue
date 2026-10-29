@@ -39,6 +39,9 @@ const billDialog = ref(false);
 const billDialogTB = ref(false);
 const billDialogTB_FC = ref(false);
 
+// DC-30: copia del recibo al abrir el diálogo de edición, para avisar si se guarda sin cambios
+const billOriginal = ref(null);
+
 // Variable para controlar el modo de programación de fechas de los recibos
 // 'manual': El usuario establece cada fecha manualmente
 // 'auto': Las fechas se generan automáticamente a partir de fecha_inicial
@@ -448,6 +451,7 @@ function openNew(periodicity) {
     submitted.value = false;
     modoFechas.value = 'manual'; // F-18: cada alta empieza en modo manual y sin fecha inicial
     anioReciboGuardado.value = null;
+    billOriginal.value = null;
     billDialog.value = true;
 }
 
@@ -460,6 +464,13 @@ function hideDialog() {
 
 async function guardarRecibo() {
     submitted.value = true;
+
+    // DC-30: guardar sin haber tocado nada no envía nada: avisa y cierra el diálogo
+    if (bill.value.id && billOriginal.value && JSON.stringify(bill.value) === JSON.stringify(billOriginal.value)) {
+        toast.add({ severity: 'success', summary: 'Sin cambios', detail: 'No se ha cambiado nada.', life: 3000 });
+        hideDialog();
+        return;
+    }
 
     // Campos obligatorios: se indica cuáles faltan antes de enviar nada al servidor
     const faltan = [];
@@ -682,6 +693,7 @@ function editBill(prod, openFCDialog = false) {
                 }))
         ]
     };
+    billOriginal.value = JSON.parse(JSON.stringify(bill.value));
 
     // Al editar, el modo de fechas es siempre manual (F-04, DC-11): el modo automático reescribe las fechas pendientes
     // a partir de fecha_inicial, así que solo se activa si el usuario lo elige en el diálogo, nunca por inferencia
@@ -908,7 +920,7 @@ const inactiveBillsCount = (periodicity) => {
                     />
                     <Button label="Actualizar" icon="pi pi-refresh" severity="secondary" class="mr-2" @click="updateBills('all')" />
                     <Button :label="isExpanded ? 'Contraer todo' : 'Expandir todo'" :icon="isExpanded ? 'pi pi-chevron-right' : 'pi pi-chevron-down'" severity="secondary" class="mr-2" @click="toggleExpandCollapseAll" />
-                    <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" />
+                    <Button :label="showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'" :icon="showInactive ? 'pi pi-eye-slash' : 'pi pi-eye'" severity="secondary" class="mr-2" @click="toggleShowInactive" :disabled="!inactiveBills.length" />
                 </template>
                 <template #center>
                     <div class="flex items-center justify-center gap-4">

@@ -38,6 +38,13 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
             console.log(`pushAccount - IBAN normalizado: ${JSON.stringify(ibanRecibido)} -> ${JSON.stringify(iban)}`);
         }
 
+        // DC-31/F-44: el nombre se guarda en minúsculas; la pantalla lo capitaliza al mostrarlo
+        const nombreOriginal = nombre;
+        nombre = typeof nombre === 'string' ? nombre.trim().toLowerCase() : nombre;
+        if (nombreOriginal !== nombre) {
+            console.log(`pushAccount - Nombre normalizado a minúsculas: ${JSON.stringify(nombreOriginal)} -> ${JSON.stringify(nombre)}`);
+        }
+
         if (id) {
             // Actualizar cuenta existente
             console.log(`pushAccount - Actualizando la cuenta ${id}: ${nombre} (${tipo}), IBAN: ${iban ?? 'sin IBAN'}`);

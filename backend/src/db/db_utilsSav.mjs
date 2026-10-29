@@ -31,6 +31,13 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
     try {
         connection = await getConnection();
 
+        // DC-31/F-44: el concepto se guarda en minúsculas; la pantalla lo capitaliza al mostrarlo
+        const conceptoOriginal = concepto;
+        concepto = typeof concepto === 'string' ? concepto.trim().toLowerCase() : concepto;
+        if (conceptoOriginal !== concepto) {
+            console.log(`pushSaving - Concepto normalizado a minúsculas: ${JSON.stringify(conceptoOriginal)} -> ${JSON.stringify(concepto)}`);
+        }
+
         if (id) {
             if (Number.isNaN(Number(ahorrado))) {
                 throw new Error('El importe ahorrado no es válido');

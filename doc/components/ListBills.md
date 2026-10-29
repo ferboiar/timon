@@ -7,7 +7,7 @@ Este documento proporciona documentación detallada sobre el componente `ListBil
 El componente `ListBills` permite la administración completa de recibos periódicos, que representan pagos regulares con fechas de cargo asociadas. Proporciona funcionalidad para:
 - Crear, editar y eliminar recibos
 - Gestionar fechas de cargo asociadas a cada recibo
-- Buscar texto en cada tabla, mostrar u ocultar inactivos y cambiar el año; las periodicidades se muestran en tablas separadas
+- Buscar texto en cada tabla, mostrar u ocultar inactivos y cambiar el año; las periodicidades se muestran en tablas separadas. Sin inactivos, el botón «Mostrar/Ocultar inactivos» queda deshabilitado (U-10, DC-34); los inactivos se muestran siempre en la tarjeta «Inactivos»
 - Visualizar el estado de los recibos y sus fechas de cargo
 
 ## Características principales
@@ -41,6 +41,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `expandedRowsMensual` | `ref([])` | Filas expandidas de la tabla de mensuales |
 | `selectedYear` | `ref(año actual)` | Año cuyos cargos se muestran; los atrasados solo aparecen si es el año en curso |
 | `inactiveBills` | `ref([])` | Lista de recibos inactivos recuperados de la base de datos |
+| `billOriginal` | `ref(null)` | Copia del recibo al abrir el diálogo de edición; permite detectar «guardar sin cambios» (DC-30) |
 | `bill` | `ref({})` | Objeto que almacena los datos del recibo en edición |
 | `categorias` | `ref([])` | Lista de categorías disponibles para asignar a los recibos |
 | `cuentas` | `ref([])` | Lista de cuentas bancarias disponibles para asociar a los recibos |

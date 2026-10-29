@@ -40,10 +40,11 @@ Estado operativo: 2026-10-27, PR #35 incorporado y relevo D-15 preparado (base 4
 Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 
 - [x] D-17 / DC-33: instrucción persistente dividida en entrada y cuatro partes, y `.md` próximos al límite de lectura revisados (2026-10-29, rama `mantenimiento/D-17-dividir-instruccion-persistente`; pendiente de revisión y fusión).
-- [ ] U-09: aplicar DC-30 («No se ha cambiado nada.» al guardar sin cambios) en el resto de diálogos; hecho en Ahorros y Categorías.
-- [ ] U-10: homogeneizar la vista de inactivos de Ahorros con la de Recibos (botón, filtrado, tarjeta «Inactivos»); leer antes las líneas de `ListBills.vue`.
-- [ ] F-44 / DC-31: base de datos en minúsculas y capitalización solo en pantalla para el resto de entidades (Ahorros `concepto`, recibos, anticipos, cuentas).
-- [ ] U-11 / DC-32: homogeneizar las vistas de listado (Recibos, Ahorros, Anticipos, Cuentas, Categorías, Presupuestos…): activo/inactivo por entrada y botón «Mostrar/Ocultar inactivos» como en Recibos, con la selección coherente con lo visible. Antes, inventario de qué entidades tienen ya `activo` (o equivalente) y cuáles necesitan migración. Incluye U-10. Orden por acordar.
+- [x] U-09: aplicar DC-30 («No se ha cambiado nada.» al guardar sin cambios) en el resto de diálogos; hecho en Ahorros, Categorías, Cuentas, Anticipos, Recibos y el diálogo de movimientos de Ahorros (2026-10-30).
+- [x] U-10: homogeneizar la vista de inactivos de Ahorros con la de Recibos. Resuelto el 2026-10-30 (DC-34): Recibos conserva su tarjeta «Inactivos» y su botón se deshabilita cuando no hay inactivos; Ahorros ya cumplía el modelo acordado.
+- [x] F-44 / DC-31: base de datos en minúsculas y capitalización solo en pantalla para el resto de entidades. Aplicado el 2026-10-30 en `pushSaving`, `pushRecibo`, `pushAdvance` y `pushAccount`.
+- [x] U-11 / DC-32: homogeneizar las vistas de listado. Aplicado parcialmente el 2026-10-30: Anticipos (inactivo = cualquier estado distinto de `activo`, con selección coherente) y Presupuestos preparado con el mecanismo; Recibos y Ahorros ya lo cumplían; Cuentas se excluye por no tener concepto de inactivo; Categorías ya lo tenía.
+- [x] U-12: la ayuda de Ahorros y Anticipos se muestra como tooltip de un `QuestionCircle` junto al título, en lugar de texto en pantalla (2026-10-30).
 - [x] Verificado a mano el 2026-10-29: «Borrar» actuaba sobre filas de Ahorros ocultas con «Ocultar inactivos» (`selectedSavings`). Corregido con un `watch` sobre `visibleSavings` (PR #41).
 
 ## Correcciones funcionales que deben abordarse después

@@ -113,6 +113,7 @@ La sustitución («Añadirlo en uno nuevo») la orquesta la pantalla: guarda el 
 Cada paso deja trazas en el log del backend con el formato «módulo - acción: datos» (DC-09):
 
 - `pushAdvance - Plan de pagos no generado …` o `… no recalculado …`, con el motivo, cuando no hay periodicidad o el pago sugerido no es mayor que 0.
+- `pushAdvance - Concepto normalizado a minúsculas: …` Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31).
 - `handlePaymentDeletion - Eliminando el pago ID: … (anticipo …, importe …, estado …, redistribuir: …)` al borrar un pago.
 - `completarPlanTrasBorrado - Anticipo …: saldo …, pendientes …, por colocar …` con el importe que falta por colocar, `… Pago ID … de A a B (+C)` por cada pago ajustado y un resumen `… N pagos ajustados y M pagos nuevos`. Los pagos nuevos dejan además las trazas habituales de `recalculatePaymentPlan`.
 - Las líneas `recalculatePaymentPlan - …` y `recalculatePostEditPayments - …` describen cada importe y fecha calculados.

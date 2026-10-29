@@ -72,6 +72,7 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 | `pushAccount - Nueva cuenta: … IBAN: …` | Al crear una cuenta; «sin IBAN» si no tiene |
 | `pushAccount - Actualizando la cuenta …` | Al editar una cuenta |
 | `pushAccount - IBAN normalizado: "" -> null` | Cuando el IBAN llega vacío o con espacios |
+| `pushAccount - Nombre normalizado a minúsculas: …` | Cuando el nombre llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 | `Error: Entrada duplicada para IBAN: …` | Cuando el IBAN ya existe |
 
 ## Referencias

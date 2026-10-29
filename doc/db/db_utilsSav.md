@@ -123,6 +123,7 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 | `pushSaving - Nuevo ahorro: …` | Al crear un ahorro |
 | `pushSaving - Ahorro … sin movimientos: valor inicial de ahorrado A -> B` | Al corregir el valor inicial |
 | `pushSaving - Rechazado: …` | Al intentar cambiar `ahorrado` con movimientos |
+| `pushSaving - Concepto normalizado a minúsculas: …` | Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 | `deleteSavings - Rechazado: …` | Si el borrado falla por una clave foránea (defensivo, F-10) |
 
 ## Referencias

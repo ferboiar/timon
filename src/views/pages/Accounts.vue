@@ -19,6 +19,10 @@ const account = ref({
 });
 
 const accountDialog = ref(false);
+
+// DC-30: copia de la cuenta al abrir el diálogo de edición, para avisar si se guarda sin cambios
+const accountOriginal = ref(null);
+const snapshotAccount = (a) => JSON.parse(JSON.stringify(a));
 const deleteAccountDialog = ref(false);
 const deleteSelectedAccountsDialog = ref(false);
 
@@ -86,6 +90,7 @@ function openNewAccount() {
         descripcion: '',
         activa: 1
     };
+    accountOriginal.value = null;
     accountDialog.value = true;
 }
 
@@ -97,6 +102,12 @@ function hideDialog() {
 
 async function saveAccount() {
     try {
+        // DC-30: guardar sin haber tocado nada no envía nada: avisa y cierra el diálogo
+        if (account.value.id && accountOriginal.value && JSON.stringify(account.value) === JSON.stringify(accountOriginal.value)) {
+            toast.add({ severity: 'success', summary: 'Sin cambios', detail: 'No se ha cambiado nada.', life: 3000 });
+            hideDialog();
+            return;
+        }
         // El IBAN es opcional: se envía NULL cuando está vacío (F-06)
         await AccService.saveAccount({ ...account.value, iban: account.value.iban?.trim() || null });
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Cuenta guardada!', life: 5000 });
@@ -119,6 +130,7 @@ function editAccount(acc) {
         descripcion: acc.descripcion || '',
         activa: acc.activa
     };
+    accountOriginal.value = snapshotAccount(account.value);
     accountDialog.value = true;
     console.log('editAccount(). Tipo de cuenta final:', account.value.tipo);
 }
