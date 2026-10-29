@@ -4,15 +4,15 @@ Documento de relevo: léelo primero si retomas el proyecto o abres una conversac
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-10-27, main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4 (PR #35 fusionado). Este relevo D-15 actualiza el punto de reanudación y la regla de commit remoto delegado; no corrige funcionalidad.
+Corte operativo: 2026-10-29, main en 4b8aad10fef052f96773c35a32036cfc7e475d37 (PR #41 fusionado). Este relevo registra la división de la instrucción persistente (D-17, DC-33) y actualiza el punto de reanudación; no corrige funcionalidad.
 
 **Próxima tarea (D-15):** leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante necesita actualización o mejora tras el error de contrato de esta iteración (se usó editor.reemplazar, que no existe). Es previa al PR de limpieza y no lo sustituye.
 
-**Siguiente PR acordado:** fusión de la rama de Ahorros y categorías; después, los PR intercalados D-17 (dividir la instrucción persistente) y de homogeneidad del front (U-09, U-10, F-44), y el resto de la agrupación de la fase 1 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**Siguiente PR acordado:** el PR de homogeneidad del front (U-09, U-10, F-44), tras D-17; después, el resto de la agrupación de la fase 1 (sección 10 del registro) y U-11, cuyo orden se acordará tras un inventario de qué entidades tienen `activo`. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
-**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28.
+**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29.
 
-**Trabajo preparado, sin fusionar:** F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), rama `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias`, 2026-10-29: borrado de ahorros sin error posterior, filtro de inactivos con interruptor «Ahorro activo», renombrado de categorías por ID con nombre en minúsculas (DC-31) y sin duplicados, mensajes de borrado bloqueado por FK y aviso «No se ha cambiado nada.» al guardar sin cambios (DC-30). F-22 sin índice único (DC-02); F-10 solo en categorías. F-14 sigue abierto.
+**Trabajo preparado, sin fusionar:** D-17 y DC-33 (división de la instrucción persistente en entrada y cuatro partes, y revisión de los `.md` próximos al límite de lectura del conector), rama `mantenimiento/D-17-dividir-instruccion-persistente`, 2026-10-29. F-14 sigue abierto.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, todavía usada por pushRecibo (F-12). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -25,16 +25,16 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 - Frontend: Vue 3 con Vite y PrimeVue 4 (plantilla Sakai) en `src/`: pantallas en `src/views/pages`, servicios de API en `src/service`, composables en `src/composables` y `src/layout/composables`.
 - Backend: Node con Express (módulos `.mjs`) en `backend/src`: rutas en `routes`, acceso a datos en `db`, middleware en `middleware`, utilidades en `utils`. Autenticación con JWT y contraseñas con `bcrypt`.
 - Base de datos: MariaDB 11.8, base `conta_hogar` en el host `mariadb01` (DC-04, DC-07). El esquema se define solo en `backend/src/db/migrations` (DC-13): 0001 línea base, 0002 esquema de recibo por año, 0003 partición de recibos por año y retirada de `recibos_historico`, 0004 tabla `ajustes_sistema`, procedimiento `generar_recibos_anio` y evento diario.
-- Documentación: `doc/`, con índice en `doc/index.md`. Hallazgos, decisiones (DC) y plan: `doc/mantenimiento/registro-hallazgos.md` (entrada y mapa; el contenido está en `registro-hallazgos_1de3.md`, `_2de3.md` y `_3de3.md`, DC-28). Lista corta de tareas: `TODO`.
+- Documentación: `doc/`, con índice en `doc/index.md`. Hallazgos, decisiones (DC) y plan: `doc/mantenimiento/registro-hallazgos.md` (entrada y mapa; el contenido está en `registro-hallazgos_1de3.md`, `_2de3.md` y `_3de3.md`, DC-28). Reglas de trabajo: `doc/mantenimiento/instruccion-persistente.md` (entrada y cuatro partes, DC-33). Lista corta de tareas: `TODO`.
 - Visor de la documentación: la pantalla `Tech-documentation.vue` carga `doc/**/*.md` y su navegación se mantiene a mano (`docNavigation`).
 - Desarrollo: contenedor en `/workspaces/timon`; repositorio `ferboiar/timon`. Node 20.9 o superior de la serie 20.
 
 ## 2. Cómo se trabaja
 
-- Una rama por cambio (`correccion/fase-1-<tema>`), un PR por rama, fusionado en `main`.
+- Una rama por cambio, un PR por rama, fusionado en `main`. El nombre de la rama lleva la fase (o `mantenimiento`) y todos los IDs desglosados, por ejemplo `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias` o `mantenimiento/D-17-dividir-instruccion-persistente`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-33, D-18, F-45, S-13, R-14 y U-12. Consultar siempre el registro antes de asignarlos.
-- Mensajes de commit: `tipo(IDs): resumen` y cuerpo en español. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-34, D-18, F-45, S-13, R-14 y U-12. Consultar siempre el registro antes de asignarlos.
+- Mensajes de commit: `tipo(IDs): resumen`, con cada ID desglosado (por ejemplo `fix(F-07, F-08): resumen`), y cuerpo en español. El título del PR sigue el mismo formato. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend (`npm run test:backend`) necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
 - No se añaden nunca a un commit `backend/src/db/.db_connection` (va cifrado con git-crypt y la pestaña Base de Datos lo reescribe, por lo que aparece como modificado) ni `backend/src/db/.db_connection.backup` (lo crea esa misma pestaña).
@@ -90,6 +90,8 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #35 | — | Instrucción persistente de funcionamiento incorporada a doc/mantenimiento (sin ID de hallazgo) |
 | #38 | D-16, DC-28 | Registro de hallazgos dividido en partes |
 | #39 | DC-14, DC-29 | Un recibo no puede tener fechas de otro año; interruptor de sesión en Ajustes |
+| #40 | F-17 | `return` en `confirmDeleteAdvance` y retirada de `saldoRestante` |
+| #41 | F-07, F-08, F-09, F-22, F-10 | Ahorros y categorías: borrado, inactivos, renombrado por ID, duplicados y borrados bloqueados por FK |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
@@ -110,20 +112,20 @@ El relevo operativo más abajo fija archivos, exclusiones, aceptación, entorno 
 - `components/`: una página por pantalla (Accounts, Advances, Calendar, Categories, ListBills, Login, ProfileSettings, Savings y las páginas vacías).
 - `services/`, `composables/`, `utils/`, `config/`, `directives/`, `router/`, `middleware/`, `auth/`: frontend y utilidades de backend.
 - `routes/`: API por módulo. `db/`: acceso a datos, procedimiento de recibos y `schema/` (diseño; la fuente del esquema son las migraciones).
-- `mantenimiento/`: el registro (entrada y tres partes `registro-hallazgos_NdeN.md`) y este documento.
+- `mantenimiento/`: la instrucción persistente (entrada y cuatro partes `instruccion-persistente_NdeN.md`), el registro (entrada y tres partes `registro-hallazgos_NdeN.md`) y este documento.
 
 ## 7. Retomar en una conversación nueva
 
-No hace falta reconstruir la memoria del chat. Leer este documento (en especial secciones 0, 5 y 8), TODO y el registro (entrada y todas sus partes), no solo un resultado truncado. Adjuntar la salida actual de git status --short, git branch --show-current y git log --oneline -5. Si hay cambios locales posteriores, revisarlos antes de cambiar de rama. Los archivos /tmp y _adjuntos de otro equipo no son accesibles automáticamente desde un chat nuevo.
+No hace falta reconstruir la memoria del chat. Leer la instrucción persistente (entrada y todas sus partes), este documento (en especial secciones 0, 5 y 8), TODO y el registro (entrada y todas sus partes), no solo un resultado truncado. Adjuntar la salida actual de git status --short, git branch --show-current y git log --oneline -5. Si hay cambios locales posteriores, revisarlos antes de cambiar de rama. Los archivos /tmp y _adjuntos de otro equipo no son accesibles automáticamente desde un chat nuevo.
 
 Texto recomendado para el primer mensaje:
 
 ```text
 Estamos retomando el mantenimiento de ferboiar/timon, no empezando un proyecto nuevo.
 
-Lee primero doc/mantenimiento/estado-del-proyecto.md, incluido el relevo operativo, TODO y doc/mantenimiento/registro-hallazgos.md (entrada) con todas sus partes registro-hallazgos_1de3.md a registro-hallazgos_3de3.md, en orden. Si una herramienta trunca un fichero, completa su lectura antes de afirmar que lo has revisado. Comprueba el estado real de la rama y los últimos commits; no borres cambios locales.
+Lee primero doc/mantenimiento/instruccion-persistente.md (entrada) con todas sus partes instruccion-persistente_1de4.md a instruccion-persistente_4de4.md, en orden, y después doc/mantenimiento/estado-del-proyecto.md, incluido el relevo operativo, TODO y doc/mantenimiento/registro-hallazgos.md (entrada) con todas sus partes registro-hallazgos_1de3.md a registro-hallazgos_3de3.md, en orden. Si una herramienta trunca un fichero, completa su lectura antes de afirmar que lo has revisado. Comprueba el estado real de la rama y los últimos commits; no borres cambios locales.
 
-El siguiente PR acordado después de la documentación es limpiar Actualizar fechas (F-11/F-23/F-32), conservando Generar nuevas fechas y el procedimiento/evento anual. No borres generarFechasFuturas: aún la usa pushRecibo y F-12 sigue abierto. Después vienen la validación de un solo año al editar (DC-14) y F-17, en PR separados.
+El siguiente trabajo acordado figura en la sección 0 del relevo y en TODO; no lo deduzcas de este texto. No borres generarFechasFuturas: aún la usa pushRecibo y F-12 sigue abierto.
 
 Sigue los criterios de aceptación y las reglas de trabajo del relevo. No deduzcas requisitos de datos de prueba, no toques .db_connection ni su copia, y no presentes una auditoría parcial como completa ni pruebas no ejecutadas como verificadas. Entrega un único conjunto de comandos, lista exacta de git add y título/descripción completos del PR.
 
@@ -219,7 +221,7 @@ El primer PR de documentación fue #29. El PR #30 incorporó el cierre D-11, com
 
 Comportamiento actual que no debe prometerse como terminado:
 
-- Ahorros: el filtro de inactivos, el interruptor «Ahorro activo» (F-08) y el borrado individual (F-07) están corregidos en la rama de Ahorros y categorías, pendiente de fusión; el concepto se envía capitalizado al guardar (F-44). No hay generación de aportaciones ni porcentaje de progreso. Ya admite movimientos manuales sin periodicidad; opciones explícitas de diaria/semanal son F-37.
+- Ahorros: el filtro de inactivos, el interruptor «Ahorro activo» (F-08) y el borrado individual (F-07) están corregidos (PR #41); el concepto se envía capitalizado al guardar (F-44). No hay generación de aportaciones ni porcentaje de progreso. Ya admite movimientos manuales sin periodicidad; opciones explícitas de diaria/semanal son F-37.
 - Anticipos: importe_total es saldo restante (F-14); mantener pagado al cambiar importe no ajusta saldo; borrar pagado no reactiva por sí solo el anticipo completado. Recalcular tras editar no equivale al algoritmo de completar tras borrar. Operaciones sin transacción (F-27).
 - Botón de borrado múltiple de Anticipos sin flujo conectado (F-39); propuestas manuales de fecha de pago suman un mes fijo (F-40).
 - saveUser/deleteUsers/changePassword solo leen token de localStorage (F-38); una sesión temporal no tiene el mismo soporte en esos métodos.
