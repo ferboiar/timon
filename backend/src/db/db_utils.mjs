@@ -307,6 +307,13 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
     if (typeof concepto !== 'string' || concepto.length > 30) {
         throw new Error('API. El concepto debe ser una cadena de texto de máximo 30 caracteres.');
     }
+
+    // DC-31/F-44: el concepto se guarda en minúsculas; la pantalla lo capitaliza al mostrarlo
+    const conceptoOriginal = concepto;
+    concepto = concepto.trim().toLowerCase();
+    if (conceptoOriginal !== concepto) {
+        console.log(`pushRecibo - Concepto normalizado a minúsculas: ${JSON.stringify(conceptoOriginal)} -> ${JSON.stringify(concepto)}`);
+    }
     if (!validPeriodicidades.includes(periodicidad)) {
         throw new Error(`API. La periodicidad debe ser una de las siguientes: ${validPeriodicidades.join(', ')}.`);
     }

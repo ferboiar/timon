@@ -8,7 +8,7 @@ Corte operativo: 2026-10-29, main en 4b8aad10fef052f96773c35a32036cfc7e475d37 (P
 
 **Próxima tarea (D-15):** leer dev/utils/ayudas.mjs, dev/utils/ayudas.test.mjs y dev/utils/README.md y valorar si el ayudante necesita actualización o mejora tras el error de contrato de esta iteración (se usó editor.reemplazar, que no existe). Es previa al PR de limpieza y no lo sustituye.
 
-**Siguiente PR acordado:** el PR de homogeneidad del front (U-09, U-10, F-44), tras D-17; después, el resto de la agrupación de la fase 1 (sección 10 del registro) y U-11, cuyo orden se acordará tras un inventario de qué entidades tienen `activo`. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**PR en curso:** homogeneidad del front (U-09, U-10, F-44, U-11 parcial y U-12), implementado y verificado funcionalmente el 2026-10-30 en la rama `correccion/fase-1-U09-U10-F44-homogeneidad-front`, pendiente de commit y PR. Después, el resto de la agrupación de la fase 1 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
 **Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29.
 

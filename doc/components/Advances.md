@@ -19,8 +19,8 @@ Al montar: `cargarZonaHoraria`, `fetchAdvances`, `fetchPeriodicidades`, `fetchAl
 | Función | Comportamiento actual |
 |---|---|
 | `openNewAdvance()` | Inicializa el formulario con fecha de hoy y valores vacíos o cero |
-| `editAdvance(adv)` | Copia el anticipo al formulario |
-| `saveAdvance()` | Convierte las fechas del formulario a texto, convierte periodicidad vacía a NULL y llama a `AdvService.saveAdvance`; después recarga anticipos y pagos |
+| `editAdvance(adv)` | Copia el anticipo al formulario y guarda una copia (`advanceOriginal`, con `snapshotAdvance`) para detectar «guardar sin cambios» (DC-30) |
+| `saveAdvance()` | Si se edita un anticipo y no se ha cambiado nada, avisa «No se ha cambiado nada.» y cierra sin enviar nada (DC-30). Si no, convierte las fechas del formulario a texto, convierte periodicidad vacía a NULL y llama a `AdvService.saveAdvance`; después recarga anticipos y pagos |
 | `confirmDeleteAdvance(adv)` / `deleteAdvance()` | Preparan y ejecutan el borrado individual; si el anticipo no tiene ID válido, `confirmDeleteAdvance` registra el error en consola y termina con `return` sin abrir el diálogo (F-17 corregido) |
 | `confirmCreatePaymentPlan(id)` / `handleCreatePaymentPlan()` | Piden confirmación y llaman a `createPaymentPlan` |
 | `createPaymentPlan(id)` | Exige anticipo existente y pago sugerido numérico mayor que cero, llama a `recalculatePaymentPlan` del servicio y recarga listas |
@@ -47,6 +47,8 @@ La sustitución excluye el pago antiguo del cálculo de pendientes, guarda el nu
 ## Tabla, expansión y exportación
 
 `expandedRows`, `expandedCount`, `isExpanded` y `advancesWithPayments` controlan la expansión. `onRowExpand` carga los pagos del anticipo; `onRowCollapse` actualiza el estado; `toggleExpandCollapseAll` alterna el conjunto completo.
+
+U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'` (`visibleAdvances`) y verlos todos; `hasInactiveAdvances` deshabilita el botón cuando no hay pausados, cancelados ni completados; un `watch` sobre `visibleAdvances` retira de `selectedAdvances` las filas que dejan de verse. U-12: la ayuda de la vista es un tooltip (`QuestionCircle`) junto al título. DC-30: `editAdvance` guarda `advanceOriginal` y `saveAdvance` avisa «No se ha cambiado nada.» si no hay cambios.
 
 `exportCSV` genera `anticipos.csv` con BOM UTF-8, separador `;`, coma decimal y campos entre comillas. No incluye filas de pagos, no escapa comillas interiores ni neutraliza fórmulas (F-19).
 

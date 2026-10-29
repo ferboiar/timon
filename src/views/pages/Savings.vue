@@ -205,6 +205,8 @@ const movimiento = ref({
     descripcion: ''
 });
 
+// DC-30: copia del movimiento al abrir el diálogo de edición, para avisar si se guarda sin cambios
+const movimientoOriginal = ref(null);
 const movimientos = ref({});
 
 const fetchMovimientos = async (ahorroId) => {
@@ -280,16 +282,24 @@ const openNewMovimiento = (ahorroId) => {
         tipo: 'regular',
         descripcion: ''
     };
+    movimientoOriginal.value = null;
     savingMovimientoDialog.value = true;
 };
 
 const editMovimiento = (mov) => {
     movimiento.value = { ...mov };
+    movimientoOriginal.value = JSON.parse(JSON.stringify(movimiento.value));
     savingMovimientoDialog.value = true;
 };
 
 const saveMovimiento = async () => {
     try {
+        // DC-30: guardar sin haber tocado nada no envía nada: avisa y cierra el diálogo
+        if (movimiento.value.id && movimientoOriginal.value && JSON.stringify(movimiento.value) === JSON.stringify(movimientoOriginal.value)) {
+            toast.add({ severity: 'success', summary: 'Sin cambios', detail: 'No se ha cambiado nada.', life: 3000 });
+            savingMovimientoDialog.value = false;
+            return;
+        }
         // Ajustar la zona horaria para fecha si está definida
         if (movimiento.value.fecha) {
             // Asegurarse de que movimiento.value.fecha sea un objeto Date
@@ -397,7 +407,7 @@ onMounted(async () => {
         </div>
 
         <div class="card">
-            <div class="font-semibold text-xl mb-4">Ahorros <small class="text-gray-500">(partidas de dinero que se guardan para un fin concreto)</small></div>
+            <div class="font-semibold text-xl mb-4 flex items-center gap-2">Ahorros <i class="pi pi-question-circle" v-tooltip.top="'Partidas de dinero que se guardan para un fin concreto'"></i></div>
             <DataTable
                 ref="dt_ahorros"
                 v-model:selection="selectedSavings"

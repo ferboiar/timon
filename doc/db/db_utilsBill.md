@@ -192,6 +192,7 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 | `pushRecibo - Recibo …: modo automático, N fechas reescritas y M conservadas` | Resumen al terminar |
 | `pushRecibo - Recibo …: fechas fuera del año …` | Se rechazan fechas fuera del año del recibo (DC-14) |
 | `pushRecibo - Recibo …: fechas fuera del año … admitidas por permitirFueraDeAnio` | Un administrador las admitió con el interruptor de sesión (DC-29) |
+| `pushRecibo - Concepto normalizado a minúsculas: …` | Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 
 ## Referencias
 

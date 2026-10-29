@@ -42,6 +42,13 @@ async function pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_ini
         cuenta_origen_id = cuenta_origen_id ?? null;
         periodicidad = periodicidad ?? null;
 
+        // DC-31/F-44: el concepto se guarda en minúsculas; la pantalla lo capitaliza al mostrarlo
+        const conceptoOriginal = concepto;
+        concepto = typeof concepto === 'string' ? concepto.trim().toLowerCase() : concepto;
+        if (conceptoOriginal !== concepto) {
+            console.log(`pushAdvance - Concepto normalizado a minúsculas: ${JSON.stringify(conceptoOriginal)} -> ${JSON.stringify(concepto)}`);
+        }
+
         if (id) {
             // Actualizar anticipo existente
             const [result] = await connection.execute(

@@ -24,7 +24,7 @@ Al montar se ejecutan `fetchSavings`, `fetchPeriodicidades` y `fetchAllMovimient
 | `confirmDeleteSelectedSavings` / `deleteSelectedSavings()` | Confirman y envían IDs en lote |
 | `updateSavings()` | Recarga solo la lista de ahorros, no todos sus movimientos |
 | `openNewMovimiento(id)` / `editMovimiento(mov)` | Preparan el movimiento nuevo o copiado |
-| `saveMovimiento()` | Normaliza la fecha, guarda un movimiento y lanza recargas de ahorros y movimientos |
+| `saveMovimiento()` | Si se edita un movimiento y no se ha cambiado nada, avisa «No se ha cambiado nada.» y cierra sin enviar nada (DC-30). Si no, normaliza la fecha, guarda el movimiento y lanza recargas de ahorros y movimientos |
 | `deleteMovimiento(mov)` | Borra sin diálogo de confirmación y lanza recargas |
 
 ## Aportaciones periódicas o sin patrón
@@ -44,7 +44,7 @@ El requisito del usuario permite ahorros diarios, semanales, otras cadencias o p
 ## Limitaciones pendientes
 
 - F-07 y F-08 corregidos el 2026-10-29 (PR #41).
-- U-09 y U-10: el diálogo de movimientos no avisa de «guardar sin cambios» (DC-30) y la vista de inactivos aún no es idéntica a la de Recibos.
+- U-09 y U-10 resueltos el 2026-10-30: el diálogo de movimientos aplica DC-30 y el modelo de inactivos quedó acordado en DC-34 (Ahorros ya lo cumplía). U-12: la ayuda de la vista se muestra como tooltip de un `QuestionCircle` junto al título.
 - F-16: saveSaving muta fecha_objetivo a texto antes del POST; el reintento sin reabrir puede fallar. No es una garantía de reintento seguro.
 - F-28: los avisos de borrado usan `getApiErrorMessage`; el resto usa error.message.
 - F-10: `ahorros_movimientos` tiene ON DELETE CASCADE en 0001 (comprobado en la migración): borrar un ahorro con movimientos también borra sus movimientos y no falla por FK. La traducción de ER_ROW_IS_REFERENCED_2 a «No se puede eliminar el ahorro porque tiene registros asociados» (409) es defensiva, por si una tabla futura referencia `ahorros` sin cascada; no se ha provocado.
