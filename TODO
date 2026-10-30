@@ -2,7 +2,7 @@
 
 ## Punto de reanudación (D-15)
 
-La validación de un solo año al editar recibos (DC-14, DC-29) se incorporó el 2026-10-28 (PR #39). F-17 se incorporó el 2026-10-28 (PR #40) y F-07, F-08, F-09, F-22 y F-10 el 2026-10-29 (PR #41). D-17 (dividir la instrucción persistente, DC-33) está preparado en la rama `mantenimiento/D-17-dividir-instruccion-persistente`, pendiente de revisión y fusión; a continuación, el PR de homogeneidad del front (U-09, U-10, F-44), y después el resto de la agrupación acordada (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27. La prioridad técnica del backlog no los sustituye por decisión del asistente.
+La validación de un solo año al editar recibos (DC-14, DC-29) se incorporó el 2026-10-28 (PR #39). F-17 se incorporó el 2026-10-28 (PR #40) y F-07, F-08, F-09, F-22 y F-10 el 2026-10-29 (PR #41). D-17 (dividir la instrucción persistente, DC-33) se incorporó el 2026-10-29 (PR #42); la homogeneidad del front (U-09, U-10, U-11 parcial, U-12, F-44) y el cierre de D-15 se incorporaron el 2026-10-30 (PR #43 y #44); a continuación, el resto de la agrupación acordada (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27. La prioridad técnica del backlog no los sustituye por decisión del asistente.
 
 Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 de doc/mantenimiento/estado-del-proyecto.md. No considerar /tmp ni _adjuntos parte del relevo persistente.
 
@@ -39,12 +39,13 @@ Estado operativo: 2026-10-27, PR #35 incorporado y relevo D-15 preparado (base 4
 
 Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 
-- [x] D-17 / DC-33: instrucción persistente dividida en entrada y cuatro partes, y `.md` próximos al límite de lectura revisados (2026-10-29, rama `mantenimiento/D-17-dividir-instruccion-persistente`; pendiente de revisión y fusión).
+- [x] D-17 / DC-33: instrucción persistente dividida en entrada y cuatro partes, y `.md` próximos al límite de lectura revisados (2026-10-29, PR #42, incorporado).
 - [x] U-09: aplicar DC-30 («No se ha cambiado nada.» al guardar sin cambios) en el resto de diálogos; hecho en Ahorros, Categorías, Cuentas, Anticipos, Recibos y el diálogo de movimientos de Ahorros (2026-10-30).
 - [x] U-10: homogeneizar la vista de inactivos de Ahorros con la de Recibos. Resuelto el 2026-10-30 (DC-34): Recibos conserva su tarjeta «Inactivos» y su botón se deshabilita cuando no hay inactivos; Ahorros ya cumplía el modelo acordado.
 - [x] F-44 / DC-31: base de datos en minúsculas y capitalización solo en pantalla para el resto de entidades. Aplicado el 2026-10-30 en `pushSaving`, `pushRecibo`, `pushAdvance` y `pushAccount`.
 - [x] U-11 / DC-32: homogeneizar las vistas de listado. Aplicado parcialmente el 2026-10-30: Anticipos (inactivo = cualquier estado distinto de `activo`, con selección coherente) y Presupuestos preparado con el mecanismo; Recibos y Ahorros ya lo cumplían; Cuentas se excluye por no tener concepto de inactivo; Categorías ya lo tenía.
 - [x] U-12: la ayuda de Ahorros y Anticipos se muestra como tooltip de un `QuestionCircle` junto al título, en lugar de texto en pantalla (2026-10-30).
+- [x] D-18: informes de cierre retroactivos de los PR #43 y #44 y relevo al día (2026-10-30, rama `mantenimiento/D-18-informes-pr43-pr44`; pendiente de revisión y fusión).
 - [x] Verificado a mano el 2026-10-29: «Borrar» actuaba sobre filas de Ahorros ocultas con «Ocultar inactivos» (`selectedSavings`). Corregido con un `watch` sobre `visibleSavings` (PR #41).
 
 ## Correcciones funcionales que deben abordarse después
