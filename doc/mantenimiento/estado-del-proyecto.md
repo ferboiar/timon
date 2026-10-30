@@ -1,18 +1,18 @@
 # Estado del proyecto Timón
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-10-24, relevo operativo D-14 tras PR #32.
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-10-30, punto de reanudación tras el PR #44 (D-18).
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-10-29, main en 4b8aad10fef052f96773c35a32036cfc7e475d37 (PR #41 fusionado). Este relevo registra la división de la instrucción persistente (D-17, DC-33) y actualiza el punto de reanudación; no corrige funcionalidad.
+Corte operativo: 2026-10-30, main en 20ccc7414145700515f87a77ba859de5d6e12267 (PR #44 fusionado). Desde el corte anterior (4b8aad10, PR #41) se fusionaron el PR #42 (D-17, DC-33), el #43 (homogeneidad del front) y el #44 (cierre de D-15). Este relevo se pone al día (D-18); no corrige funcionalidad.
 
 **D-15 (cerrada el 2026-10-30):** ayudante revisado; sin cambios necesarios. Protege `.db_connection`/`.env*` por diseño, verifica identidad y contenido, y crea copias antes de escribir. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
 
-**PR en curso:** homogeneidad del front (U-09, U-10, F-44, U-11 parcial y U-12), implementado y verificado funcionalmente el 2026-10-30 en la rama `correccion/fase-1-U09-U10-F44-homogeneidad-front`, pendiente de commit y PR. Después, el resto de la agrupación de la fase 1 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**Siguiente trabajo:** el resto de la agrupación de la fase 1 (sección 10 del registro), empezando por el grupo 2 (F-12/F-13/DC-05). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
-**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29.
+**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29; D-17 y DC-33 (instrucción persistente dividida), PR #42, 2026-10-29; U-09, U-10, U-11 parcial, U-12 y F-44 (homogeneidad del front), PR #43, 2026-10-30; D-15 (revisión del ayudante de parches), PR #44, 2026-10-30.
 
-**Trabajo preparado, sin fusionar:** D-17 y DC-33 (división de la instrucción persistente en entrada y cuatro partes, y revisión de los `.md` próximos al límite de lectura del conector), rama `mantenimiento/D-17-dividir-instruccion-persistente`, 2026-10-29. F-14 sigue abierto.
+**Trabajo preparado, sin fusionar:** D-18 (informes de cierre retroactivos de los PR #43 y #44 y relevo al día), rama `mantenimiento/D-18-informes-pr43-pr44`, 2026-10-30. F-14 sigue abierto.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, todavía usada por pushRecibo (F-12). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -33,7 +33,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 
 - Una rama por cambio, un PR por rama, fusionado en `main`. El nombre de la rama lleva la fase (o `mantenimiento`) y todos los IDs desglosados, por ejemplo `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias` o `mantenimiento/D-17-dividir-instruccion-persistente`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-34, D-18, F-45, S-13, R-14 y U-12. Consultar siempre el registro antes de asignarlos.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-35, D-19, F-45, S-13, R-14 y U-13. Consultar siempre el registro antes de asignarlos.
 - Mensajes de commit: `tipo(IDs): resumen`, con cada ID desglosado (por ejemplo `fix(F-07, F-08): resumen`), y cuerpo en español. El título del PR sigue el mismo formato. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend (`npm run test:backend`) necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
@@ -92,12 +92,15 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #39 | DC-14, DC-29 | Un recibo no puede tener fechas de otro año; interruptor de sesión en Ajustes |
 | #40 | F-17 | `return` en `confirmDeleteAdvance` y retirada de `saldoRestante` |
 | #41 | F-07, F-08, F-09, F-22, F-10 | Ahorros y categorías: borrado, inactivos, renombrado por ID, duplicados y borrados bloqueados por FK |
+| #42 | D-17, DC-33 | Instrucción persistente dividida en entrada y cuatro partes |
+| #43 | U-09, U-10, U-11, U-12, F-44 | Homogeneidad del front: guardar sin cambios, inactivos, tooltips de ayuda y textos en minúsculas |
+| #44 | D-15 | Cierre de la revisión del ayudante de parches |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
 
-El siguiente trabajo acordado tras este relevo es **limpiar Actualizar fechas (F-11/F-23/F-32)**, no implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El siguiente trabajo acordado es el grupo 2 de la fase 1 (F-12/F-13/DC-05), no implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo aún la usa, y F-12 sigue abierto.
@@ -112,7 +115,7 @@ El relevo operativo más abajo fija archivos, exclusiones, aceptación, entorno 
 - `components/`: una página por pantalla (Accounts, Advances, Calendar, Categories, ListBills, Login, ProfileSettings, Savings y las páginas vacías).
 - `services/`, `composables/`, `utils/`, `config/`, `directives/`, `router/`, `middleware/`, `auth/`: frontend y utilidades de backend.
 - `routes/`: API por módulo. `db/`: acceso a datos, procedimiento de recibos y `schema/` (diseño; la fuente del esquema son las migraciones).
-- `mantenimiento/`: la instrucción persistente (entrada y cuatro partes `instruccion-persistente_NdeN.md`), el registro (entrada y tres partes `registro-hallazgos_NdeN.md`) y este documento.
+- `mantenimiento/`: la instrucción persistente (entrada y cuatro partes `instruccion-persistente_NdeN.md`), el registro (entrada y tres partes `registro-hallazgos_NdeN.md`) y este documento; los informes de cierre de cada PR están en `mantenimiento/informes_iteraciones/`.
 
 ## 7. Retomar en una conversación nueva
 
