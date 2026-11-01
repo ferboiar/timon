@@ -4,7 +4,7 @@
 
 La validación de un solo año al editar recibos (DC-14, DC-29) se incorporó el 2026-10-28 (PR #39). F-17 se incorporó el 2026-10-28 (PR #40) y F-07, F-08, F-09, F-22 y F-10 el 2026-10-29 (PR #41). D-17 (dividir la instrucción persistente, DC-33) se incorporó el 2026-10-29 (PR #42); la homogeneidad del front (U-09, U-10, U-11 parcial, U-12, F-44) y el cierre de D-15 se incorporaron el 2026-10-30 (PR #43 y #44); a continuación, el resto de la agrupación acordada (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27. La prioridad técnica del backlog no los sustituye por decisión del asistente.
 
-Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 de doc/mantenimiento/estado-del-proyecto.md. No considerar /tmp ni _adjuntos parte del relevo persistente.
+Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (corregida en F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 de doc/mantenimiento/estado-del-proyecto.md. No considerar /tmp ni _adjuntos parte del relevo persistente.
 
 ## Prioridad técnica de trabajo futuro (D-13)
 
@@ -55,7 +55,9 @@ Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 - [ ] F-22: el servidor rechaza nombres duplicados, pero falta el índice único de la migración DC-02.
 - [x] F-10 en categorías: borrado bloqueado por FK con mensaje de negocio y 409 (2026-10-29, PR #41). En ahorros solo hay una traducción defensiva: `ahorros_movimientos` tiene ON DELETE CASCADE.
 - [ ] F-10 pendiente en el resto de borrados con FK (cuentas, anticipos, recibos).
-- [ ] F-12/F-13/DC-05: corregir el calendario antiguo que aún usa pushRecibo, dateStrings y conversión de fechas; la limpieza global no cierra F-12.
+- [x] F-12: `generarFechasFuturas` calcula la secuencia anclada y ajusta al último día del mes (DC-16), sin desbordar con los días 29 a 31 ni depender de la zona horaria; prueba nueva sin base de datos (2026-11-01, rama `correccion/fase-1-F12-fechas-ancladas`; pendiente de revisión y fusión).
+- [ ] F-45: la comprobación de «guardar sin cambios» de `guardarRecibo` (DC-30) ignora `modoFechas`: cambiar solo el modo de fechas a automático no guarda y avisa «No se ha cambiado nada.»; corregir en un PR propio.
+- [ ] F-13/DC-05: `dateStrings` en el pool de `mysql2` y retirada de los `toISOString` sobre fechas DATE; inventario previo de todos los consumidores en backend, front y pruebas (PR aparte tras F-12, DC-35).
 - [ ] F-14: corregir cambios del importe manteniendo pagado, reposición/reactivación al borrar un pago pagado y respuesta de saldo en la ruta DELETE antigua; decidir preservación del principal original.
 - [ ] F-16: preparar payloads sin convertir a texto las fechas del modelo vivo; verificar reintento tras error en Ahorros y Anticipos.
 - [ ] F-19: escapar CSV y neutralizar fórmulas, conservando IBAN como texto seguro.

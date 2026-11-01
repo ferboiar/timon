@@ -73,7 +73,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `generarRecibosAnio(simular)` | Lanza el procedimiento que crea los recibos del año siguiente (vista previa si `simular`); lo usa la ruta de administración (DC-24) |
 | `importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo)` | Importe que debe guardarse en un cargo: si está «cargado», el indicado, el que ya tuviera o el del recibo; si está pendiente, solo uno personalizado (si coincide con el del recibo queda vacío) (DC-15) |
 | `getValidValues(column, table)` | Función interna (no se exporta): obtiene valores válidos para campos ENUM o categorías |
-| `generarFechasFuturas(fechaInicial, periodicidad, cantidad)` | Función interna (no se exporta) que suma meses a la fecha inicial. La usa `pushRecibo`, al reescribir fechas en modo automático; no sigue la secuencia anclada de DC-16 y desborda con los días 29 a 31 (F-12) |
+| `generarFechasFuturas(fechaInicial, periodicidad, cantidad)` | Devuelve las primeras `cantidad` fechas de la secuencia anclada en `fechaInicial` (DC-16), sin límite de año: si el día no existe en un mes usa el último día (F-12 corregido) y no depende de la zona horaria. La usa `pushRecibo` al reescribir fechas en modo automático. Se exporta para las pruebas de `backend/test/fechas.test.mjs` |
 
 ## Un recibo por año (DC-14, DC-23)
 
