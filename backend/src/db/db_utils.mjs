@@ -108,48 +108,35 @@ async function getValidValues(column, table = 'recibos') {
 }
 
 /**
- * Genera fechas futuras basadas en la periodicidad, fecha inicial y número de fechas a generar
+ * Genera las primeras N fechas de la secuencia anclada en la fecha inicial y la periodicidad (DC-16, F-12).
+ * Cada fecha se calcula sumando un múltiplo de la periodicidad a la fecha inicial, sin arrastrar desvíos: si el día
+ * no existe en el mes (el 31 en abril o el 29 de febrero en un año no bisiesto) se usa el último día de ese mes.
+ * Opera solo con año, mes y día, sin objetos Date en hora local, así que no depende de la zona horaria del proceso (F-13).
+ * A diferencia de generarFechasDelAnio, la serie puede cruzar de año.
  * @param {string} fechaInicial - Fecha inicial en formato YYYY-MM-DD
- * @param {string} periodicidad - Periodicidad del recibo (mensual, bimestral, trimestral, anual)
+ * @param {string} periodicidad - mensual, bimestral, trimestral o anual
  * @param {number} cantidad - Número de fechas a generar
- * @returns {Array} - Array de objetos de fecha con estado "pendiente"
+ * @returns {Array} - Fechas con estado pendiente; la primera lleva el comentario Fecha inicial
  */
 function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
-    const fechas = [];
-    const fecha = new Date(fechaInicial);
-
-    for (let i = 0; i < cantidad; i++) {
-        // Crear una copia de la fecha actual para no modificar la original
-        const nuevaFecha = new Date(fecha);
-
-        // Avanzar la fecha según la periodicidad
-        switch (periodicidad) {
-            case 'mensual':
-                nuevaFecha.setMonth(nuevaFecha.getMonth() + i);
-                break;
-            case 'bimestral':
-                nuevaFecha.setMonth(nuevaFecha.getMonth() + i * 2);
-                break;
-            case 'trimestral':
-                nuevaFecha.setMonth(nuevaFecha.getMonth() + i * 3);
-                break;
-            case 'anual':
-                nuevaFecha.setFullYear(nuevaFecha.getFullYear() + i);
-                break;
-        }
-
-        // Formatear la fecha como YYYY-MM-DD
-        const fechaFormateada = nuevaFecha.toISOString().split('T')[0];
-
-        // Añadir la fecha al array
-        fechas.push({
-            fecha: fechaFormateada,
-            estado: 'pendiente',
-            comentario: i === 0 ? 'Fecha inicial' : '',
-            activo: 1
-        });
+    const mesesPorPeriodo = { mensual: 1, bimestral: 2, trimestral: 3, anual: 12 }[periodicidad];
+    if (!mesesPorPeriodo) {
+        throw new Error('API. Periodicidad no válida: ' + periodicidad + '.');
     }
-
+    const [anio, mes, dia] = String(fechaInicial).split('-').map(Number);
+    if (![anio, mes, dia].every(Number.isFinite)) {
+        throw new Error('API. La fecha inicial debe estar en el formato YYYY-MM-DD.');
+    }
+    const dosCifras = (n) => String(n).padStart(2, '0');
+    const fechas = [];
+    for (let k = 0; k < cantidad; k++) {
+        const mesesDesdeEnero = mes - 1 + k * mesesPorPeriodo;
+        const anioCargo = anio + Math.floor(mesesDesdeEnero / 12);
+        const mesCargo = (mesesDesdeEnero % 12) + 1;
+        const ultimoDia = new Date(Date.UTC(anioCargo, mesCargo, 0)).getUTCDate();
+        const diaCargo = Math.min(dia, ultimoDia);
+        fechas.push({ fecha: anioCargo + '-' + dosCifras(mesCargo) + '-' + dosCifras(diaCargo), estado: 'pendiente', comentario: k === 0 ? 'Fecha inicial' : '', activo: 1 });
+    }
     return fechas;
 }
 
@@ -853,4 +840,4 @@ async function generarRecibosAnio(simular = true) {
     }
 }
 
-export { completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, generarRecibosAnio, getRecibos, importeDelCargo, pushRecibo };
+export { completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, generarFechasFuturas, generarRecibosAnio, getRecibos, importeDelCargo, pushRecibo };
