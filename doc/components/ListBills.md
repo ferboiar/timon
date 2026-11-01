@@ -83,7 +83,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `puedeEditarCargo(cargo)` | Indica si el lápiz y la papelera de un cargo están activos: siempre si está pendiente; si está pagado, solo durante su mes o con la opción de sesión «Permitir editar/borrar recibos pagados» de Ajustes (DC-21) |
 | `puedeAnadirFecha(grupo)` / `puedeGenerarFechas(grupo)` | Activan el «+» (falta cualquier fecha) y «Generar nuevas fechas» (faltan fechas generables); replican `fechasFaltantes` del backend |
 | `openNew(periodicity)` | Inicializa un nuevo objeto recibo para la periodicidad indicada, en modo manual y sin fecha inicial (F-18) |
-| `guardarRecibo()` | Guarda un recibo nuevo o actualiza uno existente; antes de enviar comprueba que todas las fechas sean del año del recibo (DC-14) y envía `permitirFueraDeAnio` (DC-29) |
+| `guardarRecibo()` | Guarda un recibo nuevo o actualiza uno existente; si no ha cambiado nada y `modoFechas` sigue en manual, avisa «No se ha cambiado nada.» y no envía la petición (DC-30); elegir el modo automático cuenta como cambio (F-45). Antes de enviar comprueba que todas las fechas sean del año del recibo (DC-14) y envía `permitirFueraDeAnio` (DC-29) |
 | `editBill(prod, openFCDialog)` | Carga los datos de un recibo existente para su edición, siempre en modo de fechas manual (F-04); guarda el año de su `fecha_inicial` en `anioReciboGuardado` (DC-14) |
 | `confirmDeleteBill(prod)` | Prepara la eliminación de un recibo |
 | `deleteBill()` | Elimina un recibo seleccionado |
@@ -126,7 +126,7 @@ Los diálogos de recibo ofrecen dos modos para las fechas de cargo (`modoFechas`
 - Manual: el usuario fija cada fecha. Es el modo de partida al crear un recibo y siempre al editar uno (DC-11); nunca se deduce de que el recibo tenga `fecha_inicial`.
 - Automático: las fechas se generan desde `fecha_inicial` según la periodicidad. Solo se activa si el usuario lo elige. Al editar un recibo existente, el diálogo avisa de que se reescribirán las fechas pendientes; las ya pagadas (estado `cargado`) se conservan.
 
-`guardarRecibo()` envía `modoFechas` al backend. El diálogo de una fecha individual (`billDialogTB_FC`) fuerza siempre el modo manual y envía solo esa fecha.
+`guardarRecibo()` envía `modoFechas` al backend; elegir el modo automático cuenta como cambio aunque no se toque ningún otro campo (F-45). El diálogo de una fecha individual (`billDialogTB_FC`) fuerza siempre el modo manual y envía solo esa fecha.
 
 Si en modo automático se ha conservado alguna fecha pagada, el aviso de guardado pasa de «Éxito» a una advertencia que indica cuántas fechas pagadas no se han modificado y cuántas pendientes se han actualizado. Para corregir una fecha pagada hay que editarla en modo manual.
 
