@@ -465,8 +465,9 @@ function hideDialog() {
 async function guardarRecibo() {
     submitted.value = true;
 
-    // DC-30: guardar sin haber tocado nada no envía nada: avisa y cierra el diálogo
-    if (bill.value.id && billOriginal.value && JSON.stringify(bill.value) === JSON.stringify(billOriginal.value)) {
+    // DC-30: guardar sin haber tocado nada no envía nada: avisa y cierra el diálogo.
+    // F-45: editBill abre siempre en modo manual (F-04) y modoFechas no forma parte de bill; pasar a automático cuenta como cambio
+    if (bill.value.id && billOriginal.value && modoFechas.value === 'manual' && JSON.stringify(bill.value) === JSON.stringify(billOriginal.value)) {
         toast.add({ severity: 'success', summary: 'Sin cambios', detail: 'No se ha cambiado nada.', life: 3000 });
         hideDialog();
         return;

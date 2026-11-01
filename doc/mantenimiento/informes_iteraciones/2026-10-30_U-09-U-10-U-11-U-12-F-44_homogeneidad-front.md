@@ -18,7 +18,7 @@ Informe retroactivo (D-18): se redacta el 2026-10-30, después de la fusión del
 - PR anterior: #42 (D-17), fusionado.
 - Fusión: PR #43, merge `ac45176`.
 - Cambios locales conocidos y excluidos del PR: `backend/src/db/.db_connection` (modificado) y `backend/src/db/.db_connection.backup` (sin rastrear).
-- Incidencia: por indicación del asistente se ejecutó `git checkout -- backend/src/db/.db_connection`, contrario al apartado 4 de la instrucción persistente. No hubo pérdida: el SHA-256 de `.db_connection` (`c9a011ce50af…`) coincidió con el de `.db_connection.backup` según la salida aportada por el usuario.
+- Incidencia: por indicación del asistente se ejecutó `git checkout -- backend/src/db/.db_connection`, contrario al apartado 4 de la instrucción persistente. Errata (2026-11-01): este informe afirmaba aquí que no hubo pérdida, apoyándose en que el SHA-256 de `.db_connection` (`c9a011ce50af…`) coincidía con el de `.db_connection.backup`; la afirmación era incorrecta. Tras el `git checkout` del 2026-10-29, `.db_connection` quedó con la configuración de Aiven del repositorio y el login fallaba; el usuario lo reescribió con la configuración local. La coincidencia de SHA-256 no se ha vuelto a verificar al redactar la errata.
 
 ### Cambios
 
