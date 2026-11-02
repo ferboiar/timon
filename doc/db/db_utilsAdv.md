@@ -132,7 +132,7 @@ Cada paso deja trazas en el log del backend con el formato «módulo - acción: 
 ## Ejecución y límites comprobados
 
 - recalculatePaymentPlan no elimina pagos existentes: resta del saldo la suma de pendientes y añade lo que falta. Sin pagos empieza en fecha_inicio; con pagos avanza desde el último de cualquier estado. Usa la cuenta origen como destino de las cuotas generadas.
-- getPeriodicidades lee el ENUM del esquema. El algoritmo getMonthsFromPeriodicidad sí está codificado para mensual/bimestral/trimestral/anual y devuelve 0 para otros valores. Usa setMonth, no la secuencia anclada de recibos.
+- getPeriodicidades lee el ENUM del esquema. El algoritmo getMonthsFromPeriodicidad sí está codificado para mensual/bimestral/trimestral/anual y devuelve 0 para otros valores. Usa setMonth y hora local, no la secuencia anclada de recibos: puede desbordar con los días 29 a 31 y arrastrar deriva (F-46, abierto). La corrección de F-12 no modifica este algoritmo.
 - pushPago descuenta al insertar pagado o pasar a pagado; repone el importe anterior al volver a pendiente. Cambiar importe manteniendo pagado no ajusta el saldo. Una nueva cuota extraordinaria llama a recalculatePaymentPlan. No deben confundirse estos caminos (F-14).
 - recalculatePostEditPayments es interna, no exportada. Reparte entre posteriores; puede superar el sugerido y realiza un ajuste final en el último pendiente si la discrepancia supera un céntimo. Aplica mínimos de 0,01 en ciertas reducciones: no es una garantía incondicional de conciliación.
 - completarPlanTrasBorrado es interna y completa todo el saldo no cubierto por pendientes, no solo el importe del último pago borrado. recalculatePendingPayments está exportada pero no la usa ninguna ruta.

@@ -60,5 +60,6 @@ U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'
 - F-28: salvo el error de recalcular, los avisos siguen usando `error.message`.
 - F-39: botón de borrado múltiple sin diálogo/ejecución completos.
 - F-40: propuestas de fechas manuales incrementan un mes fijo, no la periodicidad del anticipo.
+- F-46: esas propuestas y el plan automático de Anticipos usan setMonth con getters/setters locales; los días 29 a 31 pueden desbordar y arrastrar deriva. La corrección anclada F-12 es de Recibos y no corrige Anticipos.
 
 Las trazas `savePago` y `recalculatePayments` se escriben en consola; no acreditan atomicidad. Ver [acceso a datos](../db/db_utilsAdv.md), [AdvService](../services/AdvService.md), [AccService](../services/AccService.md) y [zona horaria](../composables/useZonaHoraria.md).

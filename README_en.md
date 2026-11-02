@@ -8,7 +8,7 @@ Timón is a comprehensive financial platform designed for efficient management o
 
 1. **Bills System**: Facilitates the control of periodic payments (monthly, bimonthly, quarterly, annual) with detailed tracking of charge dates and payment statuses.
 
-2. **Advances System**: Allows management of loans or cash advances, with features to configure payment plans, track progress, and generate reports.
+2. **Advances System**: Allows management of loans or cash advances, with features to configure payment plans, inspect the remaining balance, and export CSV. Structured reports remain a pending proposal (R-07).
 
 3. **Savings System**: Enables creation and tracking of savings goals with target dates, configurable periodicities, and detailed records of contribution movements.
 
@@ -123,7 +123,7 @@ npm run dev
 
 ## Documentation and tests
 
-Start with doc/mantenimiento/estado-del-proyecto.md; the current plan is in TODO and doc/mantenimiento/registro-hallazgos.md. Backend tests need a separate MariaDB test environment: see backend/test/README.md. Never point destructive tests at the application database.
+Start with doc/mantenimiento/estado-del-proyecto.md; the current plan is in TODO and doc/mantenimiento/registro-hallazgos.md. The full backend suite needs a separate MariaDB test environment; standalone date, pool configuration and annual-generation unit tests do not. See backend/test/README.md. Never point destructive tests at the application database.
 
 ## Development environment with GitHub Codespaces and git-crypt
 

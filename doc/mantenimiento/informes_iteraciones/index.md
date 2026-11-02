@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-02 | D-21 | [Contraste documental de cambios recientes](./2026-11-02_D-21_contraste-documental.md) |
 | 2026-11-02 | U-13, DC-36 | [Vista previa de hoy y simulación de diciembre](./2026-11-02_U-13_DC-36_simulacion-diciembre.md) |
 | 2026-11-02 | D-20 | [Documentación técnica al día e índice de informes](./2026-11-02_D-20_documentacion-tecnica.md) |
 | 2026-11-02 | F-13, DC-05 | [Fechas DATE como texto en el pool de MariaDB](./2026-11-02_F-13_DC-05_datestrings.md) |
@@ -12,6 +13,7 @@
 | 2026-10-30 | U-09, U-10, U-11, U-12, F-44 | [Homogeneidad del front](./2026-10-30_U-09-U-10-U-11-U-12-F-44_homogeneidad-front.md) |
 | 2026-10-30 | D-18 | [Informes retroactivos de los PR #43 y #44 y relevo](./2026-10-30_D-18_informes-pr43-pr44-y-relevo.md) |
 | 2026-10-30 | D-15 | [Cierre de la revisión del ayudante de parches](./2026-10-30_D-15_cierre-revision-ayudante.md) |
+| 2026-10-29 | D-17, DC-33 | [División de la instrucción persistente — informe retroactivo](./2026-10-29_D-17_DC-33_division-instruccion.md) |
 | 2026-10-29 | F-07, F-08, F-09, F-22, F-10 | [Ahorros y categorías](./2026-10-29_F-07-F-08-F-09-F-22-F-10_ahorros-categorias.md) |
 | 2026-10-28 | F-17 | [return en confirmDeleteAdvance](./2026-10-28_F-17_return-confirmdeleteadvance.md) |
 | 2026-10-28 | DC-14, DC-29 | [Validación de un solo año](./2026-10-28_DC-14_DC-29_validacion-un-ano.md) |

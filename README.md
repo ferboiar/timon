@@ -8,7 +8,7 @@ Timón es una plataforma financiera integral diseñada para la gestión eficient
 
 1. **Sistema de Recibos**: Facilita el control de pagos periódicos (mensuales, bimestrales, trimestrales, anuales) con seguimiento detallado de fechas de cargo y estados de pago.
 
-2. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, seguimiento de avances y generación de reportes.
+2. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, consultar el saldo restante y exportar CSV. Los informes estructurados siguen pendientes (R-07).
 
 3. **Sistema de Ahorros**: Permite la creación y seguimiento de objetivos de ahorro con fechas objetivo, periodicidades configurables y registro detallado de movimientos de aportación.
 
@@ -124,7 +124,7 @@ npm run dev
 ## Documentación y pruebas
 
 - Empieza por `doc/mantenimiento/estado-del-proyecto.md`: cómo está montado el proyecto, cómo se trabaja y qué toca después. El índice de la documentación es `doc/index.md`; los hallazgos, las decisiones y el plan están en `doc/mantenimiento/registro-hallazgos.md` y la lista corta de tareas en `TODO`.
-- Pruebas del backend: `npm run test:backend`. Necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
+- Pruebas del backend: `npm run test:backend`. La suite completa necesita MariaDB de pruebas; los tests independientes de fechas, pool y generación anual no. Ver `backend/test/README.md`.
 
 ## Entorno de desarrollo con GitHub Codespaces y git-crypt
 
