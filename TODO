@@ -46,7 +46,9 @@ Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 - [x] U-11 / DC-32: homogeneizar las vistas de listado. Aplicado parcialmente el 2026-10-30: Anticipos (inactivo = cualquier estado distinto de `activo`, con selección coherente) y Presupuestos preparado con el mecanismo; Recibos y Ahorros ya lo cumplían; Cuentas se excluye por no tener concepto de inactivo; Categorías ya lo tenía.
 - [x] U-12: la ayuda de Ahorros y Anticipos se muestra como tooltip de un `QuestionCircle` junto al título, en lugar de texto en pantalla (2026-10-30).
 - [x] D-18: informes de cierre retroactivos de los PR #43 y #44 y relevo al día (2026-10-30, PR #45, incorporado).
-- [x] D-19: errata del informe retroactivo del PR #43: la incidencia de `.db_connection` sí tuvo efecto (2026-11-01, rama `correccion/fase-1-F45-guardar-sin-cambios`; pendiente de revisión y fusión).
+- [x] D-19: errata del informe retroactivo del PR #43: la incidencia de `.db_connection` sí tuvo efecto (2026-11-01, PR #47, incorporado).
+- [ ] D-20: puesta al día de la documentación técnica de PR anteriores (DC-31 en rutas, `db_utils*`, componentes e índice; `PaginasVacias.md`; inactivos de Anticipos y DC-30 en `index.md`; índice de informes y `docNavigation`), con inventario por fichero (PR propio; registrado el 2026-11-02).
+- [ ] U-13 / DC-36: «Generar los recibos del año ahora»: textos claros y simulación de fecha en un solo PR (registrado el 2026-11-02; rango de la fecha por confirmar).
 - [x] Verificado a mano el 2026-10-29: «Borrar» actuaba sobre filas de Ahorros ocultas con «Ocultar inactivos» (`selectedSavings`). Corregido con un `watch` sobre `visibleSavings` (PR #41).
 
 ## Correcciones funcionales que deben abordarse después
@@ -57,8 +59,9 @@ Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 - [x] F-10 en categorías: borrado bloqueado por FK con mensaje de negocio y 409 (2026-10-29, PR #41). En ahorros solo hay una traducción defensiva: `ahorros_movimientos` tiene ON DELETE CASCADE.
 - [ ] F-10 pendiente en el resto de borrados con FK (cuentas, anticipos, recibos).
 - [x] F-12: `generarFechasFuturas` calcula la secuencia anclada y ajusta al último día del mes (DC-16), sin desbordar con los días 29 a 31 ni depender de la zona horaria; prueba nueva sin base de datos (2026-11-01, PR #46, incorporado).
-- [x] F-45: la comprobación de «guardar sin cambios» de `guardarRecibo` (DC-30) tiene en cuenta `modoFechas`: con el diálogo abierto en manual, pasar a automático cuenta como cambio y se guarda (2026-11-01, rama `correccion/fase-1-F45-guardar-sin-cambios`; pendiente de revisión y fusión).
-- [ ] F-13/DC-05: `dateStrings` en el pool de `mysql2` y retirada de los `toISOString` sobre fechas DATE; inventario previo de todos los consumidores en backend, front y pruebas (PR aparte tras F-12, DC-35).
+- [x] F-45: la comprobación de «guardar sin cambios» de `guardarRecibo` (DC-30) tiene en cuenta `modoFechas`: con el diálogo abierto en manual, pasar a automático cuenta como cambio y se guarda (2026-11-01, PR #47, incorporado).
+- [ ] F-46: `recalculatePaymentPlan` (`db_utilsAdv.mjs`) y `Advances.vue` calculan las fechas de pago con `setMonth(getMonth() + n)`: con los días 29 a 31 desbordan al mes siguiente y arrastran la deriva (mismo fallo que F-12 en recibos). Decidir el criterio de fin de mes de Anticipos y corregirlo sin depender de la zona horaria, con prueba sin base de datos (PR propio; registrado el 2026-11-02).
+- [x] F-13/DC-05: `dateStrings: ['DATE']` en el pool de `mysql2`; los `DATE` llegan como texto y `TIMESTAMP`/`DATETIME` siguen como `Date`. El desplazamiento de un día era latente: `timezone: 'Z'` ya construía los `DATE` a medianoche UTC. Sin `toISOString` que retirar sobre columnas leídas (2026-11-02, rama `correccion/fase-1-F13-DC05-datestrings`; pendiente de revisión y fusión).
 - [ ] F-14: corregir cambios del importe manteniendo pagado, reposición/reactivación al borrar un pago pagado y respuesta de saldo en la ruta DELETE antigua; decidir preservación del principal original.
 - [ ] F-16: preparar payloads sin convertir a texto las fechas del modelo vivo; verificar reintento tras error en Ahorros y Anticipos.
 - [ ] F-19: escapar CSV y neutralizar fórmulas, conservando IBAN como texto seguro.

@@ -48,7 +48,7 @@ app.directive('role', vRole); // Registrar nuestra directiva de control de acces
 // Funciones globales
 /**
  * Formatea una fecha en formato ISO 8601 a dd/mm/yy
- * @param {string} dateString - Fecha en formato 2025-02-11T00:00:00.000Z
+ * @param {string} dateString - Fecha en formato 2025-02-11 o 2025-02-11T00:00:00.000Z
  * @param {string} separator - Separador de fecha, por defecto '/'
  * @returns {string} - Fecha formateada en dd/mm/yy
  * En template se usa como $formatDate(bill.fecha)
@@ -66,7 +66,7 @@ app.config.globalProperties.$formatDate = function (dateString, separator = '/')
 */
 /**
  * Formatea una fecha con ajuste opcional de zona horaria
- * @param {Date|string} date - Fecha a formatear (objeto Date o string ISO (2025-02-11T00:00:00.000Z))
+ * @param {Date|string} date - Fecha a formatear (objeto Date o texto: 2025-02-11 o ISO 2025-02-11T00:00:00.000Z)
  * @param {string} separator - Separador de fecha, por defecto '/'
  * @param {boolean} adjustTimezone - Si es true, ajusta la zona horaria
  * @returns {string} - Fecha formateada

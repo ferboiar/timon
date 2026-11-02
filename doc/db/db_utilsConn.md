@@ -10,7 +10,7 @@ Archivo: `backend/src/db/db_utilsConn.mjs`. Gestiona el fichero de conexión `ba
 | `saveDbConfig(config)` | Copia el fichero actual a `.db_connection.backup` y escribe el nuevo en formato `CLAVE=valor`, sin validar las claves |
 | `restoreDbConfig()` | Copia `.db_connection.backup` sobre `.db_connection` y borra la copia; error si no existe |
 
-El pool de conexiones de la aplicación (`db_connection.mjs`) trabaja en UTC (`timezone: 'Z'` y `SET time_zone = '+00:00'`, DC-25). Hallazgos abiertos: S-03 (claves sin validar, pool que no se recrea, TLS fijo, contraseña expuesta por la API).
+El pool de conexiones de la aplicación (`db_connection.mjs`) trabaja en UTC (`timezone: 'Z'` y `SET time_zone = '+00:00'`, DC-25). Hallazgos abiertos: S-03 (claves sin validar, pool que no se recrea, TLS fijo, contraseña expuesta por la API). Desde F-13/DC-05 el pool usa también `dateStrings: ['DATE']`: las columnas `DATE` llegan como texto `YYYY-MM-DD` y `TIMESTAMP` y `DATETIME` siguen como `Date`. La configuración sale de `construirConfiguracionPool`, exportada para probarla sin base de datos (`backend/test/pool.test.mjs`).
 
 ## Referencias
 

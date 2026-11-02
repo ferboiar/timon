@@ -28,7 +28,7 @@ Este módulo implementa las rutas de la API REST para la gestión de ahorros y s
 
 ### Obtener todos los ahorros (GET /api/ahorros)
 
-Esta ruta devuelve un array con todos los ahorros registrados en el sistema. Los datos son obtenidos directamente desde la función `getSavings()` del módulo de utilidades de base de datos.
+Esta ruta devuelve un array con todos los ahorros registrados en el sistema. Los datos son obtenidos directamente desde la función `getSavings()` del módulo de utilidades de base de datos. Las columnas `DATE` (`fecha_objetivo` y, en los movimientos, `fecha`) se devuelven como texto `YYYY-MM-DD` (F-13, DC-05); `created_at` y `updated_at`, donde existen, siguen siendo instantes ISO en UTC.
 
 ### Crear o actualizar un ahorro (POST /api/ahorros)
 
@@ -42,7 +42,7 @@ Esta ruta permite crear un nuevo ahorro o actualizar uno existente si se proporc
 | `concepto` | String | Concepto o nombre del ahorro | Sí |
 | `descripcion` | String | Descripción detallada del ahorro | No |
 | `ahorrado` | Number | Al crear, valor inicial. Al actualizar, solo se admite un cambio si el ahorro no tiene movimientos; en otro caso la petición se rechaza con 400 | No |
-| `fecha_objetivo` | Date | Fecha para completar el objetivo de ahorro | No |
+| `fecha_objetivo` | String | Fecha para completar el objetivo de ahorro (YYYY-MM-DD) | No |
 | `periodicidad` | String | Frecuencia de ahorro (diaria, mensual, etc.) | No |
 | `importe_periodico` | Number | Cantidad sugerida a ahorrar por periodo | Sí |
 | `activo` | Number | Estado del ahorro (1=activo, 0=inactivo) | No |

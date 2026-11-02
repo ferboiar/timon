@@ -940,3 +940,23 @@ describe('Ajustes del sistema y zona horaria (DC-25)', () => {
         }
     });
 });
+
+describe('F-13 y DC-05: fechas DATE como texto en el pool de la aplicación', () => {
+    test('una columna DATE llega como texto YYYY-MM-DD y un TIMESTAMP sigue siendo Date', async () => {
+        const { getConnection } = await import('../src/db/db_connection.mjs');
+        const [alta] = await db.execute('INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, cuenta_id, propietario_id, fecha_inicial) VALUES (?, ?, ?, 1, 1, 2, ?)', ['zz-F13 fecha', 'anual', 10, '2026-03-31']);
+        await db.execute("INSERT INTO mantenimiento_logs (operacion) VALUES ('zz-F13')");
+        const cx = await getConnection();
+        try {
+            const [[recibo]] = await cx.query('SELECT fecha_inicial FROM recibos WHERE id = ?', [alta.insertId]);
+            assert.equal(typeof recibo.fecha_inicial, 'string');
+            assert.equal(recibo.fecha_inicial, '2026-03-31');
+            const [[registro]] = await cx.query("SELECT fecha FROM mantenimiento_logs WHERE operacion = 'zz-F13'");
+            assert.ok(registro.fecha instanceof Date);
+        } finally {
+            cx.release();
+            await db.execute('DELETE FROM recibos WHERE id = ?', [alta.insertId]);
+            await db.execute("DELETE FROM mantenimiento_logs WHERE operacion = 'zz-F13'");
+        }
+    });
+});
