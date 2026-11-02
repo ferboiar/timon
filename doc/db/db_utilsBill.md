@@ -9,7 +9,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 - Gestión completa de operaciones CRUD para recibos y sus fechas de cargo
 - Soporte para múltiples periodicidades (mensual, bimestral, trimestral y anual)
 - Filtrado avanzado por periodicidad, fecha, año, concepto, categoría y estado
-- Validación exhaustiva de parámetros para garantizar la integridad de los datos
+- Comprobaciones de campos, tipos, catálogos y año del recibo descritas en las secciones de validación; no equivalen a una garantía exhaustiva de integridad
 - Manejo eficiente de transacciones para operaciones complejas
 
 ## Estructura de Datos
@@ -25,7 +25,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `categoria_id` | INT | Referencia a la categoría asociada |
 | `cuenta_id` | INT | ID de la cuenta bancaria asociada al recibo |
 | `propietario_id` | INT | ID del usuario propietario del recibo |
-| `es_privado` | TINYINT | 1 si el recibo solo es visible para su propietario |
+| `es_privado` | TINYINT | Campo previsto para privacidad; getRecibos no aplica este filtro ni autorización por propietario (S-01) |
 | `fecha_inicial` | DATE | Fecha desde la que se generan las fechas en modo automático; en modo manual se guarda la primera fecha de cargo. En un recibo creado por la migración 0003 o por el evento anual es la primera fecha de la secuencia en su año (DC-16, DC-23) |
 | `recibo_origen_id` | INT | Recibo del año anterior del que procede; único, así que cada recibo tiene como mucho un sucesor (DC-14). `deleteRecibo` impide borrar un recibo con sucesor y lo usa para marcar `replicar = 0` en su origen |
 | `replicar` | TINYINT | 1 por defecto; con 0 no se crea el recibo del año siguiente (DC-17). `deleteRecibo` lo pone a 0 en el origen del recibo que borra (DC-18) |
@@ -155,7 +155,7 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 ### Asignación automática de propietario
 
 - Al crear un nuevo recibo, el sistema asigna automáticamente el `propietario_id` a partir del token JWT
-- El usuario no necesita especificar manualmente el propietario, garantizando integridad y seguridad
+- El usuario no envía el propietario en este flujo; la ruta toma su ID del token. Esto no garantiza autorización sobre la fila editada: sigue pendiente S-01
 - El frontend no necesita manejar este campo, siendo responsabilidad completa del backend
 
 ### Filtrado por propietario

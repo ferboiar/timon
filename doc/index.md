@@ -252,7 +252,7 @@ Este sistema sigue una arquitectura multicapa:
 
 ## Funcionalidades Clave
 
-Comportamiento común de los diálogos de edición: guardar sin haber cambiado nada no llama al servidor y avisa «No se ha cambiado nada.» (DC-30), y los nombres y conceptos se guardan en minúsculas y la pantalla los capitaliza al mostrarlos (DC-31).
+Guardar sin cambios (DC-30) está implementado en Ahorros, Categorías, Cuentas, Anticipos, Recibos y movimientos de Ahorros; Usuarios y Ajustes siguen pendientes (U-09). En Recibos elegir modo automático cuenta como cambio (F-45). DC-31 normaliza en el servidor el nombre de categorías y cuentas y el concepto de ahorros, anticipos y recibos; la pantalla los capitaliza al mostrarlos, no se extiende esta afirmación a todos los textos del sistema.
 
 ### Recibos
 - Creación y gestión de recibos periódicos

@@ -107,7 +107,7 @@ Cuando se crea un nuevo recibo a través del endpoint POST, el sistema:
 
 1. Obtiene el ID del usuario desde el token JWT presente en la cabecera de autenticación
 2. Asigna automáticamente este ID como `propietario_id` del recibo
-3. No permite modificar manualmente el propietario, asegurando la integridad del sistema de permisos
+3. El cuerpo no decide el propietario en esta ruta. Al editar, pushRecibo también escribe el ID del usuario que guarda; no impone autorización por propietario y puede reasignar el recibo al editor (S-01)
 
 ```javascript
 // Extracto del código que maneja la asignación del propietario
@@ -117,7 +117,7 @@ await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propieta
 
 ### Validación de Cuenta Bancaria
 
-El endpoint POST valida que se proporcione un `cuenta_id` válido:
+El endpoint POST comprueba que se haya proporcionado cuenta_id; la existencia de la cuenta la respalda la clave foránea, no una validación completa de esta guarda:
 
 ```javascript
 if (!cuenta_id) {

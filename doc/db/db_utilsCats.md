@@ -19,7 +19,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `id` | INT | Clave primaria |
-| `nombre` | VARCHAR | Nombre de la categoría (único) |
+| `nombre` | VARCHAR | Nombre de la categoría. El servidor rechaza duplicados, pero el índice único del esquema sigue pendiente de la migración DC-02 (F-22) |
 | `descripcion` | VARCHAR | Descripción detallada (opcional) |
 | `propietario_id` | INT | Usuario que creó la categoría; no limita su visibilidad, las categorías son globales (DC-02) |
 | `es_privado` | TINYINT | Columna del esquema sin filtrado en los endpoints; en categorías no limita la visibilidad (S-01, DC-02) |
@@ -42,7 +42,7 @@ Una característica especial de la función `getCategorias()` es que siempre col
 
 ### Validación de Datos
 
-La función `deleteCategorias()` incluye validación para asegurar que los IDs proporcionados sean numéricos, evitando errores de tipo y facilitando el manejo de entrada desde la API.
+La función `deleteCategorias()` convierte la entrada a array y aplica `Number` a cada elemento antes de construir la consulta. Esta conversión no comprueba que los identificadores sean enteros positivos ni finitos: no equivale a una validación completa y puede producir NaN. La función no debe documentarse como una garantía contra entradas mal formadas.
 
 ## Validaciones y Manejo de Errores
 

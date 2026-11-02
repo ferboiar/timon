@@ -65,10 +65,10 @@ El componente `ListBills` permite la administración completa de recibos periód
 | `concepto` | String | Nombre o descripción del recibo |
 | `periodicidad` | String | Frecuencia del recibo (mensual, bimestral, trimestral o anual) |
 | `importe` | Number | Importe del recibo |
-| `categoria_id` | Number | ID de la categoría asignada al recibo |
+| `categoria` | String | Nombre de categoría enviado por el formulario; el servidor resuelve su ID. No confundir con categoria_id de la tabla recibos |
 | `cuenta_id` | Number | ID de la cuenta bancaria asociada al recibo |
 | `cargo` | Array | Lista de fechas de cargo asociadas al recibo |
-| `fecha_inicial` | Date | Fecha desde la que se generan las fechas de cargo en modo automático |
+| `fecha_inicial` | Date / String / null | En el formulario puede ser Date; la API devuelve DATE como texto YYYY-MM-DD (DC-05). El payload se normaliza antes de enviar |
 
 ## Funciones Principales
 
@@ -107,15 +107,13 @@ El componente permite asociar cada recibo a una cuenta bancaria específica medi
 3. **Persistencia**: El campo `cuenta_id` se incluye al guardar recibos nuevos o actualizarlos:
 
 ```javascript
-// Extracto de la función guardarRecibo()
+// Ejemplo simplificado del payload; presupone el modelo validado y normalizado.
+// No sustituye las validaciones ni el tratamiento del diálogo de un cargo individual.
 await BillService.saveBill({
-  id: this.bill.id || null,
-  concepto: this.bill.concepto,
-  periodicidad: this.bill.periodicidad,
-  importe: this.bill.importe,
-  categoria: this.bill.categoria_id,
-  cuenta_id: this.bill.cuenta_id, // Campo cuenta_id enviado al backend
-  cargo: this.bill.cargo
+  ...bill.value,
+  cuenta_id: bill.value.cuenta_id,
+  modoFechas: modoFechas.value,
+  permitirFueraDeAnio: permitirFechasFueraDeAnio.value
 });
 ```
 
