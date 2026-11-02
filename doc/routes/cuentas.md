@@ -30,7 +30,7 @@ Esta ruta permite crear una nueva cuenta o actualizar una existente. El comporta
 | Campo | Tipo | Descripción | Requerido |
 |-------|------|-------------|-----------|
 | `id` | Number | ID de la cuenta (null para crear nueva) | No |
-| `nombre` | String | Nombre de la cuenta | Sí |
+| `nombre` | String | Nombre de la cuenta (el servidor lo guarda sin espacios sobrantes y en minúsculas, DC-31, F-44) | Sí |
 | `tipo` | String | Tipo de cuenta (corriente, ahorro, etc.) | Sí |
 | `iban` | String | Código IBAN de la cuenta. Opcional: vacío o solo espacios se guardan como NULL. No puede repetirse entre cuentas; un IBAN repetido responde 409 con un mensaje que indica la cuenta que ya lo tiene | No |
 | `saldo_actual` | Number | Saldo actual de la cuenta | No |

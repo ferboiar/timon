@@ -35,7 +35,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getAccounts()` | Recupera todas las cuentas ordenadas alfabéticamente por nombre |
-| `pushAccount(id, nombre, tipo, ...)` | Crea o actualiza una cuenta con todos sus atributos |
+| `pushAccount(id, nombre, tipo, ...)` | Crea o actualiza una cuenta con todos sus atributos. Guarda el nombre sin espacios sobrantes y en minúsculas (DC-31, F-44) y el IBAN vacío como NULL (F-06) |
 | `deleteAccounts(accounts)` | Elimina una o más cuentas especificadas por sus IDs |
 | `getTipos()` | Obtiene los tipos de cuenta definidos en el esquema |
 

@@ -47,7 +47,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getSavings()` | Obtiene todos los ahorros ordenados alfabéticamente por concepto |
-| `pushSaving(id, concepto, ...)` | Crea o actualiza un ahorro. Al crear exige el propietario y guarda el valor inicial de `ahorrado`; al actualizar, solo permite cambiar `ahorrado` si no hay movimientos |
+| `pushSaving(id, concepto, ...)` | Crea o actualiza un ahorro. Al crear exige el propietario y guarda el valor inicial de `ahorrado`; al actualizar, solo permite cambiar `ahorrado` si no hay movimientos. Guarda el concepto sin espacios sobrantes y en minúsculas (DC-31, F-44) |
 | `deleteSavings(savings)` | Elimina uno o más ahorros |
 | `getPeriodicidades()` | Obtiene las periodicidades definidas en el esquema |
 

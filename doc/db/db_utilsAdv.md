@@ -52,7 +52,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getAdvances()` | Obtiene todos los anticipos ordenados por fecha de inicio |
-| `pushAdvance(id, concepto, ...)` | Crea o actualiza un anticipo. Al crear exige el propietario. Genera o recalcula el plan solo si hay periodicidad y un pago sugerido mayor que 0; si no, lo anota en el log con el motivo |
+| `pushAdvance(id, concepto, ...)` | Crea o actualiza un anticipo. Al crear exige el propietario. Genera o recalcula el plan solo si hay periodicidad y un pago sugerido mayor que 0; si no, lo anota en el log con el motivo. Guarda el concepto sin espacios sobrantes y en minúsculas (DC-31, F-44) |
 | `deleteAdvances(advances)` | Elimina uno o más anticipos y sus pagos asociados |
 | `getPeriodicidades()` | Obtiene las periodicidades definidas en el esquema |
 

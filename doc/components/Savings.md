@@ -14,7 +14,7 @@ Gestiona ahorros y movimientos individuales: crear, editar, borrar, expandir mov
 
 ## Carga y operaciones
 
-Al montar se ejecutan `fetchSavings`, `fetchPeriodicidades` y `fetchAllMovimientos`, secuencialmente. `fetchSavings` capitaliza el concepto y convierte fecha_objetivo a Date. La capitalización es solo de pantalla, pero `editSaving` reenvía el concepto capitalizado al guardar (F-44, DC-31). `fetchAllMovimientos` usa Promise.all; `fetchMovimientos(id)` carga un ahorro y se utiliza al expandirlo.
+Al montar se ejecutan `fetchSavings`, `fetchPeriodicidades` y `fetchAllMovimientos`, secuencialmente. `fetchSavings` capitaliza el concepto y convierte fecha_objetivo a Date. La capitalización es solo de pantalla, pero `editSaving` reenvía el concepto capitalizado al guardar y el servidor lo guarda en minúsculas (F-44, DC-31). `fetchAllMovimientos` usa Promise.all; `fetchMovimientos(id)` carga un ahorro y se utiliza al expandirlo.
 
 | Función | Comportamiento actual |
 |---|---|

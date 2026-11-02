@@ -39,7 +39,7 @@ Esta ruta permite crear un nuevo ahorro o actualizar uno existente si se proporc
 | Campo | Tipo | Descripción | Requerido |
 |-------|------|-------------|-----------|
 | `id` | Number | ID del ahorro (null para crear nuevo) | No |
-| `concepto` | String | Concepto o nombre del ahorro | Sí |
+| `concepto` | String | Concepto o nombre del ahorro (el servidor lo guarda sin espacios sobrantes y en minúsculas, DC-31, F-44) | Sí |
 | `descripcion` | String | Descripción detallada del ahorro | No |
 | `ahorrado` | Number | Al crear, valor inicial. Al actualizar, solo se admite un cambio si el ahorro no tiene movimientos; en otro caso la petición se rechaza con 400 | No |
 | `fecha_objetivo` | String | Fecha para completar el objetivo de ahorro (YYYY-MM-DD) | No |

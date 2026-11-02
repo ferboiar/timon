@@ -156,7 +156,8 @@ const docNavigation = [
                     { title: 'Instrucción: parte 1 de 4', path: 'mantenimiento/instruccion-persistente_1de4' },
                     { title: 'Instrucción: parte 2 de 4', path: 'mantenimiento/instruccion-persistente_2de4' },
                     { title: 'Instrucción: parte 3 de 4', path: 'mantenimiento/instruccion-persistente_3de4' },
-                    { title: 'Instrucción: parte 4 de 4', path: 'mantenimiento/instruccion-persistente_4de4' }
+                    { title: 'Instrucción: parte 4 de 4', path: 'mantenimiento/instruccion-persistente_4de4' },
+                    { title: 'Informes de iteración (índice)', path: 'mantenimiento/informes_iteraciones/index' }
                 ]
             }
         ]
