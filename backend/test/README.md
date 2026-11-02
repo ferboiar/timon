@@ -60,3 +60,7 @@ Los valores por defecto corresponden a la opción B. En la opción A hay que ind
 - El esquema se carga aplicando por orden todos los ficheros de `backend/src/db/migrations/`.
 - Las pruebas fijan DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_DATABASE antes de importar dinámicamente db_connection.mjs y db_utils.mjs; dotenv no pisa esas variables y las funciones reales usan la base de pruebas.
 - fase0.test.mjs conserva su nombre histórico pero prueba también lógica de recibos por año y migraciones. `fechas.test.mjs` prueba `generarFechasFuturas` (F-12) sin base de datos y se puede ejecutar solo: `node --test backend/test/fechas.test.mjs`. `pool.test.mjs` prueba la configuración del pool (F-13, DC-05) sin base de datos: `node --test backend/test/pool.test.mjs`. ENOTFOUND mariadb-test impide iniciar la suite: no demuestra un fallo funcional ni pruebas superadas. Configura la opción A o arranca la B.
+
+## Pruebas de simulación anual (U-13)
+
+`node --test backend/test/generacionAnual.test.mjs` prueba sin MariaDB el cálculo de diciembre, la prohibición de escritura futura y la separación de avisos. La suite de integración existente de `fase0.test.mjs` requiere la base *_test. Los cuatro tests nuevos son unitarios: no prueban por HTTP la ruta ni reproducen el bloqueo concurrente de MariaDB. La simulación de diciembre se comprobó además manualmente en la aplicación.

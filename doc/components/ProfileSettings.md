@@ -40,7 +40,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 ### Ajustes generales y administración de recibos (solo administradores)
 
 - **General:** selector de la zona horaria de la aplicación (DC-25). Las horas se guardan en UTC y la zona decide el día, mes y año en curso y la hora con que se muestran las fechas. Se guarda en la base de datos y se aplica a toda la aplicación.
-- **Administrar recibos**, en este orden: interruptor «Crear recibos del año automáticamente» (persistente, con explicación y riesgos); «Generar los recibos del año ahora», con vista previa y botón «Generar ahora» del proceso anual (DC-17, DC-24); interruptor «Permitir editar/borrar recibos pagados» (solo dura la sesión, DC-21); e interruptor «Permitir declarar fechas fuera del año en curso» (solo dura la sesión, con explicación de sus efectos, DC-29).
+- **Administrar recibos**, en este orden: interruptor «Crear recibos del año automáticamente» (persistente, con explicación y riesgos); «Generar los recibos del año ahora», con «Vista previa de hoy», «Simular el próximo 1 de diciembre» sin selector y «Generar ahora» independiente del interruptor automático (DC-17, DC-24, DC-36); interruptor «Permitir editar/borrar recibos pagados» (solo dura la sesión, DC-21); e interruptor «Permitir declarar fechas fuera del año en curso» (solo dura la sesión, con explicación de sus efectos, DC-29).
 
 ## Estados y Propiedades
 
@@ -66,6 +66,15 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 | `deleteUserDialog` | Boolean | Control de confirmación de eliminación |
 | `deleteSelectedUsersDialog` | Boolean | Control de confirmación de eliminación múltiple |
 
+### Estados y control de la generación anual (U-13)
+
+| Elemento | Función |
+|---|---|
+| `fechaSimulada` | Fecha devuelta por el servidor; null para la vista previa de hoy |
+| `avisosGeneracion` | Avisos generales, separados de los recibos de la tabla |
+| `puedeGenerarAhora` | Exige candidatos, fecha simulada null y ninguna consulta ni generación en curso |
+| `invalidarVistaPrevia()` | Vacía tabla, fecha y avisos y cierra la confirmación antes de consultar y al terminar una ejecución |
+
 ## Métodos Principales
 
 ### Configuración de Estilo
@@ -86,8 +95,8 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 | `guardarZona()` | Guarda la zona horaria (`AjustesService.saveZonaHoraria`) y la aplica en toda la aplicación (`establecerZonaHoraria`) |
 | `cargarAjustesRecibos()` | Carga el estado del interruptor «Crear recibos del año automáticamente» |
 | `pedirCambioCreacionAutomatica(valor)` / `confirmarCambioCreacionAutomatica()` | Abren el diálogo con la explicación y los riesgos y, al confirmar, guardan el interruptor |
-| `consultarVistaPrevia()` | Pide al servidor la vista previa de los recibos que se crearían (`generarRecibosAnio(true)`) |
-| `generarAhora()` | Ejecuta el procedimiento anual (`generarRecibosAnio(false)`) tras confirmar y avisa de cuántos recibos se han creado |
+| `consultarVistaPrevia(proximoDiciembre = false)` | Pide al servidor la vista previa de los recibos que se crearían (`generarRecibosAnio(true)`), o simula diciembre si se solicita; invalida previamente la consulta anterior |
+| `generarAhora()` | Comprueba `puedeGenerarAhora`, ejecuta con el reloj real tras confirmar y vuelve a calcular los candidatos. Cuenta solo recibos; si no hay altas muestra un aviso y su motivo. Invalida la vista previa también si falla |
 | `fetchDbConfig()`, `fetchAndShowPassword()`, `testDbConnection()`, `confirmSaveDbConfig()`, `saveDbConfig()`, `confirmRestoreDbConfig()`, `restoreDbConfig()` | Pestaña Base de Datos: leer, probar, guardar y restaurar la configuración de conexión ([DbConfigService](../services/DbConfigService.md)) |
 | `backupDatabase()`, `onSelectFileToRestore()`, `restoreDatabase()` | Pestaña Base de Datos: descargar una copia de seguridad y restaurar desde un volcado ([MaintenanceDBService](../services/MaintenanceDBService.md)) |
 
@@ -136,7 +145,7 @@ El componente utiliza varios servicios para su funcionamiento:
 - [Composable useTheme](../composables/useTheme.md) y [useLayout](../composables/useLayout.md) - Temas y apariencia general
 - [API de Ajustes](../routes/ajustes.md) - Zona horaria y recibos
 - [API de conexión](../routes/conexionDB.md) y [API de mantenimiento](../routes/mantenimientoDB.md) - Pestaña Base de Datos
-- [Registro de hallazgos y decisiones](../mantenimiento/registro-hallazgos.md) - DC-21, DC-25, DC-26 y DC-29
+- [Registro de hallazgos y decisiones](../mantenimiento/registro-hallazgos.md) - DC-21, DC-25, DC-26, DC-29 y DC-36
 
 ## Estado y validaciones auxiliares
 
@@ -148,3 +157,7 @@ El componente utiliza varios servicios para su funcionamiento:
 - zonaCambiada habilita Guardar y Descartar; horaEnZonaSeleccionada muestra la hora al evaluar la selección, no un reloj con temporizador.
 - isDbConfigChanged compara host, puerto, usuario y base, o detecta una contraseña escrita.
 - La confirmación y ejecución del borrado de usuarios, de restauración de conexión y de restauración del volcado son operaciones distintas.
+
+## Vista previa y simulación de diciembre (U-13)
+
+U-13/DC-36 distingue «Vista previa de hoy» de «Simular el próximo 1 de diciembre», sin selector. El servidor calcula el día en la zona de Ajustes: este año antes del 1 de diciembre, hoy si es ese día y el siguiente año después. La simulación proyecta los datos actuales y no predice cambios futuros. No escribe ni habilita «Generar ahora». La ejecución real sigue independiente del interruptor automático; solo se habilita con recibos de una vista previa de hoy y se recalcula al confirmar. Los avisos generales no cuentan como recibos; los avisos de cadencia permanecen asociados a cada recibo.

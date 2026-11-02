@@ -1,18 +1,18 @@
 # Estado del proyecto Timón
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-02, punto de reanudación tras el PR #48 (F-13).
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-02, base tras el PR #49 (D-20); U-13 en preparación de cierre.
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-02, main en 4fbac556764b67411a86db447231289a92dec624 (PR #48 fusionado). Desde el corte anterior (4b8aad10, PR #41) se fusionaron el PR #42 (D-17, DC-33), el #43 (homogeneidad del front), el #44 (cierre de D-15), el #45 (D-18, informes y relevo), el #46 (F-12, DC-35), el #47 (F-45, D-19) y el #48 (F-13, DC-05). Este relevo registra D-20 (documentación técnica al día e índice de informes).
+Corte operativo: 2026-11-02, main en 8142c2c3dc904efcd5e2e6f4e5000291c608b877 (PR #49 fusionado). El PR #49 incorpora D-20 sobre la base anterior 4fbac556764b67411a86db447231289a92dec624 (PR #48). La iteración activa es U-13/DC-36, todavía sin fusionar.
 
 **D-15 (cerrada el 2026-10-30):** ayudante revisado; sin cambios necesarios. Protege `.db_connection`/`.env*` por diseño, verifica identidad y contenido, y crea copias antes de escribir. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
 
-**Siguiente trabajo:** tras D-20, U-13/DC-36 («Generar los recibos del año ahora») y después el resto de la agrupación de la fase 1, empezando por F-14 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**Siguiente trabajo:** cerrar U-13/DC-36 con los dos botones aprobados, sin selector. Después, F-14 en su propio PR; F-46 continúa abierto y requiere acordar el criterio de fin de mes.
 
-**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29; D-17 y DC-33 (instrucción persistente dividida), PR #42, 2026-10-29; U-09, U-10, U-11 parcial, U-12 y F-44 (homogeneidad del front), PR #43, 2026-10-30; D-15 (revisión del ayudante de parches), PR #44, 2026-10-30; D-18 (informes de cierre retroactivos y relevo al día), PR #45, 2026-10-30; F-12 (secuencia anclada en `generarFechasFuturas`) y DC-35 (el grupo 2 se divide en dos PR), PR #46, 2026-11-01; F-45 (guardar sin cambios con el modo de fechas) y D-19 (errata del informe del PR #43), PR #47, 2026-11-01; F-13 y DC-05 (fechas `DATE` como texto en el pool de MariaDB), PR #48, 2026-11-02.
+**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29; D-17 y DC-33 (instrucción persistente dividida), PR #42, 2026-10-29; U-09, U-10, U-11 parcial, U-12 y F-44 (homogeneidad del front), PR #43, 2026-10-30; D-15 (revisión del ayudante de parches), PR #44, 2026-10-30; D-18 (informes de cierre retroactivos y relevo al día), PR #45, 2026-10-30; F-12 (secuencia anclada en `generarFechasFuturas`) y DC-35 (el grupo 2 se divide en dos PR), PR #46, 2026-11-01; F-45 (guardar sin cambios con el modo de fechas) y D-19 (errata del informe del PR #43), PR #47, 2026-11-01; F-13 y DC-05 (fechas `DATE` como texto en el pool de MariaDB), PR #48, 2026-11-02; D-20 (documentación técnica e índice de informes), PR #49, 2026-11-02.
 
-**Trabajo preparado, sin fusionar:** D-20 (documentación técnica al día e índice de informes), rama `mantenimiento/D-20-documentacion-tecnica-al-dia`, 2026-11-02. F-46 (desbordamiento de `setMonth` en Anticipos) registrado sin corregir; F-14 sigue abierto.
+**Trabajo preparado, sin fusionar:** U-13/DC-36, rama `correccion/fase-1-U13-generar-recibos-anio`: simulación implementada y seis casos manuales confirmados; suite de 85 pruebas pasada. Pendiente consolidar documentación y preparar informe, commit y PR. No se ejercitó la ejecución real desde la nueva pantalla ni el bloqueo concurrente.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, usada por pushRecibo (F-12 corregido: calcula la secuencia anclada). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -49,7 +49,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 - La pantalla muestra el año elegido y, en el año en curso, los pendientes de años anteriores como «Atrasado» (DC-18, DC-19). Un año anterior es un ejercicio cerrado (DC-20). Un cargo pagado solo se edita el mes en que vence, salvo con la opción de sesión del administrador (DC-21). «+» y «Generar nuevas fechas» siguen DC-22.
 - Al editar, el modo de fechas es siempre manual; el automático solo reescribe las fechas pendientes (DC-11). Guardar sin cambios (DC-30) solo se considera tal si el modo sigue en manual: pasar a automático cuenta como cambio (F-45).
 - Todas las fechas de un recibo deben caer en su año natural (DC-14): la pantalla avisa antes de enviar y el servidor responde 400. Excepción para el administrador: el interruptor de sesión «Permitir declarar fechas fuera del año en curso» de Ajustes › Administrar recibos (DC-29).
-- El procedimiento `generar_recibos_anio` crea los recibos del año siguiente. Un evento horario actúa a las 03:00 en la zona horaria de los ajustes. Solo inserta, y el interruptor `crear_recibos_automaticamente` lo activa o desactiva. Ajustes › Administrar recibos permite vista previa y ejecución manual (DC-17, DC-24).
+- El procedimiento `generar_recibos_anio` crea los recibos del año siguiente. Un evento horario actúa a las 03:00 en la zona horaria de los ajustes. Solo inserta, y el interruptor `crear_recibos_automaticamente` lo activa o desactiva. Ajustes › Administrar recibos permite vista previa de hoy, simulación del próximo 1 de diciembre sin selector y ejecución manual independiente del interruptor automático (DC-17, DC-24, DC-36).
 
 ### Otros módulos
 - Anticipos: planes de pago. Al borrar un pago, «Recalcular pagos» sigue DC-12; el pago sugerido se valida como número (F-02). No usa transacciones (F-27).
@@ -99,12 +99,13 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #46 | F-12, DC-35 | Fechas futuras ancladas en `generarFechasFuturas` y división del grupo 2 en dos PR |
 | #47 | F-45, D-19 | Guardar sin cambios tiene en cuenta el modo de fechas y errata del informe del PR #43 |
 | #48 | F-13, DC-05 | Fechas `DATE` como texto en el pool de MariaDB |
+| #49 | D-20 | Documentación técnica e índice de informes |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
 
-La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El siguiente trabajo acordado es D-20 y después U-13/DC-36 y F-14 (grupo 3 de la fase 1), no implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El trabajo activo es U-13/DC-36; después corresponde F-14 (grupo 3 de la fase 1), no implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo la usa (F-12 corregido el 2026-11-01).
@@ -140,7 +141,9 @@ Mi git status --short, rama y últimos commits son:
 [pegar aquí la salida actual]
 ```
 
-## 8. Relevo operativo completo
+## 8. Relevo histórico de la limpieza (2026-10-27)
+
+Esta sección conserva el alcance y las comprobaciones históricas de la limpieza; no define la siguiente tarea actual, que figura en las secciones 0 y 5.
 
 Fecha de preparación: 2026-10-27. Base confirmada: main en 4d73e0692accd7e71c5c1e9e238b2c012f5910c4, merge del PR #35. Los PR #29 a #32 son documentación; no constituyen nuevas correcciones funcionales. Confirmar el HEAD y estado del workspace al retomar, no suponer que la rama local está actualizada.
 
@@ -185,7 +188,7 @@ Ejecutar ESLint sobre los ficheros del frontend tocados y node --check en los m�
 - Contenedor /workspaces/timon en Synology; MariaDB 11.8 en mariadb01, base de aplicación conta_hogar.
 - Esquema solo en backend/src/db/migrations: 0001 a 0004. No usar notas SQL de raíz como migraciones ni reaplicar la línea base sobre la BD real.
 - Tests: npm run test:backend ejecuta node --test backend/test/. El fichero fase0.test.mjs es un nombre histórico y ya incluye pruebas posteriores.
-- La última salida aportada falló en preparación con ENOTFOUND mariadb-test, con 54 tests descubiertos, 0 superados y 53 cancelados. No son 54 fallos funcionales y no hay una ejecución nueva en verde.
+- Evidencia histórica al preparar la limpieza: ENOTFOUND mariadb-test impidió la preparación. Evidencia posterior de U-13 (2026-11-02): EXIT:0, 85 pruebas pasadas, 0 fallos, canceladas u omitidas, usando mariadb01, puerto 3306, timon_test y conta_hogar_test.
 - Opción A: backend/test/README.md explica usar mariadb01 con timon_test y conta_hogar_test, pasando TEST_DB_HOST/USER/PASSWORD. La contraseña se introduce en terminal, no se pega en el chat.
 - Opción B: arrancar docker-compose.test.yml en el host de Docker, red externa backend, y ejecutar desde el contenedor conectado a esa red.
 - Las pruebas borran y recrean TEST_DB_NAME: solo *_test y nunca conta_hogar. No lanzar migraciones, generación anual, backup/restore ni pruebas destructivas contra datos reales para verificar esta limpieza.
@@ -210,14 +213,14 @@ Recibos por año, importe por cargo, enlace recibo_origen_id, migraciones 0002/0
 
 Ajustes: General, Usuarios, Aspecto, Administrar recibos y Base de Datos; administrador abre General y resto Aspecto. Apariencia system/light/dark guardada por usuario en servidor y cacheada en timon.colorScheme; el servidor prevalece. El botón de luna no persiste. Permitir editar/borrar pagados es de sesión, se reinicia también al recargar; el borrado forzado solo lo admite el administrador.
 
-La lista completa de fallos está en el registro, no en esta síntesis. DC-01 (rechazado), DC-02 (unicidad de categorías) y dateStrings siguen pendientes; permisos reales también. Los documentos de raíz ya están clasificados como diseños históricos/ejemplos o descripción actual de package.json.
+La lista completa de fallos está en el registro, no en esta síntesis. DC-01 (rechazado) y DC-02 (unicidad de categorías) siguen pendientes; dateStrings para DATE se incorporó en el PR #48. Los permisos reales siguen pendientes. Los documentos de raíz ya están clasificados como diseños históricos/ejemplos o descripción actual de package.json.
 
 ### Protocolo para arrancar otro chat
 
 1. Leer este relevo y comprobar git status --short, rama y git log --oneline -5. No recrear una rama que ya exista ni asumir que el trabajo no confirmado en local está fusionado.
 2. Leer doc/mantenimiento/estado-del-proyecto.md, TODO y el registro: registro-hallazgos.md (entrada) y sus tres partes, en orden (decisiones, entorno, aceptación, hallazgos y plan). No limitarse a dos secciones de un resultado truncado.
 3. Si la rama actual tiene trabajo posterior, localizarlo y respetarlo antes de cambiar de rama. Las dos modificaciones de conexión conocidas no son permiso para ignorar cualquier otro cambio.
-4. Si no hay otro trabajo en curso, empezar el PR de limpieza descrito arriba. Leer las funciones actuales y todos sus consumidores antes de proponer el parche.
+4. Si no hay otro trabajo en curso, seguir las secciones 0 y 5 actuales; no reiniciar la limpieza histórica descrita arriba. Leer las funciones actuales y todos sus consumidores antes de proponer el parche.
 5. Distinguir siempre decisiones del usuario, propuestas a revalidar, fallos abiertos y cambios probados.
 
 No se recupera literalmente toda la conversación: el relevo recoge lo operativo para continuar de forma verificable, y los archivos del repositorio son la fuente persistente.

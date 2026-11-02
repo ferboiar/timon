@@ -47,8 +47,8 @@ Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 - [x] U-12: la ayuda de Ahorros y Anticipos se muestra como tooltip de un `QuestionCircle` junto al título, en lugar de texto en pantalla (2026-10-30).
 - [x] D-18: informes de cierre retroactivos de los PR #43 y #44 y relevo al día (2026-10-30, PR #45, incorporado).
 - [x] D-19: errata del informe retroactivo del PR #43: la incidencia de `.db_connection` sí tuvo efecto (2026-11-01, PR #47, incorporado).
-- [x] D-20: puesta al día de la documentación técnica de PR anteriores (DC-31 en rutas, `db_utils*` y componentes; `PaginasVacias.md`; inactivos de Anticipos y DC-30 en `index.md`; índice de informes y `docNavigation`) y del relevo tras el PR #48 (2026-11-02, rama `mantenimiento/D-20-documentacion-tecnica-al-dia`; pendiente de revisión y fusión).
-- [ ] U-13 / DC-36: «Generar los recibos del año ahora»: textos claros y simulación de fecha en un solo PR (registrado el 2026-11-02; rango de la fecha por confirmar).
+- [x] D-20: documentación técnica e índice de informes incorporados el 2026-11-02 (PR #49).
+- [x] U-13 / DC-36: textos, vista previa de hoy y simulación del próximo 1 de diciembre sin selector; avisos separados y ejecución manual independiente. Implementado y probado el 2026-11-02, rama `correccion/fase-1-U13-generar-recibos-anio`; pendiente de cierre y fusión. Límites: ejecución real nueva y bloqueo concurrente no ejercitados.
 - [x] Verificado a mano el 2026-10-29: «Borrar» actuaba sobre filas de Ahorros ocultas con «Ocultar inactivos» (`selectedSavings`). Corregido con un `watch` sobre `visibleSavings` (PR #41).
 
 ## Correcciones funcionales que deben abordarse después
@@ -79,7 +79,7 @@ Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 ## Seguridad, operación e interfaz (fases posteriores)
 - [ ] Fase 2: permisos por módulo/propietario/privacidad y guardas reales de rutas (S-01/S-04/S-06).
 - [ ] Fase 3: backup/restore y configuración de conexión (S-02/S-03), sesión/cliente API/interceptores (S-07), despliegue O-01, ignorados/entorno S-08/S-09 y migración de mantenimiento.
-- [ ] Configurar la BD de pruebas con backend/test/README.md y reejecutar: la salida recibida dio ENOTFOUND mariadb-test; no hay evidencia nueva de integración en verde.
+- [x] BD de pruebas configurada y suite reejecutada: mariadb01:3306, timon_test, conta_hogar_test; 85 pruebas pasadas, EXIT:0 (2026-11-02, U-13). El ENOTFOUND anterior era un bloqueo de entorno ya superado.
 - [ ] Fase 4: Dashboard/manual/páginas de plantilla, idiomas, calendario y resto U-01 a U-08. Mantener doc/ y navegación en cada PR, no aplazar su revisión actual.
 - [ ] Fase 5: dependencias (S-11) y ramas Snyk, con pruebas disponibles.
 - [ ] Fase 6: hoja funcional del Excel, R-01 a R-04.

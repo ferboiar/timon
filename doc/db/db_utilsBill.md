@@ -70,7 +70,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `generarFechasDelAnio(fechaInicial, periodicidad)` | Devuelve las fechas de la secuencia anclada en `fechaInicial` que caen en su mismo año natural (DC-16). Si el día no existe en un mes, usa el último día |
 | `fechasFaltantes(fechaInicial, periodicidad, fechasExistentes, anioActual, hoy)` | Devuelve los meses de la secuencia anclada en `fechaInicial` que no tienen cargo en el año en curso, nunca antes de `fechaInicial` ni en un ejercicio cerrado. Cada fecha lleva `generable`: verdadero si es posterior al último cargo o un hueco cuya fecha aún no ha llegado (DC-22) |
 | `completarFechasAnio(reciboId, anioActual, hoy)` | Añade a un recibo las fechas generables de `fechasFaltantes` (botón «Generar nuevas fechas»). Devuelve cuántas añadió; error 404 si el recibo no existe y 409 si no tiene fechas o su ejercicio está cerrado. El año en curso se calcula en la zona horaria de los ajustes |
-| `generarRecibosAnio(simular)` | Lanza el procedimiento que crea los recibos del año siguiente (vista previa si `simular`); lo usa la ruta de administración (DC-24) |
+| `generarRecibosAnio(simular, fechaSimulada = null)` | Lanza el procedimiento anual; por defecto simula hoy. El segundo parámetro admite solo un 1 de diciembre YYYY-MM-DD en simulación; lo convierte de mediodía en la zona de Ajustes a UTC. Con ejecución real y fecha informada lanza error con status 400. Devuelve las filas brutas del procedimiento; la ruta separa recibos y avisos generales (U-13/DC-36) |
 | `importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo)` | Importe que debe guardarse en un cargo: si está «cargado», el indicado, el que ya tuviera o el del recibo; si está pendiente, solo uno personalizado (si coincide con el del recibo queda vacío) (DC-15) |
 | `getValidValues(column, table)` | Función interna (no se exporta): obtiene valores válidos para campos ENUM o categorías |
 | `generarFechasFuturas(fechaInicial, periodicidad, cantidad)` | Devuelve las primeras `cantidad` fechas de la secuencia anclada en `fechaInicial` (DC-16), sin límite de año: si el día no existe en un mes usa el último día (F-12 corregido) y no depende de la zona horaria. La usa `pushRecibo` al reescribir fechas en modo automático. Se exporta para las pruebas de `backend/test/fechas.test.mjs` |
@@ -199,3 +199,11 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 - [API de Recibos](../routes/recibos.md) - Rutas que utilizan estas funciones
 - [Documentación de BillService](../services/BillService.md) - Cliente que eventualmente llama a estas funciones
 - [Componente ListBills](../components/ListBills.md) - Interfaz de usuario para recibos
+
+## Vista previa y simulación de diciembre (U-13)
+
+U-13/DC-36 distingue «Vista previa de hoy» de «Simular el próximo 1 de diciembre», sin selector. El servidor calcula el día en la zona de Ajustes: este año antes del 1 de diciembre, hoy si es ese día y el siguiente año después. La simulación proyecta los datos actuales y no predice cambios futuros. No escribe ni habilita «Generar ahora». La ejecución real sigue independiente del interruptor automático; solo se habilita con recibos de una vista previa de hoy y se recalcula al confirmar. Los avisos generales no cuentan como recibos; los avisos de cadencia permanecen asociados a cada recibo.
+
+### Referencia interna de la simulación
+
+`fechaSimulada` solo admite un 1 de diciembre en simulación. Se convierte el mediodía local de esa fecha a UTC para `p_ahora`. Sin simulación se pasa NULL y se usa el reloj real. El procedimiento SQL y su límite anual no se modifican.

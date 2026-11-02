@@ -11,6 +11,8 @@ import { getCrearRecibosAutomaticamente, getZonaHoraria, setCrearRecibosAutomati
 import { generarRecibosAnio } from '#backend/db/db_utils.mjs';
 import { verifyAdmin, verifyToken } from '#backend/middleware/auth.mjs';
 import { Router } from 'express';
+import { opcionesGeneracion, separarResultado } from '#backend/utils/generacionAnual.mjs';
+import { hoyIsoEnZonaDe } from '#backend/utils/tiempo.mjs';
 
 const router = Router();
 
@@ -62,9 +64,13 @@ router.put('/recibos', verifyAdmin, async (req, res) => {
 // Vista previa (simular = true, por defecto) o ejecución manual del procedimiento que crea los recibos del año
 router.post('/recibos/generar-anio', verifyAdmin, async (req, res) => {
     try {
-        const simular = req.body?.simular !== false;
-        const filas = await generarRecibosAnio(simular);
-        res.json({ simulacion: simular, filas });
+        if (req.body?.fecha !== undefined || req.body?.ahora !== undefined) {
+            return res.status(400).json({ error: 'No se admiten fechas libres.' });
+        }
+        const opciones = opcionesGeneracion(req.body?.simular ?? true, req.body?.proximoDiciembre ?? false, hoyIsoEnZonaDe(await getZonaHoraria()));
+        const resultado = separarResultado(await generarRecibosAnio(opciones.simular, opciones.fecha));
+        console.log('API ajustes - Resultado anual:', { simulacion: opciones.simular, fecha: opciones.fecha, recibos: resultado.filas.length, avisos: resultado.avisos.length });
+        res.json({ simulacion: opciones.simular, fecha_simulada: opciones.fecha, ...resultado });
     } catch (error) {
         responderError(res, error, 'Error al generar los recibos del año');
     }
