@@ -55,9 +55,9 @@ export class AjustesService {
     }
 
     // Vista previa (simular = true) o ejecución manual del procedimiento que crea los recibos del año
-    static async generarRecibosAnio(simular = true) {
+    static async generarRecibosAnio(simular = true, proximoDiciembre = false) {
         try {
-            const respuesta = await axios.post(`${API_URL}/recibos/generar-anio`, { simular }, { headers: cabeceras() });
+            const respuesta = await axios.post(`${API_URL}/recibos/generar-anio`, { simular, proximoDiciembre }, { headers: cabeceras() });
             return respuesta.data;
         } catch (error) {
             throw errorDe(error, 'No se pudieron generar los recibos del año');

@@ -497,6 +497,16 @@ const vistaPrevia = ref(null);
 const cargandoVistaPrevia = ref(false);
 const dialogoGenerar = ref(false);
 const generandoAhora = ref(false);
+const fechaSimulada = ref(null);
+const avisosGeneracion = ref([]);
+const puedeGenerarAhora = computed(() => !!vistaPrevia.value?.length && fechaSimulada.value === null && !cargandoVistaPrevia.value && !generandoAhora.value);
+
+function invalidarVistaPrevia() {
+    vistaPrevia.value = null;
+    fechaSimulada.value = null;
+    avisosGeneracion.value = [];
+    dialogoGenerar.value = false;
+}
 
 async function cargarAjustesRecibos() {
     try {
@@ -524,11 +534,14 @@ async function confirmarCambioCreacionAutomatica() {
     }
 }
 
-async function consultarVistaPrevia() {
+async function consultarVistaPrevia(proximoDiciembre = false) {
+    invalidarVistaPrevia();
     cargandoVistaPrevia.value = true;
     try {
-        const resultado = await AjustesService.generarRecibosAnio(true);
+        const resultado = await AjustesService.generarRecibosAnio(true, proximoDiciembre);
         vistaPrevia.value = resultado.filas;
+        fechaSimulada.value = resultado.fecha_simulada;
+        avisosGeneracion.value = resultado.avisos;
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
     } finally {
@@ -537,16 +550,25 @@ async function consultarVistaPrevia() {
 }
 
 async function generarAhora() {
+    if (!puedeGenerarAhora.value) {
+        dialogoGenerar.value = false;
+        return;
+    }
     generandoAhora.value = true;
     try {
         const resultado = await AjustesService.generarRecibosAnio(false);
-        toast.add({ severity: 'success', summary: 'Recibos generados', detail: 'Se han creado ' + resultado.filas.length + ' recibos.', life: 5000 });
-        vistaPrevia.value = null;
+        const cantidad = resultado.filas.length;
+        toast.add({
+            severity: cantidad ? 'success' : 'warn',
+            summary: cantidad ? 'Recibos generados' : 'Sin altas',
+            detail: cantidad ? 'Recibos creados: ' + cantidad : resultado.avisos.join(' ') || 'No hay recibos que crear ahora.',
+            life: 7000
+        });
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 7000 });
     } finally {
+        invalidarVistaPrevia();
         generandoAhora.value = false;
-        dialogoGenerar.value = false;
     }
 }
 // <<<<
@@ -755,16 +777,35 @@ onMounted(() => {
                     <div class="card">
                         <div class="text-lg font-semibold mb-2">Generar los recibos del año ahora</div>
                         <p>
-                            Ejecuta a mano el mismo proceso que el automático, aunque la creación automática esté desactivada. La vista previa muestra qué se crearía sin escribir nada: el recibo de origen, el año, cuántas fechas lleva, la primera y
-                            la última, y un aviso si el mes del último pago no encaja con la cadencia de la fecha inicial.
+                            Cada recibo pertenece a un año. Este proceso crea sus sucesores y sus fechas de cargo, sin modificar ni borrar los recibos existentes. Conserva las características del origen; usa el importe del último cargo pagado, o el
+                            del recibo si no hay pagos.
+                        </p>
+                        <p class="mt-2">
+                            La generación automática actúa a las 03:00 en la zona de Ajustes. La ejecución manual sirve para adelantarte a esa hora desde el 1 de diciembre, recuperar años pendientes o reintentar tras una incidencia. Funciona tanto
+                            con la automatización activada como desactivada.
+                        </p>
+                        <p class="mt-2">
+                            Hasta el 30 de noviembre solo se completan años hasta el actual. Desde el 1 de diciembre también se permite el siguiente. Se toman las series sin sucesor, con fecha inicial y replicación habilitada; si faltan varios años
+                            se ponen al día. No se duplican sucesores.
+                        </p>
+                        <p class="mt-2">
+                            «Vista previa de hoy» consulta qué se puede crear ahora, sin guardarlo. «Simular el próximo 1 de diciembre» proyecta los datos actuales a esa fecha; los resultados pueden variar si cambian los recibos o pagos. El mismo 1
+                            de diciembre se simula hoy; después se usa el del año siguiente. Una simulación nunca habilita la creación real.
+                        </p>
+                        <p class="mt-2">
+                            «Generar ahora» solo se habilita tras una vista previa de hoy con recibos. Pide confirmación y vuelve a calcular con los datos reales del momento. Si otro proceso ya los creó, puede no crear nada. Los avisos de cadencia se
+                            muestran en cada recibo y los avisos generales, aparte.
                         </p>
                         <div class="flex flex-wrap gap-2 mt-4">
-                            <Button label="Vista previa" icon="pi pi-search" severity="secondary" :loading="cargandoVistaPrevia" @click="consultarVistaPrevia" />
-                            <Button label="Generar ahora" icon="pi pi-play" :disabled="!vistaPrevia || !vistaPrevia.length" @click="dialogoGenerar = true" />
+                            <Button label="Vista previa de hoy" icon="pi pi-search" severity="secondary" :disabled="cargandoVistaPrevia || generandoAhora" @click="consultarVistaPrevia(false)" />
+                            <Button label="Simular el próximo 1 de diciembre" icon="pi pi-calendar" severity="secondary" :disabled="cargandoVistaPrevia || generandoAhora" @click="consultarVistaPrevia(true)" />
+                            <Button label="Generar ahora" icon="pi pi-play" :disabled="!puedeGenerarAhora" @click="dialogoGenerar = true" />
                         </div>
+                        <p v-if="vistaPrevia !== null" class="mt-4">{{ fechaSimulada ? 'Simulación al ' + $formatDate(fechaSimulada) + ': no se ha creado nada.' : 'Vista previa de hoy: no se ha creado nada.' }}</p>
+                        <p v-for="aviso in avisosGeneracion" :key="aviso" class="mt-2">{{ aviso }}</p>
                         <DataTable v-if="vistaPrevia" :value="vistaPrevia" stripedRows class="mt-4">
                             <template #empty>
-                                <div class="text-center p-4">No hay recibos que crear ahora mismo. Desde el 1 de diciembre se crearán los del año siguiente.</div>
+                                <div class="text-center p-4">{{ fechaSimulada ? 'No hay recibos elegibles que crear en la fecha simulada.' : 'No hay recibos elegibles que crear hoy. Puedes simular el próximo 1 de diciembre.' }}</div>
                             </template>
                             <Column field="concepto" header="Recibo" />
                             <Column field="anio_nuevo" header="Año" />

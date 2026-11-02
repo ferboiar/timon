@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-02 | U-13, DC-36 | [Vista previa de hoy y simulación de diciembre](./2026-11-02_U-13_DC-36_simulacion-diciembre.md) |
 | 2026-11-02 | D-20 | [Documentación técnica al día e índice de informes](./2026-11-02_D-20_documentacion-tecnica.md) |
 | 2026-11-02 | F-13, DC-05 | [Fechas DATE como texto en el pool de MariaDB](./2026-11-02_F-13_DC-05_datestrings.md) |
 | 2026-11-01 | F-45, D-19 | [Guardar sin cambios tiene en cuenta el modo de fechas](./2026-11-01_F-45_guardar-sin-cambios.md) |

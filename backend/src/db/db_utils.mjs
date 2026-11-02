@@ -826,11 +826,23 @@ async function completarFechasAnio(reciboId, anioActual, hoy) {
  * @param {boolean} [simular] - Si es true (por defecto) solo devuelve lo que crearía, sin escribir nada
  * @returns {Promise<Array>} - Una fila por recibo y año: origen_id, nuevo_id, concepto, anio_nuevo, fechas, primera, ultima y aviso
  */
-async function generarRecibosAnio(simular = true) {
+async function generarRecibosAnio(simular = true, fechaSimulada = null) {
+    if (fechaSimulada !== null && (!simular || !/^\d{4}-12-01$/.test(fechaSimulada))) {
+        throw Object.assign(new Error('Solo se admite simular un 1 de diciembre, sin crear recibos.'), { status: 400 });
+    }
     let connection;
     try {
         connection = await getConnection();
-        const [resultado] = await connection.query('CALL generar_recibos_anio(?, 1, NULL)', [simular ? 1 : 0]);
+        let referencia = null;
+        if (fechaSimulada !== null) {
+            const [[fila]] = await connection.query(
+                "SELECT DATE_FORMAT(COALESCE(CONVERT_TZ(CONCAT(?, ' 12:00:00'), COALESCE((SELECT valor FROM ajustes_sistema WHERE clave = 'zona_horaria'), 'Europe/Madrid'), '+00:00'), CONCAT(?, ' 12:00:00')), '%Y-%m-%d %H:%i:%s') AS utc",
+                [fechaSimulada, fechaSimulada]
+            );
+            referencia = fila.utc;
+        }
+        console.log('generarRecibosAnio - Solicitud:', { simular, fechaSimulada });
+        const [resultado] = await connection.query('CALL generar_recibos_anio(?, 1, ?)', [simular ? 1 : 0, referencia]);
         return Array.isArray(resultado[0]) ? resultado[0] : [];
     } catch (error) {
         console.error('API. Error al generar los recibos del año: ', error);

@@ -10,7 +10,7 @@
 |-----------|-------------|
 | `simular` | 1 devuelve lo que crearía, sin escribir nada |
 | `forzar` | 1 ignora el interruptor `crear_recibos_automaticamente` y la restricción de las 03:00 (ejecución manual) |
-| `ahora` | Instante de referencia en UTC; `NULL` usa el actual (existe para poder probarlo) |
+| `ahora` | Instante de referencia en UTC; `NULL` usa el reloj actual. Permite pruebas y la simulación del próximo 1 de diciembre de U-13. La API no acepta un instante libre del cliente |
 
 ## Zona horaria
 
@@ -40,4 +40,8 @@ La clave `crear_recibos_automaticamente` de `ajustes_sistema` (1 por defecto) ac
 
 ## Resultados sin generación
 
-También puede devolver una sola fila con aviso, sin las columnas ordinarias: automatización desactivada, fuera de la hora o bloqueo ocupado. Las dos primeras condiciones se omiten con forzar=1; el bloqueo no. No debe interpretarse cualquier fila como un recibo creado.
+También puede devolver una sola fila con aviso, sin las columnas ordinarias: automatización desactivada, fuera de la hora o bloqueo ocupado. Las dos primeras condiciones se omiten con forzar=1; el bloqueo no. No debe interpretarse cualquier fila como un recibo creado. La ruta de Ajustes separa los avisos generales en `avisos`, sin contarlos como altas ni habilitar «Generar ahora». Los avisos de cadencia permanecen en cada recibo.
+
+## Vista previa y simulación de diciembre (U-13)
+
+U-13/DC-36 distingue «Vista previa de hoy» de «Simular el próximo 1 de diciembre», sin selector. El servidor calcula el día en la zona de Ajustes: este año antes del 1 de diciembre, hoy si es ese día y el siguiente año después. La simulación proyecta los datos actuales y no predice cambios futuros. No escribe ni habilita «Generar ahora». La ejecución real sigue independiente del interruptor automático; solo se habilita con recibos de una vista previa de hoy y se recalcula al confirmar. Los avisos generales no cuentan como recibos; los avisos de cadencia permanecen asociados a cada recibo.
