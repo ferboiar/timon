@@ -12,7 +12,7 @@ Mantiene en toda la aplicación la zona horaria de los ajustes (por defecto `Eur
 | `establecerZonaHoraria(zona)` | Actualiza la zona en memoria tras guardarla |
 | `hoyEnZona(ahora)` | Fecha de hoy en esa zona, como `Date` con los campos locales de la zona |
 | `anioEnCurso(ahora)` | Año en curso en esa zona |
-| `fechaDeCalendario(valor)` | Convierte una columna DATE (ISO o YYYY-MM-DD) en un `Date` a medianoche local del mismo día, para que el día no se desplace según la zona del navegador |
+| `fechaDeCalendario(valor)` | Convierte una columna DATE (texto `YYYY-MM-DD`, el formato que entrega la API desde F-13/DC-05; también admite ISO) en un `Date` a medianoche local del mismo día, para que el día no se desplace según la zona del navegador |
 | `formatearFechaHora(valor)` | Formatea un instante UTC en la zona de la aplicación; disponible en las plantillas como `$formatDateTime` |
 
 Las fechas sin hora (columnas DATE) no se convierten a ninguna zona: `$formatDate` las muestra tal cual.

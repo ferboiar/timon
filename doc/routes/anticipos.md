@@ -41,6 +41,10 @@ Las rutas de pagos permiten:
 - Crear, actualizar y eliminar pagos individuales
 - Recalcular el plan de pagos cuando sea necesario
 
+### Formato de fechas (F-13, DC-05)
+
+Las columnas `DATE` (`fecha_inicio`, `fecha_fin_prevista` y la `fecha` de cada pago) se devuelven como texto `YYYY-MM-DD`. `created_at` y `updated_at`, donde existen, siguen siendo instantes ISO en UTC.
+
 ### Alta de anticipos y plan de pagos
 
 Al crear un anticipo, el propietario (`propietario_id`) se toma del usuario autenticado (`req.user.id`). El plan de pagos solo se genera si hay periodicidad y un pago sugerido mayor que 0. Si el plan superaría los 1.200 pagos, la petición falla con 400 y no se crea ningún pago, pero el anticipo puede haber quedado guardado al no existir transacción (F-27).

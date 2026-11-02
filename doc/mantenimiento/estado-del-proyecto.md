@@ -1,18 +1,18 @@
 # Estado del proyecto Timón
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-01, punto de reanudación tras el PR #46 (F-12).
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-02, punto de reanudación tras el PR #47 (F-45).
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-01, main en dda18705dca27038cb2ce0dbbdaf0e1be2e94685 (PR #46 fusionado). Desde el corte anterior (4b8aad10, PR #41) se fusionaron el PR #42 (D-17, DC-33), el #43 (homogeneidad del front), el #44 (cierre de D-15), el #45 (D-18, informes y relevo) y el #46 (F-12, DC-35). Este relevo registra F-45 (guardar sin cambios con el modo de fechas) y la errata del informe del PR #43 (D-19).
+Corte operativo: 2026-11-02, main en af0eac53f4a846a54a4442e41f8895f158843db0 (PR #47 fusionado). Desde el corte anterior (4b8aad10, PR #41) se fusionaron el PR #42 (D-17, DC-33), el #43 (homogeneidad del front), el #44 (cierre de D-15), el #45 (D-18, informes y relevo), el #46 (F-12, DC-35) y el #47 (F-45, D-19). Este relevo registra F-46 (desbordamiento de `setMonth` en Anticipos).
 
 **D-15 (cerrada el 2026-10-30):** ayudante revisado; sin cambios necesarios. Protege `.db_connection`/`.env*` por diseño, verifica identidad y contenido, y crea copias antes de escribir. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
 
 **Siguiente trabajo:** tras F-12 y F-45, F-13/DC-05 (`dateStrings`) en un PR aparte (DC-35) y después el resto de la agrupación de la fase 1 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
-**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29; D-17 y DC-33 (instrucción persistente dividida), PR #42, 2026-10-29; U-09, U-10, U-11 parcial, U-12 y F-44 (homogeneidad del front), PR #43, 2026-10-30; D-15 (revisión del ayudante de parches), PR #44, 2026-10-30; D-18 (informes de cierre retroactivos y relevo al día), PR #45, 2026-10-30; F-12 (secuencia anclada en `generarFechasFuturas`) y DC-35 (el grupo 2 se divide en dos PR), PR #46, 2026-11-01.
+**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29; D-17 y DC-33 (instrucción persistente dividida), PR #42, 2026-10-29; U-09, U-10, U-11 parcial, U-12 y F-44 (homogeneidad del front), PR #43, 2026-10-30; D-15 (revisión del ayudante de parches), PR #44, 2026-10-30; D-18 (informes de cierre retroactivos y relevo al día), PR #45, 2026-10-30; F-12 (secuencia anclada en `generarFechasFuturas`) y DC-35 (el grupo 2 se divide en dos PR), PR #46, 2026-11-01; F-45 (guardar sin cambios con el modo de fechas) y D-19 (errata del informe del PR #43), PR #47, 2026-11-01.
 
-**Trabajo preparado, sin fusionar:** F-45 (guardar sin cambios con el modo de fechas) y D-19 (errata del informe del PR #43), rama `correccion/fase-1-F45-guardar-sin-cambios`, 2026-11-01. F-13 y F-14 siguen abiertos.
+**Trabajo preparado, sin fusionar:** F-13/DC-05 (`dateStrings: ['DATE']` en el pool), rama `correccion/fase-1-F13-DC05-datestrings`, 2026-11-02. F-46 (desbordamiento de `setMonth` en Anticipos) registrado sin corregir; F-14 sigue abierto.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, usada por pushRecibo (F-12 corregido: calcula la secuencia anclada). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -33,7 +33,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 
 - Una rama por cambio, un PR por rama, fusionado en `main`. El nombre de la rama lleva la fase (o `mantenimiento`) y todos los IDs desglosados, por ejemplo `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias` o `mantenimiento/D-17-dividir-instruccion-persistente`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-36, D-20, F-46, S-13, R-14 y U-13. Consultar siempre el registro antes de asignarlos.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-37, D-21, F-47, S-13, R-14 y U-14. Consultar siempre el registro antes de asignarlos.
 - Mensajes de commit: `tipo(IDs): resumen`, con cada ID desglosado (por ejemplo `fix(F-07, F-08): resumen`), y cuerpo en español. El título del PR sigue el mismo formato. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend (`npm run test:backend`) necesitan una base MariaDB de pruebas; ver `backend/test/README.md`.
@@ -97,6 +97,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #44 | D-15 | Cierre de la revisión del ayudante de parches |
 | #45 | D-18 | Informes de cierre retroactivos de los PR #43 y #44 y relevo al día |
 | #46 | F-12, DC-35 | Fechas futuras ancladas en `generarFechasFuturas` y división del grupo 2 en dos PR |
+| #47 | F-45, D-19 | Guardar sin cambios tiene en cuenta el modo de fechas y errata del informe del PR #43 |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 

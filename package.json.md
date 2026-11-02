@@ -6,7 +6,7 @@ Estado actualizado por D-13, 2026-10-24. Este documento sustituye el ejemplo ant
 
 - Backend: backend/src/server.mjs (Express, módulos .mjs).
 - Frontend: src/, Vite desde la raíz; no se hace cd frontend.
-- Pruebas: node --test backend/test/; requieren MariaDB de pruebas. No ejecutarlas contra la base de la aplicación.
+- Pruebas: node --test backend/test/; requieren MariaDB de pruebas. No ejecutarlas contra la base de la aplicación. Excepción: `backend/test/fechas.test.mjs` (F-12) y `backend/test/pool.test.mjs` (F-13) no necesitan base de datos y se pueden ejecutar solas con `node --test <fichero>`.
 - Node: requisito exacto del manifiesto `>=20.9.0-1003 <21.0.0`.
 - Versión declarada del proyecto: `0.1.0`; no demuestra qué versión está desplegada.
 

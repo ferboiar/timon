@@ -36,7 +36,7 @@ El frontend es una Aplicación de Página Única (SPA) que se comunica con el ba
 
 - **Sistema**: MariaDB 11.8 (DC-04)
 - **Esquema**: El esquema completo de la base de datos, incluyendo tablas y relaciones, se define en las migraciones de `backend/src/db/migrations/` (línea base `0001_baseline.sql` y una migración por cada cambio posterior).
-- **Conexión**: La configuración de la conexión a la base de datos se gestiona en `backend/src/db/db_connection.mjs` y se configura a través de `backend/src/db/.db_connection`.
+- **Conexión**: La configuración de la conexión a la base de datos se gestiona en `backend/src/db/db_connection.mjs` y se configura a través de `backend/src/db/.db_connection`. Las columnas `DATE` llegan al código como texto `YYYY-MM-DD` (`dateStrings: ['DATE']`, F-13/DC-05); `TIMESTAMP` y `DATETIME` siguen siendo `Date`.
 
 ## Flujo de Datos
 En `src/views/pages/` se definen las vistas de la aplicación. Cada vista corresponde a una página de la aplicación y se organiza en componentes de Vue.

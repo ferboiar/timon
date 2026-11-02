@@ -21,6 +21,25 @@ const dbConfigPath = path.join(__dirname, '.db_connection');
 
 let pool;
 
+// Configuración del pool a partir de las variables de entorno; se exporta para probarla sin base de datos (F-13, DC-05)
+function construirConfiguracionPool(entorno = process.env) {
+    return {
+        host: entorno.DB_HOST,
+        port: parseInt(entorno.DB_PORT, 10),
+        user: entorno.DB_USER,
+        password: entorno.DB_PASSWORD,
+        database: entorno.DB_DATABASE,
+        ssl: {
+            rejectUnauthorized: false
+        },
+        timezone: 'Z', // Las fechas y horas viajan en UTC; la zona horaria de la aplicación se aplica al calcular "hoy" y al mostrarlas (DC-25)
+        dateStrings: ['DATE'], // F-13, DC-05: las columnas DATE llegan como texto YYYY-MM-DD, sin hora ni zona; TIMESTAMP y DATETIME siguen siendo instantes (Date)
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
+    };
+}
+
 async function initPool() {
     try {
         // Verificar si el archivo de configuración existe
@@ -43,20 +62,7 @@ async function initPool() {
             throw new Error(`Error al procesar el archivo de configuración: ${result.error}`);
         }
 
-        const config = {
-            host: process.env.DB_HOST,
-            port: parseInt(process.env.DB_PORT, 10),
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_DATABASE,
-            ssl: {
-                rejectUnauthorized: false
-            },
-            timezone: 'Z', // Las fechas y horas viajan en UTC; la zona horaria de la aplicación se aplica al calcular "hoy" y al mostrarlas (DC-25)
-            waitForConnections: true,
-            connectionLimit: 10,
-            queueLimit: 0
-        };
+        const config = construirConfiguracionPool();
 
         // Verificar que todos los parámetros necesarios estén definidos
         const requiredParams = ['host', 'port', 'user', 'password', 'database'];
@@ -93,4 +99,4 @@ async function closePool() {
     }
 }
 
-export { closePool, getConnection };
+export { closePool, construirConfiguracionPool, getConnection };

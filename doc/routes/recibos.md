@@ -35,7 +35,7 @@ Esta ruta permite obtener todos los recibos o filtrarlos según diversos criteri
 - `estado`: Filtrar por estado de los cargos
 - `activo`: Filtrar por estado de actividad (1 activo, 0 inactivo)
 
-La respuesta es un array de objetos con los datos de los recibos y sus fechas de cargo correspondientes. Cada objeto incluye `importe` (el del recibo) e `importe_cargo` (el real del cargo, vacío si está pendiente).
+La respuesta es un array de objetos con los datos de los recibos y sus fechas de cargo correspondientes. Cada objeto incluye `importe` (el del recibo) e `importe_cargo` (el real del cargo, vacío si está pendiente). Las columnas `DATE` (`fecha_inicial` del recibo y `fecha` del cargo) se devuelven como texto `YYYY-MM-DD` (F-13, DC-05).
 
 ### Crear o actualizar un recibo (POST /api/recibos)
 
