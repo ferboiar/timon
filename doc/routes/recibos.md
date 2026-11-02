@@ -46,7 +46,7 @@ Esta ruta permite crear un nuevo recibo o actualizar uno existente si se proporc
 | Campo | Tipo | Descripción | Requerido |
 |-------|------|-------------|-----------|
 | `id` | Number | ID del recibo (solo para actualización) | No |
-| `concepto` | String | Descripción corta del recibo | Sí |
+| `concepto` | String | Descripción corta del recibo (el servidor lo guarda sin espacios sobrantes y en minúsculas, DC-31, F-44) | Sí |
 | `periodicidad` | String | Frecuencia del recibo | Sí |
 | `importe` | Number | Cantidad del recibo | Sí |
 | `categoria` | String | Categoría a la que pertenece el recibo | Sí |

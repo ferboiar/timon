@@ -45,7 +45,7 @@ El componente `Accounts` permite la administración completa de cuentas bancaria
 | `fetchTipos()` | Obtiene los tipos de cuentas permitidos en el sistema |
 | `openNewAccount()` | Inicializa un nuevo objeto cuenta y abre el diálogo de creación |
 | `editAccount(acc)` | Carga los datos de una cuenta existente para su edición y guarda una copia (`accountOriginal`, con `snapshotAccount`) para detectar «guardar sin cambios» (DC-30) |
-| `saveAccount()` | Si se edita una cuenta y no se ha cambiado nada, avisa «No se ha cambiado nada.» y cierra sin enviar nada (DC-30). Si no, guarda una cuenta nueva o actualiza una existente. Envía el IBAN vacío como NULL sin modificar el formulario (F-06) |
+| `saveAccount()` | Si se edita una cuenta y no se ha cambiado nada, avisa «No se ha cambiado nada.» y cierra sin enviar nada (DC-30). Si no, guarda una cuenta nueva o actualiza una existente. Envía el IBAN vacío como NULL sin modificar el formulario (F-06). El servidor guarda el nombre en minúsculas (DC-31) y la pantalla lo capitaliza al mostrarlo |
 | `deleteAccount()` | Elimina una cuenta seleccionada |
 | `deleteSelectedAccounts()` | Elimina todas las cuentas seleccionadas en la tabla |
 

@@ -9,7 +9,7 @@ El servicio `AccService` actúa como intermediario entre la interfaz de usuario 
 | Método | Descripción | Endpoint |
 |--------|-------------|----------|
 | `getAccounts()` | Obtiene todas las cuentas registradas | `GET /api/cuentas` |
-| `saveAccount(account)` | Crea o actualiza una cuenta | `POST /api/cuentas` |
+| `saveAccount(account)` | Crea o actualiza una cuenta; el servidor guarda el nombre en minúsculas (DC-31) | `POST /api/cuentas` |
 | `deleteAccounts(accounts)` | Elimina una o más cuentas por ID | `DELETE /api/cuentas` |
 | `getTipos()` | Obtiene los tipos de cuentas permitidos | `GET /api/cuentas/tipos` |
 

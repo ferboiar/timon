@@ -11,7 +11,7 @@ El servicio `SavService` actúa como intermediario entre la interfaz de usuario 
 | Método | Descripción | Endpoint |
 |--------|-------------|----------|
 | `getSavings()` | Obtiene todos los ahorros registrados | `GET /api/ahorros` |
-| `saveSaving(saving)` | Crea o actualiza un ahorro | `POST /api/ahorros` |
+| `saveSaving(saving)` | Crea o actualiza un ahorro; el servidor guarda el concepto en minúsculas (DC-31) | `POST /api/ahorros` |
 | `deleteSavings(savings)` | Elimina uno o más ahorros por ID | `DELETE /api/ahorros` |
 | `getPeriodicidades()` | Obtiene las periodicidades permitidas para los ahorros | `GET /api/ahorros/periodicidades` |
 

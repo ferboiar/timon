@@ -1,18 +1,18 @@
 # Estado del proyecto Timón
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-02, punto de reanudación tras el PR #47 (F-45).
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-02, punto de reanudación tras el PR #48 (F-13).
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-02, main en af0eac53f4a846a54a4442e41f8895f158843db0 (PR #47 fusionado). Desde el corte anterior (4b8aad10, PR #41) se fusionaron el PR #42 (D-17, DC-33), el #43 (homogeneidad del front), el #44 (cierre de D-15), el #45 (D-18, informes y relevo), el #46 (F-12, DC-35) y el #47 (F-45, D-19). Este relevo registra F-46 (desbordamiento de `setMonth` en Anticipos).
+Corte operativo: 2026-11-02, main en 4fbac556764b67411a86db447231289a92dec624 (PR #48 fusionado). Desde el corte anterior (4b8aad10, PR #41) se fusionaron el PR #42 (D-17, DC-33), el #43 (homogeneidad del front), el #44 (cierre de D-15), el #45 (D-18, informes y relevo), el #46 (F-12, DC-35), el #47 (F-45, D-19) y el #48 (F-13, DC-05). Este relevo registra D-20 (documentación técnica al día e índice de informes).
 
 **D-15 (cerrada el 2026-10-30):** ayudante revisado; sin cambios necesarios. Protege `.db_connection`/`.env*` por diseño, verifica identidad y contenido, y crea copias antes de escribir. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
 
-**Siguiente trabajo:** tras F-12 y F-45, F-13/DC-05 (`dateStrings`) en un PR aparte (DC-35) y después el resto de la agrupación de la fase 1 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
+**Siguiente trabajo:** tras D-20, U-13/DC-36 («Generar los recibos del año ahora») y después el resto de la agrupación de la fase 1, empezando por F-14 (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27 (PR de limpieza). La auditoría fue un inciso y sus cierres parciales no acreditan una certificación integral.
 
-**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29; D-17 y DC-33 (instrucción persistente dividida), PR #42, 2026-10-29; U-09, U-10, U-11 parcial, U-12 y F-44 (homogeneidad del front), PR #43, 2026-10-30; D-15 (revisión del ayudante de parches), PR #44, 2026-10-30; D-18 (informes de cierre retroactivos y relevo al día), PR #45, 2026-10-30; F-12 (secuencia anclada en `generarFechasFuturas`) y DC-35 (el grupo 2 se divide en dos PR), PR #46, 2026-11-01; F-45 (guardar sin cambios con el modo de fechas) y D-19 (errata del informe del PR #43), PR #47, 2026-11-01.
+**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29; D-17 y DC-33 (instrucción persistente dividida), PR #42, 2026-10-29; U-09, U-10, U-11 parcial, U-12 y F-44 (homogeneidad del front), PR #43, 2026-10-30; D-15 (revisión del ayudante de parches), PR #44, 2026-10-30; D-18 (informes de cierre retroactivos y relevo al día), PR #45, 2026-10-30; F-12 (secuencia anclada en `generarFechasFuturas`) y DC-35 (el grupo 2 se divide en dos PR), PR #46, 2026-11-01; F-45 (guardar sin cambios con el modo de fechas) y D-19 (errata del informe del PR #43), PR #47, 2026-11-01; F-13 y DC-05 (fechas `DATE` como texto en el pool de MariaDB), PR #48, 2026-11-02.
 
-**Trabajo preparado, sin fusionar:** F-13/DC-05 (`dateStrings: ['DATE']` en el pool), rama `correccion/fase-1-F13-DC05-datestrings`, 2026-11-02. F-46 (desbordamiento de `setMonth` en Anticipos) registrado sin corregir; F-14 sigue abierto.
+**Trabajo preparado, sin fusionar:** D-20 (documentación técnica al día e índice de informes), rama `mantenimiento/D-20-documentacion-tecnica-al-dia`, 2026-11-02. F-46 (desbordamiento de `setMonth` en Anticipos) registrado sin corregir; F-14 sigue abierto.
 
 Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, usada por pushRecibo (F-12 corregido: calcula la secuencia anclada). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
 
@@ -32,7 +32,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 ## 2. Cómo se trabaja
 
 - Una rama por cambio, un PR por rama, fusionado en `main`. El nombre de la rama lleva la fase (o `mantenimiento`) y todos los IDs desglosados, por ejemplo `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias` o `mantenimiento/D-17-dividir-instruccion-persistente`.
-- Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`.
+- Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y este documento (DC-27). Un documento nuevo se añade también a `docNavigation`. Cada informe de iteración nuevo se añade al índice `mantenimiento/informes_iteraciones/index.md`.
 - Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres: DC-37, D-21, F-47, S-13, R-14 y U-14. Consultar siempre el registro antes de asignarlos.
 - Mensajes de commit: `tipo(IDs): resumen`, con cada ID desglosado (por ejemplo `fix(F-07, F-08): resumen`), y cuerpo en español. El título del PR sigue el mismo formato. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
@@ -98,12 +98,13 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 | #45 | D-18 | Informes de cierre retroactivos de los PR #43 y #44 y relevo al día |
 | #46 | F-12, DC-35 | Fechas futuras ancladas en `generarFechasFuturas` y división del grupo 2 en dos PR |
 | #47 | F-45, D-19 | Guardar sin cambios tiene en cuenta el modo de fechas y errata del informe del PR #43 |
+| #48 | F-13, DC-05 | Fechas `DATE` como texto en el pool de MariaDB |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
 
-La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El siguiente trabajo acordado es F-13/DC-05 (grupo 2 de la fase 1, tras F-12), no implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El siguiente trabajo acordado es D-20 y después U-13/DC-36 y F-14 (grupo 3 de la fase 1), no implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo la usa (F-12 corregido el 2026-11-01).
@@ -118,7 +119,7 @@ El relevo operativo más abajo fija archivos, exclusiones, aceptación, entorno 
 - `components/`: una página por pantalla (Accounts, Advances, Calendar, Categories, ListBills, Login, ProfileSettings, Savings y las páginas vacías).
 - `services/`, `composables/`, `utils/`, `config/`, `directives/`, `router/`, `middleware/`, `auth/`: frontend y utilidades de backend.
 - `routes/`: API por módulo. `db/`: acceso a datos, procedimiento de recibos y `schema/` (diseño; la fuente del esquema son las migraciones).
-- `mantenimiento/`: la instrucción persistente (entrada y cuatro partes `instruccion-persistente_NdeN.md`), el registro (entrada y tres partes `registro-hallazgos_NdeN.md`) y este documento; los informes de cierre de cada PR están en `mantenimiento/informes_iteraciones/`.
+- `mantenimiento/`: la instrucción persistente (entrada y cuatro partes `instruccion-persistente_NdeN.md`), el registro (entrada y tres partes `registro-hallazgos_NdeN.md`) y este documento; los informes de cierre de cada PR están en `mantenimiento/informes_iteraciones/`, con su índice en `index.md`.
 
 ## 7. Retomar en una conversación nueva
 

@@ -11,7 +11,7 @@ El servicio `AdvService` actúa como intermediario entre la interfaz de usuario 
 | Método | Descripción | Endpoint |
 |--------|-------------|----------|
 | `getAdvances()` | Obtiene todos los anticipos registrados | `GET /api/anticipos` |
-| `saveAdvance(advance)` | Crea o actualiza un anticipo | `POST /api/anticipos` |
+| `saveAdvance(advance)` | Crea o actualiza un anticipo; el servidor guarda el concepto en minúsculas (DC-31) | `POST /api/anticipos` |
 | `deleteAdvances(advances)` | Elimina uno o más anticipos por ID | `DELETE /api/anticipos` |
 | `getPeriodicidades()` | Obtiene las periodicidades permitidas para anticipos | `GET /api/anticipos/periodicidades` |
 

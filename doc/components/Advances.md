@@ -20,7 +20,7 @@ Al montar: `cargarZonaHoraria`, `fetchAdvances`, `fetchPeriodicidades`, `fetchAl
 |---|---|
 | `openNewAdvance()` | Inicializa el formulario con fecha de hoy y valores vacíos o cero |
 | `editAdvance(adv)` | Copia el anticipo al formulario y guarda una copia (`advanceOriginal`, con `snapshotAdvance`) para detectar «guardar sin cambios» (DC-30) |
-| `saveAdvance()` | Si se edita un anticipo y no se ha cambiado nada, avisa «No se ha cambiado nada.» y cierra sin enviar nada (DC-30). Si no, convierte las fechas del formulario a texto, convierte periodicidad vacía a NULL y llama a `AdvService.saveAdvance`; después recarga anticipos y pagos |
+| `saveAdvance()` | Si se edita un anticipo y no se ha cambiado nada, avisa «No se ha cambiado nada.» y cierra sin enviar nada (DC-30). Si no, convierte las fechas del formulario a texto, convierte periodicidad vacía a NULL y llama a `AdvService.saveAdvance`; después recarga anticipos y pagos. El servidor guarda el concepto en minúsculas (DC-31) y la pantalla lo capitaliza al mostrarlo |
 | `confirmDeleteAdvance(adv)` / `deleteAdvance()` | Preparan y ejecutan el borrado individual; si el anticipo no tiene ID válido, `confirmDeleteAdvance` registra el error en consola y termina con `return` sin abrir el diálogo (F-17 corregido) |
 | `confirmCreatePaymentPlan(id)` / `handleCreatePaymentPlan()` | Piden confirmación y llaman a `createPaymentPlan` |
 | `createPaymentPlan(id)` | Exige anticipo existente y pago sugerido numérico mayor que cero, llama a `recalculatePaymentPlan` del servicio y recarga listas |
