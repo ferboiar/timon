@@ -81,7 +81,7 @@ Los scripts principales están definidos en `package.json`.
 
 ## Documentación
 
-- Relevo del proyecto: `doc/mantenimiento/estado-del-proyecto.md`. Índice: `doc/index.md`. Hallazgos, decisiones (DC-xx) y plan: `doc/mantenimiento/registro-hallazgos.md`. Tareas: `TODO`.
+- Relevo del proyecto: `doc/mantenimiento/estado-del-proyecto.md` (entrada; sus tres partes `estado-del-proyecto_1de3.md` a `_3de3.md` se leen en orden). Índice: `doc/index.md`. Hallazgos, decisiones (DC-xx) y plan: `doc/mantenimiento/registro-hallazgos.md`. Tareas: `TODO`.
 - Cada cambio actualiza `doc/`, `TODO` y el plan en el mismo PR (DC-27). Los documentos nuevos se añaden a la navegación de `src/views/pages/Tech-documentation.vue`.
 - No se añaden a un commit `backend/src/db/.db_connection` ni `.db_connection.backup`.
 

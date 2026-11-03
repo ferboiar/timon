@@ -1,6 +1,6 @@
 # Registro de hallazgos y plan de mantenimiento
 
-Línea base de la fase 0 (2026-10-17). Documento vivo: se actualiza en cada iteración, y cada corrección cita su ID en el commit y actualiza `doc/`, `TODO`, el plan de la sección 10 y [estado-del-proyecto.md](./estado-del-proyecto.md) en el mismo PR.
+Línea base de la fase 0 (2026-10-17). Documento vivo: se actualiza en cada iteración, y cada corrección cita su ID en el commit y actualiza `doc/`, `TODO`, el plan de la sección 10 y el relevo ([estado-del-proyecto.md](./estado-del-proyecto.md) y sus partes) en el mismo PR.
 
 ## Propósito y orden de lectura
 
