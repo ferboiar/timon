@@ -1,6 +1,6 @@
 # Documentación del Sistema Timon
 
-Si retomas el proyecto, empieza por el [estado del proyecto](./mantenimiento/estado-del-proyecto.md).
+Si retomas el proyecto, empieza por el [estado del proyecto](./mantenimiento/estado-del-proyecto.md), entrada de un relevo dividido en tres partes que se leen en orden.
 
 ## Introducción
 
@@ -333,7 +333,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 
 ## Mantenimiento del proyecto
 
-- [Estado del proyecto](./mantenimiento/estado-del-proyecto.md) - Documento de relevo: cómo se trabaja, cómo funciona hoy y qué toca después
+- [Estado del proyecto](./mantenimiento/estado-del-proyecto.md) - Documento de relevo: cómo se trabaja, cómo funciona hoy y qué toca después. Entrada y 3 partes que se leen en orden: [1 de 3](./mantenimiento/estado-del-proyecto_1de3.md), [2 de 3](./mantenimiento/estado-del-proyecto_2de3.md), [3 de 3](./mantenimiento/estado-del-proyecto_3de3.md)
 - [Registro de hallazgos y decisiones](./mantenimiento/registro-hallazgos.md) - Entrada y mapa del registro (decisiones DC, hallazgos y plan por fases), dividido en 3 partes que se leen en orden: [1 de 3](./mantenimiento/registro-hallazgos_1de3.md), [2 de 3](./mantenimiento/registro-hallazgos_2de3.md), [3 de 3](./mantenimiento/registro-hallazgos_3de3.md)
 - [Instrucción persistente](./mantenimiento/instruccion-persistente.md) - Reglas de trabajo del asistente en el proyecto (entrada y 4 partes que se leen en orden): [1 de 4](./mantenimiento/instruccion-persistente_1de4.md), [2 de 4](./mantenimiento/instruccion-persistente_2de4.md), [3 de 4](./mantenimiento/instruccion-persistente_3de4.md), [4 de 4](./mantenimiento/instruccion-persistente_4de4.md)
 - [Informes de iteración](./mantenimiento/informes_iteraciones/index.md) - Un informe de cierre por PR, con su índice

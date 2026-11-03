@@ -1,10 +1,10 @@
 # TAREAS PENDIENTES
 
-## Punto de reanudación (D-21)
+## Punto de reanudación (D-22)
 
 La validación de un solo año al editar recibos (DC-14, DC-29) se incorporó el 2026-10-28 (PR #39). F-17 se incorporó el 2026-10-28 (PR #40) y F-07, F-08, F-09, F-22 y F-10 el 2026-10-29 (PR #41). D-17 (dividir la instrucción persistente, DC-33) se incorporó el 2026-10-29 (PR #42); la homogeneidad del front (U-09, U-10, U-11 parcial, U-12, F-44) y el cierre de D-15 se incorporaron el 2026-10-30 (PR #43 y #44); a continuación, el resto de la agrupación acordada (sección 10 del registro). La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27. La prioridad técnica del backlog no los sustituye por decisión del asistente.
 
-Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (corregida en F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 de doc/mantenimiento/estado-del-proyecto.md. No considerar /tmp ni _adjuntos parte del relevo persistente.
+Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (corregida en F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 del relevo (doc/mantenimiento/estado-del-proyecto.md y sus partes: las secciones 5 y 7 están en la parte 2 de 3 y la 8 en la parte 3 de 3). No considerar /tmp ni _adjuntos parte del relevo persistente.
 
 ## Prioridad técnica de trabajo futuro (D-13)
 
@@ -26,7 +26,7 @@ La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola lo
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
 
-Estado operativo: 2026-11-02, PR #50 incorporado, base 65593df61997ff71d4d2e9ec3d51678d965d3d4c. D-21 contrasta los cambios recientes con documentación y seguimiento; después se retoma F-14. Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-03, PR #51 (D-21) incorporado, base eb5dad1b357ffbc76bc94e9e1aac395b369f2c03. D-22 divide el relevo en partes; después se retoma F-14. Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Siguiente (un PR por punto; mantener este orden)
 - [x] D-15 (tarea previa): ayudante revisado el 2026-10-30 (ayudas.mjs, pruebas y README). Sin cambios necesarios: protege `.db_connection` y `.env*` por diseño, verifica identidad/contenido antes de escribir y hace copia previa. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
@@ -37,7 +37,8 @@ Estado operativo: 2026-11-02, PR #50 incorporado, base 65593df61997ff71d4d2e9ec3
 
 ## PR intercalados acordados (2026-10-29)
 
-- [x] D-21: contraste documental de cambios desde el 28 de octubre hasta el PR #50; discrepancias identificadas corregidas, diff revisado e informe retroactivo de #42 añadido. Alcance y límites en el informe de D-21. Preparado en su rama, pendiente de revisión y fusión; no certifica alineación integral del repositorio.
+- [x] D-21: contraste documental de cambios desde el 28 de octubre hasta el PR #50; discrepancias identificadas corregidas, diff revisado e informe retroactivo de #42 añadido. Alcance y límites en el informe de D-21. Incorporado el 2026-11-02 (PR #51); no certifica alineación integral del repositorio.
+- [x] D-22 / DC-37: dividir `doc/mantenimiento/estado-del-proyecto.md` en entrada y tres partes, como el registro (DC-28) y la instrucción persistente (DC-33), con referencias, índice, navegación y seguimiento al día (rama `mantenimiento/D-22-DC-37-dividir-estado-del-proyecto`; 2026-11-03). Preparado en su rama y verificado, pendiente de revisión y fusión; informe en `doc/mantenimiento/informes_iteraciones/2026-11-03_D-22_DC-37_division-relevo.md`.
 
 Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 

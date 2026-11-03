@@ -146,7 +146,10 @@ const docNavigation = [
                 children: [
                     { title: 'Calendario', path: 'components/Calendar' },
                     { title: 'Páginas vacías de la plantilla', path: 'components/PaginasVacias' },
-                    { title: 'Estado del proyecto', path: 'mantenimiento/estado-del-proyecto' },
+                    { title: 'Estado del proyecto (entrada)', path: 'mantenimiento/estado-del-proyecto' },
+                    { title: 'Estado: parte 1 de 3', path: 'mantenimiento/estado-del-proyecto_1de3' },
+                    { title: 'Estado: parte 2 de 3', path: 'mantenimiento/estado-del-proyecto_2de3' },
+                    { title: 'Estado: parte 3 de 3', path: 'mantenimiento/estado-del-proyecto_3de3' },
                     { title: 'Auditoría de documentación', path: 'mantenimiento/auditoria-documentacion' },
                     { title: 'Registro de hallazgos (entrada)', path: 'mantenimiento/registro-hallazgos' },
                     { title: 'Registro: parte 1 de 3', path: 'mantenimiento/registro-hallazgos_1de3' },
