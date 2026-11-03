@@ -26,7 +26,7 @@ La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola lo
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
 
-Estado operativo: 2026-11-03, PR #51 (D-21) incorporado, base eb5dad1b357ffbc76bc94e9e1aac395b369f2c03. D-22 divide el relevo en partes; después se retoma F-14. Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-03, PR #52 (D-22) incorporado, base d59d1dd4f67acf097fa92f569903f60e3f38d5de. F-14 en curso con el modelo de DC-38, por pasos. Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Siguiente (un PR por punto; mantener este orden)
 - [x] D-15 (tarea previa): ayudante revisado el 2026-10-30 (ayudas.mjs, pruebas y README). Sin cambios necesarios: protege `.db_connection` y `.env*` por diseño, verifica identidad/contenido antes de escribir y hace copia previa. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
@@ -38,7 +38,7 @@ Estado operativo: 2026-11-03, PR #51 (D-21) incorporado, base eb5dad1b357ffbc76b
 ## PR intercalados acordados (2026-10-29)
 
 - [x] D-21: contraste documental de cambios desde el 28 de octubre hasta el PR #50; discrepancias identificadas corregidas, diff revisado e informe retroactivo de #42 añadido. Alcance y límites en el informe de D-21. Incorporado el 2026-11-02 (PR #51); no certifica alineación integral del repositorio.
-- [x] D-22 / DC-37: dividir `doc/mantenimiento/estado-del-proyecto.md` en entrada y tres partes, como el registro (DC-28) y la instrucción persistente (DC-33), con referencias, índice, navegación y seguimiento al día (rama `mantenimiento/D-22-DC-37-dividir-estado-del-proyecto`; 2026-11-03). Preparado en su rama y verificado, pendiente de revisión y fusión; informe en `doc/mantenimiento/informes_iteraciones/2026-11-03_D-22_DC-37_division-relevo.md`.
+- [x] D-22 / DC-37: dividir `doc/mantenimiento/estado-del-proyecto.md` en entrada y tres partes, como el registro (DC-28) y la instrucción persistente (DC-33), con referencias, índice, navegación y seguimiento al día (rama `mantenimiento/D-22-DC-37-dividir-estado-del-proyecto`; 2026-11-03). Incorporado el 2026-11-03 (PR #52); informe en `doc/mantenimiento/informes_iteraciones/2026-11-03_D-22_DC-37_division-relevo.md`.
 
 Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 
@@ -65,7 +65,7 @@ Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 - [x] F-45: la comprobación de «guardar sin cambios» de `guardarRecibo` (DC-30) tiene en cuenta `modoFechas`: con el diálogo abierto en manual, pasar a automático cuenta como cambio y se guarda (2026-11-01, PR #47, incorporado).
 - [ ] F-46: `recalculatePaymentPlan` (`db_utilsAdv.mjs`) y `Advances.vue` calculan las fechas de pago con `setMonth(getMonth() + n)`: con los días 29 a 31 desbordan al mes siguiente y arrastran la deriva (mismo fallo que F-12 en recibos). Decidir el criterio de fin de mes de Anticipos y corregirlo sin depender de la zona horaria, con prueba sin base de datos (PR propio; registrado el 2026-11-02).
 - [x] F-13/DC-05: `dateStrings: ['DATE']` en el pool de `mysql2`; los `DATE` llegan como texto y `TIMESTAMP`/`DATETIME` siguen como `Date`. El desplazamiento de un día era latente: `timezone: 'Z'` ya construía los `DATE` a medianoche UTC. Sin `toISOString` que retirar sobre columnas leídas (2026-11-02, PR #48, incorporado).
-- [ ] F-14: corregir cambios del importe manteniendo pagado, reposición/reactivación al borrar un pago pagado y respuesta de saldo en la ruta DELETE antigua; decidir preservación del principal original.
+- [ ] F-14: corregir cambios del importe manteniendo pagado, reposición/reactivación al borrar un pago pagado y respuesta de saldo en la ruta DELETE antigua; decidido en DC-38: principal guardado e importe pendiente derivado, por pasos (a principal e importe pendiente; b transacciones y ruta única; c plan automático o manual; d fechas ancladas). El paso a (rama correccion/fase-1-F14-saldo-anticipos) está verificado en su rama (informe de F-14 / DC-38) y pendiente de revisión y fusión.
 - [ ] F-16: preparar payloads sin convertir a texto las fechas del modelo vivo; verificar reintento tras error en Ahorros y Anticipos.
 - [ ] F-19: escapar CSV y neutralizar fórmulas, conservando IBAN como texto seguro.
 - [ ] F-20/F-21: resolver getBillById sin endpoint y no prometer saldo de cuentas calculado automáticamente.

@@ -22,7 +22,7 @@ La plataforma está organizada en seis sistemas interconectados que trabajan con
 
 1. **Sistema de Recibos**: Facilita el control de pagos periódicos (mensuales, bimestrales, trimestrales) con seguimiento detallado de fechas de cargo y estados de pago.
 
-2. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, consulta del saldo restante y exportación CSV; los informes estructurados son una propuesta pendiente (R-07).
+2. **Sistema de Anticipos**: Permite la gestión de préstamos o adelantos de dinero, con funcionalidades para configurar planes de pago, consulta del importe pendiente y exportación CSV; los informes estructurados son una propuesta pendiente (R-07).
 
 3. **Sistema de Ahorros**: Permite la creación y seguimiento de objetivos de ahorro con fechas objetivo, periodicidades configurables y registro detallado de movimientos de aportación.
 

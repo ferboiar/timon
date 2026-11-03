@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-03 | F-14, DC-38 | [Principal guardado e importe pendiente derivado en anticipos](./2026-11-03_F-14_DC-38_principal-importe-pendiente.md) |
 | 2026-11-03 | D-22, DC-37 | [División del relevo en entrada y tres partes](./2026-11-03_D-22_DC-37_division-relevo.md) |
 | 2026-11-02 | D-21 | [Contraste documental de cambios recientes](./2026-11-02_D-21_contraste-documental.md) |
 | 2026-11-02 | U-13, DC-36 | [Vista previa de hoy y simulación de diciembre](./2026-11-02_U-13_DC-36_simulacion-diciembre.md) |
