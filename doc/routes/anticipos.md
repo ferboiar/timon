@@ -10,7 +10,7 @@ Este módulo implementa las rutas de la API REST para la gestión de anticipos y
 
 | Método HTTP | Ruta | Descripción |
 |-------------|------|-------------|
-| `GET` | `/api/anticipos` | Obtiene todos los anticipos |
+| `GET` | `/api/anticipos` | Obtiene todos los anticipos, con `importe_original`, el `pendiente` calculado y el `estado` efectivo (DC-38) |
 | `POST` | `/api/anticipos` | Crea o actualiza un anticipo |
 | `DELETE` | `/api/anticipos` | Elimina uno o más anticipos |
 | `GET` | `/api/anticipos/periodicidades` | Obtiene las periodicidades válidas |
@@ -20,8 +20,8 @@ Este módulo implementa las rutas de la API REST para la gestión de anticipos y
 | Método HTTP | Ruta | Descripción |
 |-------------|------|-------------|
 | `GET` | `/api/anticipos/:anticipoId/pagos` | Obtiene los pagos de un anticipo específico |
-| `POST` | `/api/anticipos/pagos` | Crea o actualiza un pago |
-| `DELETE` | `/api/anticipos/pagos/:id` | Elimina un pago específico |
+| `POST` | `/api/anticipos/pagos` | Crea o actualiza un pago; responde 400 si se intenta pasar de pagado a cancelado (DC-38) |
+| `DELETE` | `/api/anticipos/pagos/:id` | Elimina un pago específico y responde con el importe `pendiente` derivado (DC-38) |
 | `POST` | `/api/anticipos/delete-payment` | Elimina un pago; con `redistribuir: true` completa el plan de pagos con ese importe (DC-12) |
 | `POST` | `/api/anticipos/recalculate-payment-plan` | Recalcula el plan de pagos para un anticipo |
 
@@ -38,7 +38,7 @@ La ruta principal para anticipos maneja operaciones CRUD básicas:
 
 Las rutas de pagos permiten:
 - Recuperar pagos asociados a un anticipo específico
-- Crear, actualizar y eliminar pagos individuales
+- Crear, actualizar y eliminar pagos individuales; el importe pendiente del anticipo no se guarda: se deriva de los pagos pagados (DC-38)
 - Recalcular el plan de pagos cuando sea necesario
 
 ### Formato de fechas (F-13, DC-05)
@@ -56,7 +56,7 @@ Al crear un anticipo, el propietario (`propietario_id`) se toma del usuario aute
 | `pagoId` | Number | ID del pago a eliminar | Sí |
 | `redistribuir` | Boolean | Solo `true` activa el recálculo: completa los pagos pendientes hasta el pago sugerido y crea los pagos nuevos que hagan falta (DC-12); exige pago sugerido y periodicidad | No |
 
-Respuesta 200: `message`, `saldoRestante`, `anticipoId`, `redistribuido`, `pagosAjustados` y `pagosCreados`. Si falta `pagoId` responde 400; si se pide recalcular y el anticipo no tiene pago sugerido y periodicidad, responde 400 con el motivo; ante cualquier otro error, 500.
+Respuesta 200: `message`, `pendiente`, `anticipoId`, `redistribuido`, `pagosAjustados` y `pagosCreados`. Si falta `pagoId` responde 400; si se pide recalcular y el anticipo no tiene pago sugerido y periodicidad, responde 400 con el motivo; ante cualquier otro error, 500.
 
 ### Recalcular el plan (POST /api/anticipos/recalculate-payment-plan)
 
@@ -68,7 +68,7 @@ Recibe `anticipoId` (obligatorio, 400 si falta). Si el pago sugerido no es váli
 {
   "id": null, // null para crear, ID para actualizar
   "concepto": "Reparación coche",
-  "importe_total": 1000,
+  "importe_original": 1000,
   "pago_sugerido": 200,
   "fecha_inicio": "2023-01-15",
   "fecha_fin_prevista": "2023-06-15",
@@ -83,7 +83,7 @@ Recibe `anticipoId` (obligatorio, 400 si falta). Si el pago sugerido no es váli
 
 Las rutas de pagos escriben su actividad en el log del backend (DC-09):
 
-- `delete-payment - Procesando pago ID: … (redistribuir: …)` al recibir la petición y `delete-payment - Pago … eliminado del anticipo … (saldo restante …, redistribuido: …, pagos ajustados: …, pagos nuevos: …)` al terminar.
+- `delete-payment - Procesando pago ID: … (redistribuir: …)` al recibir la petición y `delete-payment - Pago … eliminado del anticipo … (pendiente …, redistribuido: …, pagos ajustados: …, pagos nuevos: …)` al terminar.
 - `recalculate-payment-plan - Procesando anticipo ID: …` al regenerar el plan.
 - Los errores de validación del plan salen como `Error en recalculatePaymentPlan: …`.
 

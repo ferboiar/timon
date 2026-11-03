@@ -30,7 +30,7 @@ const formatDate = appContext.config.globalProperties.$formatDate;
 const advance = ref({
     id: null,
     concepto: '',
-    importe_total: 0,
+    importe_original: 0,
     pago_sugerido: 0,
     fecha_inicio: null,
     fecha_fin_prevista: null,
@@ -103,7 +103,7 @@ function openNewAdvance() {
     advance.value = {
         id: null,
         concepto: '',
-        importe_total: 0,
+        importe_original: 0,
         pago_sugerido: 0,
         fecha_inicio: hoyEnZona(), // Hoy en la zona horaria de los ajustes (DC-25)
         fecha_fin_prevista: null,
@@ -154,7 +154,7 @@ async function saveAdvance() {
 }
 
 function editAdvance(adv) {
-    advance.value = { ...adv };
+    advance.value = { ...adv, estado: adv.estado === 'completado' ? 'activo' : adv.estado }; // DC-38: completado se deduce del importe pendiente y no se elige
     advanceOriginal.value = snapshotAdvance(advance.value);
     advanceDialog.value = true;
 }
@@ -197,6 +197,7 @@ const pago = ref({
 });
 
 const originalImporte = ref(0); // Almacenar el importe original para comparar
+const pagoEstabaPagado = ref(false); // DC-38: un pago que estaba pagado no se puede cancelar
 
 const isImporteModificado = computed(() => {
     return pago.value.id && Math.abs(pago.value.importe - originalImporte.value) > 0.001;
@@ -256,6 +257,7 @@ async function createPaymentPlan(anticipoId) {
 
 function openNewPago(anticipoId) {
     isReplacingPayment.value = false; // Una alta nueva nunca es una sustitución
+    pagoEstabaPagado.value = false;
     // Obtener el anticipo relacionado
     const anticipo = advances.value.find((a) => a.id === anticipoId);
     if (!anticipo) {
@@ -288,6 +290,7 @@ function openNewPago(anticipoId) {
 function editPago(p) {
     pago.value = { ...p, fecha: fechaDeCalendario(p.fecha) };
     originalImporte.value = parseFloat(p.importe); // Guardar el importe original
+    pagoEstabaPagado.value = p.estado === 'pagado';
     advancePagoDialog.value = true;
 }
 
@@ -333,7 +336,7 @@ async function savePago() {
         console.log('savePago - Suma de pagos pendientes:', sumaPagosPendientes);
 
         // Verificar si los pagos pendientes ya cubren el anticipo
-        if (sumaPagosPendientes >= anticipo.importe_total) {
+        if (sumaPagosPendientes >= Number(anticipo.pendiente)) {
             console.warn('savePago - Los pagos pendientes ya cubren el anticipo');
             toast.add({ severity: 'error', summary: 'Error', detail: 'Los pagos pendientes incluidos ya cubren el anticipo.', life: 5000 });
             advancePagoDialog.value = false; // Cerrar el cuadro de diálogo
@@ -341,7 +344,7 @@ async function savePago() {
         }
 
         // Ajustar el importe del nuevo pago si excede el importe pendiente
-        const importePendiente = anticipo.importe_total - sumaPagosPendientes;
+        const importePendiente = Number(anticipo.pendiente) - sumaPagosPendientes;
         if (pago.value.importe > importePendiente) {
             console.warn('savePago - Ajustando el importe del pago a:', importePendiente);
             toast.add({ severity: 'warn', summary: 'Ajuste de Importe', detail: `El importe del pago se ajustó a ${importePendiente.toFixed(2)}€ para cubrir el anticipo.`, life: 5000 });
@@ -391,15 +394,15 @@ const deletePago = (pago) => {
 
     // Excluir el pago que se está eliminando de los cálculos
     const pagosPendientes = pagosAnticipo.filter((p) => p.estado === 'pendiente' && p.id !== pago.id);
-    const pagosPagados = pagosAnticipo.filter((p) => p.estado === 'pagado');
+    const pagosPagados = pagosAnticipo.filter((p) => p.estado === 'pagado' && p.id !== pago.id);
 
     // Calcular suma de pagos pagados y pendientes (excluyendo el pago a eliminar)
     const sumaPagosPagados = pagosPagados.reduce((total, p) => total + parseFloat(p.importe || 0), 0);
     const sumaPagosPendientes = pagosPendientes.reduce((total, p) => total + parseFloat(p.importe || 0), 0);
 
     // Calcular el importe inicial del anticipo
-    const importeTotal = parseFloat(anticipo?.importe_total || 0); // Convertir a número
-    const importeInicial = (importeTotal + sumaPagosPagados).toFixed(2); // Redondear a 2 decimales
+    const importeOriginal = Number(anticipo?.importe_original || 0); // DC-38: el principal lo guarda el servidor
+    const importeInicial = importeOriginal.toFixed(2); // Redondear a 2 decimales
     console.log('deletePago - Importe inicial del anticipo:', importeInicial);
 
     // Calcular el importe pendiente de planificar
@@ -446,7 +449,9 @@ const recalculatePayments = async () => {
         toast.add({
             severity: resultado.redistribuido ? 'success' : 'warn',
             summary: resultado.redistribuido ? 'Successful' : 'Sin cambios',
-            detail: resultado.redistribuido ? `Pagos recalculados: ${resultado.pagosAjustados} ajustados hasta el pago sugerido y ${resultado.pagosCreados} nuevos.` : 'No había importe que colocar: el plan de pagos ya cubre el saldo del anticipo.',
+            detail: resultado.redistribuido
+                ? `Pagos recalculados: ${resultado.pagosAjustados} ajustados hasta el pago sugerido y ${resultado.pagosCreados} nuevos.`
+                : 'No había importe que colocar: el plan de pagos ya cubre el importe pendiente del anticipo.',
             life: 5000
         });
         await fetchAdvances(); // Actualizar la lista de anticipos
@@ -485,6 +490,7 @@ const addNewPayment = async () => {
         deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo de borrar
         advancePagoDialog.value = true; // Abrir el cuadro de diálogo para añadir el nuevo pago
         isReplacingPayment.value = true; // Activar la bandera de reemplazo
+        pagoEstabaPagado.value = false;
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el pago: ${error.message}`, life: 5000 });
     }
@@ -540,11 +546,12 @@ onMounted(async () => {
 
 const exportCSV = () => {
     const csvContent = [
-        ['Concepto', 'Descripción', 'Importe Total', 'Fecha Inicio', 'Fecha Fin Prevista', 'Estado', 'Cuenta Origen', 'Periodicidad', 'Pago Sugerido'],
+        ['Concepto', 'Descripción', 'Importe', 'Pendiente', 'Fecha Inicio', 'Fecha Fin Prevista', 'Estado', 'Cuenta Origen', 'Periodicidad', 'Pago Sugerido'],
         ...advances.value.map((adv) => [
             adv.concepto,
             adv.descripcion || '',
-            parseFloat(adv.importe_total).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
+            parseFloat(adv.importe_original).toFixed(2).replace('.', ','),
+            parseFloat(adv.pendiente).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
             formatDate(adv.fecha_inicio),
             formatDate(adv.fecha_fin_prevista),
             adv.estado,
@@ -624,10 +631,15 @@ async function handleCreatePaymentPlan() {
                 <Column expander style="width: 5rem" />
                 <Column field="concepto" header="Concepto" sortable style="min-width: 4rem" />
                 <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem" />
-                <Column field="importe_total" header="Importe Total" sortable style="min-width: 4rem">
+                <Column field="importe_original" header="Importe" sortable style="min-width: 4rem">
                     <template #body="slotProps">
-                        <span :class="{ 'text-green-500': slotProps.data.importe_total >= 0, 'text-red-500': slotProps.data.importe_total < 0 }">
-                            {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.importe_total) }}
+                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.importe_original) }}
+                    </template>
+                </Column>
+                <Column field="pendiente" header="Pendiente" sortable style="min-width: 4rem">
+                    <template #body="slotProps">
+                        <span :class="{ 'text-green-500': slotProps.data.pendiente >= 0, 'text-red-500': slotProps.data.pendiente < 0 }">
+                            {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.pendiente) }}
                         </span>
                     </template>
                 </Column>
@@ -751,8 +763,8 @@ async function handleCreatePaymentPlan() {
                         <small v-if="!advance.cuenta_origen_id" class="text-red-500">La cuenta es obligatoria</small>
                     </div>
                     <div class="flex-1">
-                        <label for="importe_total" class="block font-bold mb-3">Importe Total</label>
-                        <InputNumber id="importe_total" v-model="advance.importe_total" mode="currency" currency="EUR" locale="es-ES" fluid />
+                        <label for="importe_original" class="block font-bold mb-3">Importe</label>
+                        <InputNumber id="importe_original" v-model="advance.importe_original" mode="currency" currency="EUR" locale="es-ES" fluid />
                     </div>
                     <div class="flex-1">
                         <label for="pago_sugerido" class="block font-bold mb-3">Pago Sugerido</label>
@@ -785,8 +797,7 @@ async function handleCreatePaymentPlan() {
                             :options="[
                                 { label: 'Activo', value: 'activo' },
                                 { label: 'Pausado', value: 'pausado' },
-                                { label: 'Cancelado', value: 'cancelado' },
-                                { label: 'Completado', value: 'completado' }
+                                { label: 'Cancelado', value: 'cancelado' }
                             ]"
                             optionValue="value"
                             optionLabel="label"
@@ -823,11 +834,12 @@ async function handleCreatePaymentPlan() {
                         <label for="pago_estado" class="block font-bold mb-3">Estado</label>
                         <Select
                             id="pago_estado"
+                            optionDisabled="disabled"
                             v-model="pago.estado"
                             :options="[
                                 { label: 'Pendiente', value: 'pendiente' },
                                 { label: 'Pagado', value: 'pagado' },
-                                { label: 'Cancelado', value: 'cancelado' }
+                                { label: 'Cancelado', value: 'cancelado', disabled: pagoEstabaPagado }
                             ]"
                             optionValue="value"
                             optionLabel="label"
@@ -863,7 +875,10 @@ async function handleCreatePaymentPlan() {
             </div>
             <template #footer>
                 <div class="w-full">
-                    <p v-if="isImporteModificado" class="text-red-500 mb-2 font-bold text-sm">¡Atención! Al modificar el importe del pago, el resto de pagos pendientes será recalculado en función del nuevo valor.</p>
+                    <p v-if="isImporteModificado && pago.estado !== 'pagado'" class="text-red-500 mb-2 font-bold text-sm">¡Atención! Al modificar el importe del pago, el resto de pagos pendientes será recalculado en función del nuevo valor.</p>
+                    <p v-if="isImporteModificado && pago.estado === 'pagado'" class="text-red-500 mb-2 font-bold text-sm">
+                        ¡Atención! Este pago ya está pagado: al cambiar su importe cambia el saldo pendiente del anticipo, pero los pagos restantes no se recalculan. Ajústalos a mano o usa «Añadir o completar el plan de pagos».
+                    </p>
                     <div class="flex justify-end">
                         <Button label="Cancel" icon="pi pi-times" text @click="advancePagoDialog = false" />
                         <Button label="Save" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />

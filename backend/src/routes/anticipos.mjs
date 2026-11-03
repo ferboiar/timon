@@ -27,9 +27,9 @@ router.get('/', verifyToken, async (req, res) => {
 
 // Guardar un anticipo (crear o actualizar)
 router.post('/', verifyToken, async (req, res) => {
-    const { id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad } = req.body;
+    const { id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad } = req.body;
     try {
-        await pushAdvance(id, concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.user.id);
+        await pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.user.id);
         res.status(201).json({ message: 'Anticipo insertado o actualizado correctamente' });
     } catch (error) {
         res.status(400).json({ error: `Error al guardar el anticipo: ${error.message}` });
@@ -88,11 +88,11 @@ router.post('/pagos', verifyToken, async (req, res) => {
 router.delete('/pagos/:id', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const saldoRestante = await deletePago(id); // Modificar deletePago para devolver el saldo restante
+        const pendiente = await deletePago(id);
         res.status(200).json({
             message: 'Pago eliminado correctamente',
-            saldoRestante,
-            options: ['Recalcular pagos restantes', 'Añadir un nuevo pago con el saldo restante']
+            pendiente,
+            options: ['Recalcular pagos restantes', 'Añadir un nuevo pago con el importe pendiente']
         });
     } catch (error) {
         res.status(500).json({ error: `Error al eliminar el pago: ${error.message}` });
@@ -109,11 +109,11 @@ router.post('/delete-payment', verifyToken, async (req, res) => {
         }
 
         console.log('delete-payment - Procesando pago ID: ' + pagoId + ' (redistribuir: ' + (redistribuir === true) + ')');
-        const { saldoRestante, anticipoId, redistribuido, pagosAjustados, pagosCreados } = await handlePaymentDeletion(pagoId, redistribuir === true);
-        console.log('delete-payment - Pago ' + pagoId + ' eliminado del anticipo ' + anticipoId + ' (saldo restante ' + saldoRestante + ', redistribuido: ' + redistribuido + ', pagos ajustados: ' + pagosAjustados + ', pagos nuevos: ' + pagosCreados + ')');
+        const { pendiente, anticipoId, redistribuido, pagosAjustados, pagosCreados } = await handlePaymentDeletion(pagoId, redistribuir === true);
+        console.log('delete-payment - Pago ' + pagoId + ' eliminado del anticipo ' + anticipoId + ' (pendiente ' + pendiente + ', redistribuido: ' + redistribuido + ', pagos ajustados: ' + pagosAjustados + ', pagos nuevos: ' + pagosCreados + ')');
         res.status(200).json({
             message: 'Pago eliminado correctamente',
-            saldoRestante,
+            pendiente,
             anticipoId,
             redistribuido,
             pagosAjustados,

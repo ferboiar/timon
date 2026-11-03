@@ -39,12 +39,13 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #49 | D-20 | Documentación técnica e índice de informes |
 | #50 | U-13, DC-36 | Vista previa de hoy y simulación del próximo 1 de diciembre |
 | #51 | D-21 | Contraste documental de cambios recientes e informe retroactivo del PR #42 |
+| #52 | D-22, DC-37 | Relevo dividido en entrada y tres partes |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
 
-La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El trabajo activo es D-22, por petición expresa de dividir este relevo en partes (DC-37); D-21 se incorporó en el PR #51. Después corresponde F-14 (grupo 3 de la fase 1), no implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El trabajo activo es F-14 (grupo 3 de la fase 1) con el modelo de DC-38, por pasos; D-22 se incorporó en el PR #52. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo la usa (F-12 corregido el 2026-11-01).

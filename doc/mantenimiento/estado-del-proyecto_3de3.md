@@ -93,7 +93,7 @@ El primer PR de documentación fue #29. El PR #30 incorporó el cierre D-11, com
 Comportamiento actual que no debe prometerse como terminado:
 
 - Ahorros: el filtro de inactivos, el interruptor «Ahorro activo» (F-08) y el borrado individual (F-07) están corregidos (PR #41); el concepto se envía capitalizado al guardar (F-44). No hay generación de aportaciones ni porcentaje de progreso. Ya admite movimientos manuales sin periodicidad; opciones explícitas de diaria/semanal son F-37.
-- Anticipos: importe_total es saldo restante (F-14); mantener pagado al cambiar importe no ajusta saldo; borrar pagado no reactiva por sí solo el anticipo completado. Recalcular tras editar no equivale al algoritmo de completar tras borrar. Operaciones sin transacción (F-27).
+- Anticipos: en esta auditoría importe_total era el saldo restante (F-14) y cambiar el importe de un pagado no lo ajustaba. Preparado en la rama correccion/fase-1-F14-saldo-anticipos (DC-38, paso a), pendiente de fusión: el principal se guarda en importe_original, el importe pendiente y el estado completado se derivan de los pagos pagados y un pagado no puede cancelarse. El recálculo de los pagos pendientes al editar un pagado sigue sin hacerse. Recalcular tras editar no equivale al algoritmo de completar tras borrar. Operaciones sin transacción (F-27).
 - Botón de borrado múltiple de Anticipos sin flujo conectado (F-39); propuestas manuales de fecha de pago suman un mes fijo (F-40).
 - saveUser/deleteUsers/changePassword solo leen token de localStorage (F-38); una sesión temporal no tiene el mismo soporte en esos métodos.
 - Formularios que mutan fechas antes de éxito (F-16), CSV sin escape completo (F-19), avisos desiguales del servidor (F-28) y apiClient no usado por los servicios (S-07).

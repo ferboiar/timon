@@ -49,6 +49,7 @@ let db;
 let cerrarPool;
 let completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo;
 let deleteCategorias, deleteSavings, pushCategoria;
+let deletePago, getAdvances, handlePaymentDeletion, pushAdvance, pushPago;
 
 before(async () => {
     const admin = await mysql.createConnection(conexion);
@@ -70,6 +71,7 @@ before(async () => {
     ({ completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo } = await import('../src/db/db_utils.mjs'));
     ({ deleteCategorias, pushCategoria } = await import('../src/db/db_utilsCats.mjs'));
     ({ deleteSavings } = await import('../src/db/db_utilsSav.mjs'));
+    ({ deletePago, getAdvances, handlePaymentDeletion, pushAdvance, pushPago } = await import('../src/db/db_utilsAdv.mjs'));
 });
 
 after(async () => {
@@ -130,7 +132,7 @@ describe('F-01: altas de la aplicación con propietario_id', () => {
     // Mantenerlas sincronizadas con los INSERT de la aplicación, que deben incluir propietario_id (F-01).
     const altas = [
         ['ahorros', 'INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', ['Prueba', null, 0, null, null, 0, 1, 2]],
-        ['anticipos', 'INSERT INTO anticipos (concepto, importe_total, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', ['Prueba', 100, 10, '2026-01-01', null, null, 'activo', 1, 'mensual', 2]],
+        ['anticipos', 'INSERT INTO anticipos (concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', ['Prueba', 100, 10, '2026-01-01', null, null, 'activo', 1, 'mensual', 2]],
         ['cuentas', 'INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?)', ['Prueba', 'corriente', 'ES0000000000000000000002', 0, null, 1, 2]],
         ['categorias', 'INSERT INTO categorias (nombre, descripcion, propietario_id) VALUES (?, ?, ?)', ['zz_prueba', null, 2]]
     ];
@@ -565,6 +567,154 @@ describe('F-09, F-22, F-10, DC-31: categorías y borrados con las funciones real
         } finally {
             await db.query('DELETE FROM ahorros WHERE id = ?', [ahorro.insertId]);
         }
+    });
+});
+
+describe('Migración 0005: principal guardado e importe pendiente derivado (DC-38)', () => {
+    let sqlMigracion;
+    before(async () => {
+        sqlMigracion = await readFile(new URL('../src/db/migrations/0005_anticipos_principal_pendiente_derivado.sql', import.meta.url), 'utf8');
+    });
+
+    test('rellena el principal con el importe_total más los pagados, pasa los completados a activo, retira importe_total y es repetible', async () => {
+        await db.query("DELETE FROM anticipos_pagos WHERE anticipo_id IN (SELECT id FROM anticipos WHERE concepto LIKE 'zz-m05%')");
+        await db.query("DELETE FROM anticipos WHERE concepto LIKE 'zz-m05%'");
+        await db.query('ALTER TABLE anticipos ADD COLUMN importe_total decimal(10,2) NULL, MODIFY COLUMN importe_original decimal(10,2) NULL');
+        const altaPago = (anticipoId, importe, estado) => db.execute("INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, estado, cuenta_destino_id) VALUES (?, ?, '2026-01-01', 'regular', ?, 1)", [anticipoId, importe, estado]);
+        const [a] = await db.execute("INSERT INTO anticipos (concepto, importe_total, pago_sugerido, fecha_inicio, estado, cuenta_origen_id, propietario_id) VALUES ('zz-m05 a', 700, 100, '2026-01-01', 'activo', 1, 2)");
+        const [b] = await db.execute("INSERT INTO anticipos (concepto, importe_total, pago_sugerido, fecha_inicio, estado, cuenta_origen_id, propietario_id) VALUES ('zz-m05 b', 0, 100, '2026-01-01', 'completado', 1, 2)");
+        await altaPago(a.insertId, 300, 'pagado');
+        await altaPago(a.insertId, 100, 'pendiente');
+        await altaPago(a.insertId, 50, 'cancelado');
+        await altaPago(b.insertId, 500, 'pagado');
+
+        await db.query(sqlMigracion);
+        const leer = async () => (await db.query("SELECT concepto, importe_original, estado FROM anticipos WHERE concepto LIKE 'zz-m05%' ORDER BY concepto"))[0].map((f) => ({ ...f }));
+        const esperado = [
+            { concepto: 'zz-m05 a', importe_original: '1000.00', estado: 'activo' },
+            { concepto: 'zz-m05 b', importe_original: '500.00', estado: 'activo' }
+        ];
+        assert.deepEqual(await leer(), esperado);
+        const [[columna]] = await db.query("SELECT COUNT(*) AS n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'anticipos' AND COLUMN_NAME = 'importe_total'", [dbName]);
+        assert.equal(Number(columna.n), 0);
+
+        await db.query(sqlMigracion);
+        assert.deepEqual(await leer(), esperado);
+
+        await db.query("DELETE FROM anticipos_pagos WHERE anticipo_id IN (SELECT id FROM anticipos WHERE concepto LIKE 'zz-m05%')");
+        await db.query("DELETE FROM anticipos WHERE concepto LIKE 'zz-m05%'");
+    });
+});
+
+describe('F-14, DC-38: principal guardado e importe pendiente derivado en anticipos', () => {
+    const crearAnticipo = async (concepto, principal, estado = 'activo') => {
+        const [r] = await db.execute('INSERT INTO anticipos (concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [concepto, principal, 10, '2026-01-01', null, null, estado, 1, null, 2]);
+        return r.insertId;
+    };
+    const crearPago = async (anticipoId, importe, estado) => {
+        await pushPago(undefined, anticipoId, importe, '2026-11-05', 'regular', null, estado, 1);
+        const [[p]] = await db.query('SELECT id FROM anticipos_pagos WHERE anticipo_id = ? ORDER BY id DESC LIMIT 1', [anticipoId]);
+        return p.id;
+    };
+    const editar = (pagoId, anticipoId, importe, estado = 'pagado') => pushPago(pagoId, anticipoId, importe, '2026-11-05', 'regular', null, estado, 1);
+    const anticipoDe = async (id) => {
+        const fila = (await getAdvances()).find((a) => a.id === id);
+        return { principal: Number(fila.importe_original), pendiente: Number(fila.pendiente), estado: fila.estado };
+    };
+    const estadoGuardado = async (id) => (await db.query('SELECT estado FROM anticipos WHERE id = ?', [id]))[0][0].estado;
+    const estadoPago = async (id) => (await db.query('SELECT estado FROM anticipos_pagos WHERE id = ?', [id]))[0][0].estado;
+
+    beforeEach(async () => {
+        await db.query("DELETE FROM anticipos_pagos WHERE anticipo_id IN (SELECT id FROM anticipos WHERE concepto LIKE 'zz-f14%')");
+        await db.query("DELETE FROM anticipos WHERE concepto LIKE 'zz-f14%'");
+    });
+
+    test('el importe pendiente es el principal menos los pagos pagados; pendientes y cancelados no cuentan', async () => {
+        const a = await crearAnticipo('zz-f14 pendiente', 1000);
+        await crearPago(a, 300, 'pagado');
+        await crearPago(a, 100, 'pendiente');
+        await crearPago(a, 50, 'cancelado');
+        assert.deepEqual(await anticipoDe(a), { principal: 1000, pendiente: 700, estado: 'activo' });
+    });
+
+    test('editar el importe de un pago que sigue pagado cambia el importe pendiente y no el principal', async () => {
+        const a = await crearAnticipo('zz-f14 edicion', 1000);
+        const p = await crearPago(a, 300, 'pagado');
+        await editar(p, a, 350);
+        assert.deepEqual(await anticipoDe(a), { principal: 1000, pendiente: 650, estado: 'activo' });
+        await editar(p, a, 250);
+        assert.deepEqual(await anticipoDe(a), { principal: 1000, pendiente: 750, estado: 'activo' });
+    });
+
+    test('completado se deduce del importe pendiente y no se guarda', async () => {
+        const a = await crearAnticipo('zz-f14 completar', 300);
+        const p = await crearPago(a, 300, 'pagado');
+        assert.deepEqual(await anticipoDe(a), { principal: 300, pendiente: 0, estado: 'completado' });
+        assert.equal(await estadoGuardado(a), 'activo');
+        await editar(p, a, 250);
+        assert.deepEqual(await anticipoDe(a), { principal: 300, pendiente: 50, estado: 'activo' });
+        await editar(p, a, 300);
+        assert.equal((await anticipoDe(a)).estado, 'completado');
+    });
+
+    test('borrar un pago pagado sube el importe pendiente y deletePago lo devuelve', async () => {
+        const a = await crearAnticipo('zz-f14 borrar', 300);
+        const p = await crearPago(a, 300, 'pagado');
+        assert.equal((await anticipoDe(a)).estado, 'completado');
+        assert.equal(Number(await deletePago(p)), 300);
+        assert.deepEqual(await anticipoDe(a), { principal: 300, pendiente: 300, estado: 'activo' });
+    });
+
+    test('handlePaymentDeletion devuelve el importe pendiente derivado', async () => {
+        const a = await crearAnticipo('zz-f14 manejar', 300);
+        const p = await crearPago(a, 100, 'pagado');
+        const resultado = await handlePaymentDeletion(p, false);
+        assert.equal(Number(resultado.pendiente), 300);
+        assert.equal(resultado.anticipoId, a);
+        assert.deepEqual(await anticipoDe(a), { principal: 300, pendiente: 300, estado: 'activo' });
+    });
+
+    test('pausado y cancelado se mantienen aunque el importe pendiente llegue a 0', async () => {
+        const pausado = await crearAnticipo('zz-f14 pausado', 100, 'pausado');
+        await crearPago(pausado, 100, 'pagado');
+        assert.deepEqual(await anticipoDe(pausado), { principal: 100, pendiente: 0, estado: 'pausado' });
+        const cancelado = await crearAnticipo('zz-f14 cancelado', 100, 'cancelado');
+        await crearPago(cancelado, 100, 'pagado');
+        assert.deepEqual(await anticipoDe(cancelado), { principal: 100, pendiente: 0, estado: 'cancelado' });
+    });
+
+    test('un pago pagado no puede cancelarse, pero sí volver a pendiente', async () => {
+        const a = await crearAnticipo('zz-f14 cancelar', 1000);
+        const p = await crearPago(a, 300, 'pagado');
+        await assert.rejects(() => editar(p, a, 300, 'cancelado'), /no puede cancelarse/);
+        assert.equal(await estadoPago(p), 'pagado');
+        assert.equal((await anticipoDe(a)).pendiente, 700);
+        await editar(p, a, 300, 'pendiente');
+        assert.equal(await estadoPago(p), 'pendiente');
+        assert.equal((await anticipoDe(a)).pendiente, 1000);
+    });
+
+    test('pushAdvance guarda el principal y genera el plan; cambiar el principal completa el plan', async () => {
+        await pushAdvance(undefined, 'zz-f14 plan', 600, 100, '2026-11-03', null, null, 'activo', 1, 'mensual', 2);
+        const [[fila]] = await db.query("SELECT id, importe_original FROM anticipos WHERE concepto = 'zz-f14 plan'");
+        assert.equal(Number(fila.importe_original), 600);
+        let [pagos] = await db.query('SELECT importe, estado FROM anticipos_pagos WHERE anticipo_id = ? ORDER BY fecha', [fila.id]);
+        assert.equal(pagos.length, 6);
+        assert.ok(pagos.every((p) => Number(p.importe) === 100 && p.estado === 'pendiente'));
+
+        await pushAdvance(fila.id, 'zz-f14 plan', 700, 100, '2026-11-03', null, null, 'activo', 1, 'mensual', 2);
+        [pagos] = await db.query('SELECT importe, estado FROM anticipos_pagos WHERE anticipo_id = ? ORDER BY fecha', [fila.id]);
+        assert.equal(pagos.length, 7);
+        assert.deepEqual(await anticipoDe(fila.id), { principal: 700, pendiente: 700, estado: 'activo' });
+    });
+
+    test('pushAdvance rechaza un importe no válido y guarda completado como activo', async () => {
+        await assert.rejects(() => pushAdvance(undefined, 'zz-f14 negativo', -5, 10, '2026-11-03', null, null, 'activo', 1, null, 2), /mayor o igual que 0/);
+        const [[n]] = await db.query("SELECT COUNT(*) AS total FROM anticipos WHERE concepto = 'zz-f14 negativo'");
+        assert.equal(Number(n.total), 0);
+        await pushAdvance(undefined, 'zz-f14 estado', 100, 10, '2026-11-03', null, null, 'completado', 1, null, 2);
+        const [[fila]] = await db.query("SELECT id FROM anticipos WHERE concepto = 'zz-f14 estado'");
+        assert.equal(await estadoGuardado(fila.id), 'activo');
     });
 });
 

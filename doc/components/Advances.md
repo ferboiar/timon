@@ -4,7 +4,7 @@ Fuente: `src/views/pages/Advances.vue`. Revisión estática completa: 2026-10-23
 
 ## Alcance
 
-Gestiona anticipos y sus pagos: alta, edición, borrado individual, generación o ampliación del plan, edición de pagos y borrado con tres alternativas. «Importe total» muestra el saldo restante (`importe_total`), no el principal original (F-14). Exporta anticipos, no sus pagos, a CSV.
+Gestiona anticipos y sus pagos: alta, edición, borrado individual, generación o ampliación del plan, edición de pagos y borrado con tres alternativas. La tabla muestra «Importe» (el principal, `importe_original`) y «Pendiente» (el importe pendiente, calculado por el servidor); el formulario edita el importe (DC-38). El estado «completado» se deduce del importe pendiente y no se elige. Exporta anticipos, no sus pagos, a CSV.
 
 ## Estado y carga
 
@@ -34,15 +34,15 @@ El botón Guardar exige concepto, cuenta y fecha inicial; pago sugerido y period
 | `fetchPagos(id)` / `fetchAllPagos()` | Cargan uno o todos los conjuntos de pagos; la segunda usa Promise.all |
 | `openNewPago(id)` | Propone el sugerido, la cuenta origen como destino y un mes después del último pago; sin pagos, un mes después de hoy |
 | `editPago(p)` | Copia los datos, normaliza la fecha y guarda el importe original |
-| `savePago()` | Para nuevos pagos limita el importe al saldo no cubierto por pendientes; al editar envía directamente el formulario |
-| `deletePago(p)` | Prepara el diálogo, excluye el pago elegido de los pendientes y calcula el aviso de saldo no planificado |
+| `savePago()` | Para nuevos pagos limita el importe al importe pendiente no cubierto por los pagos pendientes; al editar envía directamente el formulario |
+| `deletePago(p)` | Prepara el diálogo, excluye el pago elegido de los pendientes y calcula el aviso de importe no planificado |
 | `confirmDeletePago()` | Borra con `handlePaymentDeletion(id)` sin reparto |
 | `recalculatePayments()` | Borra con `handlePaymentDeletion(id, true)` y muestra los contadores de cuotas ajustadas y nuevas; usa `getApiErrorMessage` en su error |
 | `addNewPayment()` | Prepara un pago sustituto pendiente, de igual importe y con fecha un mes después del último pago restante |
 
 `isPagoFormValid` comprueba fecha y tipo; Guardar exige además cuenta destino, pero no valida importe positivo en ese computed. El botón Recalcular pagos solo se deshabilita si faltan sugerido positivo o periodicidad.
 
-La sustitución excluye el pago antiguo del cálculo de pendientes, guarda el nuevo y después borra el antiguo: son dos peticiones independientes (F-25 corregido en su flujo, atomicidad pendiente). Al editar no se aplica el límite de saldo que se aplica a las altas. La advertencia de recálculo aparece para cualquier pago con importe cambiado, pero el servidor solo redistribuye si queda pendiente (F-14).
+La sustitución excluye el pago antiguo del cálculo de pendientes, guarda el nuevo y después borra el antiguo: son dos peticiones independientes (F-25 corregido en su flujo, atomicidad pendiente). Al editar no se aplica el límite del importe pendiente que se aplica a las altas. El aviso de recálculo solo aparece al editar un pago pendiente, que es el único caso en que el servidor redistribuye; con un pago pagado el aviso dice que cambia el saldo pendiente y que los pagos restantes no se recalculan (DC-38). El desplegable de estado no permite cancelar un pago que estaba pagado.
 
 ## Tabla, expansión y exportación
 
@@ -54,7 +54,7 @@ U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'
 
 ## Fallos y límites documentados, no corregidos aquí
 
-- F-14: saldo restante y edición del importe manteniendo pagado; no se debe prometer conciliación automática en todos los caminos.
+- F-14 / DC-38: el importe pendiente se deriva y es coherente; al editar un pago pagado los pagos pendientes no se recalculan (paso c). No se debe prometer conciliación automática del plan pendiente.
 - F-16: las fechas del formulario se mutan antes de confirmar el éxito, y un reintento tras fallo puede fallar por tipo.
 - F-27: operaciones del backend sin transacción; la sustitución también son dos peticiones.
 - F-28: salvo el error de recalcular, los avisos siguen usando `error.message`.
