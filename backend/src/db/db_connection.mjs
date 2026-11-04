@@ -91,6 +91,44 @@ async function getConnection() {
     return pool.getConnection();
 }
 
+/**
+ * Ejecuta una operación dentro de una transacción de base de datos (F-27, DC-39).
+ *
+ * - Si conexionExterna es null: toma una conexión del pool, inicia la transacción y ejecuta la operación. Si termina
+ *   bien, confirma (commit); si lanza un error, lo deshace todo (rollback) y relanza ese mismo error. La conexión se
+ *   devuelve siempre al pool.
+ * - Si conexionExterna ya existe: la operación forma parte de la transacción de quien la llama. Aquí no se abre otra
+ *   ni se confirma nada: el commit o el rollback los decide quien abrió la transacción. Así una función interna, por
+ *   ejemplo la que genera el plan de pagos, sirve igual suelta que dentro de una operación mayor.
+ *
+ * La operación recibe la conexión y debe usarla para todas sus consultas; las que hagan otra conexión del pool
+ * quedarían fuera de la transacción.
+ */
+async function enTransaccion(conexionExterna, operacion) {
+    if (conexionExterna) {
+        return operacion(conexionExterna);
+    }
+    const connection = await getConnection();
+    try {
+        await connection.beginTransaction();
+        const resultado = await operacion(connection);
+        await connection.commit();
+        console.log('enTransaccion - Transacción confirmada');
+        return resultado;
+    } catch (error) {
+        try {
+            await connection.rollback();
+            console.log('enTransaccion - Transacción deshecha: ' + error.message);
+        } catch (errorRollback) {
+            // Si el rollback falla se conserva el error original, que es el que explica el problema
+            console.error('enTransaccion - Error al deshacer la transacción:', errorRollback);
+        }
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
 // Cierra el pool (las pruebas lo usan para terminar limpiamente)
 async function closePool() {
     if (pool) {
@@ -99,4 +137,4 @@ async function closePool() {
     }
 }
 
-export { closePool, construirConfiguracionPool, getConnection };
+export { closePool, construirConfiguracionPool, enTransaccion, getConnection };

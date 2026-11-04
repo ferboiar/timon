@@ -107,11 +107,13 @@ export class AdvService {
         }
     }
 
-    // Eliminar un pago
-    static async deletePago(pagoId) {
+    // Eliminar un pago (DC-39). Con redistribuir = true el servidor coloca su importe en el resto del plan (DC-12);
+    // el borrado y el reparto van en la misma transacción
+    static async handlePaymentDeletion(pagoId, redistribuir = false) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await axios.delete(`${API_URL}/pagos/${pagoId}`, {
+                params: { redistribuir },
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -123,22 +125,19 @@ export class AdvService {
         }
     }
 
-    // Manejar la eliminación de un pago
-    static async handlePaymentDeletion(pagoId, redistribuir = false) {
+    // Sustituir un pago por uno nuevo en una sola operación atómica (F-25, F-27, DC-39):
+    // el servidor crea el pago nuevo (pendiente) y borra el antiguo en la misma transacción
+    static async replacePago(pagoId, pago) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(
-                `${API_URL}/delete-payment`,
-                { pagoId, redistribuir },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+            const response = await axios.post(`${API_URL}/pagos/${pagoId}/sustituir`, pago, {
+                headers: {
+                    Authorization: `Bearer ${token}`
                 }
-            );
+            });
             return response.data;
         } catch (error) {
-            console.error('Error al manejar la eliminación del pago:', error);
+            console.error('Error al sustituir el pago:', error);
             throw error;
         }
     }

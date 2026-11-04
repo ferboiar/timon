@@ -148,7 +148,7 @@ async function saveAdvance() {
         await fetchAllPagos(); // Actualizar los pagos relacionados
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el anticipo: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al guardar el anticipo', detail: getApiErrorMessage(error), life: 5000 });
         console.error('Error en saveAdvance:', error);
     }
 }
@@ -178,7 +178,7 @@ async function deleteAdvance() {
         await fetchAllPagos(); // Actualizar los pagos relacionados
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el anticipo: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al eliminar el anticipo', detail: getApiErrorMessage(error), life: 5000 });
         console.error('deleteAdvance - Error al eliminar el anticipo:', error);
     }
 }
@@ -204,6 +204,14 @@ const isImporteModificado = computed(() => {
 });
 
 const pagos = ref({});
+// DC-40: el plan cuadra si la suma de los pagos pendientes es igual al importe pendiente del anticipo. Solo entonces el servidor
+// recalcula los pagos pendientes al cambiar el importe de un pago pagado; el aviso del diálogo usa el mismo criterio
+const planCuadrado = computed(() => {
+    const anticipo = advances.value.find((a) => a.id === pago.value.anticipo_id);
+    if (!anticipo) return false;
+    const sumaPendientes = (pagos.value[pago.value.anticipo_id] || []).filter((p) => p.estado === 'pendiente').reduce((total, p) => total + parseFloat(p.importe || 0), 0);
+    return Math.abs(sumaPendientes - Number(anticipo.pendiente)) < 0.01;
+});
 
 const fetchPagos = async (anticipoId) => {
     try {
@@ -251,7 +259,7 @@ async function createPaymentPlan(anticipoId) {
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Plan de pagos creado correctamente.', life: 3000 });
     } catch (error) {
         console.error('Error en createPaymentPlan:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al crear el plan de pagos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al crear el plan de pagos', detail: getApiErrorMessage(error), life: 5000 });
     }
 }
 
@@ -353,11 +361,12 @@ async function savePago() {
 
         // Guardar el nuevo pago
         console.log('savePago - Guardando el nuevo pago');
-        await AdvService.savePago(pago.value);
         if (isReplacingPayment.value && selectedPayment.value) {
-            // Sustitución: el pago antiguo se elimina una vez guardado el nuevo
-            console.log('savePago - Sustitución: eliminando el pago antiguo ID:', selectedPayment.value.id);
-            await AdvService.handlePaymentDeletion(selectedPayment.value.id);
+            // F-27, DC-39: la sustitución es una sola petición: el servidor crea el pago nuevo y borra el antiguo en la misma transacción
+            console.log('savePago - Sustitución del pago ID:', selectedPayment.value.id);
+            await AdvService.replacePago(selectedPayment.value.id, pago.value);
+        } else {
+            await AdvService.savePago(pago.value);
         }
         toast.add({ severity: 'success', summary: 'Pago guardado', detail: 'El pago ha sido guardado correctamente.', life: 3000 });
 
@@ -372,7 +381,7 @@ async function savePago() {
         isReplacingPayment.value = false; // Restablecer la bandera
     } catch (error) {
         console.error('savePago - Error:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el pago: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al guardar el pago', detail: getApiErrorMessage(error), life: 5000 });
     }
 }
 
@@ -436,7 +445,7 @@ const confirmDeletePago = async () => {
         await fetchAllPagos(); // Actualizar los pagos relacionados
         deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el pago: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al eliminar el pago', detail: getApiErrorMessage(error), life: 5000 });
     }
 };
 
@@ -458,7 +467,7 @@ const recalculatePayments = async () => {
         await fetchAllPagos(); // Actualizar los pagos relacionados
         deletePaymentDialog.value = false; // Cerrar el cuadro de diálogo
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al recalcular los pagos: ${getApiErrorMessage(error)}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al recalcular los pagos', detail: getApiErrorMessage(error), life: 5000 });
     }
 };
 
@@ -492,7 +501,7 @@ const addNewPayment = async () => {
         isReplacingPayment.value = true; // Activar la bandera de reemplazo
         pagoEstabaPagado.value = false;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el pago: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al eliminar el pago', detail: getApiErrorMessage(error), life: 5000 });
     }
 };
 
@@ -875,9 +884,13 @@ async function handleCreatePaymentPlan() {
             </div>
             <template #footer>
                 <div class="w-full">
-                    <p v-if="isImporteModificado && pago.estado !== 'pagado'" class="text-red-500 mb-2 font-bold text-sm">¡Atención! Al modificar el importe del pago, el resto de pagos pendientes será recalculado en función del nuevo valor.</p>
-                    <p v-if="isImporteModificado && pago.estado === 'pagado'" class="text-red-500 mb-2 font-bold text-sm">
-                        ¡Atención! Este pago ya está pagado: al cambiar su importe cambia el saldo pendiente del anticipo, pero los pagos restantes no se recalculan. Ajústalos a mano o usa «Añadir o completar el plan de pagos».
+                    <p v-if="isImporteModificado && pago.estado === 'pendiente'" class="text-red-500 mb-2 font-bold text-sm">¡Atención! Al modificar el importe del pago, el resto de pagos pendientes será recalculado en función del nuevo valor.</p>
+                    <p v-if="isImporteModificado && pago.estado === 'pagado' && planCuadrado" class="text-red-500 mb-2 font-bold text-sm">
+                        ¡Atención! Este pago está pagado: al cambiar su importe cambia el saldo pendiente del anticipo y el resto de pagos pendientes se recalculará en proporción para que el total siga cuadrando.
+                    </p>
+                    <p v-if="isImporteModificado && pago.estado === 'pagado' && !planCuadrado" class="text-red-500 mb-2 font-bold text-sm">
+                        ¡Atención! Este pago está pagado: al cambiar su importe cambia el saldo pendiente del anticipo, pero los pagos pendientes no se recalcularán porque el plan no cuadra con el saldo pendiente. Ajústalos a mano o usa «Añadir o
+                        completar el plan de pagos».
                     </p>
                     <div class="flex justify-end">
                         <Button label="Cancel" icon="pi pi-times" text @click="advancePagoDialog = false" />
