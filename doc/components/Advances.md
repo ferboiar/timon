@@ -63,3 +63,7 @@ U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'
 - F-46 (DC-41, preparado en su rama): las propuestas de fecha de un pago nuevo y de la sustitución usan sumarMesAnclado (`src/utils/fechasAnticipos.js`) con el día de fecha_inicio del anticipo, así que el 31 no desborda al mes siguiente; el plan automático del servidor usa la misma secuencia anclada. Esas propuestas siguen sumando un mes fijo (F-40) y no tienen prueba automática de pantalla.
 
 Las trazas `savePago` y `recalculatePayments` se escriben en consola; no acreditan atomicidad. Ver [acceso a datos](../db/db_utilsAdv.md), [AdvService](../services/AdvService.md), [AccService](../services/AccService.md) y [zona horaria](../composables/useZonaHoraria.md).
+
+## F-16: payloads de fechas
+
+`saveAdvance` y `savePago` preparan un payload nuevo con las fechas convertidas mediante `fechaIsoDeCalendario`; no mutan `advance.value` ni `pago.value` antes de que el servidor confirme el guardado. En una alta de pago, el importe ajustado se calcula en el payload, no en el formulario. Tras un error, el formulario conserva su estado y el reintento envía un payload válido.

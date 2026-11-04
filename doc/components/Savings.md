@@ -50,3 +50,7 @@ El requisito del usuario permite ahorros diarios, semanales, otras cadencias o p
 - F-10: `ahorros_movimientos` tiene ON DELETE CASCADE en 0001 (comprobado en la migración): borrar un ahorro con movimientos también borra sus movimientos y no falla por FK. La traducción de ER_ROW_IS_REFERENCED_2 a «No se puede eliminar el ahorro porque tiene registros asociados» (409) es defensiva, por si una tabla futura referencia `ahorros` sin cascada; no se ha provocado.
 
 Ver [SavService](../services/SavService.md), [acceso a datos](../db/db_utilsSav.md) y [registro de hallazgos](../mantenimiento/registro-hallazgos.md).
+
+## F-16: payloads de fechas
+
+`saveSaving` y `saveMovimiento` preparan un payload nuevo con la fecha convertida mediante `fechaIsoDeCalendario`; no mutan `saving.value` ni `movimiento.value` antes de que el servidor confirme el guardado. Tras un error, el formulario conserva su estado y el reintento envía un payload válido.

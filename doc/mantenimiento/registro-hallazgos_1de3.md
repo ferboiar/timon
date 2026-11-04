@@ -4,7 +4,7 @@ Parte 1 de 3 del [registro de hallazgos](./registro-hallazgos.md): secciones 0 a
 
 ## 0. Reanudación operativa (D-15)
 
-Fecha: 2026-11-04. main en 120676f4b1c9e0d1f4a3b6c8e5f7a9d0c2b4e6f8a (PR #55 fusionado). U-13/DC-36 (PR #50), D-21 (PR #51), D-22/DC-37 (PR #52) y los pasos a, b y d de DC-38 (F-14, PR #53; F-27, DC-39 y DC-40, PR #54; F-46 y DC-41, PR #55) incorporados. El resto del paso c de DC-38 se declara no aplicable por DC-42 y F-14 queda cerrado. No hay trabajo activo.
+Fecha: 2026-11-04. main en 41ab1950da150baea5383b4b2c78fd9e57d1dfb7 (PR #56 fusionado); F-16 preparado en su rama. U-13/DC-36 (PR #50), D-21 (PR #51), D-22/DC-37 (PR #52) y los pasos a, b y d de DC-38 (F-14, PR #53; F-27, DC-39 y DC-40, PR #54; F-46 y DC-41, PR #55) incorporados. El resto del paso c de DC-38 se declara no aplicable por DC-42 y F-14 queda cerrado. No hay trabajo activo.
 
 Limpieza completada el 2026-10-27: retirados updateAllDates, updateAllBillsDates, POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo. Conservados generateDates/generateBillDates, POST /:id/generar-fechas, completarFechasAnio, el procedimiento/evento anual y generarFechasFuturas (pushRecibo la sigue usando; F-12 corregido el 2026-11-01). Validación de un solo año al editar (DC-14, DC-29) incorporada el 2026-10-28 (PR #39); F-17 (`return` en `confirmDeleteAdvance`) incorporada el 2026-10-28 (PR #40). F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías) incorporadas el 2026-10-29 (PR #41); D-17 (división de la instrucción persistente, DC-33) incorporado el 2026-10-29 (PR #42); la homogeneidad del front (U-09, U-10, U-11 parcial, U-12, F-44) y el cierre de D-15, el 2026-10-30 (PR #43 y #44).
 

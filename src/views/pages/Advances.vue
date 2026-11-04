@@ -2,6 +2,7 @@
 import { AccService } from '@/service/AccService'; // Importar AccService
 import { AdvService } from '@/service/AdvService';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { fechaIsoDeCalendario } from '@/utils/fechasFormulario';
 import { cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
 import { sumarMesAnclado } from '@/utils/fechasAnticipos';
 import { useToast } from 'primevue/usetoast';
@@ -131,19 +132,15 @@ async function saveAdvance() {
             hideDialog();
             return;
         }
-        if (advance.value.fecha_inicio) {
-            const localFecha = new Date(advance.value.fecha_inicio.getTime() - advance.value.fecha_inicio.getTimezoneOffset() * 60000);
-            advance.value.fecha_inicio = formatDate(localFecha, '-');
-        }
-        if (advance.value.fecha_fin_prevista) {
-            const localFecha = new Date(advance.value.fecha_fin_prevista.getTime() - advance.value.fecha_fin_prevista.getTimezoneOffset() * 60000);
-            advance.value.fecha_fin_prevista = formatDate(localFecha, '-');
-        }
-        // Si no se seleccionó periodicidad, se asigna null
-        if (!advance.value.periodicidad) {
-            advance.value.periodicidad = null;
-        }
-        await AdvService.saveAdvance(advance.value);
+        // F-16: el payload se prepara sin mutar el formulario; un error permite reintentar
+        const payload = {
+            ...advance.value,
+            fecha_inicio: fechaIsoDeCalendario(advance.value.fecha_inicio),
+            fecha_fin_prevista: fechaIsoDeCalendario(advance.value.fecha_fin_prevista),
+            periodicidad: advance.value.periodicidad || null
+        };
+
+        await AdvService.saveAdvance(payload);
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Anticipo guardado!', life: 5000 });
         await fetchAdvances(); // Actualizar la lista de anticipos
         await fetchAllPagos(); // Actualizar los pagos relacionados
@@ -308,17 +305,12 @@ const isReplacingPayment = ref(false); // Bandera para indicar si se está reemp
 
 async function savePago() {
     try {
-        if (pago.value.fecha) {
-            if (!(pago.value.fecha instanceof Date)) {
-                pago.value.fecha = fechaDeCalendario(pago.value.fecha); // Convierte la fecha a un objeto Date sin desplazar el día
-            }
-            const localFecha = new Date(pago.value.fecha.getTime() - pago.value.fecha.getTimezoneOffset() * 60000);
-            pago.value.fecha = formatDate(localFecha, '-');
-        }
+        // F-16: la fecha del payload se prepara sin mutar el formulario
+        const fechaPago = fechaIsoDeCalendario(pago.value.fecha);
 
         // Verificar si se está editando un pago existente
         if (pago.value.id) {
-            await AdvService.savePago(pago.value);
+            await AdvService.savePago({ ...pago.value, fecha: fechaPago });
             toast.add({ severity: 'success', summary: 'Pago actualizado', detail: 'El pago ha sido actualizado correctamente.', life: 3000 });
 
             // Actualizar los anticipos y pagos relacionados
@@ -355,20 +347,21 @@ async function savePago() {
 
         // Ajustar el importe del nuevo pago si excede el importe pendiente
         const importePendiente = Number(anticipo.pendiente) - sumaPagosPendientes;
+        const importePago = pago.value.importe > importePendiente ? importePendiente : pago.value.importe;
         if (pago.value.importe > importePendiente) {
             console.warn('savePago - Ajustando el importe del pago a:', importePendiente);
             toast.add({ severity: 'warn', summary: 'Ajuste de Importe', detail: `El importe del pago se ajustó a ${importePendiente.toFixed(2)}€ para cubrir el anticipo.`, life: 5000 });
-            pago.value.importe = importePendiente;
         }
 
         // Guardar el nuevo pago
         console.log('savePago - Guardando el nuevo pago');
+        const payloadPago = { ...pago.value, fecha: fechaPago, importe: importePago };
         if (isReplacingPayment.value && selectedPayment.value) {
             // F-27, DC-39: la sustitución es una sola petición: el servidor crea el pago nuevo y borra el antiguo en la misma transacción
             console.log('savePago - Sustitución del pago ID:', selectedPayment.value.id);
-            await AdvService.replacePago(selectedPayment.value.id, pago.value);
+            await AdvService.replacePago(selectedPayment.value.id, payloadPago);
         } else {
-            await AdvService.savePago(pago.value);
+            await AdvService.savePago(payloadPago);
         }
         toast.add({ severity: 'success', summary: 'Pago guardado', detail: 'El pago ha sido guardado correctamente.', life: 3000 });
 
