@@ -138,6 +138,7 @@ const docNavigation = [
                     { title: 'DB Utils Mantenimiento', path: 'db/db_maintenance' },
                     { title: 'Utilidades de tiempo', path: 'utils/tiempo' },
                     { title: 'Utilidad apiError', path: 'utils/apiError' },
+                    { title: 'Utilidad de fechas de formulario', path: 'utils/fechasFormulario' },
                     { title: 'Esquema de la base de datos', path: 'db/schema/index' }
                 ]
             },

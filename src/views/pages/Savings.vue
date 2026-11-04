@@ -1,6 +1,7 @@
 <script setup>
 import { SavService } from '@/service/SavService';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { fechaIsoDeCalendario } from '@/utils/fechasFormulario';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 
@@ -125,18 +126,14 @@ async function saveSaving() {
             hideDialog();
             return;
         }
-        // Ajustar la zona horaria para fecha_objetivo si está definida
-        if (saving.value.fecha_objetivo) {
-            const fechaLocal = new Date(saving.value.fecha_objetivo.getTime() - saving.value.fecha_objetivo.getTimezoneOffset() * 60000);
-            saving.value.fecha_objetivo = formatDate(fechaLocal, '-'); // Convertir fechaLocal al formato YYYY-MM-DD
-        }
+        // F-16: el payload se prepara sin mutar el formulario; un error permite reintentar
+        const payload = {
+            ...saving.value,
+            fecha_objetivo: fechaIsoDeCalendario(saving.value.fecha_objetivo),
+            periodicidad: saving.value.periodicidad || null
+        };
 
-        // Verificar si periodicidad no está definida y asignarle null
-        if (!saving.value.periodicidad) {
-            saving.value.periodicidad = null;
-        }
-
-        await SavService.saveSaving(saving.value);
+        await SavService.saveSaving(payload);
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Ahorro guardado!', life: 5000 });
         fetchSavings();
         hideDialog();
@@ -300,17 +297,13 @@ const saveMovimiento = async () => {
             savingMovimientoDialog.value = false;
             return;
         }
-        // Ajustar la zona horaria para fecha si está definida
-        if (movimiento.value.fecha) {
-            // Asegurarse de que movimiento.value.fecha sea un objeto Date
-            if (!(movimiento.value.fecha instanceof Date)) {
-                movimiento.value.fecha = new Date(movimiento.value.fecha);
-            }
-            const fechaLocal = new Date(movimiento.value.fecha.getTime() - movimiento.value.fecha.getTimezoneOffset() * 60000);
-            movimiento.value.fecha = formatDate(fechaLocal, '-'); // Convertir fechaLocal al formato YYYY-MM-DD
-        }
+        // F-16: el payload se prepara sin mutar el formulario; un error permite reintentar
+        const payload = {
+            ...movimiento.value,
+            fecha: fechaIsoDeCalendario(movimiento.value.fecha)
+        };
 
-        await SavService.saveMovimiento(movimiento.value);
+        await SavService.saveMovimiento(payload);
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Movimiento guardado!', life: 5000 });
         fetchSavings();
         fetchAllMovimientos();

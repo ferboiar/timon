@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-04 | F-16 | [Payloads de fechas inmutables en Ahorros y Anticipos](./2026-11-04_F-16_payloads-fechas.md) |
 | 2026-11-04 | D-23, DC-42 | [Cierre del paso c de DC-38 y de F-14 en Anticipos](./2026-11-04_D-23_DC-42_cierre-paso-c-anticipos.md) |
 | 2026-11-04 | F-46, DC-41 | [Fechas ancladas en el plan de pagos de anticipos](./2026-11-04_F-46_DC-41_fechas-ancladas-anticipos.md) |
 | 2026-11-04 | F-27, DC-39, DC-40 | [Transacciones, rutas de pagos y recálculo al editar un pagado en anticipos](./2026-11-04_F-27_DC-39_DC-40_transacciones-anticipos.md) |
