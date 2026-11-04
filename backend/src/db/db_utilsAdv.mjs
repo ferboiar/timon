@@ -17,6 +17,7 @@
  */
 
 import { enTransaccion, getConnection } from './db_connection.mjs';
+import { fechaISO, siguienteFechaAnclada, sumarMesesAnclado } from '../utils/fechasAnticipos.mjs';
 
 // DC-38: el importe pendiente no se guarda; es el principal menos la suma de los pagos pagados. El estado completado se deduce de él.
 const SQL_PENDIENTE = "a.importe_original - COALESCE((SELECT SUM(p.importe) FROM anticipos_pagos p WHERE p.anticipo_id = a.id AND p.estado = 'pagado'), 0)";
@@ -212,12 +213,19 @@ async function generarPlanDePagos(connection, anticipoId) {
         porPlanificar = Math.round(porPlanificar * 100) / 100; // F-36: sin residuos de coma flotante
         console.log('recalculatePaymentPlan - Importe por planificar después de considerar los pagos pendientes: ' + porPlanificar);
 
-        // Determinar la fecha del próximo pago basándote en el último pago existente
-        let fechaPago = new Date(fecha_inicio);
+        // F-46/DC-41: la secuencia está anclada en el día de fecha_inicio. Si el día no existe
+        // en un mes se usa el último día de ese mes, sin arrastrar desvíos ni depender de la zona horaria.
+        const mesesPeriodo = getMonthsFromPeriodicidad(periodicidad);
+        if (mesesPeriodo <= 0) {
+            throw errorHttp(400, 'La periodicidad del anticipo no permite generar fechas de pago');
+        }
+        const diaAncla = Number(fechaISO(fecha_inicio).slice(8, 10));
+        let fechaPagoISO;
         if (existingPagos.length > 0) {
-            const ultimaFechaExistente = new Date(existingPagos[existingPagos.length - 1].fecha);
-            fechaPago = new Date(ultimaFechaExistente);
-            fechaPago.setMonth(fechaPago.getMonth() + getMonthsFromPeriodicidad(periodicidad));
+            const ultimaFechaExistente = fechaISO(existingPagos[existingPagos.length - 1].fecha);
+            fechaPagoISO = siguienteFechaAnclada(ultimaFechaExistente, fechaISO(fecha_inicio), mesesPeriodo);
+        } else {
+            fechaPagoISO = fechaISO(fecha_inicio);
         }
 
         // Crear nuevos pagos si es necesario
@@ -237,21 +245,21 @@ async function generarPlanDePagos(connection, anticipoId) {
             await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?)', [
                 anticipoId,
                 importePago,
-                fechaPago.toISOString().split('T')[0],
+                fechaPagoISO,
                 'regular',
                 'pendiente',
                 cuentaDestinoId
             ]);
-            console.log('recalculatePaymentPlan - Nuevo pago creado con importe: ' + importePago + ', fecha: ' + fechaPago.toISOString().split('T')[0]);
+            console.log('recalculatePaymentPlan - Nuevo pago creado con importe: ' + importePago + ', fecha: ' + fechaPagoISO);
             porPlanificar = Math.round((porPlanificar - importePago) * 100) / 100; // F-36
-            ultimaFechaPago = new Date(fechaPago); // Actualizar la fecha del último pago
-            fechaPago.setMonth(fechaPago.getMonth() + getMonthsFromPeriodicidad(periodicidad));
+            ultimaFechaPago = fechaPagoISO;
+            fechaPagoISO = sumarMesesAnclado(fechaPagoISO, mesesPeriodo, diaAncla);
         }
 
         // Actualizar la fecha fin prevista del anticipo con la fecha del último pago
         if (ultimaFechaPago) {
-            await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ? WHERE id = ?', [ultimaFechaPago.toISOString().split('T')[0], anticipoId]);
-            console.log('recalculatePaymentPlan - Fecha fin prevista actualizada a: ' + ultimaFechaPago.toISOString().split('T')[0]);
+            await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ? WHERE id = ?', [ultimaFechaPago, anticipoId]);
+            console.log('recalculatePaymentPlan - Fecha fin prevista actualizada a: ' + ultimaFechaPago);
         }
 
         console.log('recalculatePaymentPlan - Plan de pagos recalculado exitosamente para el anticipo con ID: ' + anticipoId);

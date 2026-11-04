@@ -60,6 +60,6 @@ U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'
 - F-28: los avisos de guardar y borrar anticipos y pagos, generar el plan y recalcular muestran el mensaje del servidor con `getApiErrorMessage` (DC-39); el resto siguen usando `error.message`.
 - F-39: botón de borrado múltiple sin diálogo/ejecución completos.
 - F-40: propuestas de fechas manuales incrementan un mes fijo, no la periodicidad del anticipo.
-- F-46: esas propuestas y el plan automático de Anticipos usan setMonth con getters/setters locales; los días 29 a 31 pueden desbordar y arrastrar deriva. La corrección anclada F-12 es de Recibos y no corrige Anticipos.
+- F-46 (DC-41, preparado en su rama): las propuestas de fecha de un pago nuevo y de la sustitución usan sumarMesAnclado (`src/utils/fechasAnticipos.js`) con el día de fecha_inicio del anticipo, así que el 31 no desborda al mes siguiente; el plan automático del servidor usa la misma secuencia anclada. Esas propuestas siguen sumando un mes fijo (F-40) y no tienen prueba automática de pantalla.
 
 Las trazas `savePago` y `recalculatePayments` se escriben en consola; no acreditan atomicidad. Ver [acceso a datos](../db/db_utilsAdv.md), [AdvService](../services/AdvService.md), [AccService](../services/AccService.md) y [zona horaria](../composables/useZonaHoraria.md).
