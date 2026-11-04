@@ -46,7 +46,7 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 ## 5. Siguiente paso operativo
 
-La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El trabajo activo es F-14 (grupo 3 de la fase 1) con el modelo de DC-38, por pasos: el paso a se incorporó en el PR #53 y el paso b (F-27, DC-39) está preparado en su rama. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). El trabajo activo es F-14 (grupo 3 de la fase 1) con el modelo de DC-38, por pasos: los pasos a y b se incorporaron en los PR #53 y #54 (F-27, DC-39, DC-40) y el paso d (F-46, DC-41) está preparado en su rama, pendiente de revisión y fusión; del paso c queda el modo automático o manual con vista previa. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo la usa (F-12 corregido el 2026-11-01).

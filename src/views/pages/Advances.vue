@@ -3,6 +3,7 @@ import { AccService } from '@/service/AccService'; // Importar AccService
 import { AdvService } from '@/service/AdvService';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
+import { sumarMesAnclado } from '@/utils/fechasAnticipos';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 
@@ -278,14 +279,15 @@ function openNewPago(anticipoId) {
 
     // Calcular la fecha del nuevo pago (siguiente a la última fecha de los pagos existentes)
     const ultimaFechaPago = pagosAnticipo.length > 0 ? new Date(Math.max(...pagosAnticipo.map((p) => fechaDeCalendario(p.fecha).getTime()))) : hoyEnZona();
-    ultimaFechaPago.setMonth(ultimaFechaPago.getMonth() + 1);
+    const diaAnclaNuevoPago = anticipo.fecha_inicio ? fechaDeCalendario(anticipo.fecha_inicio).getDate() : ultimaFechaPago.getDate();
+    const fechaNuevoPago = sumarMesAnclado(ultimaFechaPago, diaAnclaNuevoPago);
 
     // Precargar los datos del nuevo pago
     pago.value = {
         id: null,
         anticipo_id: anticipoId,
         importe: anticipo.pago_sugerido,
-        fecha: ultimaFechaPago,
+        fecha: fechaNuevoPago,
         tipo: 'regular',
         descripcion: '',
         estado: 'pendiente',
@@ -482,14 +484,16 @@ const addNewPayment = async () => {
 
         // Calcular la fecha del nuevo pago (mes siguiente al último pago)
         const nuevaFecha = ultimoPago ? fechaDeCalendario(ultimoPago.fecha) : hoyEnZona();
-        nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
+        const anticipoSustituido = advances.value.find((a) => a.id === anticipoId);
+        const diaAnclaSustitucion = anticipoSustituido && anticipoSustituido.fecha_inicio ? fechaDeCalendario(anticipoSustituido.fecha_inicio).getDate() : nuevaFecha.getDate();
+        const fechaSustitucion = sumarMesAnclado(nuevaFecha, diaAnclaSustitucion);
 
         // Precargar los datos del nuevo pago
         pago.value = {
             id: null,
             anticipo_id: anticipoId,
             importe: selectedPayment.value.importe,
-            fecha: nuevaFecha,
+            fecha: fechaSustitucion,
             tipo: selectedPayment.value.tipo,
             descripcion: selectedPayment.value.descripcion,
             estado: 'pendiente',
