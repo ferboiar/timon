@@ -49,7 +49,7 @@ let db;
 let cerrarPool;
 let completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo;
 let deleteCategorias, deleteSavings, pushCategoria;
-let deletePago, getAdvances, handlePaymentDeletion, pushAdvance, pushPago;
+let deleteAdvances, getAdvances, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan, sustituirPago;
 
 before(async () => {
     const admin = await mysql.createConnection(conexion);
@@ -71,7 +71,7 @@ before(async () => {
     ({ completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo } = await import('../src/db/db_utils.mjs'));
     ({ deleteCategorias, pushCategoria } = await import('../src/db/db_utilsCats.mjs'));
     ({ deleteSavings } = await import('../src/db/db_utilsSav.mjs'));
-    ({ deletePago, getAdvances, handlePaymentDeletion, pushAdvance, pushPago } = await import('../src/db/db_utilsAdv.mjs'));
+    ({ deleteAdvances, getAdvances, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan, sustituirPago } = await import('../src/db/db_utilsAdv.mjs'));
 });
 
 after(async () => {
@@ -657,11 +657,11 @@ describe('F-14, DC-38: principal guardado e importe pendiente derivado en antici
         assert.equal((await anticipoDe(a)).estado, 'completado');
     });
 
-    test('borrar un pago pagado sube el importe pendiente y deletePago lo devuelve', async () => {
+    test('borrar un pago pagado sube el importe pendiente y el anticipo deja de estar completado', async () => {
         const a = await crearAnticipo('zz-f14 borrar', 300);
         const p = await crearPago(a, 300, 'pagado');
         assert.equal((await anticipoDe(a)).estado, 'completado');
-        assert.equal(Number(await deletePago(p)), 300);
+        await handlePaymentDeletion(p, false);
         assert.deepEqual(await anticipoDe(a), { principal: 300, pendiente: 300, estado: 'activo' });
     });
 
@@ -715,6 +715,175 @@ describe('F-14, DC-38: principal guardado e importe pendiente derivado en antici
         await pushAdvance(undefined, 'zz-f14 estado', 100, 10, '2026-11-03', null, null, 'completado', 1, null, 2);
         const [[fila]] = await db.query("SELECT id FROM anticipos WHERE concepto = 'zz-f14 estado'");
         assert.equal(await estadoGuardado(fila.id), 'activo');
+    });
+});
+
+describe('F-27, DC-39: transacciones, borrado y sustitución de pagos en anticipos', () => {
+    const crearAnticipo = async (concepto, principal, { sugerido = 10, periodicidad = null } = {}) => {
+        const [r] = await db.execute('INSERT INTO anticipos (concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [concepto, principal, sugerido, '2026-01-01', null, null, 'activo', 1, periodicidad, 2]);
+        return r.insertId;
+    };
+    const crearPago = async (anticipoId, importe, estado = 'pendiente') => {
+        await pushPago(undefined, anticipoId, importe, '2026-11-05', 'regular', null, estado, 1);
+        const [[p]] = await db.query('SELECT id FROM anticipos_pagos WHERE anticipo_id = ? ORDER BY id DESC LIMIT 1', [anticipoId]);
+        return p.id;
+    };
+    const totalPagos = async (anticipoId) => Number((await db.query('SELECT COUNT(*) AS n FROM anticipos_pagos WHERE anticipo_id = ?', [anticipoId]))[0][0].n);
+    const existePago = async (id) => Number((await db.query('SELECT COUNT(*) AS n FROM anticipos_pagos WHERE id = ?', [id]))[0][0].n) === 1;
+    const idDe = async (concepto) => {
+        const [filas] = await db.query('SELECT id FROM anticipos WHERE concepto = ?', [concepto]);
+        return filas[0]?.id;
+    };
+
+    beforeEach(async () => {
+        await db.query("DELETE FROM anticipos_pagos WHERE anticipo_id IN (SELECT id FROM anticipos WHERE concepto LIKE 'zz-f27%')");
+        await db.query("DELETE FROM anticipos WHERE concepto LIKE 'zz-f27%'");
+    });
+
+    test('pushAdvance: si falla la generación del plan al editar, el anticipo no cambia', async () => {
+        await pushAdvance(undefined, 'zz-f27 edicion', 100, 10, '2026-11-03', null, null, 'activo', 1, 'mensual', 2);
+        const id = await idDe('zz-f27 edicion');
+        assert.equal(await totalPagos(id), 10);
+        await assert.rejects(() => pushAdvance(id, 'zz-f27 edicion', 1000000, 1, '2026-11-03', null, null, 'activo', 1, 'mensual', 2), /1200 pagos/);
+        const [[a]] = await db.query('SELECT importe_original, pago_sugerido FROM anticipos WHERE id = ?', [id]);
+        assert.equal(Number(a.importe_original), 100);
+        assert.equal(Number(a.pago_sugerido), 10);
+        assert.equal(await totalPagos(id), 10);
+    });
+
+    test('pushAdvance: si falla la generación del plan al crear, no se crea el anticipo', async () => {
+        await assert.rejects(() => pushAdvance(undefined, 'zz-f27 nuevo', 1000000, 1, '2026-11-03', null, null, 'activo', 1, 'mensual', 2), /1200 pagos/);
+        assert.equal(await idDe('zz-f27 nuevo'), undefined);
+    });
+
+    test('handlePaymentDeletion con reparto: si no se puede completar el plan, el pago no se borra', async () => {
+        const a = await crearAnticipo('zz-f27 reparto', 1000000, { sugerido: 1, periodicidad: 'mensual' });
+        const p = await crearPago(a, 100);
+        await assert.rejects(() => handlePaymentDeletion(p, true), /1200 pagos/);
+        assert.equal(await existePago(p), true);
+    });
+
+    test('handlePaymentDeletion: un pago inexistente da 404 y repartir sin periodicidad da 400 sin borrar nada', async () => {
+        await assert.rejects(() => handlePaymentDeletion(999999, false), { status: 404 });
+        const a = await crearAnticipo('zz-f27 sin periodicidad', 500);
+        const p = await crearPago(a, 100);
+        await assert.rejects(() => handlePaymentDeletion(p, true), { status: 400 });
+        assert.equal(await existePago(p), true);
+    });
+
+    test('sustituirPago crea el pago nuevo pendiente y borra el antiguo en una sola operación', async () => {
+        const a = await crearAnticipo('zz-f27 sustituir', 1000);
+        const viejo = await crearPago(a, 100);
+        const r = await sustituirPago(viejo, { importe: 120, fecha: '2026-12-05', tipo: 'regular', descripcion: 'nuevo', cuenta_destino_id: 1 });
+        assert.equal(r.anticipoId, a);
+        assert.equal(await existePago(viejo), false);
+        const [[nuevo]] = await db.query("SELECT importe, estado, DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, descripcion FROM anticipos_pagos WHERE id = ?", [r.pagoNuevoId]);
+        assert.equal(Number(nuevo.importe), 120);
+        assert.equal(nuevo.estado, 'pendiente');
+        assert.equal(nuevo.fecha, '2026-12-05');
+        assert.equal(nuevo.descripcion, 'nuevo');
+        assert.equal(await totalPagos(a), 1);
+    });
+
+    test('sustituirPago: si el pago nuevo no se puede crear, el antiguo se conserva', async () => {
+        const a = await crearAnticipo('zz-f27 cuenta', 1000);
+        const viejo = await crearPago(a, 100);
+        await assert.rejects(() => sustituirPago(viejo, { importe: 120, fecha: '2026-12-05', cuenta_destino_id: 999999 }), { status: 400 });
+        assert.equal(await existePago(viejo), true);
+        assert.equal(await totalPagos(a), 1);
+    });
+
+    test('sustituirPago rechaza datos no válidos con 400 sin cambiar nada', async () => {
+        const a = await crearAnticipo('zz-f27 datos', 1000);
+        const viejo = await crearPago(a, 100);
+        const invalidos = [
+            { importe: 0, fecha: '2026-12-05', cuenta_destino_id: 1 },
+            { importe: 50, fecha: '05/12/2026', cuenta_destino_id: 1 },
+            { importe: 50, fecha: '2026-13-45', cuenta_destino_id: 1 },
+            { importe: 50, fecha: '2026-12-05', tipo: 'otro', cuenta_destino_id: 1 },
+            { importe: 50, fecha: '2026-12-05' }
+        ];
+        for (const datos of invalidos) {
+            await assert.rejects(() => sustituirPago(viejo, datos), { status: 400 });
+        }
+        await assert.rejects(() => sustituirPago(999999, { importe: 50, fecha: '2026-12-05', cuenta_destino_id: 1 }), { status: 404 });
+        assert.equal(await existePago(viejo), true);
+        assert.equal(await totalPagos(a), 1);
+    });
+
+    test('deleteAdvances borra el anticipo y todos sus pagos', async () => {
+        const a = await crearAnticipo('zz-f27 borrar anticipo', 500);
+        await crearPago(a, 100);
+        await crearPago(a, 100);
+        assert.equal(await deleteAdvances([a]), 1);
+        assert.equal(await idDe('zz-f27 borrar anticipo'), undefined);
+        assert.equal(await totalPagos(a), 0);
+    });
+
+    test('pushPago sobre un pago inexistente da 404', async () => {
+        const a = await crearAnticipo('zz-f27 pago inexistente', 500);
+        await assert.rejects(() => pushPago(999999, a, 10, '2026-11-05', 'regular', null, 'pendiente', 1), { status: 404 });
+    });
+
+    test('pushAdvance y pushPago traducen una cuenta inexistente a un 400 con un mensaje claro', async () => {
+        await assert.rejects(() => pushAdvance(undefined, 'zz-f27 cuenta mala', 100, 10, '2026-11-03', null, null, 'activo', 999999, null, 2), { status: 400, message: 'La cuenta indicada no existe' });
+        assert.equal(await idDe('zz-f27 cuenta mala'), undefined);
+        const a = await crearAnticipo('zz-f27 cuenta pago', 500);
+        await assert.rejects(() => pushPago(undefined, a, 10, '2026-11-05', 'regular', null, 'pendiente', 999999), { status: 400, message: 'La cuenta indicada no existe' });
+    });
+
+    test('dos regeneraciones simultáneas del plan no duplican pagos (bloqueo del anticipo)', async () => {
+        const a = await crearAnticipo('zz-f27 concurrente', 300, { sugerido: 100, periodicidad: 'mensual' });
+        await Promise.all([recalculatePaymentPlan(a), recalculatePaymentPlan(a)]);
+        assert.equal(await totalPagos(a), 3);
+    });
+});
+
+describe('DC-40: editar un pago pagado recalcula los pagos pendientes si el plan cuadraba', () => {
+    const crearConPlan = async (concepto) => {
+        await pushAdvance(undefined, concepto, 1000, 100, '2026-11-03', null, null, 'activo', 1, 'mensual', 2);
+        const [[a]] = await db.query('SELECT id FROM anticipos WHERE concepto = ?', [concepto]);
+        const [pagos] = await db.query('SELECT id FROM anticipos_pagos WHERE anticipo_id = ? ORDER BY fecha', [a.id]);
+        return { anticipo: a.id, primero: pagos[0].id };
+    };
+    const editar = (pagoId, anticipoId, importe, estado) => pushPago(pagoId, anticipoId, importe, '2026-11-03', 'regular', null, estado, 1);
+    const sumaPendientes = async (id) => Number((await db.query("SELECT COALESCE(SUM(importe), 0) AS s FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente'", [id]))[0][0].s);
+    const pendienteDe = async (id) => Number((await getAdvances()).find((a) => a.id === id).pendiente);
+
+    beforeEach(async () => {
+        await db.query("DELETE FROM anticipos_pagos WHERE anticipo_id IN (SELECT id FROM anticipos WHERE concepto LIKE 'zz-c40%')");
+        await db.query("DELETE FROM anticipos WHERE concepto LIKE 'zz-c40%'");
+    });
+
+    test('pagado a pagado con otro importe reparte la diferencia entre los pendientes y se puede revertir', async () => {
+        const { anticipo, primero } = await crearConPlan('zz-c40 pagado');
+        await editar(primero, anticipo, 100, 'pagado');
+        assert.equal(await pendienteDe(anticipo), 900);
+        assert.equal(await sumaPendientes(anticipo), 900);
+        await editar(primero, anticipo, 150, 'pagado');
+        assert.equal(await pendienteDe(anticipo), 850);
+        assert.equal(await sumaPendientes(anticipo), 850);
+        await editar(primero, anticipo, 100, 'pagado');
+        assert.equal(await pendienteDe(anticipo), 900);
+        assert.equal(await sumaPendientes(anticipo), 900);
+    });
+
+    test('pasar un pendiente a pagado con otro importe también reparte la diferencia', async () => {
+        const { anticipo, primero } = await crearConPlan('zz-c40 pasar a pagado');
+        await editar(primero, anticipo, 150, 'pagado');
+        assert.equal(await pendienteDe(anticipo), 850);
+        assert.equal(await sumaPendientes(anticipo), 850);
+    });
+
+    test('si el plan no cuadraba antes de la edición, editar un pagado no toca los pendientes', async () => {
+        const { anticipo, primero } = await crearConPlan('zz-c40 descuadrado');
+        await db.query('DELETE FROM anticipos_pagos WHERE anticipo_id = ? ORDER BY fecha DESC LIMIT 3', [anticipo]);
+        await editar(primero, anticipo, 100, 'pagado');
+        assert.equal(await pendienteDe(anticipo), 900);
+        assert.equal(await sumaPendientes(anticipo), 600);
+        await editar(primero, anticipo, 150, 'pagado');
+        assert.equal(await pendienteDe(anticipo), 850);
+        assert.equal(await sumaPendientes(anticipo), 600);
     });
 });
 

@@ -21,8 +21,8 @@ El servicio `AdvService` actúa como intermediario entre la interfaz de usuario 
 |--------|-------------|----------|
 | `getPagos(anticipoId)` | Obtiene todos los pagos de un anticipo específico | `GET /api/anticipos/{anticipoId}/pagos` |
 | `savePago(pago)` | Crea o actualiza un pago | `POST /api/anticipos/pagos` |
-| `deletePago(pagoId)` | Elimina un pago por su ID | `DELETE /api/anticipos/pagos/{pagoId}` |
-| `handlePaymentDeletion(pagoId, redistribuir)` | Elimina un pago; con `redistribuir = true` el servidor completa el plan de pagos con su importe (DC-12) | `POST /api/anticipos/delete-payment` |
+| `replacePago(pagoId, pago)` | Sustituye un pago por uno nuevo en una sola operación atómica (F-27, DC-39) | `POST /api/anticipos/pagos/{pagoId}/sustituir` |
+| `handlePaymentDeletion(pagoId, redistribuir)` | Elimina un pago; con `redistribuir = true` el servidor completa el plan de pagos con su importe (DC-12). Una sola ruta para los dos casos (DC-39) | `DELETE /api/anticipos/pagos/{pagoId}?redistribuir=…` |
 | `recalculatePaymentPlan(anticipoId)` | Recalcula el plan de pagos para un anticipo | `POST /api/anticipos/recalculate-payment-plan` |
 
 ## Uso Común
@@ -55,4 +55,4 @@ async function cargarAnticipos() {
 
 Usa axios directamente, no apiClient: no pasa por sus interceptores (S-07). Construye la URL desde API_BASE_URL (`VITE_API_URL`, con respaldo `http://localhost:3000`). Cada método obtiene token de localStorage o sessionStorage, lo envía en Authorization y devuelve response.data. Registra y relanza el error original, sin convertirlo en un mensaje específico de negocio. No valida permisos en el cliente; estos deben comprobarse en el servidor.
 
-`deleteAdvances(ids)` exige array no vacío y envía `{ advances: ids }`. `handlePaymentDeletion(id, redistribuir = false)` envía `{ pagoId: id, redistribuir }`; `recalculatePaymentPlan(id)` envía `{ anticipoId: id }`. La pantalla usa handlePaymentDeletion para borrar pagos. La ruta DELETE antigua intenta incluir saldoRestante, pero deletePago del backend no retorna ese valor (F-14).
+`deleteAdvances(ids)` exige array no vacío y envía `{ advances: ids }`. `handlePaymentDeletion(id, redistribuir = false)` envía `DELETE …/pagos/{id}` con `redistribuir` como parámetro de consulta y sin cuerpo; `replacePago(id, pago)` envía el pago nuevo a `POST …/pagos/{id}/sustituir`; `recalculatePaymentPlan(id)` envía `{ anticipoId: id }`. La pantalla usa handlePaymentDeletion para borrar pagos y replacePago para sustituirlos (DC-39). La antigua ruta DELETE sin reparto, deletePago y POST /delete-payment se retiraron.

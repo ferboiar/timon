@@ -34,7 +34,7 @@ El botón Guardar exige concepto, cuenta y fecha inicial; pago sugerido y period
 | `fetchPagos(id)` / `fetchAllPagos()` | Cargan uno o todos los conjuntos de pagos; la segunda usa Promise.all |
 | `openNewPago(id)` | Propone el sugerido, la cuenta origen como destino y un mes después del último pago; sin pagos, un mes después de hoy |
 | `editPago(p)` | Copia los datos, normaliza la fecha y guarda el importe original |
-| `savePago()` | Para nuevos pagos limita el importe al importe pendiente no cubierto por los pagos pendientes; al editar envía directamente el formulario |
+| `savePago()` | Para nuevos pagos limita el importe al importe pendiente no cubierto por los pagos pendientes; al editar envía directamente el formulario; si es una sustitución llama a `AdvService.replacePago`, una sola petición atómica (F-27, DC-39) |
 | `deletePago(p)` | Prepara el diálogo, excluye el pago elegido de los pendientes y calcula el aviso de importe no planificado |
 | `confirmDeletePago()` | Borra con `handlePaymentDeletion(id)` sin reparto |
 | `recalculatePayments()` | Borra con `handlePaymentDeletion(id, true)` y muestra los contadores de cuotas ajustadas y nuevas; usa `getApiErrorMessage` en su error |
@@ -42,7 +42,7 @@ El botón Guardar exige concepto, cuenta y fecha inicial; pago sugerido y period
 
 `isPagoFormValid` comprueba fecha y tipo; Guardar exige además cuenta destino, pero no valida importe positivo en ese computed. El botón Recalcular pagos solo se deshabilita si faltan sugerido positivo o periodicidad.
 
-La sustitución excluye el pago antiguo del cálculo de pendientes, guarda el nuevo y después borra el antiguo: son dos peticiones independientes (F-25 corregido en su flujo, atomicidad pendiente). Al editar no se aplica el límite del importe pendiente que se aplica a las altas. El aviso de recálculo solo aparece al editar un pago pendiente, que es el único caso en que el servidor redistribuye; con un pago pagado el aviso dice que cambia el saldo pendiente y que los pagos restantes no se recalculan (DC-38). El desplegable de estado no permite cancelar un pago que estaba pagado.
+La sustitución excluye el pago antiguo del cálculo de pendientes y llama a `AdvService.replacePago`: el servidor crea el pago nuevo y borra el antiguo en una sola transacción (F-25, F-27, DC-39). Los borrados usan `DELETE …/pagos/:id?redistribuir=…` a través de `AdvService.handlePaymentDeletion`. Al editar no se aplica el límite del importe pendiente que se aplica a las altas. El aviso del diálogo depende del caso (DC-40): al editar un pago pendiente anuncia que el resto de pagos pendientes se recalculará; con un pago pagado anuncia que se recalculará en proporción si el plan cuadra (`planCuadrado`, suma de pendientes igual al importe pendiente) y, si no cuadra, que no se recalculará y que hay que ajustarlos a mano o completar el plan. El desplegable de estado no permite cancelar un pago que estaba pagado.
 
 ## Tabla, expansión y exportación
 
@@ -54,10 +54,10 @@ U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'
 
 ## Fallos y límites documentados, no corregidos aquí
 
-- F-14 / DC-38: el importe pendiente se deriva y es coherente; al editar un pago pagado los pagos pendientes no se recalculan (paso c). No se debe prometer conciliación automática del plan pendiente.
+- F-14 / DC-38: el importe pendiente se deriva y es coherente; al editar un pago pagado los pagos pendientes se recalculan solo si el plan cuadraba (DC-40); del paso c siguen pendientes el modo automático o manual por anticipo y la vista previa. No se debe prometer conciliación automática del plan pendiente.
 - F-16: las fechas del formulario se mutan antes de confirmar el éxito, y un reintento tras fallo puede fallar por tipo.
-- F-27: operaciones del backend sin transacción; la sustitución también son dos peticiones.
-- F-28: salvo el error de recalcular, los avisos siguen usando `error.message`.
+- F-27 (resuelto en el servidor, DC-39): las operaciones compuestas del backend son transaccionales y la sustitución es una sola petición.
+- F-28: los avisos de guardar y borrar anticipos y pagos, generar el plan y recalcular muestran el mensaje del servidor con `getApiErrorMessage` (DC-39); el resto siguen usando `error.message`.
 - F-39: botón de borrado múltiple sin diálogo/ejecución completos.
 - F-40: propuestas de fechas manuales incrementan un mes fijo, no la periodicidad del anticipo.
 - F-46: esas propuestas y el plan automático de Anticipos usan setMonth con getters/setters locales; los días 29 a 31 pueden desbordar y arrastrar deriva. La corrección anclada F-12 es de Recibos y no corrige Anticipos.
