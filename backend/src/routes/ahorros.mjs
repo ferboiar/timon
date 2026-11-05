@@ -12,6 +12,7 @@
 import { deleteMovimiento, deleteSavings, getMovimientos, getPeriodicidades, getSavings, pushMovimiento, pushSaving } from '#backend/db/db_utilsSav.mjs';
 import { Router } from 'express';
 import { verifyToken } from '#backend/middleware/auth.mjs';
+import { responderError } from '../utils/errorDeNegocio.mjs';
 
 const router = Router();
 
@@ -30,7 +31,7 @@ router.post('/', verifyToken, async (req, res) => {
         await pushSaving(id, concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, req.user.id);
         res.status(201).json({ message: 'Ahorro insertado o actualizado correctamente' });
     } catch (error) {
-        res.status(400).json({ error: `Error al insertar o actualizar el ahorro: ${error.message}`, details: error.stack });
+        responderError(res, error, 'No se pudo guardar el ahorro.', { contexto: 'ahorros - POST' });
     }
 });
 
@@ -40,8 +41,7 @@ router.delete('/', verifyToken, async (req, res) => {
         await deleteSavings(savings);
         res.status(200).json({ message: 'Ahorro(s) eliminado(s) correctamente' });
     } catch (error) {
-        const status = error.message.startsWith('No se puede eliminar') ? 409 : 500;
-        res.status(status).json({ error: `Error al eliminar el/los ahorro(s): ${error.message}`, details: error.stack });
+        responderError(res, error, 'No se pudieron eliminar los ahorros.', { contexto: 'ahorros - DELETE' });
     }
 });
 
@@ -70,7 +70,7 @@ router.post('/movimientos', verifyToken, async (req, res) => {
         await pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion);
         res.status(201).json({ message: 'Movimiento insertado o actualizado correctamente' });
     } catch (error) {
-        res.status(400).json({ error: `Error al insertar o actualizar el movimiento: ${error.message}`, details: error.stack });
+        responderError(res, error, 'No se pudo guardar el movimiento.', { contexto: 'ahorros - POST movimiento' });
     }
 });
 
@@ -80,7 +80,7 @@ router.delete('/movimientos/:id', verifyToken, async (req, res) => {
         await deleteMovimiento(id);
         res.status(200).json({ message: 'Movimiento eliminado correctamente' });
     } catch (error) {
-        res.status(500).json({ error: `Error al eliminar el movimiento: ${error.message}`, details: error.stack });
+        responderError(res, error, 'No se pudo eliminar el movimiento.', { contexto: 'ahorros - DELETE movimiento' });
     }
 });
 

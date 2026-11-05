@@ -10,6 +10,7 @@
  */
 
 import { getConnection } from './db_connection.mjs';
+import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 
 async function getAccounts() {
     let connection;
@@ -60,7 +61,7 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
             console.log(`Update realizado correctamente en tabla cuentas. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             // Insertar nueva cuenta
-            if (!propietario_id) throw new Error('Falta el propietario para crear la cuenta');
+            if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear la cuenta');
             console.log(`pushAccount - Nueva cuenta: ${nombre} (${tipo}), IBAN: ${iban ?? 'sin IBAN'}`);
             const [insertResult] = await connection.execute('INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id]);
             console.log(`Insert realizado correctamente en tabla cuentas. Filas afectadas: ${insertResult.affectedRows}`);
@@ -77,9 +78,7 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
             } catch (consultaError) {
                 console.error('pushAccount - No se pudo identificar la cuenta con el IBAN duplicado:', consultaError);
             }
-            const duplicado = new Error(mensaje);
-            duplicado.code = 'IBAN_DUPLICADO';
-            throw duplicado;
+            throw new ErrorDeNegocio(mensaje, 409, 'IBAN_DUPLICADO');
         }
         console.error('Error al insertar o actualizar la cuenta:', error);
         throw error;

@@ -11,6 +11,7 @@
 
 import { deleteCategorias, getCategorias, pushCategoria } from '#backend/db/db_utilsCats.mjs';
 import { verifyToken } from '#backend/middleware/auth.mjs';
+import { responderError } from '../utils/errorDeNegocio.mjs';
 import { Router } from 'express';
 
 const router = Router();
@@ -33,7 +34,7 @@ router.post('/', verifyToken, async (req, res) => {
         await pushCategoria(id, nombre, descripcion, req.user.id);
         res.status(201).json({ message: 'Categoría insertada o actualizada correctamente' });
     } catch (error) {
-        res.status(400).json({ error: error.message, details: error.stack });
+        responderError(res, error, 'No se pudo guardar la categoría.', { contexto: 'categorias - POST' });
     }
 });
 
@@ -71,8 +72,7 @@ router.delete('/', verifyToken, async (req, res) => {
         await deleteCategorias(numericCategoriaIds);
         res.status(200).json({ message: 'Categoría(s) eliminada(s) correctamente' });
     } catch (error) {
-        const status = error.message.startsWith('No se puede eliminar') ? 409 : 500;
-        res.status(status).json({ error: `Error al eliminar la(s) categoría(s): ${error.message}`, details: error.stack });
+        responderError(res, error, 'No se pudieron eliminar las categorías.', { contexto: 'categorias - DELETE' });
     }
 });
 

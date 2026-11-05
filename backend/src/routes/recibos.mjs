@@ -12,6 +12,7 @@
 // Importamos Router de express para crear rutas
 import { completarFechasAnio, deleteRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
 import { verifyToken } from '#backend/middleware/auth.mjs';
+import { responderError } from '../utils/errorDeNegocio.mjs';
 import { Router } from 'express';
 
 // Creamos una instancia de Router
@@ -28,11 +29,7 @@ router.get('/', verifyToken, async (req, res) => {
         res.json(recibos);
     } catch (error) {
         // Si hay un error, enviamos una respuesta con el código de estado y el mensaje de error
-        if (error.message.startsWith('Filtro no válido')) {
-            res.status(400).json({ error: error.message });
-        } else {
-            res.status(500).json({ error: 'Error al obtener los recibos' });
-        }
+        responderError(res, error, 'No se pudieron obtener los recibos.', { contexto: 'recibos - GET' });
     }
 });
 
@@ -107,10 +104,7 @@ router.post('/', verifyToken, async (req, res) => {
         console.error('API recibos.mjs: Error al insertar/actualizar recibo:', error);
         console.error('API recibos.mjs: Detalles del error:', error.stack);
         console.log('API recibos.mjs: ==== FIN PETICIÓN POST /recibos (ERROR) ====');
-        res.status(400).json({
-            error: `Error al ${id ? 'actualizar' : 'insertar'} el recibo: ${error.message}`,
-            details: error.stack
-        });
+        responderError(res, error, 'No se pudo guardar el recibo.', { contexto: 'recibos - POST' });
     }
 });
 
@@ -127,10 +121,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
             res.status(404).send({ message: 'Recibo no encontrado' });
         }
     } catch (error) {
-        if (error.status === 409) {
-            return res.status(409).send({ message: error.message });
-        }
-        res.status(500).send({ message: 'Error al eliminar el recibo', error: error.message });
+        responderError(res, error, 'No se pudo eliminar el recibo.', { clave: 'message', contexto: 'recibos - DELETE' });
     }
 });
 
@@ -144,10 +135,7 @@ router.post('/:id/generar-fechas', verifyToken, async (req, res) => {
             creadas
         });
     } catch (error) {
-        if (error.status) {
-            return res.status(error.status).json({ error: error.message });
-        }
-        res.status(500).json({ error: 'Error al generar nuevas fechas', details: error.message });
+        responderError(res, error, 'No se pudieron generar nuevas fechas.', { contexto: 'recibos - generar-fechas' });
     }
 });
 

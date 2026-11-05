@@ -10,6 +10,7 @@
  */
 
 import { getConnection } from './db_connection.mjs';
+import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 
 async function getSavings() {
     let connection;
@@ -40,7 +41,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
 
         if (id) {
             if (Number.isNaN(Number(ahorrado))) {
-                throw new Error('El importe ahorrado no es válido');
+                throw new ErrorDeNegocio('El importe ahorrado no es válido');
             }
 
             // Actualizar ahorro existente: ahorrado solo se puede cambiar a mano mientras no tenga movimientos
@@ -49,7 +50,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
 
             const [actual] = await connection.execute('SELECT ahorrado FROM ahorros WHERE id = ? FOR UPDATE', [id]);
             if (actual.length === 0) {
-                throw new Error(`Ahorro con ID ${id} no encontrado`);
+                throw new ErrorDeNegocio(`Ahorro con ID ${id} no encontrado`, 404);
             }
             const [conteo] = await connection.execute('SELECT COUNT(*) AS n FROM ahorros_movimientos WHERE ahorro_id = ?', [id]);
             const numMovimientos = Number(conteo[0].n);
@@ -58,7 +59,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
 
             if (numMovimientos > 0 && cambiaAhorrado) {
                 console.log(`pushSaving - Rechazado: el ahorro ${id} tiene ${numMovimientos} movimientos y no se puede modificar ahorrado (actual ${ahorradoActual}, recibido ${ahorrado})`);
-                throw new Error('No se puede modificar el importe ahorrado de un ahorro con movimientos; añade un movimiento positivo o negativo');
+                throw new ErrorDeNegocio('No se puede modificar el importe ahorrado de un ahorro con movimientos; añade un movimiento positivo o negativo', 409);
             }
             if (cambiaAhorrado) {
                 console.log(`pushSaving - Ahorro ${id} sin movimientos: valor inicial de ahorrado ${ahorradoActual} -> ${ahorrado}`);
@@ -82,7 +83,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
             console.log(`pushSaving - Transacción confirmada para el ahorro ${id}`);
         } else {
             // Insertar nuevo ahorro
-            if (!propietario_id) throw new Error('Falta el propietario para crear el ahorro');
+            if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear el ahorro');
             console.log(`pushSaving - Nuevo ahorro: ${concepto}, valor inicial de ahorrado ${ahorrado}`);
             const [insertResult] = await connection.execute('INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
                 concepto,
@@ -127,7 +128,7 @@ async function deleteSavings(savings) {
         console.error('Error al eliminar los ahorros:', error);
         if (error.code === 'ER_ROW_IS_REFERENCED_2') {
             console.log('deleteSavings - Rechazado: el ahorro tiene registros asociados: ' + String(savings));
-            throw new Error('No se puede eliminar el ahorro porque tiene registros asociados');
+            throw new ErrorDeNegocio('No se puede eliminar el ahorro porque tiene registros asociados', 409);
         }
         throw error;
     } finally {
@@ -172,10 +173,10 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
         connection = await getConnection();
 
         if (!fecha || !tipo) {
-            throw new Error('Faltan campos obligatorios: fecha y tipo');
+            throw new ErrorDeNegocio('Faltan campos obligatorios: fecha y tipo');
         }
         if (importe === undefined || importe === null || Number.isNaN(Number(importe))) {
-            throw new Error('El importe del movimiento no es válido');
+            throw new ErrorDeNegocio('El importe del movimiento no es válido');
         }
 
         // El movimiento y el ajuste de ahorrado se guardan juntos o no se guarda nada
@@ -189,7 +190,7 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
             // Bloquear el movimiento y tomar de la base de datos su ahorro y su importe anterior
             const [anterior] = await connection.execute('SELECT ahorro_id, importe FROM ahorros_movimientos WHERE id = ? FOR UPDATE', [id]);
             if (anterior.length === 0) {
-                throw new Error('Movimiento no encontrado');
+                throw new ErrorDeNegocio('Movimiento no encontrado', 404);
             }
             ahorroId = anterior[0].ahorro_id;
             const importeAnterior = anterior[0].importe;
@@ -207,7 +208,7 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
         // Actualizar ahorrado solo con la diferencia que aporta este movimiento
         const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) + ? WHERE id = ?', [diferencia, ahorroId]);
         if (updateAhorroResult.affectedRows === 0) {
-            throw new Error(`Ahorro con ID ${ahorroId} no encontrado`);
+            throw new ErrorDeNegocio(`Ahorro con ID ${ahorroId} no encontrado`, 404);
         }
         console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateAhorroResult.affectedRows} (ahorrado ${diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)})`);
 
@@ -241,7 +242,7 @@ async function deleteMovimiento(id) {
         // Obtener el importe del movimiento antes de eliminarlo
         const [movimiento] = await connection.execute('SELECT ahorro_id, importe FROM ahorros_movimientos WHERE id = ? FOR UPDATE', [id]);
         if (movimiento.length === 0) {
-            throw new Error('Movimiento no encontrado');
+            throw new ErrorDeNegocio('Movimiento no encontrado', 404);
         }
 
         const { ahorro_id, importe } = movimiento[0];
