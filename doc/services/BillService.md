@@ -11,7 +11,6 @@ El servicio `BillService` actúa como intermediario entre la interfaz de usuario
 | Método | Descripción | Endpoint |
 |--------|-------------|----------|
 | `getBills()` | Obtiene todos los recibos disponibles | `GET /api/recibos` |
-| `getBillById(id)` | Obtiene un recibo específico por su ID. El endpoint no existe en el servidor (F-20) | `GET /api/recibos/:id` |
 | `saveBill(bill)` | Crea o actualiza un recibo; el servidor guarda el concepto en minúsculas (DC-31) | `POST /api/recibos` |
 | `deleteBill(id, fecha, periodicidad, permitirPagados = false)` | Elimina un recibo o una fecha de cargo específica. Con `permitirPagados` envía `permitirPagados=1`, que el servidor solo acepta de un administrador (DC-21). Si el servidor responde 409 (cargos pagados o recibo con sucesor), lanza un error con el mensaje del servidor | `DELETE /api/recibos/:id` |
 | `generateBillDates(id)` | Añade a un recibo las fechas generables que le faltan (botón «Generar nuevas fechas», DC-22) | `POST /api/recibos/:id/generar-fechas` |

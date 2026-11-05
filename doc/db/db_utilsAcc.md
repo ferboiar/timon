@@ -10,7 +10,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 - Soporte para múltiples tipos de cuentas (corriente, ahorro, efectivo, etc.)
 - Normalización del IBAN (trim y vacío a NULL) y detección de duplicados por índice único; no valida dígitos de control ni formato
 - Control de estado de cuentas (activas e inactivas)
-- El saldo (`saldo_actual`) se edita a mano; ninguna operación lo actualiza (hallazgo F-21)
+- El saldo (`saldo_actual`) se edita a mano; ninguna operación lo actualiza (F-21, DC-43)
 
 ## Estructura de Datos
 

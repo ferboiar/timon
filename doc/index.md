@@ -28,7 +28,7 @@ La plataforma está organizada en seis sistemas interconectados que trabajan con
 
 4. **Sistema de Categorías**: Proporciona una estructura para clasificar los movimientos financieros, permitiendo un análisis detallado de gastos e ingresos según su naturaleza.
 
-5. **Sistema de Cuentas**: administra las cuentas y un saldo introducido manualmente; no registra automáticamente el efecto de todos los módulos (F-21).
+5. **Sistema de Cuentas**: administra las cuentas y un saldo introducido manualmente; no registra automáticamente el efecto de todos los módulos (F-21, DC-43).
 
 6. **Sistema de Usuarios y Autenticación**: Proporciona control de acceso y seguridad para la aplicación, incluyendo gestión de usuarios, autenticación, autorización basada en roles y personalización de la interfaz.
 
