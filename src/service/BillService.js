@@ -20,20 +20,6 @@ export class BillService {
         }
     }
 
-    // Obtener un recibo por ID
-    static async getBillById(id) {
-        try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/${id}`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
-            });
-            return response.data;
-        } catch (error) {
-            console.error(`Error al obtener el recibo con ID ${id}:`, error);
-            throw error;
-        }
-    }
-
     // Guardar un recibo (crear o actualizar)
     static async saveBill(bill) {
         try {

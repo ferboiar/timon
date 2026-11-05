@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-05 | F-20, F-21, DC-43 | [Retirada de `getBillById` y decisión del saldo manual](./2026-11-05_F-20_F-21_retirada-getbillbyid-dc43.md) |
 | 2026-11-05 | D-25 | [Sincronización del seguimiento tras el PR #58 y registro de D-23](./2026-11-05_D-25_sincronizacion-post-pr58.md) |
 | 2026-11-04 | F-19, D-24 | [Exportación CSV segura y sincronización del seguimiento](./2026-11-04_F-19_D-24_csv-seguro.md) |
 | 2026-11-04 | F-16 | [Payloads de fechas inmutables en Ahorros y Anticipos](./2026-11-04_F-16_payloads-fechas.md) |
