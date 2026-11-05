@@ -142,6 +142,11 @@ TEST_DB_HOST=mariadb01 TEST_DB_PORT=3306 TEST_DB_USER=timon_test TEST_DB_NAME=co
 Entrega el comando concreto de la opción confirmada.
 Comprueba host, puerto, usuario y base; no heredes variables accidentalmente.
 
+Antes de ejecutar `npm run test:backend`, lee `backend/test/README.md` (opción A) y el relevo.
+Nunca lances la suite sin TEST_DB_HOST, TEST_DB_USER y TEST_DB_PASSWORD definidos: los valores por defecto (`mariadb-test`, `root`) son los de la opción B y dan ENOTFOUND.
+No leas `.db_connection` para obtener credenciales de pruebas: son las de `conta_hogar`, no las de `conta_hogar_test`.
+No pidas ni escribas la contraseña. Si TEST_DB_PASSWORD no está definida en tu entorno, no ejecutes la suite: entrega el comando al usuario y espera el resumen (`# tests`, `# pass`, `# fail`, `# cancelled`).
+
 Pruebas destructivas solo en entorno autorizado y bases *_test, nunca conta_hogar. El sufijo no sustituye comprobar el destino.
 
 Contraseñas en terminal, no en chat ni commits.
@@ -192,7 +197,7 @@ No quedan como órdenes permanentes de reorganización automática.
 
 MENSAJE DE ARRANQUE
 
-“Retomamos ferboiar/timon. Lee instruccion-persistente.md y todas sus partes, el relevo, TODO, el registro (entrada y todas sus partes, en orden) y el informe pertinente. Comprueba primero el acceso. Si no puedes leer el contexto crítico completo, dímelo y no modifiques el proyecto: aportaré lo que falte. Mientras tanto: nada es verificado sin evidencia; sin secretos en el chat; no preparar .db_connection ni su copia; no git add -A, reset --hard ni push forzado; no escribas en el repositorio por conectores salvo que te lo pida expresamente. Reconstruye la fase actual y continúa con el siguiente paso acordado.”
+“Retomamos ferboiar/timon. Lee instruccion-persistente.md y todas sus partes, el relevo, TODO, el registro (entrada y todas sus partes, en orden), el informe pertinente y `backend/test/README.md`. Comprueba primero el acceso. Si no puedes leer el contexto crítico completo, dímelo y no modifiques el proyecto: aportaré lo que falte. Mientras tanto: nada es verificado sin evidencia; sin secretos en el chat; no preparar .db_connection ni su copia; no git add -A, reset --hard ni push forzado; no escribas en el repositorio por conectores salvo que te lo pida expresamente. Reconstruye la fase actual y continúa con el siguiente paso acordado.”
 
 13. RESPUESTAS Y ETIQUETAS
 
