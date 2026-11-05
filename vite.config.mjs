@@ -40,6 +40,9 @@ export default defineConfig({
     },
     assetsInclude: ['**/*.md'], // Incluir archivos MD como recursos
     server: {
+        watch: {
+            ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/coverage/**', '**/backend/**', '**/.devcontainer/**']
+        },
         fs: {
             // Permitir servir archivos desde fuera del directorio raíz
             allow: ['..', '/workspaces/timon/doc'] // Explícitamente permitir la carpeta doc

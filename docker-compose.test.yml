@@ -15,8 +15,11 @@ services:
       - --default-time-zone=+00:00
     environment:
       MARIADB_ROOT_PASSWORD: test_root_pw
-    tmpfs:
-      - /var/lib/mysql
+    volumes:
+      - type: tmpfs
+        target: /var/lib/mysql
+        tmpfs:
+          size: 536870912
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s

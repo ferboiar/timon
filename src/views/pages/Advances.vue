@@ -2,6 +2,7 @@
 import { AccService } from '@/service/AccService'; // Importar AccService
 import { AdvService } from '@/service/AdvService';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { construirCsv } from '@/utils/csv';
 import { fechaIsoDeCalendario } from '@/utils/fechasFormulario';
 import { cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
 import { sumarMesAnclado } from '@/utils/fechasAnticipos';
@@ -550,26 +551,26 @@ onMounted(async () => {
     await fetchCuentas(); // Cargar las cuentas al montar el componente
 });
 
-const exportCSV = () => {
-    const csvContent = [
-        ['Concepto', 'Descripción', 'Importe', 'Pendiente', 'Fecha Inicio', 'Fecha Fin Prevista', 'Estado', 'Cuenta Origen', 'Periodicidad', 'Pago Sugerido'],
-        ...advances.value.map((adv) => [
-            adv.concepto,
-            adv.descripcion || '',
-            parseFloat(adv.importe_original).toFixed(2).replace('.', ','),
-            parseFloat(adv.pendiente).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
-            formatDate(adv.fecha_inicio),
-            formatDate(adv.fecha_fin_prevista),
-            adv.estado,
-            cuentas.value.find((cuenta) => cuenta.value === adv.cuenta_origen_id)?.label || '',
-            adv.periodicidad || '',
-            parseFloat(adv.pago_sugerido).toFixed(2).replace('.', ',') // Convertir a número con 2 decimales y reemplazar el punto por una coma
-        ])
-    ]
-        .map((row) => row.map((field) => `"${field}"`).join(';')) // Separador de campos: punto y coma
-        .join('\n');
+// F-19: exportación con escape CSV y neutralización de fórmulas (src/utils/csv.js)
+const COLUMNAS_CSV = ['Concepto', 'Descripción', 'Importe', 'Pendiente', 'Fecha Inicio', 'Fecha Fin Prevista', 'Estado', 'Cuenta Origen', 'Periodicidad', 'Pago Sugerido'];
 
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+const exportCSV = () => {
+    const filas = advances.value.map((adv) => [
+        adv.concepto,
+        adv.descripcion || '',
+        parseFloat(adv.importe_original).toFixed(2).replace('.', ','),
+        parseFloat(adv.pendiente).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
+        formatDate(adv.fecha_inicio),
+        formatDate(adv.fecha_fin_prevista),
+        adv.estado,
+        cuentas.value.find((cuenta) => cuenta.value === adv.cuenta_origen_id)?.label || '',
+        adv.periodicidad || '',
+        parseFloat(adv.pago_sugerido).toFixed(2).replace('.', ',') // Convertir a número con 2 decimales y reemplazar el punto por una coma
+    ]);
+
+    const csvContent = construirCsv(COLUMNAS_CSV, filas);
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);

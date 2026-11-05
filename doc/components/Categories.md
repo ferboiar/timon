@@ -87,7 +87,7 @@ El template está estructurado en varias secciones:
 
 - **Ordenación**: La tabla permite ordenar por nombre y descripción
 - **Capitalización**: El nombre de cada categoría se muestra con la primera letra en mayúscula; en la base de datos se guarda en minúsculas (DC-31)
-- **Exportación**: Incluye un botón para exportar los datos de categorías
+- **Exportación**: Incluye un botón para exportar las categorías a `categories.csv` con la utilidad común ([utils/csv](../utils/csv.md)): BOM, separador `;`, escape de `;`, comillas y saltos de línea, y neutralización de fórmulas (F-19)
 
 ## Validaciones
 

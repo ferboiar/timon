@@ -184,6 +184,6 @@ Antes de enviar, `guardarRecibo()` comprueba también que todas las fechas sean 
 - copiarExpansion y restaurarExpansion conservan las filas abiertas al recargar; el cambio de año las contrae.
 - expandir, contraer, toggleExpandCollapseAll y checkGlobalExpandState controlan la expansión global y por tabla.
 - toggleComment, saveComment y hideComment gestionan las ventanas emergentes de comentarios.
-- exportCSV admite una periodicidad o all; el botón superior exporta todas a allBills.csv. Usa el importe del cargo si existe, BOM UTF-8, separador punto y coma y coma decimal, sin escape completo (F-19).
+- exportCSV admite una periodicidad o all; el botón superior exporta todas a allBills.csv. Usa el importe del cargo si existe, BOM UTF-8, separador punto y coma y coma decimal. Desde F-19 construye el fichero con la utilidad común ([utils/csv](../utils/csv.md)): escape de `;`, comillas y saltos de línea, neutralización de fórmulas y `null`/`undefined` como campo vacío.
 - El botón Actualizar fechas y el botón Cargar están comentados en la plantilla.
 - El diálogo de borrado usa bill.name en vez de concepto (F-31).

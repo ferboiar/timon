@@ -13,7 +13,7 @@
         "dev:frontend": "vite",
         "build:frontend": "vite build",
         "preview:frontend": "vite preview",
-        "lint:frontend": "eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+        "lint:frontend": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
         "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
         "nas": "concurrently \"npm run dev:backend\" \"npm run dev:frontend -- --host\"",
         "build": "npm run build:frontend",
