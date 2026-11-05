@@ -1,6 +1,15 @@
 import { API_BASE_URL } from '@/config/api';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const API_URL = `${API_BASE_URL}/api/db-config`;
+
+/**
+ * Mensaje de error de una respuesta `fetch` no correcta.
+ * El texto por defecto viaja en el hueco del mensaje del propio error.
+ */
+function mensajeDeRespuestaError(cuerpo, porDefecto) {
+    return getApiErrorMessage({ message: porDefecto, response: { data: cuerpo } });
+}
 
 export class DbConfigService {
     /**
@@ -16,7 +25,7 @@ export class DbConfigService {
         });
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al obtener la configuración de la base de datos');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al obtener la configuración de la base de datos'));
         }
         return await response.json();
     }
@@ -36,7 +45,7 @@ export class DbConfigService {
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
                 const error = await response.json();
-                throw new Error(error.message || 'Error al obtener la contraseña');
+                throw new Error(mensajeDeRespuestaError(error, 'Error al obtener la contraseña'));
             } else {
                 const errorText = await response.text();
                 throw new Error(`Server returned non-JSON response: ${errorText}`);
@@ -62,7 +71,7 @@ export class DbConfigService {
         });
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al probar la conexión a la base de datos');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al probar la conexión a la base de datos'));
         }
         return await response.json();
     }
@@ -84,7 +93,7 @@ export class DbConfigService {
         });
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al guardar la configuración de la base de datos');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al guardar la configuración de la base de datos'));
         }
         return await response.json();
     }
@@ -103,7 +112,7 @@ export class DbConfigService {
         });
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al restaurar la configuración de la base de datos');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al restaurar la configuración de la base de datos'));
         }
         return await response.json();
     }

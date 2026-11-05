@@ -41,7 +41,7 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
         const [mismoNombre] = await connection.execute('SELECT id FROM categorias WHERE nombre = ?', [nombre]);
         if (mismoNombre.some((fila) => Number(fila.id) !== Number(id))) {
             console.log('pushCategoria - Rechazado: ya existe otra categoría con el nombre ' + nombre);
-            throw new Error('Ya existe otra categoría con el nombre ' + nombre);
+            throw new Error(`Ya existe otra categoría con el nombre «${nombre}».`);
         }
 
         // F-09: con ID se edita esa categoría (también para renombrarla); sin ID se crea una nueva

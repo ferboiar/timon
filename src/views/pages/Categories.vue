@@ -34,7 +34,7 @@ const fetchCategories = async () => {
             nombre: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1)
         }));
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar las categorias: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar las categorias: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al actualizar las categorias:', error);
     }
 };

@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/config/api';
+import { getApiErrorMessage } from '@/utils/apiError';
 import axios from 'axios';
 
 // Ajustes del sistema: zona horaria, creación automática de recibos y generación manual del año (DC-24, DC-25)
@@ -10,8 +11,13 @@ function cabeceras() {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * Error con el mensaje del servidor o, si no lo envía, el texto por defecto.
+ * El texto por defecto viaja en el hueco del mensaje del propio error para que
+ * no se muestre el mensaje genérico de axios.
+ */
 function errorDe(error, mensajePorDefecto) {
-    return new Error(error.response?.data?.error || mensajePorDefecto);
+    return new Error(getApiErrorMessage({ message: mensajePorDefecto, response: error?.response }));
 }
 
 export class AjustesService {

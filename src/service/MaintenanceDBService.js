@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/config/api';
+import { getApiErrorMessage } from '@/utils/apiError';
 import axios from 'axios';
 
 const API_URL = `${API_BASE_URL}/api/db`;
@@ -30,8 +31,8 @@ export class MtoDBService {
             return response.data;
         } catch (error) {
             console.error('Error al restaurar la base de datos:', error);
-            // Propagar el mensaje de error del servidor si está disponible
-            throw error.response?.data || error;
+            // Se propaga un Error con el mensaje del servidor, nunca el objeto de la respuesta
+            throw new Error(getApiErrorMessage(error));
         }
     }
 }

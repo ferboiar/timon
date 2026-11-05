@@ -51,7 +51,7 @@ const fetchSavings = async () => {
             fecha_objetivo: sav.fecha_objetivo ? new Date(sav.fecha_objetivo) : null // Convertir fecha_objetivo a objeto Date
         }));
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los ahorros: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los ahorros: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al actualizar los ahorros:', error);
     }
 };
@@ -67,7 +67,7 @@ const fetchPeriodicidades = async () => {
             }))
         ];
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las periodicidades: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las periodicidades: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al obtener las periodicidades:', error);
     }
 };
@@ -139,7 +139,7 @@ async function saveSaving() {
         fetchSavings();
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el ahorro: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el ahorro: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al guardar el ahorro:', error);
     }
 }
@@ -212,7 +212,7 @@ const fetchMovimientos = async (ahorroId) => {
         const data = await SavService.getMovimientos(ahorroId);
         movimientos.value[ahorroId] = data;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los movimientos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los movimientos: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al obtener los movimientos:', error);
         movimientos.value[ahorroId] = [];
     }
@@ -227,7 +227,7 @@ const fetchAllMovimientos = async () => {
             movimientos.value[id] = movimientosResults[index];
         });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los movimientos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener los movimientos: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al obtener los movimientos:', error);
     }
 };
@@ -310,7 +310,7 @@ const saveMovimiento = async () => {
         fetchAllMovimientos();
         savingMovimientoDialog.value = false;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el movimiento: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el movimiento: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al guardar el movimiento:', error);
     }
 };
@@ -322,7 +322,7 @@ const deleteMovimiento = async (mov) => {
         fetchSavings();
         fetchAllMovimientos();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el movimiento: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el movimiento: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al eliminar el movimiento:', error);
     }
 };
