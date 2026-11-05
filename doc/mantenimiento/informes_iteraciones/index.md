@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-05 | D-25 | [Sincronización del seguimiento tras el PR #58 y registro de D-23](./2026-11-05_D-25_sincronizacion-post-pr58.md) |
 | 2026-11-04 | F-19, D-24 | [Exportación CSV segura y sincronización del seguimiento](./2026-11-04_F-19_D-24_csv-seguro.md) |
 | 2026-11-04 | F-16 | [Payloads de fechas inmutables en Ahorros y Anticipos](./2026-11-04_F-16_payloads-fechas.md) |
 | 2026-11-04 | D-23, DC-42 | [Cierre del paso c de DC-38 y de F-14 en Anticipos](./2026-11-04_D-23_DC-42_cierre-paso-c-anticipos.md) |
