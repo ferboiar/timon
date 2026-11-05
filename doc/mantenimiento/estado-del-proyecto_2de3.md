@@ -47,7 +47,7 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #57 | F-16 | Payloads de fechas inmutables en Ahorros y Anticipos |
 | #58 | F-19, D-24 | Exportación CSV segura y sincronización del seguimiento |
 | #59 | D-25 | Sincronización del seguimiento tras el PR #58 y registro de D-23 |
-| PR propio | F-20, F-21 | Retirada de `getBillById` y decisión DC-43 del saldo manual |
+| #60 | F-20, F-21 | Retirada de `getBillById` y decisión DC-43 del saldo manual |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
