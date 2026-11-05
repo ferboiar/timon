@@ -54,10 +54,10 @@ La API implementa las siguientes validaciones:
 
 ## Manejo de Errores
 
-Todas las rutas implementan manejo de errores que:
-1. Capturan excepciones que puedan ocurrir durante el procesamiento
-2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 409, 500)
-3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
+Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
+
+1. **Error de negocio** (`ErrorDeNegocio`): se devuelve su mensaje con su código HTTP. Un nombre repetido responde 400 con «Ya existe otra categoría con el nombre «nombre».»; una categoría en uso responde 409.
+2. **Error técnico**: se responde **500** con un texto genérico («No se pudo guardar la categoría.», «No se pudieron eliminar las categorías.»), sin detalle interno. El detalle queda en el log del servidor.
 
 ## Dependencias
 

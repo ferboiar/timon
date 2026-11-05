@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-05 | F-47, F-48 | [Errores de negocio y técnicos en el backend](./2026-11-05_F-47_errorDeNegocio.md) |
 | 2026-11-05 | F-28, D-26 | [Mensajes del servidor en servicios y pantallas](./2026-11-05_F-28_mensajes-servidor.md) |
 | 2026-11-05 | F-20, F-21, DC-43 | [Retirada de `getBillById` y decisión del saldo manual](./2026-11-05_F-20_F-21_retirada-getbillbyid-dc43.md) |
 | 2026-11-05 | D-25 | [Sincronización del seguimiento tras el PR #58 y registro de D-23](./2026-11-05_D-25_sincronizacion-post-pr58.md) |

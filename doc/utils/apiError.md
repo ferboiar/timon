@@ -40,7 +40,7 @@ getApiErrorMessage({ message: 'No se pudo guardar la configuración.', response:
 
 ## Límite actual
 
-Algunas ramas del backend siguen devolviendo el error del motor de base de datos con un prefijo técnico (`Error al insertar o actualizar …`) y sin distinguir si es un mensaje de negocio o un fallo técnico. En esos casos el aviso puede mostrar texto del motor y duplicar el prefijo de la pantalla. La normalización de errores técnicos y de negocio en las rutas es **F-47**, pendiente de una iteración propia.
+F-47 normaliza cuentas, ahorros, categorías y recibos: esas rutas devuelven el mensaje de negocio o un texto genérico seguro, sin prefijos técnicos ni detalle interno. El resto de rutas (usuarios, conexión, mantenimiento, anticipos y ajustes) queda para **F-48**; hasta entonces pueden devolver el mensaje del servidor tal cual.
 
 ## Referencias
 

@@ -49,10 +49,10 @@ Devuelve un array con los tipos de cuentas definidos en el esquema de la base de
 
 ## Manejo de Errores
 
-Todas las rutas implementan manejo de errores que:
-1. Capturan excepciones que puedan ocurrir durante el procesamiento
-2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 409, 500)
-3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
+Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
+
+1. **Error de negocio** (`ErrorDeNegocio` o una clase heredada): se devuelve su mensaje con el código HTTP que lleva (400, 404 o 409). El IBAN duplicado responde **409** con el mensaje «El IBAN … ya está asignado a la cuenta «…»» y `codigo: "IBAN_DUPLICADO"`.
+2. **Error técnico**: se responde **500** con un texto genérico («No se pudo guardar la cuenta.», «No se pudieron eliminar las cuentas.»), sin detalle interno ni traza. El detalle completo queda en el log del servidor.
 
 ## Dependencias
 

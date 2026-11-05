@@ -76,10 +76,10 @@ Las operaciones sobre ahorros y movimientos escriben sus pasos en el log del bac
 
 ## Manejo de Errores
 
-Todas las rutas implementan manejo de errores que:
-1. Capturan excepciones que puedan ocurrir durante el procesamiento
-2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 409, 500)
-3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
+Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
+
+1. **Error de negocio** (`ErrorDeNegocio` o una clase heredada): se devuelve su mensaje con su código HTTP (400, 404 o 409). Un ahorro con movimientos no admite cambiar `ahorrado` (409) y un ahorro o movimiento en uso no se puede borrar (409).
+2. **Error técnico**: se responde **500** con un texto genérico («No se pudo guardar el ahorro.», «No se pudieron eliminar los ahorros.», «No se pudo guardar el movimiento.», «No se pudo eliminar el movimiento.»), sin detalle interno. El detalle queda en el log del servidor.
 
 ## Dependencias
 

@@ -11,6 +11,7 @@
 
 import { hoyEnZona } from './db_ajustes.mjs';
 import { getConnection } from './db_connection.mjs';
+import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 
 const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 'estado', 'activo'];
 
@@ -44,7 +45,7 @@ async function getRecibos(filters) {
         // Validar filtros antes de construir la consulta
         for (const key of Object.keys(filters)) {
             if (!validFilters.includes(key) && key !== 'fecha') {
-                throw new Error(`API. Filtro no válido: ${key}. Filtros válidos: ${validFilters.join(', ')}`);
+                throw new ErrorDeNegocio(`Filtro no válido: ${key}. Filtros válidos: ${validFilters.join(', ')}`);
             }
         }
 
@@ -121,11 +122,11 @@ async function getValidValues(column, table = 'recibos') {
 function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
     const mesesPorPeriodo = { mensual: 1, bimestral: 2, trimestral: 3, anual: 12 }[periodicidad];
     if (!mesesPorPeriodo) {
-        throw new Error('API. Periodicidad no válida: ' + periodicidad + '.');
+        throw new ErrorDeNegocio('Periodicidad no válida: ' + periodicidad + '.');
     }
     const [anio, mes, dia] = String(fechaInicial).split('-').map(Number);
     if (![anio, mes, dia].every(Number.isFinite)) {
-        throw new Error('API. La fecha inicial debe estar en el formato YYYY-MM-DD.');
+        throw new ErrorDeNegocio('La fecha inicial debe estar en el formato YYYY-MM-DD.');
     }
     const dosCifras = (n) => String(n).padStart(2, '0');
     const fechas = [];
@@ -152,7 +153,7 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
 function generarFechasDelAnio(fechaInicial, periodicidad) {
     const mesesPorPeriodo = { mensual: 1, bimestral: 2, trimestral: 3, anual: 12 }[periodicidad];
     if (!mesesPorPeriodo) {
-        throw new Error(`API. Periodicidad no válida: ${periodicidad}.`);
+        throw new ErrorDeNegocio(`Periodicidad no válida: ${periodicidad}.`);
     }
     const [anio, mes, dia] = String(fechaInicial).split('-').map(Number);
     const dosCifras = (n) => String(n).padStart(2, '0');
@@ -182,7 +183,7 @@ function importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo) {
     if (indicado !== undefined && indicado !== null && indicado !== '') {
         const importeIndicado = Number(indicado);
         if (!Number.isFinite(importeIndicado) || importeIndicado < 0) {
-            throw new Error('API. El importe del cargo debe ser un número positivo.');
+            throw new ErrorDeNegocio('El importe del cargo debe ser un número positivo.');
         }
         // Pagado: el importe queda fijado. Pendiente: solo se guarda si difiere del importe del recibo
         if (estado === 'cargado') return importeIndicado;
@@ -245,26 +246,26 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
     if (!cuenta_id) faltantes.push('cuenta');
     if (faltantes.length > 0) {
         console.log('API db_utils.mjs: ERROR - Faltan parámetros obligatorios: ' + faltantes.join(', '));
-        throw new Error('Faltan campos obligatorios: ' + faltantes.join(', ') + '.');
+        throw new ErrorDeNegocio('Faltan campos obligatorios: ' + faltantes.join(', ') + '.');
     }
 
     // Manejar validaciones específicas según el modo de fechas
     if (modoFechas === 'auto') {
         if (!fecha_inicial) {
             console.log('API db_utils.mjs: ERROR - En modo automático falta fecha_inicial');
-            throw new Error('API. En modo automático, fecha_inicial es obligatorio.');
+            throw new ErrorDeNegocio('En modo automático, fecha_inicial es obligatorio.');
         }
     } else if (modoFechas === 'manual') {
         if (!cargo || cargo.length === 0) {
             console.log('API db_utils.mjs: ERROR - En modo manual cargo está vacío');
-            throw new Error('API. En modo manual, cargo es obligatorio y debe contener al menos un elemento.');
+            throw new ErrorDeNegocio('En modo manual, cargo es obligatorio y debe contener al menos un elemento.');
         }
     } else {
         // Modo no especificado, usar validación tradicional
         // Si es un nuevo recibo y no se proporcionan fechas, verificar que se proporcione fecha_inicial
         if (!id && (!cargo || cargo.length === 0) && !fecha_inicial) {
             console.log('API db_utils.mjs: ERROR - Nuevo recibo sin cargo ni fecha_inicial');
-            throw new Error('API. Para un nuevo recibo, se debe proporcionar cargo o fecha_inicial.');
+            throw new ErrorDeNegocio('Para un nuevo recibo, se debe proporcionar cargo o fecha_inicial.');
         }
     }
 
@@ -288,11 +289,11 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
             return;
         }
         console.log(`pushRecibo - Recibo ${id ?? 'nuevo'}: fechas fuera del año ${anio}: ${fuera.join(', ')}`);
-        throw new Error(`API. Todas las fechas de un recibo deben ser del año ${anio} (DC-14). Fuera de ese año: ${fuera.join(', ')}. Para otro año se usa otro recibo.`);
+        throw new ErrorDeNegocio(`Todas las fechas de un recibo deben ser del año ${anio} (DC-14). Fuera de ese año: ${fuera.join(', ')}. Para otro año se usa otro recibo.`);
     };
 
     if (typeof concepto !== 'string' || concepto.length > 30) {
-        throw new Error('API. El concepto debe ser una cadena de texto de máximo 30 caracteres.');
+        throw new ErrorDeNegocio('El concepto debe ser una cadena de texto de máximo 30 caracteres.');
     }
 
     // DC-31/F-44: el concepto se guarda en minúsculas; la pantalla lo capitaliza al mostrarlo
@@ -302,18 +303,18 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
         console.log(`pushRecibo - Concepto normalizado a minúsculas: ${JSON.stringify(conceptoOriginal)} -> ${JSON.stringify(concepto)}`);
     }
     if (!validPeriodicidades.includes(periodicidad)) {
-        throw new Error(`API. La periodicidad debe ser una de las siguientes: ${validPeriodicidades.join(', ')}.`);
+        throw new ErrorDeNegocio(`La periodicidad debe ser una de las siguientes: ${validPeriodicidades.join(', ')}.`);
     }
     if (typeof importe !== 'number' || importe < 0) {
-        throw new Error('API. El importe debe ser un número positivo.');
+        throw new ErrorDeNegocio('El importe debe ser un número positivo.');
     }
     if (!validCategorias.includes(categoria)) {
-        throw new Error(`API. La categoría debe ser una de las siguientes: ${validCategorias.join(', ')}.`);
+        throw new ErrorDeNegocio(`La categoría debe ser una de las siguientes: ${validCategorias.join(', ')}.`);
     }
 
     // Si se proporcionó fecha_inicial, validarla
     if (fecha_inicial && !dateRegex.test(fecha_inicial)) {
-        throw new Error('API. La fecha inicial debe estar en el formato YYYY-MM-DD.');
+        throw new ErrorDeNegocio('La fecha inicial debe estar en el formato YYYY-MM-DD.');
     }
 
     // Determinar si necesitamos generar fechas automáticamente
@@ -345,11 +346,11 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
         for (const c of fechasCargo) {
             if (c.fecha) {
                 if (!dateRegex.test(new Date(c.fecha).toISOString().split('T')[0])) {
-                    throw new Error('API. La fecha debe estar en el formato YYYY-MM-DD.');
+                    throw new ErrorDeNegocio('La fecha debe estar en el formato YYYY-MM-DD.');
                 }
             }
             if (c.estado && !validEstados.includes(c.estado)) {
-                throw new Error(`API. El estado del cargo debe ser uno de los siguientes: ${validEstados.join(', ')}.`);
+                throw new ErrorDeNegocio(`El estado del cargo debe ser uno de los siguientes: ${validEstados.join(', ')}.`);
             }
             if (c.activo === undefined || c.activo === null) {
                 c.activo = 1; // Valor por defecto
@@ -573,7 +574,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                     await connection.execute('UPDATE fechas_cargo SET activo = ? WHERE recibo_id = ?', [cargo[0].activo, id]);
                 }
             } else {
-                throw new Error('API. El recibo con el ID especificado no existe.');
+                throw new ErrorDeNegocio('El recibo con el ID especificado no existe.', 404);
             }
         } else {
             // Insertar nuevo recibo
@@ -656,11 +657,10 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
 }
 
 /** Error con código HTTP asociado, para que la ruta responda con el estado adecuado. */
-class ErrorDeRecibo extends Error {
-    constructor(mensaje, status) {
-        super(mensaje);
+class ErrorDeRecibo extends ErrorDeNegocio {
+    constructor(mensaje, status = 400) {
+        super(mensaje, status);
         this.name = 'ErrorDeRecibo';
-        this.status = status;
     }
 }
 
@@ -747,7 +747,7 @@ async function deleteRecibo(id, fecha, periodicidad, hoy, forzar = false) {
 function fechasFaltantes(fechaInicial, periodicidad, fechasExistentes, anioActual, hoy = new Date()) {
     const mesesPorPeriodo = { mensual: 1, bimestral: 2, trimestral: 3, anual: 12 }[periodicidad];
     if (!mesesPorPeriodo) {
-        throw new Error('API. Periodicidad no válida: ' + periodicidad + '.');
+        throw new ErrorDeNegocio('Periodicidad no válida: ' + periodicidad + '.');
     }
     if (fechasExistentes.length === 0) return [];
     const indiceMes = (fecha) => {

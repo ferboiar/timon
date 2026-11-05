@@ -140,10 +140,10 @@ La API implementa las siguientes validaciones:
 
 ## Manejo de Errores
 
-Todas las rutas implementan manejo de errores que:
-1. Capturan excepciones que puedan ocurrir durante el procesamiento
-2. Devuelven códigos de estado HTTP apropiados (200, 201, 400, 404, 409, 500)
-3. Proporcionan mensajes de error descriptivos y detalles adicionales cuando es necesario
+Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
+
+1. **Error de negocio** (`ErrorDeNegocio`, `ErrorDeRecibo` y demás clases heredadas): se devuelve su mensaje con su código HTTP (400, 404 o 409) en el campo `error`. El borrado de un recibo conserva su contrato y usa el campo `message`.
+2. **Error técnico**: se responde **500** con un texto genérico («No se pudieron obtener los recibos.», «No se pudo guardar el recibo.», «No se pudo eliminar el recibo.», «No se pudieron generar nuevas fechas.»), sin `details` ni mensaje del motor. El detalle completo queda en el log del servidor.
 
 ## Trazas en el log
 

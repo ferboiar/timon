@@ -10,6 +10,7 @@
  */
 
 import { getConnection } from './db_connection.mjs';
+import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 
 async function getCategorias() {
     let connection;
@@ -41,7 +42,7 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
         const [mismoNombre] = await connection.execute('SELECT id FROM categorias WHERE nombre = ?', [nombre]);
         if (mismoNombre.some((fila) => Number(fila.id) !== Number(id))) {
             console.log('pushCategoria - Rechazado: ya existe otra categoría con el nombre ' + nombre);
-            throw new Error(`Ya existe otra categoría con el nombre «${nombre}».`);
+            throw new ErrorDeNegocio(`Ya existe otra categoría con el nombre «${nombre}».`);
         }
 
         // F-09: con ID se edita esa categoría (también para renombrarla); sin ID se crea una nueva
@@ -49,7 +50,7 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
             const [existe] = await connection.execute('SELECT id, nombre FROM categorias WHERE id = ?', [id]);
             if (existe.length === 0) {
                 console.log('pushCategoria - Rechazado: la categoría con ID ' + id + ' no existe');
-                throw new Error('Categoría con ID ' + id + ' no encontrada');
+                throw new ErrorDeNegocio('Categoría con ID ' + id + ' no encontrada', 404);
             }
             // Actualizar categoría existente por ID
             console.log(`pushCategoria - Categoría ${id}: nombre ${existe[0].nombre} -> ${nombre}`);
@@ -57,7 +58,7 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
             console.log(`Update realizado correctamente en tabla categorias. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             // Insertar nueva categoría
-            if (!propietario_id) throw new Error('Falta el propietario para crear la categoría');
+            if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear la categoría');
             console.log(`pushCategoria - Nueva categoría: ${nombre || 'Sin nombre'}`);
             const [insertResult] = await connection.execute('INSERT INTO categorias (nombre, descripcion, propietario_id) VALUES (?, ?, ?)', [nombre || 'Sin nombre', descripcion, propietario_id]);
             console.log(`Insert realizado correctamente en tabla categorias. Filas afectadas: ${insertResult.affectedRows}`);
@@ -86,7 +87,7 @@ async function deleteCategorias(categoriaIds) {
         console.error('API. Error al eliminar las categorías:', error);
         if (error.code === 'ER_ROW_IS_REFERENCED_2') {
             console.log('deleteCategorias - Rechazado: categorías en uso: ' + categoriaIds.join(', '));
-            throw new Error('No se puede eliminar la categoría porque está en uso (recibos, presupuestos u otros registros)');
+            throw new ErrorDeNegocio('No se puede eliminar la categoría porque está en uso (recibos, presupuestos u otros registros)', 409);
         }
         throw error;
     } finally {
