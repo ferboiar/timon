@@ -8,6 +8,7 @@ import { AjustesService } from '@/service/AjustesService';
 import { UsersService } from '@/service/UsersService';
 import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { cargarZonaHoraria, establecerZonaHoraria } from '@/composables/useZonaHoraria';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 
@@ -142,7 +143,7 @@ async function saveStylePreferences() {
 
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Preferencias de estilo guardadas correctamente', life: 3000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `No se pudieron guardar las preferencias: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `No se pudieron guardar las preferencias: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al guardar preferencias de estilo:', error);
     }
 }
@@ -241,7 +242,7 @@ const testDbConnection = async () => {
         await DbConfigService.testDbConnection(dbConfig.value);
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'La prueba de conexión fue bien.', life: 3000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error en la conexión', detail: error.message || 'No se pudo conectar a la base de datos.', life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error en la conexión', detail: getApiErrorMessage({ message: 'No se pudo conectar a la base de datos.', response: error?.response }), life: 5000 });
     }
 };
 
@@ -259,7 +260,7 @@ const saveDbConfig = async () => {
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Configuración de la conexión con base de datos guardada.', life: 3000 });
         await fetchDbConfig(); // Recargar la configuración
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error al guardar', detail: error.message || 'No se pudo guardar la configuración.', life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al guardar', detail: getApiErrorMessage({ message: 'No se pudo guardar la configuración.', response: error?.response }), life: 5000 });
     } finally {
         saveDbConfigDialog.value = false;
     }
@@ -271,7 +272,7 @@ const restoreDbConfig = async () => {
         toast.add({ severity: 'info', summary: 'Restaurado', detail: 'Configuración restaurada desde la copia de seguridad.', life: 3000 });
         await fetchDbConfig(); // Recargar la configuración
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error al restaurar', detail: error.message || 'No se pudo restaurar la configuración.', life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al restaurar', detail: getApiErrorMessage({ message: 'No se pudo restaurar la configuración.', response: error?.response }), life: 5000 });
     } finally {
         restoreDbConfigDialog.value = false;
     }
@@ -320,7 +321,7 @@ const restoreDatabase = async () => {
         toast.add({
             severity: 'error',
             summary: 'Error en la restauración',
-            detail: error.message || 'No se pudo restaurar la base de datos.',
+            detail: getApiErrorMessage({ message: 'No se pudo restaurar la base de datos.', response: error?.response }),
             life: 5000
         });
         console.error('Error al restaurar la base de datos:', error);
@@ -337,7 +338,7 @@ const fetchUsers = async () => {
         const data = await UsersService.getUsers();
         users.value = data;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener usuarios: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener usuarios: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al obtener usuarios:', error);
     }
 };
@@ -396,7 +397,7 @@ async function saveUser() {
         fetchUsers();
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar usuario: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar usuario: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al guardar usuario:', error);
     }
 }
@@ -410,7 +411,7 @@ async function changePassword() {
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Contraseña actualizada correctamente', life: 3000 });
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al cambiar la contraseña: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al cambiar la contraseña: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al cambiar la contraseña:', error);
     }
 }
@@ -422,7 +423,7 @@ async function deleteUser() {
         fetchUsers();
         hideDialog();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar usuario: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar usuario: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al eliminar usuario:', error);
     }
 }
@@ -436,7 +437,7 @@ async function deleteSelectedUsers() {
         hideDialog();
         selectedUsers.value = [];
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar usuarios: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar usuarios: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error al eliminar usuarios:', error);
     }
 }
@@ -482,7 +483,7 @@ async function guardarZona() {
         zonaGuardada.value = ajustes.zona_horaria;
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Zona horaria guardada. Se aplica a toda la aplicación.', life: 4000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: getApiErrorMessage(error), life: 5000 });
     } finally {
         guardandoZona.value = false;
     }
@@ -513,7 +514,7 @@ async function cargarAjustesRecibos() {
         const ajustes = await AjustesService.getRecibos();
         crearRecibosAutomaticamente.value = ajustes.crear_recibos_automaticamente;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: getApiErrorMessage(error), life: 5000 });
     }
 }
 
@@ -528,7 +529,7 @@ async function confirmarCambioCreacionAutomatica() {
         crearRecibosAutomaticamente.value = ajustes.crear_recibos_automaticamente;
         toast.add({ severity: 'success', summary: 'Éxito', detail: ajustes.crear_recibos_automaticamente ? 'Creación automática activada.' : 'Creación automática desactivada hasta que la actives de nuevo.', life: 4000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: getApiErrorMessage(error), life: 5000 });
     } finally {
         dialogoCreacionAutomatica.value = false;
     }
@@ -543,7 +544,7 @@ async function consultarVistaPrevia(proximoDiciembre = false) {
         fechaSimulada.value = resultado.fecha_simulada;
         avisosGeneracion.value = resultado.avisos;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: getApiErrorMessage(error), life: 5000 });
     } finally {
         cargandoVistaPrevia.value = false;
     }
@@ -565,7 +566,7 @@ async function generarAhora() {
             life: 7000
         });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 7000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: getApiErrorMessage(error), life: 7000 });
     } finally {
         invalidarVistaPrevia();
         generandoAhora.value = false;

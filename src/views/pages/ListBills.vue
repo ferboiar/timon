@@ -4,6 +4,7 @@ import { BillService } from '@/service/BillService';
 import { CatsService } from '@/service/CatsService'; // Importar CatsService
 import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { anioEnCurso, cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { construirCsv } from '@/utils/csv';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
@@ -155,7 +156,7 @@ async function reloadBills({ conservarExpansion = true } = {}) {
             contraer('all');
         }
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los recibos del año ' + selectedYear.value + ': ' + error.message, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los recibos del año ' + selectedYear.value + ': ' + getApiErrorMessage(error), life: 5000 });
         console.error('reloadBills(). Error:', error);
     }
 }
@@ -212,7 +213,7 @@ async function generateDates(reciboId) {
         // Actualizar la lista de recibos para mostrar las nuevas fechas generadas
         reloadBills();
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al generar nuevas fechas: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al generar nuevas fechas: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('generateDates(). Error:', error);
     }
 }
@@ -322,7 +323,7 @@ function updateBills(periodicity) {
                 toast.add({ severity: 'success', summary: 'Actualizado', detail: 'Todos los recibos actualizados.', life: 3000 });
             })
             .catch((error) => {
-                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los recibos: ${error.message}`, life: 5000 });
+                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los recibos: ${getApiErrorMessage(error)}`, life: 5000 });
                 console.error('Error al actualizar los recibos:', error);
             });
     } else if (periodicity === 'inactivo') {
@@ -331,7 +332,7 @@ function updateBills(periodicity) {
                 inactiveBills.value = response;
             })
             .catch((error) => {
-                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar la lista de recibos inactivos: ${error.message}`, life: 5000 });
+                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar la lista de recibos inactivos: ${getApiErrorMessage(error)}`, life: 5000 });
                 console.error('Error al actualizar la lista de recibos inactivos:', error);
             });
     } else {
@@ -350,7 +351,7 @@ function updateBills(periodicity) {
                 toast.add({ severity: 'success', summary: 'Actualizado', detail: `Listado de recibos ${periodicity}es actualizado.`, life: 3000 });
             })
             .catch((error) => {
-                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar la lista de recibos ${periodicity}es: ${error.message}`, life: 5000 });
+                toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar la lista de recibos ${periodicity}es: ${getApiErrorMessage(error)}`, life: 5000 });
                 console.error(`Error al actualizar la lista de recibos ${periodicity}:`, error);
             });
     }
@@ -649,7 +650,7 @@ async function guardarRecibo() {
                 }))
             };
         } catch (error) {
-            toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el recibo: ${error.message}`, life: 7000 });
+            toast.add({ severity: 'error', summary: 'Error', detail: `Error al guardar el recibo: ${getApiErrorMessage(error)}`, life: 7000 });
             console.error('guardarRecibo(). Error completo:', error);
             console.error('guardarRecibo(). Detalles:', {
                 mensaje: error.message,
@@ -729,7 +730,7 @@ async function deleteBill() {
         bill.value = {};
         toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo eliminado', life: 3000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el recibo: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el recibo: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('deleteBill(). Error al eliminar el recibo: ', error.response?.data || error.message);
     }
 }
@@ -811,7 +812,7 @@ async function deleteSelectedBills() {
             updateBills(periodicity);
         }
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar los recibos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar los recibos: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('deleteSelectedBills(). Error al eliminar los recibos: ', error.response?.data || error.message);
     }
 }

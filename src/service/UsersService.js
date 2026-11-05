@@ -1,4 +1,13 @@
 import { API_BASE_URL } from '@/config/api';
+import { getApiErrorMessage } from '@/utils/apiError';
+
+/**
+ * Mensaje de error de una respuesta `fetch` no correcta.
+ * El texto por defecto viaja en el hueco del mensaje del propio error.
+ */
+function mensajeDeRespuestaError(cuerpo, porDefecto) {
+    return getApiErrorMessage({ message: porDefecto, response: { data: cuerpo } });
+}
 
 export const UsersService = {
     /**
@@ -14,7 +23,7 @@ export const UsersService = {
         });
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al obtener usuarios');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al obtener usuarios'));
         }
         return await response.json();
     },
@@ -40,7 +49,7 @@ export const UsersService = {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al guardar usuario');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al guardar usuario'));
         }
 
         return await response.json();
@@ -64,7 +73,7 @@ export const UsersService = {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al eliminar usuarios');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al eliminar usuarios'));
         }
 
         return await response.json();
@@ -88,7 +97,7 @@ export const UsersService = {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al cambiar contraseña');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al cambiar contraseña'));
         }
 
         return await response.json();
@@ -114,7 +123,7 @@ export const UsersService = {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al guardar preferencias de estilo');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al guardar preferencias de estilo'));
         }
 
         return await response.json();
@@ -136,7 +145,7 @@ export const UsersService = {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al obtener preferencias de estilo');
+            throw new Error(mensajeDeRespuestaError(error, 'Error al obtener preferencias de estilo'));
         }
 
         return await response.json();

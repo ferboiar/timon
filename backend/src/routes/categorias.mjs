@@ -33,7 +33,7 @@ router.post('/', verifyToken, async (req, res) => {
         await pushCategoria(id, nombre, descripcion, req.user.id);
         res.status(201).json({ message: 'Categoría insertada o actualizada correctamente' });
     } catch (error) {
-        res.status(400).json({ error: `Error al insertar o actualizar la categoría: ${error.message}`, details: error.stack });
+        res.status(400).json({ error: error.message, details: error.stack });
     }
 });
 

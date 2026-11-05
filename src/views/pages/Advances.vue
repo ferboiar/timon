@@ -63,7 +63,7 @@ const fetchAdvances = async () => {
             fecha_fin_prevista: adv.fecha_fin_prevista ? fechaDeCalendario(adv.fecha_fin_prevista) : null
         }));
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los anticipos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al actualizar los anticipos: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error en fetchAdvances:', error);
     }
 };
@@ -79,7 +79,7 @@ const fetchPeriodicidades = async () => {
             }))
         ];
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las periodicidades: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las periodicidades: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error en fetchPeriodicidades:', error);
     }
 };
@@ -92,7 +92,7 @@ const fetchCuentas = async () => {
             value: cuenta.id
         }));
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las cuentas: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener las cuentas: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error en fetchCuentas:', error);
     }
 };
@@ -217,7 +217,7 @@ const fetchPagos = async (anticipoId) => {
         const data = await AdvService.getPagos(anticipoId);
         pagos.value[anticipoId] = data;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener pagos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener pagos: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error en fetchPagos:', error);
         pagos.value[anticipoId] = [];
     }
@@ -232,7 +232,7 @@ const fetchAllPagos = async () => {
             pagos.value[id] = pagosResults[index];
         });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener todos los pagos: ${error.message}`, life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: `Error al obtener todos los pagos: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('Error en fetchAllPagos:', error);
     }
 };

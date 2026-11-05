@@ -1,6 +1,7 @@
 <script setup>
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { API_BASE_URL } from '@/config/api';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -48,7 +49,7 @@ const handleLogin = async () => {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message || 'Error al iniciar sesión');
+            throw new Error(getApiErrorMessage({ message: 'Error al iniciar sesión', response: { data } }));
         }
 
         // Si "Recordarme" está marcado, guardar en localStorage
@@ -74,7 +75,7 @@ const handleLogin = async () => {
         // Redireccionar al dashboard después de iniciar sesión
         router.push('/dashboard');
     } catch (error) {
-        errorMessage.value = error.message || 'Error al iniciar sesión';
+        errorMessage.value = getApiErrorMessage(error);
         console.error('Error de autenticación:', error);
     } finally {
         isLoading.value = false;
