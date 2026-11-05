@@ -56,7 +56,7 @@ El componente `Accounts` permite la administración completa de cuentas bancaria
 | `updateAccounts()` | Actualiza la lista de cuentas y muestra un mensaje de confirmación |
 | `hideDialog()` | Cierra cualquier diálogo abierto |
 | `capitalizeFirstLetter(string)` | Convierte la primera letra de un texto a mayúscula |
-| `exportCSV()` | Exporta las cuentas a CSV; el IBAN se escribe como fórmula de texto (`="…"`) para que Excel no lo convierta a notación científica ni pierda ceros iniciales, y queda vacío si la cuenta no tiene IBAN |
+| `exportCSV()` | Exporta las cuentas a `accounts.csv` con la utilidad común ([utils/csv](../utils/csv.md)): BOM, separador `;`, escape y neutralización de fórmulas (F-19). El IBAN se escribe con `ibanSeguro` como fórmula de texto (`="…"`) para que Excel no lo convierta a notación científica ni pierda ceros iniciales, y queda vacío si la cuenta no tiene IBAN; como el campo contiene comillas, en el fichero aparece entrecomillado (`"=""…"""`) |
 
 ## Ciclo de Vida
 

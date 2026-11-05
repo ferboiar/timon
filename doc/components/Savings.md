@@ -39,7 +39,7 @@ El requisito del usuario permite ahorros diarios, semanales, otras cadencias o p
 
 `toggleShowInactive` alterna `showInactive`; `visibleSavings` (computed) muestra solo los ahorros con `activo = 1` salvo que `showInactive` sea verdadero, y la tabla se enlaza a `visibleSavings` (F-08). `hasInactiveSavings` habilita el botón solo cuando hay algún ahorro inactivo. El diálogo de edición incluye el interruptor «Ahorro activo / inactivo», que guarda `activo` como 1 o 0. Un `watch` sobre `visibleSavings` quita de `selectedSavings` las filas que dejan de verse (inactivos ocultos o ahorro recién desactivado), para que «Borrar» no actúe sobre ellas.
 
-`exportCSV` genera `savings.csv`, UTF-8 con BOM, separador `;` y coma decimal. Produce una fila por movimiento, repitiendo los datos del ahorro, o una fila si no hay movimientos. No escapa separadores, saltos, comillas ni fórmulas (F-19).
+`exportCSV` genera `savings.csv` con la utilidad común ([utils/csv](../utils/csv.md)): UTF-8 con BOM, separador `;`, coma decimal, escape de `;`, comillas y saltos de línea, y neutralización de fórmulas (F-19). Produce una fila por movimiento, repitiendo los datos del ahorro, o una fila de seis campos si no hay movimientos.
 
 ## Limitaciones pendientes
 

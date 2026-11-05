@@ -2,16 +2,32 @@
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {
-            "@/*": [
-                "./src/*"
-            ],
-            "#backend/*": [
-                "./backend/src/*"
-            ]
+            "@/*": ["./src/*"],
+            "#backend/*": ["./backend/src/*"]
         }
     },
+    "include": [
+        "src/**/*",
+        "src/**/*.vue",
+        "backend/src/**/*",
+        "backend/test/**/*",
+        "scripts/**/*",
+        "vite.config.mjs"
+    ],
     "exclude": [
-        "node_modules",
-        "dist"
-    ]
+        "**/node_modules",
+        "**/.*/",
+        "**/dist",
+        "**/coverage",
+        "**/public"
+    ],
+    "watchOptions": {
+        "excludeDirectories": [
+            "**/node_modules",
+            "**/dist",
+            "**/coverage",
+            "**/doc",
+            "**/public"
+        ]
+    }
 }

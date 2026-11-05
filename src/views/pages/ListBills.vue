@@ -4,6 +4,7 @@ import { BillService } from '@/service/BillService';
 import { CatsService } from '@/service/CatsService'; // Importar CatsService
 import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { anioEnCurso, cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
+import { construirCsv } from '@/utils/csv';
 import { FilterMatchMode } from '@primevue/core/api';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
@@ -733,11 +734,14 @@ async function deleteBill() {
     }
 }
 
+// F-19: exportación con escape CSV y neutralización de fórmulas (src/utils/csv.js)
+const COLUMNAS_CSV = ['Periodicidad', 'Concepto', 'Importe', 'Fecha', 'Estado', 'Comentario'];
+
 function exportCSV(periodicity) {
     const exportData = (bills, filename, formatDate) => {
-        const csvContent = [
-            ['Periodicidad', 'Concepto', 'Importe', 'Fecha', 'Estado', 'Comentario'],
-            ...bills.map((bill) => [
+        const csvContent = construirCsv(
+            COLUMNAS_CSV,
+            bills.map((bill) => [
                 bill.periodicidad,
                 bill.concepto,
                 parseFloat(bill.importe_cargo ?? bill.importe)
@@ -747,11 +751,9 @@ function exportCSV(periodicity) {
                 bill.estado,
                 bill.comentario
             ])
-        ]
-            .map((e) => e.map((field) => `${field}`).join(';'))
-            .join('\n');
+        );
 
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);

@@ -1,6 +1,7 @@
 <script setup>
 import { SavService } from '@/service/SavService';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { construirCsv } from '@/utils/csv';
 import { fechaIsoDeCalendario } from '@/utils/fechasFormulario';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
@@ -337,30 +338,31 @@ const isMovimientoFormValid = computed(() => {
     return movimiento.value.fecha && movimiento.value.tipo;
 });
 
+// F-19: exportación con escape CSV y neutralización de fórmulas (src/utils/csv.js)
+const COLUMNAS_CSV = ['Concepto', 'Descripción', 'Ahorrado', 'Fecha Objetivo', 'Periodicidad', 'Ahorro sugerido', 'Fecha Movimiento', 'Tipo Movimiento', 'Importe Movimiento', 'Descripción Movimiento'];
+
 const exportCSV = () => {
     const exportData = (savings, movimientos, filename, formatDate) => {
-        const csvContent = [
-            ['Concepto', 'Descripción', 'Ahorrado', 'Fecha Objetivo', 'Periodicidad', 'Ahorro sugerido', 'Fecha Movimiento', 'Tipo Movimiento', 'Importe Movimiento', 'Descripción Movimiento'],
-            ...savings.flatMap((saving) => {
-                const savingData = [
-                    saving.concepto,
-                    saving.descripcion,
-                    parseFloat(saving.ahorrado).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
-                    saving.fecha_objetivo ? formatDate(saving.fecha_objetivo) : '',
-                    saving.periodicidad,
-                    parseFloat(saving.importe_periodico).toFixed(2).replace('.', ',')
-                ];
-                if (movimientos[saving.id] && movimientos[saving.id].length > 0) {
-                    return movimientos[saving.id].map((mov) => [...savingData, formatDate(mov.fecha), mov.tipo, parseFloat(mov.importe).toFixed(2).replace('.', ','), mov.descripcion]);
-                } else {
-                    return [savingData];
-                }
-            })
-        ]
-            .map((e) => e.map((field) => `${field}`).join(';'))
-            .join('\n');
+        // Un ahorro sin movimientos genera una fila de 6 campos (las cuatro últimas columnas quedan vacías)
+        const filas = savings.flatMap((saving) => {
+            const savingData = [
+                saving.concepto,
+                saving.descripcion,
+                parseFloat(saving.ahorrado).toFixed(2).replace('.', ','), // Convertir a número con 2 decimales y reemplazar el punto por una coma
+                saving.fecha_objetivo ? formatDate(saving.fecha_objetivo) : '',
+                saving.periodicidad,
+                parseFloat(saving.importe_periodico).toFixed(2).replace('.', ',')
+            ];
+            if (movimientos[saving.id] && movimientos[saving.id].length > 0) {
+                return movimientos[saving.id].map((mov) => [...savingData, formatDate(mov.fecha), mov.tipo, parseFloat(mov.importe).toFixed(2).replace('.', ','), mov.descripcion]);
+            } else {
+                return [savingData];
+            }
+        });
 
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csvContent = construirCsv(COLUMNAS_CSV, filas);
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);

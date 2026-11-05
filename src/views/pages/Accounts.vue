@@ -1,6 +1,7 @@
 <script setup>
 import { AccService } from '@/service/AccService';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { construirCsv, ibanSeguro } from '@/utils/csv';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
@@ -156,16 +157,21 @@ const isFormValid = computed(() => {
     return account.value.nombre.trim() !== '' && account.value.tipo !== '';
 });
 
+// F-19: exportación con escape CSV y neutralización de fórmulas (src/utils/csv.js)
+const COLUMNAS_CSV = ['Nombre', 'Tipo', 'IBAN', 'Saldo Actual', 'Descripción'];
+
 const exportCSV = () => {
     const exportData = (data, filename) => {
         // Formateo para CSV:
-        // - IBAN: Se envuelve en `="<valor>"` para forzar a Excel a tratarlo como texto y evitar la notación científica en números largos.
+        // - IBAN: ibanSeguro lo mantiene como fórmula de texto (`="<valor>"`) para forzar a Excel
+        //   a tratarlo como texto y evitar la notación científica en números largos.
         // - Saldo Actual: Se formatea a 2 decimales y se reemplaza el punto por una coma para compatibilidad con formatos regionales.
-        const csvContent = [['Nombre', 'Tipo', 'IBAN', 'Saldo Actual', 'Descripción'], ...data.map((item) => [item.nombre, item.tipo, (item.iban ? `="${item.iban}"` : ''), parseFloat(item.saldo_actual).toFixed(2).replace('.', ','), item.descripcion])]
-            .map((e) => e.join(';'))
-            .join('\n');
+        const csvContent = construirCsv(
+            COLUMNAS_CSV,
+            data.map((item) => [item.nombre, item.tipo, ibanSeguro(item.iban), parseFloat(item.saldo_actual).toFixed(2).replace('.', ','), item.descripcion])
+        );
 
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);

@@ -1,6 +1,7 @@
 <script setup>
 import { CatsService } from '@/service/CatsService';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { construirCsv } from '@/utils/csv';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 
@@ -62,11 +63,17 @@ const deleteSelectedCategories = async () => {
     }
 };
 
+// F-19: exportación con escape CSV y neutralización de fórmulas (src/utils/csv.js)
+const COLUMNAS_CSV = ['Nombre', 'Descripción'];
+
 const exportCSV = () => {
     const exportData = (data, filename) => {
-        const csvContent = [['Nombre', 'Descripción'], ...data.map((item) => [item.nombre, item.descripcion])].map((e) => e.join(';')).join('\n');
+        const csvContent = construirCsv(
+            COLUMNAS_CSV,
+            data.map((item) => [item.nombre, item.descripcion])
+        );
 
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);

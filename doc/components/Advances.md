@@ -50,7 +50,7 @@ La sustitución excluye el pago antiguo del cálculo de pendientes y llama a `Ad
 
 U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'` (`visibleAdvances`) y verlos todos; `hasInactiveAdvances` deshabilita el botón cuando no hay pausados, cancelados ni completados; un `watch` sobre `visibleAdvances` retira de `selectedAdvances` las filas que dejan de verse. U-12: la ayuda de la vista es un tooltip (`QuestionCircle`) junto al título. DC-30: `editAdvance` guarda `advanceOriginal` y `saveAdvance` avisa «No se ha cambiado nada.» si no hay cambios.
 
-`exportCSV` genera `anticipos.csv` con BOM UTF-8, separador `;`, coma decimal y campos entre comillas. No incluye filas de pagos, no escapa comillas interiores ni neutraliza fórmulas (F-19).
+`exportCSV` genera `anticipos.csv` con la utilidad común ([utils/csv](../utils/csv.md)): BOM UTF-8, separador `;`, coma decimal, escape RFC 4180 (entrecomilla solo lo que lo necesita, antes entrecomillaba todos los campos) y neutralización de fórmulas (F-19). No incluye filas de pagos.
 
 ## Fallos y límites documentados, no corregidos aquí
 
