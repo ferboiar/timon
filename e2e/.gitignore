@@ -1,0 +1,9 @@
+# TEMPORAL: esta línea se retira cuando git-crypt cifre e2e/.env (PR 2 de la
+# iteración). Mientras tanto, e2e/.env no se versiona.
+.env
+
+# Estado de la última ejecución verde (herramienta de triage, no se versiona).
+.last-green.json
+
+# Dependencias instaladas con npm ci.
+node_modules

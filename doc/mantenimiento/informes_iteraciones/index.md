@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-06 | O-02, DC-44, D-27 | [Suite E2E persistente con Playwright](./2026-11-06_O-02_suite-e2e.md) |
 | 2026-11-05 | F-47, F-48 | [Errores de negocio y técnicos en el backend](./2026-11-05_F-47_errorDeNegocio.md) |
 | 2026-11-05 | F-28, D-26 | [Mensajes del servidor en servicios y pantallas](./2026-11-05_F-28_mensajes-servidor.md) |
 | 2026-11-05 | F-20, F-21, DC-43 | [Retirada de `getBillById` y decisión del saldo manual](./2026-11-05_F-20_F-21_retirada-getbillbyid-dc43.md) |

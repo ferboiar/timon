@@ -1,0 +1,28 @@
+{
+    "name": "timon-e2e",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Suite E2E de Timón con Playwright contra un Edge remoto por CDP",
+    "type": "module",
+    "directories": {
+        "test": "tests"
+    },
+    "scripts": {
+        "e2e": "node lanzador.mjs",
+        "test": "node lanzador.mjs",
+        "e2e:auth": "node lanzador.mjs tests/auth.spec.mjs",
+        "e2e:categorias": "node lanzador.mjs tests/categorias.spec.mjs",
+        "e2e:smoke": "node lanzador.mjs tests/smoke.spec.mjs",
+        "e2e:lista": "playwright test --list"
+    },
+    "keywords": [
+        "e2e",
+        "playwright",
+        "timon"
+    ],
+    "license": "MIT",
+    "devDependencies": {
+        "@playwright/test": "^1.65.0",
+        "dotenv": "^18.0.9"
+    }
+}
