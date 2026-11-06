@@ -123,6 +123,7 @@ Selecciona sintaxis, lint, build, tests y prueba manual según la tarea.
 Explica qué ejecutan y qué demuestran.
 
 No confundas parche aplicado, fixture, análisis estático, test unitario, integración ni UI.
+Para pruebas reales de interfaz (UI), usa la suite E2E de e2e/ con Playwright: lee e2e/README.md para saber cómo usarla y crea los scripts necesarios. Mantén el script y el README actualizados según los cambios introducidos.
 
 No declares pruebas superadas sin evidencia.
 Describe fielmente el entorno utilizado y la correspondencia entre el contenido probado y el entregado.
