@@ -115,12 +115,16 @@ El lanzador (`lanzador.mjs`):
 - **Regla anti-autocuración**: no se debilita una aserción ni se cambia un test para que
   pase sin explicar el motivo; un cambio de texto o idioma puede ser una regresión.
 
-## Aviso importante sobre `e2e/.env`
+## `e2e/.env` cifrado
 
-Mientras `git-crypt` no cifre `e2e/.env`, la línea `.env` de `e2e/.gitignore` está
-**activa** (protección temporal): `git check-ignore -v e2e/.env` la resuelve en
-`e2e/.gitignore:3`. Hasta que se active el cifrado, **no** se debe preparar ni commitear
-`e2e/.env`; la protección se retira en el PR de cifrado.
+`e2e/.env` está versionado y **cifrado con git-crypt** (DC-45). El clon se desbloquea con la
+clave del proyecto (`git-crypt unlock`); sin clave no se puede leer y el checkout falla a
+propósito (`required=true`). No se ignora: `e2e/.gitignore` solo excluye `.last-green.json` y
+`node_modules`.
+
+Antes de publicar, los hooks `pre-commit` y `pre-push` (activados con
+`core.hooksPath scripts/hooks`) rechazan cualquier secreto en claro mediante
+`scripts/comprobar-cifrado.mjs`.
 
 ## Fallo observado durante la migración (2026-11-06)
 

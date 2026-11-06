@@ -152,6 +152,8 @@ Pruebas destructivas solo en entorno autorizado y bases *_test, nunca conta_hoga
 
 Contraseñas en terminal, no en chat ni commits.
 Logs saneados, sin secretos.
+Los ficheros cifrados con git-crypt (`backend/.env`, `backend/src/db/.db_connection`, `backend/src/db/.db_connection.backup` y `e2e/.env`) se descifran en el clon local con la clave o contraseña del proyecto (`git-crypt unlock`) para poder usarlos, y el asistente verifica el cifrado antes de subirlos: el filtro `clean` cifra al preparar, `git-crypt status -e` confirma las rutas y `scripts/hooks/pre-push` con `scripts/comprobar-cifrado.mjs` rechazan cualquier blob en claro (DC-45).
+Si el clon no está desbloqueado y no hay clave disponible, detente y pide la clave; no ejecutes `git-crypt lock`.
 
 No confundas fallos de DNS/conexión/preparación con defectos funcionales.
 
