@@ -1,6 +1,4 @@
-# TEMPORAL: esta línea se retira cuando git-crypt cifre e2e/.env (PR 2 de la
-# iteración). Mientras tanto, e2e/.env no se versiona.
-.env
+# `e2e/.env` se versiona cifrado con git-crypt (DC-45); no se ignora.
 
 # Estado de la última ejecución verde (herramienta de triage, no se versiona).
 .last-green.json

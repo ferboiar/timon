@@ -27,7 +27,7 @@ Los módulos no ofrecen todavía integración contable completa ni conciliación
 - Node.js 20.9 o superior de la serie 20 (`engines` de `package.json`)
 - MariaDB 11.8 (DC-04 del registro de mantenimiento)
 - Git
-- git-crypt (para el manejo seguro de archivos sensibles)
+- git-crypt (para el manejo seguro de archivos sensibles; la imagen del devcontainer ya lo instala y el clon se desbloquea con la clave del proyecto, DC-45)
 
 ### Pasos de instalación
 
@@ -171,6 +171,8 @@ git-crypt export-key ~/clave-git-crypt-timon.key
 ```
 backend/.env filter=git-crypt diff=git-crypt
 backend/src/db/.db_connection filter=git-crypt diff=git-crypt
+backend/src/db/.db_connection.backup filter=git-crypt diff=git-crypt
+e2e/.env filter=git-crypt diff=git-crypt
 ```
 
 4. **Flujo de trabajo con git-crypt**:

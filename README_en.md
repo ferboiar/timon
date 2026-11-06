@@ -170,6 +170,8 @@ git-crypt export-key ~/clave-git-crypt-timon.key
 ```
 backend/.env filter=git-crypt diff=git-crypt
 backend/src/db/.db_connection filter=git-crypt diff=git-crypt
+backend/src/db/.db_connection.backup filter=git-crypt diff=git-crypt
+e2e/.env filter=git-crypt diff=git-crypt
 ```
 
 4. **Workflow with git-crypt**:

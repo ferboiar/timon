@@ -65,10 +65,15 @@ npm run e2e:lista                 # lista los tests sin ejecutarlos
 
 ## Secretos
 
-`e2e/.env` no se versiona mientras `git-crypt` no lo cifre (línea activa en `e2e/.gitignore`,
-protección temporal que se retira en el PR de cifrado). `e2e/.env.example` solo contiene
-nombres de variables. Las claves de `backend/.env` y `backend/src/db/.db_connection` se cifran
-con `git-crypt` desde `.gitattributes`.
+`e2e/.env` está versionado y **cifrado con git-crypt** (DC-45), junto con `backend/.env`,
+`backend/src/db/.db_connection` y `backend/src/db/.db_connection.backup`. El clon se
+desbloquea en local con la clave del proyecto (`git-crypt unlock`); sin clave no se puede
+leer, y el checkout de esos ficheros falla a propósito (`required=true`). `e2e/.env.example`
+solo contiene nombres de variables y no se cifra.
+
+Antes de publicar: el filtro `clean` cifra al preparar el commit y
+`scripts/comprobar-cifrado.mjs` (invocado por los hooks `pre-commit` y `pre-push`) rechaza
+cualquier secreto que pretenda viajar en claro.
 
 ## Límites
 

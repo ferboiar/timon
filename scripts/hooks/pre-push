@@ -1,0 +1,7 @@
+#!/bin/sh
+# Hook de pre-push: rechaza publicar commits con secretos en claro (DC-45).
+# Comprueba el rango origin/main..HEAD (falla cerrado si no se puede evaluar).
+# Activar con: git config core.hooksPath scripts/hooks
+set -eu
+raiz=$(git rev-parse --show-toplevel)
+exec node "$raiz/scripts/comprobar-cifrado.mjs" --rango origin/main..HEAD
