@@ -16,7 +16,7 @@
             ]
         }
     },
-    "postCreateCommand": "npm install && (cd e2e && npm ci) && git config core.hooksPath scripts/hooks && for f in backend/.env backend/src/db/.db_connection backend/src/db/.db_connection.backup e2e/.env; do [ -f \"$f\" ] && chmod 600 \"$f\"; done",
+    "postCreateCommand": "npm install && (cd e2e && npm ci) && git config core.hooksPath scripts/hooks && chmod +x scripts/hooks/* && for f in backend/.env backend/src/db/.db_connection backend/src/db/.db_connection.backup e2e/.env; do [ -f \"$f\" ] && chmod 600 \"$f\"; done",
     "remoteUser": "node",
     "forwardPorts": [3000, 5173],
     "portsAttributes": {
