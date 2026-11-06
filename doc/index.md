@@ -338,6 +338,10 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 - [Instrucción persistente](./mantenimiento/instruccion-persistente.md) - Reglas de trabajo del asistente en el proyecto (entrada y 4 partes que se leen en orden): [1 de 4](./mantenimiento/instruccion-persistente_1de4.md), [2 de 4](./mantenimiento/instruccion-persistente_2de4.md), [3 de 4](./mantenimiento/instruccion-persistente_3de4.md), [4 de 4](./mantenimiento/instruccion-persistente_4de4.md)
 - [Informes de iteración](./mantenimiento/informes_iteraciones/index.md) - Un informe de cierre por PR, con su índice
 
+## Pruebas
+
+- [Suite E2E con Playwright](./pruebas/e2e.md) - Qué cubre la suite de extremo a extremo, cómo se ejecuta contra el Edge real por CDP, qué datos de prueba crea y cómo se hace el triage de fallos.
+
 ## Estado de implementación y cierre de revisión
 
 El informe de [auditoría documental](./mantenimiento/auditoria-documentacion.md) diferencia diseño, implementación y fallos conocidos. Campos de permisos no equivalen a autorización aplicada (S-01); saldos manuales no equivalen a conciliación automática; aportaciones con periodicidad no equivalen a generación automática de movimientos. La sección 10 del registro y TODO incluyen las correcciones pendientes con sus IDs.

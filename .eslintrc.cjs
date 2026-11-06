@@ -3,7 +3,7 @@ require('@rushstack/eslint-patch/modern-module-resolution');
 
 module.exports = {
     root: true,
-    ignorePatterns: ['dist/**', 'coverage/**', 'doc/**'],
+    ignorePatterns: ['dist/**', 'coverage/**', 'doc/**', 'e2e/**'],
     env: {
         node: true
     },

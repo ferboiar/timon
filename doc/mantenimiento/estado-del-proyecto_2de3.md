@@ -49,13 +49,13 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #59 | D-25 | Sincronización del seguimiento tras el PR #58 y registro de D-23 |
 | #60 | F-20, F-21 | Retirada de `getBillById` y decisión DC-43 del saldo manual |
 | #61 | F-28, D-26 | Mensajes del servidor homogéneos en servicios y pantallas, y sincronización del seguimiento tras el PR #60 |
-| PR propio | F-47 | Errores de negocio y técnicos en cuentas, ahorros, categorías y recibos; F-48 registrado para el resto |
+| #62 | F-47, F-48 | Errores de negocio y técnicos: utilidad compartida aplicada a cuentas, ahorros, categorías y recibos, y extensión a usuarios, conexión, mantenimiento, anticipos y ajustes |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
 
-La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). F-14 (grupo 3 de la fase 1) está cerrado: los pasos a, b y d se incorporaron en los PR #53, #54 y #55 y el resto del paso c se declara no aplicable por DC-42 (solo se implementó el recálculo al editar un pagado, DC-40). F-19 y D-24 se incorporaron en el PR #58, D-25 en el #59, F-20/F-21 en el #60 y F-28 con D-26 en el #61. El trabajo activo es F-47 (errores de negocio y técnicos en el backend), preparado en la rama `correccion/fase-1-F47-errores-negocio-tecnicos` y pendiente de revisión y fusión. Después, F-48 (extender la normalización a usuarios, conexión, mantenimiento, anticipos y ajustes) y, tras él, F-30/F-31. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). F-14 (grupo 3 de la fase 1) está cerrado: los pasos a, b y d se incorporaron en los PR #53, #54 y #55 y el resto del paso c se declara no aplicable por DC-42 (solo se implementó el recálculo al editar un pagado, DC-40). F-19 y D-24 se incorporaron en el PR #58, D-25 en el #59, F-20/F-21 en el #60, F-28 con D-26 en el #61 y F-47 con F-48 en el #62. El trabajo activo es la suite E2E (O-02, DC-44 y D-27), preparada en la rama `mantenimiento/fase-1-O02-DC44-D27-suite-e2e` y pendiente de revisión y fusión. Después, F-30/F-31. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo la usa (F-12 corregido el 2026-11-01).
