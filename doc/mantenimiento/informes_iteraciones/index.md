@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-06 | D-29 | [Sincronización posterior a los PR #65, #66 y #67](./2026-11-06_D-29_sincronizacion-post-pr66-67.md) |
 | 2026-11-06 | S-15 | [Hooks ejecutables con `core.fileMode=false`](./2026-11-06_S-15-hooks-ejecutables.md) |
 | 2026-11-06 | S-09, DC-45 | [Cifrado con git-crypt: `e2e/.env` cifrado, hooks y política](./2026-11-06_S-09-cifrado-git-crypt.md) |
 | 2026-11-06 | O-02, DC-44, D-27 | [Suite E2E persistente con Playwright](./2026-11-06_O-02_suite-e2e.md) |
