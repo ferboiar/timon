@@ -15,6 +15,7 @@ test('esSensible reconoce los ficheros de secretos y no marca documentación', (
     assert.equal(esSensible('backend/src/db/.db_connection.backup'), true);
     assert.equal(esSensible('clave.key'), true);
     assert.equal(esSensible('servidor.pem'), true);
+    assert.equal(esSensible('backend/test/.env.test'), true);
     assert.equal(esSensible('e2e/.env.example'), false);
     assert.equal(esSensible('.env'), false);
     assert.equal(esSensible('README.md'), false);

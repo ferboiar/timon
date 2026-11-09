@@ -81,6 +81,7 @@ Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
 - [ ] F-37: opciones explícitas diaria/semanal y otras cadencias de Ahorros según requisito; conservar aportaciones manuales sin patrón, que ya existen con periodicidad NULL.
 - [x] F-38: obtener token de ambos almacenes en saveUser/deleteUsers/changePassword; probar con y sin Recordarme. Corregido el 2026-11-09 (F-48) y verificado con la suite E2E (alta y borrado de un usuario `e2e_` con sesión temporal).
 - [ ] S-16: decidir si `auth.mjs` responde 401 en vez de 403 ante un token inválido, revisando antes el interceptor de `src/config/api.js`. Registrado el 2026-11-09; fuera de F-48.
+- [x] DC-46: entorno de pruebas cifrado (`backend/test/.env.test`) y script `test:backend:local` con comprobación de permisos sobre bases `_test` (2026-11-09).
 - [ ] F-39: completar confirmación, ejecución y recarga del borrado múltiple en Anticipos, o retirar temporalmente el botón.
 - [ ] F-40: unificar propuestas de fecha de pagos manuales con periodicidad o acordar excepción explícita; hoy siempre incrementan un mes.
 - [ ] DC-01: migración del estado rechazado; DC-02: índice único de categorías.

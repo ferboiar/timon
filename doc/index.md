@@ -341,6 +341,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 ## Pruebas
 
 - [Suite E2E con Playwright](./pruebas/e2e.md) - Qué cubre la suite de extremo a extremo, cómo se ejecuta contra el Edge real por CDP, qué datos de prueba crea y cómo se hace el triage de fallos.
+- [Entorno de pruebas del backend](./pruebas/entorno-pruebas.md) - Credenciales cifradas con git-crypt y comprobación de permisos antes de lanzar la suite (DC-46).
 
 ## Estado de implementación y cierre de revisión
 

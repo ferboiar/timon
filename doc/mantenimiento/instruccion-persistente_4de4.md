@@ -143,10 +143,13 @@ TEST_DB_HOST=mariadb01 TEST_DB_PORT=3306 TEST_DB_USER=timon_test TEST_DB_NAME=co
 Entrega el comando concreto de la opción confirmada.
 Comprueba host, puerto, usuario y base; no heredes variables accidentalmente.
 
-Antes de ejecutar `npm run test:backend`, lee `backend/test/README.md` (opción A) y el relevo.
+Antes de ejecutar `npm run test:backend`, lee `backend/test/README.md` (opciones A, B y C) y el relevo.
 Nunca lances la suite sin TEST_DB_HOST, TEST_DB_USER y TEST_DB_PASSWORD definidos: los valores por defecto (`mariadb-test`, `root`) son los de la opción B y dan ENOTFOUND.
 No leas `.db_connection` para obtener credenciales de pruebas: son las de `conta_hogar`, no las de `conta_hogar_test`.
-No pidas ni escribas la contraseña. Si TEST_DB_PASSWORD no está definida en tu entorno, no ejecutes la suite: entrega el comando al usuario y espera el resumen (`# tests`, `# pass`, `# fail`, `# cancelled`).
+No pidas ni escribas la contraseña en el chat, en el código, en los commits ni en los logs.
+Si existe `backend/test/.env.test` (versionado y cifrado con git-crypt, opción C, DC-46), puedes ejecutar `npm run test:backend:local`: el comprobador `scripts/comprobar-entorno-pruebas.mjs` valida permisos, variables y que el usuario de pruebas solo tenga permisos sobre bases `_test`, y `node --env-file` carga el fichero. No imprimas su contenido ni lo copies fuera de su ruta.
+Sin ese fichero y sin TEST_DB_PASSWORD definida, no ejecutes la suite: entrega el comando al usuario y espera el resumen (`# tests`, `# pass`, `# fail`, `# cancelled`).
+En ambos casos conserva y cita el código de salida y no declares nada en verde sin la salida real.
 
 Pruebas destructivas solo en entorno autorizado y bases *_test, nunca conta_hogar. El sufijo no sustituye comprobar el destino.
 

@@ -17,6 +17,7 @@ Estado actualizado por D-13, 2026-10-24. Este documento sustituye el ejemplo ant
 | `npm run start:backend` | `NODE_ENV=production node backend/src/server.mjs` |
 | `npm run dev:backend` | `NODE_ENV=development nodemon backend/src/server.mjs` |
 | `npm run test:backend` | `node --test backend/test/` |
+| `npm run test:backend:local` | `node scripts/comprobar-entorno-pruebas.mjs && node --env-file=backend/test/.env.test --test backend/test/` |
 | `npm run dev:frontend` | `vite` |
 | `npm run build:frontend` | `vite build` |
 | `npm run preview:frontend` | `vite preview` |
