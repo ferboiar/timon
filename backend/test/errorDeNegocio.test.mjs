@@ -1,7 +1,19 @@
-// F-47: pruebas de la utilidad de errores de negocio y técnicos; no necesitan base de datos.
+// F-47 y F-48: pruebas de la utilidad de errores de negocio y técnicos; no necesitan base de datos.
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { ErrorDeNegocio, esErrorDeNegocio, MARCA_ERROR_DE_NEGOCIO, responderError, respuestaDeError } from '../src/utils/errorDeNegocio.mjs';
+import {
+    detalleParaLog,
+    ErrorDeNegocio,
+    esErrorDeNegocio,
+    MARCA_ERROR_DE_NEGOCIO,
+    responderError,
+    respuestaDeError,
+    sanearParaLog
+} from '../src/utils/errorDeNegocio.mjs';
+import { AUDIENCIA_ADMIN } from '../src/utils/catalogoErrores.mjs';
+
+const AVISO_GENERAL = 'Inténtalo de nuevo y, si persiste, avisa al administrador.';
+const AVISO_ADMIN = 'La causa no se ha podido identificar; consulta el registro del servidor.';
 
 function respuestaFalsa() {
     return {
@@ -16,6 +28,16 @@ function respuestaFalsa() {
             return this;
         }
     };
+}
+
+function sinLog(fn) {
+    const original = console.error;
+    console.error = () => {};
+    try {
+        return fn();
+    } finally {
+        console.error = original;
+    }
 }
 
 describe('ErrorDeNegocio (F-47)', () => {
@@ -71,8 +93,8 @@ describe('esErrorDeNegocio (F-47)', () => {
 
 describe('responderError (F-47)', () => {
     test('responde el error de negocio y no escribe en el log', () => {
-        const original = console.error;
         let llamadas = 0;
+        const original = console.error;
         console.error = () => {
             llamadas++;
         };
@@ -87,29 +109,48 @@ describe('responderError (F-47)', () => {
         }
     });
 
-    test('responde un texto genérico y registra el detalle técnico', () => {
-        const original = console.error;
-        const registros = [];
-        console.error = (...args) => {
-            registros.push(args);
-        };
-        try {
-            const res = respuestaFalsa();
-            const tecnico = new Error('Table timon.recibos doesnt exist');
-            responderError(res, tecnico, 'No se pudo guardar el recibo.', { contexto: 'recibos - POST' });
-            assert.equal(res.status, 500);
-            assert.deepEqual(res.cuerpo, { error: 'No se pudo guardar el recibo.' });
-            assert.equal(registros.length, 1);
-            assert.equal(registros[0][0].includes('recibos - POST'), true);
-            assert.equal(registros[0][1], tecnico);
-        } finally {
-            console.error = original;
-        }
+    test('responde un 500 técnico añadiendo el aviso de la audiencia general', () => {
+        const res = sinLog(() => {
+            const respuesta = respuestaFalsa();
+            responderError(respuesta, new Error('minero interno'), 'No se pudo guardar el ahorro.');
+            return respuesta;
+        });
+
+        assert.equal(res.status, 500);
+        assert.deepEqual(res.cuerpo, { error: 'No se pudo guardar el ahorro. ' + AVISO_GENERAL });
     });
 
-    test('respeta la clave message y publica el código de negocio', () => {
+    test('con audiencia de administrador el aviso remite al registro del servidor', () => {
+        const res = sinLog(() => {
+            const respuesta = respuestaFalsa();
+            responderError(respuesta, new Error('minero interno'), 'No se han podido cargar los usuarios.', { audiencia: AUDIENCIA_ADMIN });
+            return respuesta;
+        });
+
+        assert.equal(res.status, 500);
+        assert.deepEqual(res.cuerpo, { error: 'No se han podido cargar los usuarios. ' + AVISO_ADMIN });
+    });
+
+    test('una causa identificada se añade al mensaje propio', () => {
+        const error = new Error('connect ECONNREFUSED 127.0.0.1:3399');
+        error.code = 'ECONNREFUSED';
+
+        const res = sinLog(() => {
+            const respuesta = respuestaFalsa();
+            responderError(respuesta, error, 'No se ha podido conectar con esos datos.');
+            return respuesta;
+        });
+
+        assert.equal(res.status, 500);
+        assert.deepEqual(res.cuerpo, {
+            error: 'No se ha podido conectar con esos datos. No se puede acceder a la base de datos. Comprueba que el servicio esté en marcha y que la dirección y el puerto sean correctos.'
+        });
+    });
+
+    test('usa la clave indicada y publica el código de negocio', () => {
         const res = respuestaFalsa();
-        responderError(res, new ErrorDeNegocio('IBAN repetido', 409, 'IBAN_DUPLICADO'), 'Fallo interno', { clave: 'message' });
+        responderError(res, new ErrorDeNegocio('IBAN repetido', 409, 'IBAN_DUPLICADO'), 'No se pudo guardar la cuenta.', { clave: 'message' });
+
         assert.equal(res.status, 409);
         assert.deepEqual(res.cuerpo, { message: 'IBAN repetido', codigo: 'IBAN_DUPLICADO' });
     });
@@ -151,21 +192,20 @@ describe('IBAN duplicado (F-47)', () => {
         assert.deepEqual(res.cuerpo, { error: MENSAJE, codigo: 'IBAN_DUPLICADO' });
     });
 
-    test('un error técnico de cuentas no filtra el detalle', () => {
-        const res = respuestaFalsa();
-        const original = console.error;
-        console.error = () => {};
-        try {
-            responderError(res, new Error('ER_DUP_ENTRY: Duplicate entry'), 'No se pudo guardar la cuenta.');
-        } finally {
-            console.error = original;
-        }
+    test('un error técnico de cuentas no filtra el detalle del motor', () => {
+        const res = sinLog(() => {
+            const respuesta = respuestaFalsa();
+            responderError(respuesta, new Error('ER_DUP_ENTRY: Duplicate entry'), 'No se pudo guardar la cuenta.');
+            return respuesta;
+        });
+
         assert.equal(res.status, 500);
-        assert.deepEqual(res.cuerpo, { error: 'No se pudo guardar la cuenta.' });
+        assert.equal(res.cuerpo.error, 'No se pudo guardar la cuenta. ' + AVISO_GENERAL);
+        assert.equal(res.cuerpo.error.includes('ER_DUP_ENTRY'), false);
     });
 });
 
-describe('respuestaDeError (F-47)', () => {
+describe('respuestaDeError (F-47, F-48)', () => {
     test('devuelve el mensaje de negocio con su status', () => {
         assert.deepEqual(respuestaDeError(new ErrorDeNegocio('El recibo está cerrado.', 409), 'Fallo interno'), {
             status: 409,
@@ -182,21 +222,55 @@ describe('respuestaDeError (F-47)', () => {
         });
     });
 
-    test('responde un texto genérico y 500 ante un error técnico', () => {
+    test('un error técnico da 500 con el mensaje propio y el aviso, sin texto del motor', () => {
         const tecnico = new Error('ER_NO_SUCH_TABLE: Table contahogar.recibos doesn exist');
-        assert.deepEqual(respuestaDeError(tecnico, 'No se pudo guardar el recibo.'), {
-            status: 500,
-            cuerpo: { error: 'No se pudo guardar el recibo.' },
-            tecnico: true
-        });
+        const { status, cuerpo, tecnico: esTecnico } = respuestaDeError(tecnico, 'No se pudo guardar el recibo.');
+
+        assert.equal(status, 500);
+        assert.deepEqual(cuerpo, { error: 'No se pudo guardar el recibo. ' + AVISO_GENERAL });
+        assert.equal(esTecnico, true);
     });
 
     test('no filtra el mensaje técnico aunque el error lleve status', () => {
         const conStatus = new Error('SQL interno');
         conStatus.status = 400;
         const { status, cuerpo, tecnico } = respuestaDeError(conStatus, 'Fallo interno');
+
         assert.equal(status, 500);
-        assert.deepEqual(cuerpo, { error: 'Fallo interno' });
+        assert.deepEqual(cuerpo, { error: 'Fallo interno ' + AVISO_GENERAL });
         assert.equal(tecnico, true);
+    });
+});
+
+describe('log saneado (F-48)', () => {
+    test('detalleParaLog incluye código y mensaje del error', () => {
+        const error = new Error('connect ECONNREFUSED 127.0.0.1:3399');
+        error.code = 'ECONNREFUSED';
+
+        assert.equal(detalleParaLog(error), 'código ECONNREFUSED - connect ECONNREFUSED 127.0.0.1:3399');
+        assert.equal(detalleParaLog(null), 'sin detalle');
+    });
+
+    test('oculta contraseñas y credenciales de las cadenas de conexión', () => {
+        assert.equal(sanearParaLog('DB_PASSWORD=s3cr3t0'), 'DB_PASSWORD=<oculto>');
+        assert.equal(sanearParaLog('password: s3cr3t0'), 'password: <oculto>');
+        assert.equal(sanearParaLog('mysql://timon:s3cr3t0@mariadb01:3306/conta_hogar'), 'mysql://timon:<oculto>@mariadb01:3306/conta_hogar');
+    });
+
+    test('el log recibe el error real aunque el cliente vea el texto genérico', () => {
+        const registrado = [];
+        const original = console.error;
+        console.error = (mensaje) => registrado.push(String(mensaje));
+        try {
+            const error = new Error('ER_NO_SUCH_TABLE: Table x doesn exist');
+            error.code = 'ER_NO_SUCH_TABLE';
+            responderError(respuestaFalsa(), error, 'No se han podido cargar los usuarios.', { contexto: 'usuarios - listado', audiencia: AUDIENCIA_ADMIN });
+        } finally {
+            console.error = original;
+        }
+
+        assert.equal(registrado.length, 1);
+        assert.match(registrado[0], /^usuarios - listado: error técnico \(500\) - código ER_NO_SUCH_TABLE/);
+        assert.equal(registrado[0].includes('ER_NO_SUCH_TABLE: Table x'), true);
     });
 });

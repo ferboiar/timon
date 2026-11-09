@@ -11,6 +11,8 @@ del despliegue.
 | `tests/auth.spec.mjs` | Login incorrecto (401 y mensaje del servidor), login correcto (200, `/dashboard`, pie con el usuario y token de sesión) y cierre de sesión desde el menú de perfil |
 | `tests/categorias.spec.mjs` | Listado y detección de categorías E2E de ejecuciones anteriores, alta, presencia en la tabla tras recargar, rechazo de duplicado, edición de la descripción y borrado |
 | `tests/smoke.spec.mjs` | Que Timón carga en el navegador real y que el layout autenticado se pinta |
+| `tests/erroresConexion.spec.mjs` | Pestaña Base de Datos: una prueba de conexión con una dirección inalcanzable (`127.0.0.1` y un puerto sin escuchar) muestra el mensaje de usuario completo, sin código del sistema, y no guarda nada |
+| `tests/usuarios.spec.mjs` | Pestaña Usuarios: alta de un usuario `e2e_` y rechazo del nombre duplicado con el mensaje completo del servidor (409, `USUARIO_DUPLICADO`) |
 
 Las aserciones se apoyan en roles accesibles, etiquetas, textos únicos y estructura DOM estable
 de la interfaz; cada spec documenta en comentarios de qué fichero de Timón sale cada selector.
@@ -51,6 +53,8 @@ npm run e2e:lista                 # lista los tests sin ejecutarlos
   Por defecto se borran (solo las que no pertenecen a la ejecución en curso); con
   `E2E_LIMPIAR_HUERFANAS=0` solo se informa.
 - La suite no borra ninguna otra categoría.
+- Los usuarios de prueba siguen el formato exacto `e2e_usuario_AAAAMMDD_HHMMSS` (26 caracteres; `users.username` es `varchar(50)`) con correo `…@e2e.invalid` (38 caracteres; `varchar(100)`) y una contraseña de un solo uso. Cada ejecución crea y borra solo su usuario; los huérfanos con ese formato solo se informan.
+- La prueba de conexión usa `POST /api/db-config/test`, que abre una conexión y la cierra: no escribe `.db_connection` ni crea `.db_connection.backup`, y el spec comprueba que no se emite ningún guardado ni restauración.
 
 ## Triage de fallos
 

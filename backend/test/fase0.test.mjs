@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import mysql from 'mysql2/promise';
+import { ErrorDeNegocio } from '../src/utils/errorDeNegocio.mjs';
 
 const dbName = process.env.TEST_DB_NAME ?? 'conta_hogar_test';
 const conexion = {
@@ -520,7 +521,12 @@ describe('F-09, F-22, F-10, DC-31: categorías y borrados con las funciones real
         try {
             await pushCategoria(undefined, 'zz-dup', null, 2);
             const antes = await total();
-            await assert.rejects(() => pushCategoria(undefined, 'ZZ-DUP', null, 2), /Ya existe otra categoría con el nombre zz-dup/);
+            // F-47/F-48: el mensaje de negocio lleva el nombre entre comillas angulares y es un
+            // ErrorDeNegocio; se comprueba la clase y el texto completo, no solo una subcadena.
+            await assert.rejects(
+                () => pushCategoria(undefined, 'ZZ-DUP', null, 2),
+                (error) => error instanceof ErrorDeNegocio && error.message === 'Ya existe otra categoría con el nombre «zz-dup».'
+            );
             assert.equal(await total(), antes);
         } finally {
             await borrar('zz-dup');

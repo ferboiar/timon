@@ -4,6 +4,8 @@
  * @module db_utilsConn
  */
 import dotenv from 'dotenv';
+import { mensajeDeCausa } from '../utils/catalogoErrores.mjs';
+import { detalleParaLog, ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 import fs from 'fs/promises';
 import mysql from 'mysql2/promise';
 import path from 'path';
@@ -42,8 +44,8 @@ export const getDbConfig = async () => {
 
         return { config, backupExists };
     } catch (error) {
-        console.error('API. Error al leer la configuración de la base de datos:', error);
-        throw new Error('API. No se pudo leer la configuración de la base de datos.');
+        console.error('db_utilsConn - lectura de la configuración: ' + detalleParaLog(error));
+        throw new ErrorDeNegocio('No se ha podido leer el archivo de configuración de la base de datos. Comprueba que existe y que el servidor tiene permiso de lectura.', 500);
     }
 };
 
@@ -65,8 +67,8 @@ export const getDbPassword = async () => {
         const config = dotenv.parse(fileContent);
         return config.DB_PASSWORD || '';
     } catch (error) {
-        console.error('API. Error al leer la contraseña de la base de datos:', error);
-        throw new Error('API. No se pudo leer la contraseña.');
+        console.error('db_utilsConn - lectura de la contraseña: ' + detalleParaLog(error));
+        throw new ErrorDeNegocio('No se ha podido leer la contraseña guardada en la configuración. Comprueba el archivo de configuración.', 500);
     }
 };
 
@@ -92,8 +94,13 @@ export const testDbConnection = async (config) => {
         await connection.connect();
         return true;
     } catch (error) {
-        console.error('API. Error al probar la conexión a la base de datos:', error.message);
-        throw new Error(`API. Falló la prueba de conexión: ${error.message}`);
+        // F-48: la causa se traduce a lenguaje de usuario; el detalle del motor va solo al log
+        console.error('db_utilsConn - prueba de conexión: ' + detalleParaLog(error));
+        const causa = mensajeDeCausa(error);
+        throw new ErrorDeNegocio(
+            causa || 'No se ha podido conectar con esos datos. La causa no se ha podido identificar; consulta el registro del servidor.',
+            400
+        );
     } finally {
         if (connection) await connection.end();
     }
@@ -123,8 +130,8 @@ export const saveDbConfig = async (config) => {
 
         await fs.writeFile(dbConfigPath, configString, 'utf-8');
     } catch (error) {
-        console.error('API. Error al guardar la configuración de la base de datos:', error);
-        throw new Error('API. No se pudo guardar la configuración de la base de datos.');
+        console.error('db_utilsConn - guardado de la configuración: ' + detalleParaLog(error));
+        throw new ErrorDeNegocio('No se ha podido guardar la configuración. Comprueba el permiso de escritura y el espacio en disco del servidor.', 500);
     }
 };
 
@@ -133,19 +140,21 @@ export const saveDbConfig = async (config) => {
  * @returns {Promise<void>}
  */
 export const restoreDbConfig = async () => {
+    // F-48: que no haya copia es un estado esperado, no un fallo del servidor
+    if (
+        !(await fs
+            .access(dbBackupPath)
+            .then(() => true)
+            .catch(() => false))
+    ) {
+        throw new ErrorDeNegocio('No hay ninguna copia de la configuración guardada que se pueda restaurar.', 409, 'SIN_COPIA');
+    }
+
     try {
-        if (
-            !(await fs
-                .access(dbBackupPath)
-                .then(() => true)
-                .catch(() => false))
-        ) {
-            throw new Error('API. No existe un archivo de copia de seguridad para restaurar.');
-        }
         await fs.copyFile(dbBackupPath, dbConfigPath);
         await fs.unlink(dbBackupPath); // Eliminar el backup después de restaurar
     } catch (error) {
-        console.error('API. Error al restaurar la configuración de la base de datos:', error);
-        throw new Error('API. No se pudo restaurar la configuración de la base de datos.');
+        console.error('db_utilsConn - restauración de la configuración: ' + detalleParaLog(error));
+        throw new ErrorDeNegocio('No se ha podido restaurar la copia de la configuración. Comprueba los permisos del archivo.', 500);
     }
 };

@@ -6,11 +6,18 @@
  * cambiar contraseñas, eliminar usuarios y gestionar preferencias de estilo. Todas las rutas requieren autenticación
  * como administrador, salvo las de preferencias de estilo, que solo exigen sesión (son del propio usuario).
  *
+ * Errores (F-48): las rutas de gestión son de administrador y sus mensajes pueden hablar de
+ * configuración y del servicio de la base de datos; las preferencias de estilo se redactan para
+ * cualquier usuario. Los errores técnicos se componen con el catálogo de causas y el detalle
+ * completo queda en el log del servidor (DC-09).
+ *
  * @module routes/users
  */
 
 import * as dbUsers from '#backend/db/db_utilsUsers.mjs';
 import { verifyAdmin, verifyToken } from '#backend/middleware/auth.mjs';
+import { AUDIENCIA_ADMIN, AUDIENCIA_GENERAL } from '#backend/utils/catalogoErrores.mjs';
+import { responderError } from '#backend/utils/errorDeNegocio.mjs';
 import bcrypt from 'bcrypt';
 import express from 'express';
 
@@ -26,7 +33,11 @@ router.get('/', verifyAdmin, async (req, res) => {
         const users = await dbUsers.getUsers();
         res.json(users);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se han podido cargar los usuarios.', {
+            clave: 'message',
+            contexto: 'usuarios - listado',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -41,7 +52,7 @@ router.post('/', verifyAdmin, async (req, res) => {
 
         // Validar que se proporcionan todos los campos requeridos
         if (!username || !email || !password || !rol) {
-            return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+            return res.status(400).json({ message: 'Faltan datos obligatorios: nombre de usuario, correo, contraseña y rol.' });
         }
 
         // Generar hash de la contraseña
@@ -63,9 +74,14 @@ router.post('/', verifyAdmin, async (req, res) => {
             perm_cuentas
         });
 
+        console.log(`usuarios - alta: usuario ${result.id} con rol ${rol}`);
         res.status(201).json(result);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se ha podido crear el usuario.', {
+            clave: 'message',
+            contexto: 'usuarios - alta',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -80,7 +96,7 @@ router.put('/', verifyAdmin, async (req, res) => {
 
         // Validar que se proporcionan todos los campos requeridos
         if (!id || !username || !email || !rol) {
-            return res.status(400).json({ message: 'Los campos id, username, email y rol son obligatorios' });
+            return res.status(400).json({ message: 'Faltan datos obligatorios: usuario, correo y rol.' });
         }
 
         // Actualizar el usuario
@@ -97,9 +113,14 @@ router.put('/', verifyAdmin, async (req, res) => {
             perm_cuentas
         });
 
+        console.log(`usuarios - edición: usuario ${id}`);
         res.json(result);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se han podido guardar los cambios del usuario.', {
+            clave: 'message',
+            contexto: 'usuarios - edición',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -114,7 +135,7 @@ router.put('/password', verifyAdmin, async (req, res) => {
 
         // Validar que se proporcionan todos los campos requeridos
         if (!id || !password) {
-            return res.status(400).json({ message: 'ID y contraseña son obligatorios' });
+            return res.status(400).json({ message: 'Faltan el usuario y la contraseña nueva.' });
         }
 
         // Generar hash de la nueva contraseña
@@ -124,9 +145,14 @@ router.put('/password', verifyAdmin, async (req, res) => {
         // Cambiar la contraseña
         await dbUsers.changePassword(id, hashedPassword);
 
+        console.log(`usuarios - cambio de contraseña: usuario ${id}`);
         res.json({ message: 'Contraseña actualizada correctamente' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se ha podido cambiar la contraseña.', {
+            clave: 'message',
+            contexto: 'usuarios - cambio de contraseña',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -141,15 +167,20 @@ router.delete('/', verifyAdmin, async (req, res) => {
 
         // Validar que se proporciona al menos un ID
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-            return res.status(400).json({ message: 'Se requiere al menos un ID de usuario' });
+            return res.status(400).json({ message: 'Selecciona al menos un usuario para eliminar.' });
         }
 
         // Eliminar usuarios
         await dbUsers.deleteUsers(userIds);
 
+        console.log(`usuarios - borrado: ${userIds.length} usuario(s)`);
         res.json({ message: 'Usuarios eliminados correctamente' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se han podido eliminar los usuarios.', {
+            clave: 'message',
+            contexto: 'usuarios - borrado',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -165,11 +196,11 @@ router.put('/style-preferences', verifyToken, async (req, res) => {
 
         // Validar que hay preferencias de estilo
         if (!stylePrefs || Object.keys(stylePrefs).length === 0) {
-            return res.status(400).json({ message: 'No se proporcionaron preferencias de estilo' });
+            return res.status(400).json({ message: 'No hay preferencias que guardar.' });
         }
 
         if (stylePrefs.colorScheme !== undefined && !['system', 'light', 'dark'].includes(stylePrefs.colorScheme)) {
-            return res.status(400).json({ message: 'La apariencia general debe ser system, light o dark' });
+            return res.status(400).json({ message: 'La apariencia debe ser Sistema, Claro u Oscuro.' });
         }
 
         // Guardar las preferencias
@@ -177,7 +208,12 @@ router.put('/style-preferences', verifyToken, async (req, res) => {
 
         res.json({ message: 'Preferencias de estilo guardadas correctamente' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        // Ruta de uso general: el texto no supone conocimientos de administrador
+        responderError(res, error, 'No se han podido guardar tus preferencias de estilo.', {
+            clave: 'message',
+            contexto: 'usuarios - preferencias de estilo',
+            audiencia: AUDIENCIA_GENERAL
+        });
     }
 });
 
@@ -199,7 +235,11 @@ router.get('/style-preferences', verifyToken, async (req, res) => {
 
         res.json(stylePrefs);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se han podido cargar tus preferencias de estilo.', {
+            clave: 'message',
+            contexto: 'usuarios - preferencias de estilo',
+            audiencia: AUDIENCIA_GENERAL
+        });
     }
 });
 

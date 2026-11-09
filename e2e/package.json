@@ -13,6 +13,8 @@
         "e2e:auth": "node lanzador.mjs tests/auth.spec.mjs",
         "e2e:categorias": "node lanzador.mjs tests/categorias.spec.mjs",
         "e2e:smoke": "node lanzador.mjs tests/smoke.spec.mjs",
+        "e2e:errores": "node lanzador.mjs tests/erroresConexion.spec.mjs",
+        "e2e:usuarios": "node lanzador.mjs tests/usuarios.spec.mjs",
         "e2e:lista": "playwright test --list"
     },
     "keywords": [

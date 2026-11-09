@@ -71,6 +71,8 @@ El lanzador (`lanzador.mjs`):
 | `tests/auth.spec.mjs` | Login incorrecto, login correcto y cierre de sesión |
 | `tests/categorias.spec.mjs` | Flujo serial sobre una sola sesión |
 | `tests/smoke.spec.mjs` | Timón carga en el Edge del portátil |
+| `tests/erroresConexion.spec.mjs` | Base de Datos: mensaje de usuario ante una conexión inalcanzable, sin guardar nada |
+| `tests/usuarios.spec.mjs` | Usuarios: alta `e2e_` y duplicado con el mensaje completo del servidor |
 
 ## Aislamiento y sesión
 
@@ -93,6 +95,10 @@ El lanzador (`lanzador.mjs`):
 - Al empezar se informa de las categorías huérfanas con ese formato de ejecuciones
   anteriores. Por defecto se borran (solo las que no pertenecen a la ejecución en curso);
   con `E2E_LIMPIAR_HUERFANAS=0` solo se informa.
+- Los usuarios de prueba siguen el formato exacto `e2e_usuario_AAAAMMDD_HHMMSS` (26 caracteres;
+  `users.username` es `varchar(50)`) con correo `@e2e.invalid` y contraseña de un solo uso. Se borra
+  en `afterAll` solo el usuario creado por la ejecución; los huérfanos con ese formato **solo se
+  informan**, nunca se borran automáticamente (son cuentas, no categorías).
 
 ## Servidores
 

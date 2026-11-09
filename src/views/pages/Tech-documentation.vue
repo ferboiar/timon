@@ -141,6 +141,7 @@ const docNavigation = [
                     { title: 'Utilidad de fechas de formulario', path: 'utils/fechasFormulario' },
                     { title: 'Utilidad de CSV', path: 'utils/csv' },
                     { title: 'Utilidad de errores de negocio', path: 'utils/errorDeNegocio' },
+                    { title: 'Catálogo de causas de error', path: 'utils/catalogoErrores' },
                     { title: 'Esquema de la base de datos', path: 'db/schema/index' }
                 ]
             },

@@ -22,6 +22,10 @@ Las horas se guardan siempre en UTC (las conexiones del pool trabajan en UTC). L
 
 Las utilidades puras (`esZonaValida`, `hoyEnZonaDe`, `hoyIsoEnZonaDe`) están en `backend/src/utils/tiempo.mjs` ([tiempo](../utils/tiempo.md)).
 
+## Errores (F-48)
+
+`ErrorDeAjuste` hereda de `ErrorDeNegocio` y conserva el nombre, así que `esErrorDeNegocio` la reconoce sin casos especiales. Los dos rechazos de zona horaria siguen siendo 400 y su texto indica qué hacer («La zona horaria elegida no es válida. Elige una de la lista, por ejemplo Europe/Madrid.» y «La aplicación no reconoce esa zona horaria. Elige otra de la lista.»); el detalle técnico va al log.
+
 ## Referencias
 
 - [API de Ajustes](../routes/ajustes.md)

@@ -93,6 +93,19 @@ El sistema permite almacenar y recuperar preferencias de interfaz personalizadas
 - Sustituye el JSON completo: no fusiona campos de preferencias
 - Conversión automática entre formatos string y objeto JSON
 
+## Errores (F-48)
+
+Lanza `ErrorDeNegocio` (ver [la utilidad de errores](../utils/errorDeNegocio.md)) y deja que la ruta componga el mensaje técnico con el [catálogo de causas](../utils/catalogoErrores.md):
+
+| Situación | Estado | Código |
+|---|---|---|
+| Nombre de usuario duplicado (`username_UNIQUE`) | 409 | `USUARIO_DUPLICADO` |
+| Correo duplicado (`email`) | 409 | `CORREO_DUPLICADO` |
+| Usuario inexistente | 404 | `USUARIO_NO_ENCONTRADO` |
+| Borrado bloqueado por datos asociados | 409 | `USUARIO_CON_DATOS` |
+
+El duplicado se resuelve con `campoDuplicado(error)`, que lee el **nombre del índice** que informa el motor. Las funciones ya no envuelven el error del motor en un texto genérico: lo relanzan para que el catálogo identifique la causa. Para el borrado bloqueado, el nombre del usuario se lee antes de borrar y solo se usa en el mensaje.
+
 ## Referencias
 
 - [API de Usuarios](../routes/users.md) - Endpoints que utilizan estas funciones
