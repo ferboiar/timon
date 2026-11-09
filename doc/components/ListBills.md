@@ -168,6 +168,12 @@ Antes de enviar, `guardarRecibo()` comprueba concepto, periodicidad, importe (ma
 
 Antes de enviar, `guardarRecibo()` comprueba también que todas las fechas sean del mismo año (DC-14): en un recibo que se edita, el de su `fecha_inicial` guardada (`anioReciboGuardado`); en un alta, el de la primera fecha. Si alguna cae fuera, muestra un aviso con esas fechas y no envía nada. El servidor repite la comprobación, también para el modo automático, cuyas fechas la pantalla no calcula. Con el interruptor de sesión «Permitir declarar fechas fuera del año en curso» (`permitirFechasFueraDeAnio` de [useAjustesSesion](../composables/useAjustesSesion.md), DC-29) la pantalla no avisa y la petición lleva `permitirFueraDeAnio: true`; el servidor solo lo respeta si quien guarda es administrador.
 
+## Selección y borrado (F-30, F-31)
+
+Cada tabla de periodicidad mantiene **su propia** selección: `selectedAnualBills`, `selectedQuarterlyBills`, `selectedBimonthlyBills` y `selectedMonthlyBills`. La de trimestrales usa `selectedQuarterlyBills` desde F-30; antes compartía el estado de bimestrales, de modo que seleccionar en una tabla afectaba a la otra. El botón «Borrar» de la barra reúne las cuatro selecciones.
+
+El diálogo de confirmación muestra el **concepto** del recibo (`bill.concepto`). Hasta F-31 usaba `bill.name`, un campo que no existe en los datos, así que el nombre salía vacío. Lo cubren la guarda estática `backend/test/plantillasRecibos.test.mjs` y el spec `e2e/tests/recibosBorrado.spec.mjs`, que abre el diálogo de un recibo real y cancela sin borrar nada.
+
 ## Referencias
 
 - [BillService](../services/BillService.md) - Servicio que gestiona la comunicación con la API de recibos

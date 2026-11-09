@@ -1051,7 +1051,7 @@ const inactiveBillsCount = (periodicity) => {
                     </div>
                     <DataTable
                         ref="dt_trimestral"
-                        v-model:selection="selectedBimonthlyBills"
+                        v-model:selection="selectedQuarterlyBills"
                         v-model:expandedRows="expandedRowsTrimestral"
                         :value="groupedQuarterlyBills"
                         dataKey="id"
@@ -1771,7 +1771,7 @@ const inactiveBillsCount = (periodicity) => {
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
                 <span v-if="bill"
-                    >¿Seguro que quieres borrar el recibo <b>{{ bill.name }}</b
+                    >¿Seguro que quieres borrar el recibo <b>{{ bill.concepto }}</b
                     >?</span
                 >
             </div>
