@@ -6,6 +6,8 @@
 |---|---|---|
 | 2026-11-08 | F-48, D-30 | [Errores de negocio y técnicos en el resto del backend](./2026-11-08_F-48_D-30_errores-negocio-resto.md) |
 | 2026-11-09 | S-16 | [Token inválido: 401 en vez de 403](./2026-11-09_S-16_token-invalido-401.md) |
+| 2026-11-09 | DC-46 (arreglo) | [Permisos 600 del entorno de pruebas](./2026-11-09_DC-46_permisos-600.md) |
+| 2026-11-09 | DC-46 | [Entorno de pruebas cifrado y `test:backend:local`](./2026-11-09_DC-46_entorno-pruebas-cifrado.md) |
 | 2026-11-06 | D-29 | [Sincronización posterior a los PR #65, #66 y #67](./2026-11-06_D-29_sincronizacion-post-pr66-67.md) |
 | 2026-11-06 | S-15 | [Hooks ejecutables con `core.fileMode=false`](./2026-11-06_S-15-hooks-ejecutables.md) |
 | 2026-11-06 | S-09, DC-45 | [Cifrado con git-crypt: `e2e/.env` cifrado, hooks y política](./2026-11-06_S-09-cifrado-git-crypt.md) |
