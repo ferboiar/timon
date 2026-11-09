@@ -13,11 +13,11 @@ Fuente: `backend/src/middleware/auth.mjs`. Revisión estática: 2026-10-23.
 Todas llevan `{ success: false, message }`:
 
 - Sin token: 401, `Se requiere token de autenticación`.
-- Inválido o caducado: 403, `Token inválido o expirado`.
+- Inválido o caducado: **401**, `Token inválido o expirado` (S-16; antes 403).
 - Sin rol administrador: 403, `Acceso restringido a administradores`.
 - Fuera de checkRole: 403, `No tienes permisos para realizar esta acción`.
 
-No hay comprobación de perm_*, es_privado, cambios posteriores del rol ni revocación (S-01, S-04). El módulo no establece HTTPS. La ruta /api/auth/verify valida directamente JWT y responde 401 al fallar: no debe confundirse con verifyToken.
+No hay comprobación de perm_*, es_privado, cambios posteriores del rol ni revocación (S-01, S-04). El módulo no establece HTTPS. La ruta /api/auth/verify valida directamente JWT y responde 401 al fallar, el mismo criterio que verifyToken desde S-16.
 
 ## Referencias
 

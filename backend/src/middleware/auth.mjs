@@ -30,7 +30,9 @@ export const verifyToken = (req, res, next) => {
         next();
     } catch (error) {
         console.error('Error de autenticación:', error);
-        return res.status(403).json({
+        // S-16: el token inválido o caducado es un problema de autenticación (401).
+        // El 403 queda para la autorización: sin rol suficiente.
+        return res.status(401).json({
             success: false,
             message: 'Token inválido o expirado'
         });
