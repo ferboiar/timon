@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 
-import { basesConcedidas, basesPeligrosas, parsearEnv, revisarFichero } from '../../scripts/comprobar-entorno-pruebas.mjs';
+import { asegurarPermisos, basesConcedidas, basesPeligrosas, parsearEnv, revisarFichero } from '../../scripts/comprobar-entorno-pruebas.mjs';
 
 const TEMPORAL = path.join('/tmp', 'timon-entorno-pruebas');
 
@@ -64,11 +64,12 @@ test('revisarFichero acepta un fichero completo con permisos 600', () => {
     assert.equal(variables.get('TEST_DB_NAME'), 'conta_hogar_test');
 });
 
-test('revisarFichero rechaza permisos distintos de 600', () => {
+test('asegurarPermisos restablece el 600 que git no conserva', () => {
     const ruta = escribirFichero('.env.test-permisos', 'TEST_DB_HOST=x\n', 0o644);
-    const { problemas } = revisarFichero(ruta);
 
-    assert.equal(problemas.some((problema) => problema.includes('permisos 600')), true);
+    assert.equal(asegurarPermisos(ruta), true);
+    assert.equal(fs.statSync(ruta).mode & 0o777, 0o600);
+    assert.equal(asegurarPermisos(ruta), false);
 });
 
 test('revisarFichero enumera las variables que faltan', () => {

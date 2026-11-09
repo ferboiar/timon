@@ -46,7 +46,7 @@ npm run test:backend:local
 
 El script hace dos cosas, en este orden:
 
-1. `node scripts/comprobar-entorno-pruebas.mjs` comprueba que el fichero existe, que tiene permisos `600`, que están las cinco variables y que `TEST_DB_NAME` acaba en `_test`. Después conecta con esas credenciales y ejecuta `SHOW GRANTS FOR CURRENT_USER()`: si el usuario tiene permisos sobre alguna base que **no** acaba en `_test` (o un permiso global), **aborta sin lanzar la suite**. No imprime la contraseña ni el contenido del fichero.
+1. `node scripts/comprobar-entorno-pruebas.mjs` comprueba que el fichero existe, **restablece los permisos `600`** si un checkout los dejó en `644` (git no conserva el modo), comprueba que están las cinco variables y que `TEST_DB_NAME` acaba en `_test`. Después conecta con esas credenciales y ejecuta `SHOW GRANTS FOR CURRENT_USER()`: si el usuario tiene permisos sobre alguna base que **no** acaba en `_test` (o un permiso global), **aborta sin lanzar la suite**. No imprime la contraseña ni el contenido del fichero.
 2. `node --env-file=backend/test/.env.test --test backend/test/` ejecuta la suite completa.
 
 ## Límites
