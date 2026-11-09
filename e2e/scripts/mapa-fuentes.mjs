@@ -53,6 +53,12 @@ export const MAPA_FUENTES = {
         'backend/src/utils/errorDeNegocio.mjs',
         'backend/src/db/migrations/0001_baseline.sql'
     ],
+    'tests/recibosBorrado.spec.mjs': [
+        'src/views/pages/ListBills.vue',
+        'src/service/BillService.js',
+        'src/router/index.js',
+        'backend/src/routes/recibos.mjs'
+    ],
     'tests/smoke.spec.mjs': ['src/main.js', 'src/App.vue', 'src/router/index.js', 'vite.config.mjs']
 };
 

@@ -73,6 +73,7 @@ El lanzador (`lanzador.mjs`):
 | `tests/smoke.spec.mjs` | Timón carga en el Edge del portátil |
 | `tests/erroresConexion.spec.mjs` | Base de Datos: mensaje de usuario ante una conexión inalcanzable, sin guardar nada |
 | `tests/usuarios.spec.mjs` | Usuarios: alta `e2e_` y duplicado con el mensaje completo del servidor |
+| `tests/recibosBorrado.spec.mjs` | Recibos: el diálogo de borrado muestra el concepto del recibo (no crea ni borra datos) |
 
 ## Aislamiento y sesión
 
