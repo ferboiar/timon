@@ -82,6 +82,21 @@ Las preferencias de estilo son específicas para cada usuario y se almacenan en 
 - Apariencia general (`colorScheme`: `system`, `light` o `dark`)
 - Colores primarios y de superficie
 
+## Manejo de errores (F-48)
+
+Las rutas de gestión exigen administrador; las de preferencias de estilo, solo sesión. El texto de cada error lo decide esa **audiencia**: las de gestión pueden hablar de configuración y del servicio de la base de datos; las de preferencias se redactan para cualquier usuario. Se usa la utilidad compartida [`responderError`](../utils/errorDeNegocio.md) con la clave `message`, que es la que envía este módulo, y el [catálogo de causas](../utils/catalogoErrores.md) traduce el error del motor. El detalle completo, saneado, va al log con el formato «módulo - acción: datos» (DC-09).
+
+| Situación | Estado | Código |
+|---|---|---|
+| Falta un dato obligatorio | 400 | — |
+| Nombre de usuario ya usado | **409** (antes 500) | `USUARIO_DUPLICADO` |
+| Correo ya registrado | **409** (antes 500) | `CORREO_DUPLICADO` |
+| Usuario inexistente | **404** (antes 500) | `USUARIO_NO_ENCONTRADO` |
+| Borrado bloqueado por datos asociados | **409** (antes 500) | `USUARIO_CON_DATOS` |
+| Fallo técnico | 500 | — |
+
+Los duplicados se reconocen por el **nombre del índice único** (`username_UNIQUE`, `email`), no por el texto del mensaje. Textos: «No se ha podido crear el usuario porque ya existe uno con el nombre «X».», «No se ha podido guardar el usuario porque el correo «X» ya está asociado a otra cuenta.», «No se puede eliminar al usuario «X» porque tiene datos asociados.» y «No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.».
+
 ## Referencias
 
 - [Servicio de Usuarios](../services/UsersService.md) - Cliente de API para consumir estos endpoints

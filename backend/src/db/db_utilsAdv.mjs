@@ -18,6 +18,7 @@
 
 import { enTransaccion, getConnection } from './db_connection.mjs';
 import { fechaISO, siguienteFechaAnclada, sumarMesesAnclado } from '../utils/fechasAnticipos.mjs';
+import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 
 // DC-38: el importe pendiente no se guarda; es el principal menos la suma de los pagos pagados. El estado completado se deduce de él.
 const SQL_PENDIENTE = "a.importe_original - COALESCE((SELECT SUM(p.importe) FROM anticipos_pagos p WHERE p.anticipo_id = a.id AND p.estado = 'pagado'), 0)";
@@ -39,10 +40,9 @@ function traducirErrorBD(error) {
 }
 
 // Crea un error con código HTTP: las rutas lo devuelven tal cual (400 datos no válidos, 404 no existe)
-function errorHttp(estado, mensaje) {
-    const error = new Error(mensaje);
-    error.status = estado;
-    return error;
+// F-48: es un error de negocio de la utilidad compartida, no un error con `status` suelto
+function errorHttp(estado, mensaje, codigo = null) {
+    return new ErrorDeNegocio(mensaje, estado, codigo);
 }
 
 /**
@@ -483,7 +483,7 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
 
         // Obtener datos del anticipo
         const [anticipo] = await connection.execute(SQL_ANTICIPO + ' WHERE a.id = ?', [anticipo_id]);
-        if (anticipo.length === 0) throw new Error(`Anticipo con ID ${anticipo_id} no encontrado`);
+        if (anticipo.length === 0) throw errorHttp(404, 'No se ha encontrado el anticipo.', 'ANTICIPO_NO_ENCONTRADO');
 
         const importeTotal = parseFloat(anticipo[0].pendiente);
         const pagoSugerido = parseFloat(anticipo[0].pago_sugerido);

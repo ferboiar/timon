@@ -208,3 +208,144 @@ export async function eliminarCategoria(page, nombre) {
 
     return respuesta;
 }
+
+/**
+ * Ajustes (/settings) — F-48.
+ * ===========================
+ *
+ * Deducciones:
+ * - `src/router/index.js`: ruta `/settings`, componente `ProfileSettings.vue`.
+ * - `ProfileSettings.vue`: `Tabs` con `Tab value="general|usuarios|Estilo|recibos|db"`; el texto
+ *   visible es «General», «Usuarios», «Aspecto», «Administrar recibos» y «Base de Datos».
+ * - Pestaña Base de Datos: `InputText id="db-host|db-port|db-user|db-database"`, `Password`
+ *   `id="db-password"` y botones «Probar», «Guardar» y «Restaurar».
+ * - Pestaña Usuarios: toolbar con «Nuevo», `DataTable` (columnas Usuario, E-Mail, Rol) y, en
+ *   cada fila, botones `pi-pencil`, `pi-key` y `pi-trash`; el diálogo de alta es
+ *   «Detalle del usuario» con `#username`, `#password`, `#email`, `#rol` y «Cancelar»/«Guardar».
+ * - Los toasts de error usan `role="alert"` (PrimeVue Toast).
+ *
+ * Formato de los usuarios de prueba: `e2e_usuario_AAAAMMDD_HHMMSS` (26 caracteres;
+ * `users.username` es `varchar(50)` y `users.email`, `varchar(100)`).
+ */
+
+/** Formato exacto de los usuarios que crea esta suite. */
+export const PATRON_USUARIO_E2E = /^e2e_usuario_\d{8}_\d{6}$/;
+
+/** `users.username` es `varchar(50)` (migración 0001_baseline.sql). */
+const LONGITUD_MAXIMA_USUARIO = 50;
+
+/** Nombres de usuario ya entregados en esta ejecución. */
+const usuariosUsados = new Set();
+
+/**
+ * Nombre de usuario único con el formato exacto `e2e_usuario_AAAAMMDD_HHMMSS` (26 caracteres).
+ */
+export async function nombreUsuarioUnico() {
+    for (;;) {
+        const ahora = new Date();
+        const dos = (numero) => String(numero).padStart(2, '0');
+        const fecha = `${ahora.getFullYear()}${dos(ahora.getMonth() + 1)}${dos(ahora.getDate())}`;
+        const hora = `${dos(ahora.getHours())}${dos(ahora.getMinutes())}${dos(ahora.getSeconds())}`;
+        const nombre = `e2e_usuario_${fecha}_${hora}`;
+
+        if (nombre.length > LONGITUD_MAXIMA_USUARIO) {
+            throw new Error(`El usuario E2E «${nombre}» supera ${LONGITUD_MAXIMA_USUARIO} caracteres`);
+        }
+
+        if (!usuariosUsados.has(nombre)) {
+            usuariosUsados.add(nombre);
+            return nombre;
+        }
+
+        await new Promise((resolver) => setTimeout(resolver, 1000));
+    }
+}
+
+/** Correo del usuario de prueba, con el dominio reservado `.invalid` (39 caracteres). */
+export function emailDeUsuario(nombre) {
+    return `${nombre}@e2e.invalid`;
+}
+
+/** Contraseña de un solo uso para el usuario de prueba. */
+export function contrasenaDeUsuario(nombre) {
+    return `E2e_${nombre.slice(-6)}!aB3`;
+}
+
+/** Abre `/settings` y, si se indica, activa una pestaña concreta. */
+export async function abrirAjustes(page, pestana = null) {
+    await page.goto(urlDe('/settings'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await expect(page.getByRole('tab').first()).toBeVisible();
+
+    if (pestana) await irAPestana(page, pestana);
+}
+
+/** Activa una pestaña de Ajustes por su texto visible y comprueba que queda seleccionada. */
+export async function irAPestana(page, nombre) {
+    const pestana = page.getByRole('tab', { name: nombre, exact: true });
+    await pestana.click();
+    await expect(pestana).toHaveAttribute('aria-selected', 'true');
+}
+
+/** Diálogo de alta y edición de usuario. */
+export function dialogoUsuario(page) {
+    return page.getByRole('dialog', { name: 'Detalle del usuario' });
+}
+
+/** Fila de la tabla de usuarios que contiene el nombre indicado. */
+export function filaUsuario(page, nombre) {
+    return page.locator('table tbody tr').filter({ hasText: nombre });
+}
+
+/**
+ * Da de alta un usuario desde la interfaz y devuelve la respuesta del `POST /api/users`.
+ * El rol lo pone la pantalla (`user`) al abrir el diálogo de alta.
+ */
+export async function crearUsuario(page, { username, email, password }) {
+    await page.getByRole('button', { name: 'Nuevo' }).click();
+
+    const dialogo = dialogoUsuario(page);
+    await expect(dialogo).toBeVisible();
+
+    await dialogo.locator('#username').fill(username);
+    await dialogo.locator('input[type="password"]').first().fill(password);
+    await dialogo.locator('#email').fill(email);
+
+    const [respuesta] = await Promise.all([
+        page.waitForResponse((r) => r.url().includes('/api/users') && r.request().method() === 'POST', { timeout: 30_000 }),
+        dialogo.getByRole('button', { name: 'Guardar' }).click()
+    ]);
+
+    return respuesta;
+}
+
+/** Cierra el diálogo de usuario sin guardar, si sigue abierto. */
+export async function cerrarDialogoUsuario(page) {
+    const dialogo = dialogoUsuario(page);
+
+    if (await dialogo.isVisible()) {
+        await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+        await expect(dialogo).toBeHidden();
+    }
+}
+
+/**
+ * Borra un usuario concreto desde la interfaz. Devuelve la respuesta del
+ * `DELETE /api/users`, o `null` si ese usuario no está en la tabla.
+ */
+export async function eliminarUsuario(page, nombre) {
+    const fila = filaUsuario(page, nombre);
+
+    if ((await fila.count()) === 0) return null;
+
+    await fila.first().locator('button:has(.pi-trash)').click();
+
+    const confirmacion = page.getByRole('dialog', { name: 'Confirmar' });
+    await expect(confirmacion).toBeVisible();
+
+    const [respuesta] = await Promise.all([
+        page.waitForResponse((r) => r.url().includes('/api/users') && r.request().method() === 'DELETE', { timeout: 30_000 }),
+        confirmacion.getByRole('button', { name: 'Sí' }).click()
+    ]);
+
+    return respuesta;
+}

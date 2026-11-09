@@ -134,6 +134,18 @@ El componente utiliza varios servicios para su funcionamiento:
 - `useLayout` para gestionar configuración de diseño
 - `useToast` para notificaciones al usuario
 
+## Mensajes de error en las pestañas de administración (F-48, U-14)
+
+Las pestañas **Usuarios**, **Base de Datos**, **Mantenimiento** y **Ajustes** usan los servicios de F-48. El ayudante local `mensajeDeErrorApi(error, porDefecto)` compone el texto del *toast*:
+
+- Si el servicio lanzó el error con el mensaje del servidor (los que usan `fetch` guardan ahí el texto y **no** tienen `response`), se muestra ese mensaje.
+- Si hay `response` (axios), manda el cuerpo del servidor (`data.error` o `data.message`).
+- El texto por defecto solo aparece cuando no hay ningún mensaje.
+
+Antes de U-14 (corregido el 2026-11-09) esas llamadas pasaban `{ message: '<texto por defecto>', response: error?.response }`, así que con los servicios `fetch` la pantalla mostraba siempre el texto por defecto y el mensaje del servidor se perdía. Lo detectó `e2e/tests/erroresConexion.spec.mjs`.
+
+La pestaña **Base de Datos** muestra además `invalidFileTypeMessage` en español al elegir un archivo que no es `.sql`: «El archivo «{0}» no es una copia de seguridad. Selecciona un archivo con extensión .sql.». Es un aviso en línea del `FileUpload` (modo `basic`), no un *toast*.
+
 ## Referencias
 
 - [Servicio de Usuarios](../services/UsersService.md) - Operaciones CRUD para gestionar usuarios

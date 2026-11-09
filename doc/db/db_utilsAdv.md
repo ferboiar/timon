@@ -147,6 +147,10 @@ Cada paso deja trazas en el log del backend con el formato «módulo - acción: 
 - Las operaciones de recálculo de pagos (`recalculatePostEditPayments`, `recalculatePaymentPlan`) pueden ser intensivas en recursos para anticipos con muchos pagos.
 - Las operaciones compuestas se serializan por anticipo con SELECT … FOR UPDATE: dos peticiones sobre el mismo anticipo esperan una a la otra, y un fallo intermedio deshace la operación entera (F-27, DC-39).
 
+## Errores (F-48)
+
+`errorHttp(estado, mensaje, codigo)` devuelve un `ErrorDeNegocio`: los errores de negocio (400, 404 y 409) conservan estado, mensaje y código, y la ruta los devuelve tal cual. El propietario ausente al crear un anticipo pasa a **401** `SESION_NO_IDENTIFICADA` (antes 400). Los errores del motor no se envuelven: la ruta los compone con el [catálogo de causas](../utils/catalogoErrores.md) y el detalle va al log (DC-09).
+
 ## Referencias
 
 - [Documentación de la API de Anticipos](../routes/anticipos.md) - Rutas que utilizan estas funciones

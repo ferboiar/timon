@@ -40,7 +40,7 @@ getApiErrorMessage({ message: 'No se pudo guardar la configuración.', response:
 
 ## Límite actual
 
-F-47 normaliza cuentas, ahorros, categorías y recibos: esas rutas devuelven el mensaje de negocio o un texto genérico seguro, sin prefijos técnicos ni detalle interno. El resto de rutas (usuarios, conexión, mantenimiento, anticipos y ajustes) queda para **F-48**; hasta entonces pueden devolver el mensaje del servidor tal cual.
+F-47 y F-48 normalizan todo el backend: cada ruta devuelve el mensaje de negocio tal cual o, ante un error técnico, el texto propio de la operación con la causa del [catálogo de causas](./catalogoErrores.md), sin prefijos técnicos, sin códigos del motor y sin detalle interno. Las pantallas siguen anteponiendo su prefijo contextual («Error al guardar usuario: …»), que ahora se lee como una frase completa. Los fallos de la prueba de conexión nunca muestran el código del sistema.
 
 ## Referencias
 

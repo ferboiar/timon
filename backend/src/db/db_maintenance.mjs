@@ -11,8 +11,31 @@ import fs from 'fs';
 import readline from 'readline';
 import { promisify } from 'util';
 import { getDbConfig, getDbPassword } from './db_utilsConn.mjs';
+import { detalleParaLog, ErrorDeNegocio, esErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 
 const execAsync = promisify(exec);
+
+/**
+ * F-48: una configuración incompleta es un estado que el administrador puede corregir
+ * (409), no un fallo del servidor. Se indica qué dato falta.
+ */
+function exigirConfiguracionCompleta(config, password) {
+    const faltan = [];
+
+    if (!config.DB_HOST) faltan.push('host');
+    if (!config.DB_PORT) faltan.push('puerto');
+    if (!config.DB_USER) faltan.push('usuario');
+    if (!password) faltan.push('contraseña');
+    if (!config.DB_DATABASE) faltan.push('base de datos');
+
+    if (faltan.length > 0) {
+        throw new ErrorDeNegocio(
+            'La configuración de la base de datos está incompleta: falta «' + faltan.join('», «') + '». Revísala en la pestaña Base de Datos.',
+            409,
+            'CONFIGURACION_INCOMPLETA'
+        );
+    }
+}
 
 /**
  * Realiza un backup de la base de datos usando mysqldump.
@@ -27,17 +50,16 @@ export const backupDb = async (backupFilePath) => {
 
         //console.log('Parámetros de la base de datos para el backup:', { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_DATABASE });
 
-        if (!DB_USER || !DB_PASSWORD || !DB_DATABASE || !DB_HOST || !DB_PORT) {
-            throw new Error('La configuración de la base de datos está incompleta.');
-        }
+        exigirConfiguracionCompleta(config, DB_PASSWORD);
 
         const command = `mysqldump --host=${DB_HOST} --port=${DB_PORT} --user=${DB_USER} --password=${DB_PASSWORD} ${DB_DATABASE} > ${backupFilePath}`;
 
         await execAsync(command);
         console.log(`Backup de la base de datos creado en: ${backupFilePath}`);
     } catch (error) {
-        console.error('Error al crear el backup de la base de datos:', error);
-        throw new Error('No se pudo completar el backup de la base de datos.');
+        // F-48: el detalle va al log; la ruta compone el mensaje con el catálogo de causas
+        if (!esErrorDeNegocio(error)) console.error('db_maintenance - copia de seguridad: ' + detalleParaLog(error));
+        throw error;
     }
 };
 
@@ -80,10 +102,10 @@ const validateSqlDump = async (filePath) => {
 
     // 3. Devolver errores más específicos
     if (!foundDumpHeader) {
-        throw new Error('El fichero no parece ser un volcado válido. Falta la cabecera "MySQL dump" o "MariaDB dump".');
+        throw new ErrorDeNegocio('El archivo no es una copia de seguridad de Timón: no contiene una cabecera de volcado de MySQL o MariaDB.', 400, 'VOLCADO_NO_VALIDO');
     }
     if (!foundDropTable || !foundCreateTable) {
-        throw new Error('El fichero de volcado parece incompleto. Faltan las sentencias "DROP TABLE" o "CREATE TABLE".');
+        throw new ErrorDeNegocio('La copia de seguridad está incompleta: faltan las sentencias que crean las tablas.', 400, 'VOLCADO_INCOMPLETO');
     }
 
     return true;
@@ -103,9 +125,7 @@ export const restoreDb = async (dumpFilePath) => {
         const DB_PASSWORD = await getDbPassword();
         const { DB_USER, DB_DATABASE, DB_HOST, DB_PORT } = config;
 
-        if (!DB_USER || !DB_PASSWORD || !DB_DATABASE || !DB_HOST || !DB_PORT) {
-            throw new Error('La configuración de la base de datos está incompleta.');
-        }
+        exigirConfiguracionCompleta(config, DB_PASSWORD);
 
         // 3. Ejecutar el comando de restauración
         const command = `mysql --host=${DB_HOST} --port=${DB_PORT} --user=${DB_USER} --password=${DB_PASSWORD} ${DB_DATABASE} < ${dumpFilePath}`;
@@ -113,8 +133,8 @@ export const restoreDb = async (dumpFilePath) => {
         await execAsync(command);
         console.log(`Base de datos restaurada correctamente desde: ${dumpFilePath}`);
     } catch (error) {
-        console.error('Error al restaurar la base de datos:', error);
         // Re-lanzar el error para que el controlador de la ruta lo capture
+        if (!esErrorDeNegocio(error)) console.error('db_maintenance - restauración: ' + detalleParaLog(error));
         throw error;
     }
 };

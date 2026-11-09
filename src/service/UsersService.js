@@ -42,7 +42,7 @@ export const UsersService = {
             method,
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token')}`
+                Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
             },
             body
         });
@@ -66,7 +66,7 @@ export const UsersService = {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token')}`
+                Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
             },
             body: JSON.stringify(params)
         });
@@ -90,7 +90,7 @@ export const UsersService = {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token')}`
+                Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
             },
             body: JSON.stringify(params)
         });

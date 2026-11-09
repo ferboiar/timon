@@ -11,6 +11,8 @@
 
 import bcrypt from 'bcrypt';
 import { getConnection } from './db_connection.mjs';
+import { campoDuplicado, codigoDeError } from '../utils/catalogoErrores.mjs';
+import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 
 /**
  * Obtener todos los usuarios
@@ -28,8 +30,8 @@ export const getUsers = async () => {
         `);
         return rows;
     } catch (error) {
-        console.error('Error al obtener usuarios:', error);
-        throw new Error('Error al obtener la lista de usuarios');
+        // F-48: la ruta compone el mensaje con el catálogo de causas
+        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -55,12 +57,11 @@ export const getUserById = async (userId) => {
             [userId]
         );
         if (rows.length === 0) {
-            throw new Error('Usuario no encontrado');
+            throw new ErrorDeNegocio('No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.', 404, 'USUARIO_NO_ENCONTRADO');
         }
         return rows[0];
     } catch (error) {
-        console.error(`Error al obtener usuario con ID ${userId}:`, error);
-        throw new Error('Error al obtener datos del usuario');
+        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -112,16 +113,15 @@ export const createUser = async (userData) => {
             perm_cuentas
         };
     } catch (error) {
-        console.error('Error al crear usuario:', error);
-        if (error.code === 'ER_DUP_ENTRY') {
-            if (error.message.includes('username_UNIQUE')) {
-                throw new Error('El nombre de usuario ya está en uso');
-            }
-            if (error.message.includes('email')) {
-                throw new Error('El correo electrónico ya está registrado');
-            }
+        // F-48: el duplicado se resuelve por el nombre del índice único, nunca por el texto
+        const campo = campoDuplicado(error);
+        if (campo === 'nombre de usuario') {
+            throw new ErrorDeNegocio('No se ha podido crear el usuario porque ya existe uno con el nombre «' + String(userData?.username ?? '') + '».', 409, 'USUARIO_DUPLICADO');
         }
-        throw new Error('Error al crear el usuario');
+        if (campo === 'correo') {
+            throw new ErrorDeNegocio('No se ha podido guardar el usuario porque el correo «' + String(userData?.email ?? '') + '» ya está asociado a otra cuenta.', 409, 'CORREO_DUPLICADO');
+        }
+        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -181,16 +181,14 @@ export const updateUser = async (userId, userData) => {
         const updatedUser = await getUserById(userId);
         return updatedUser;
     } catch (error) {
-        console.error(`Error al actualizar usuario con ID ${userId}:`, error);
-        if (error.code === 'ER_DUP_ENTRY') {
-            if (error.message.includes('username_UNIQUE')) {
-                throw new Error('El nombre de usuario ya está en uso');
-            }
-            if (error.message.includes('email')) {
-                throw new Error('El correo electrónico ya está registrado');
-            }
+        const campo = campoDuplicado(error);
+        if (campo === 'nombre de usuario') {
+            throw new ErrorDeNegocio('No se ha podido guardar el usuario porque ya existe uno con el nombre «' + String(userData?.username ?? '') + '».', 409, 'USUARIO_DUPLICADO');
         }
-        throw new Error('Error al actualizar el usuario');
+        if (campo === 'correo') {
+            throw new ErrorDeNegocio('No se ha podido guardar el usuario porque el correo «' + String(userData?.email ?? '') + '» ya está asociado a otra cuenta.', 409, 'CORREO_DUPLICADO');
+        }
+        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -209,8 +207,7 @@ export const changePassword = async (userId, password) => {
         await connection.query('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [password, userId]);
         return true;
     } catch (error) {
-        console.error(`Error al cambiar contraseña del usuario con ID ${userId}:`, error);
-        throw new Error('Error al cambiar la contraseña');
+        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -225,11 +222,24 @@ export const deleteUsers = async (userIds) => {
     let connection;
     try {
         connection = await getConnection();
+        // F-48: el nombre solo se usa para el mensaje del borrado bloqueado por datos asociados
+        const [filas] = await connection.query('SELECT username FROM users WHERE id IN (?)', [userIds]);
+        const nombre = filas.length === 1 ? filas[0].username : null;
+
         await connection.query('DELETE FROM users WHERE id IN (?)', [userIds]);
         return true;
     } catch (error) {
-        console.error('Error al eliminar usuarios:', error);
-        throw new Error('Error al eliminar usuarios');
+        const codigo = codigoDeError(error);
+        if (codigo === 'ER_ROW_IS_REFERENCED_2' || codigo === 'ER_ROW_IS_REFERENCED') {
+            throw new ErrorDeNegocio(
+                nombre
+                    ? 'No se puede eliminar al usuario «' + nombre + '» porque tiene datos asociados.'
+                    : 'No se puede eliminar el usuario porque tiene datos asociados.',
+                409,
+                'USUARIO_CON_DATOS'
+            );
+        }
+        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -261,8 +271,7 @@ export const saveStylePreferences = async (userId, stylePrefs) => {
 
         return true;
     } catch (error) {
-        console.error(`Error al guardar preferencias de estilo para usuario con ID ${userId}:`, error);
-        throw new Error('Error al guardar preferencias de estilo');
+        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -303,8 +312,7 @@ export const getStylePreferences = async (userId) => {
 
         return null;
     } catch (error) {
-        console.error(`Error al obtener preferencias de estilo para usuario con ID ${userId}:`, error);
-        throw new Error('Error al obtener preferencias de estilo');
+        throw error;
     } finally {
         if (connection) connection.release();
     }

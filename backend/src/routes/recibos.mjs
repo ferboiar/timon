@@ -12,7 +12,7 @@
 // Importamos Router de express para crear rutas
 import { completarFechasAnio, deleteRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
 import { verifyToken } from '#backend/middleware/auth.mjs';
-import { responderError } from '../utils/errorDeNegocio.mjs';
+import { detalleParaLog, responderError } from '../utils/errorDeNegocio.mjs';
 import { Router } from 'express';
 
 // Creamos una instancia de Router
@@ -79,31 +79,30 @@ router.post('/', verifyToken, async (req, res) => {
 
         const propietarioId = req.user.id; // Obtenemos el ID del usuario del token JWT
 
-        console.log('API recibos.mjs: ==== INICIO PETICIÓN POST /recibos ====');
-        console.log('API recibos.mjs: Datos validados correctamente, procediendo a llamar pushRecibo');
-        console.log('API recibos.mjs: Llamando a pushRecibo con ID:', id);
-        console.log('API recibos.mjs: Tipo de cargo:', Array.isArray(cargo) ? 'Array' : typeof cargo);
-        console.log('API recibos.mjs: Número de fechas en cargo:', cargo ? cargo.length : 0);
+        console.log('recibos - ==== INICIO PETICIÓN POST /recibos ====');
+        console.log('recibos - Datos validados correctamente, procediendo a llamar pushRecibo');
+        console.log('recibos - Llamando a pushRecibo con ID:', id);
+        console.log('recibos - Tipo de cargo:', Array.isArray(cargo) ? 'Array' : typeof cargo);
+        console.log('recibos - Número de fechas en cargo:', cargo ? cargo.length : 0);
 
         if (cargo && cargo.length > 0) {
-            console.log('API recibos.mjs: Primera fecha en cargo:', JSON.stringify(cargo[0]));
-            console.log('API recibos.mjs: Comentario en cargo[0]:', cargo[0].comentario, 'Tipo:', typeof cargo[0].comentario);
+            console.log('recibos - Primera fecha en cargo:', JSON.stringify(cargo[0]));
+            console.log('recibos - Comentario en cargo[0]:', cargo[0].comentario, 'Tipo:', typeof cargo[0].comentario);
             if (cargo.length > 1) {
-                console.log('API recibos.mjs: Segunda fecha en cargo:', JSON.stringify(cargo[1]));
+                console.log('recibos - Segunda fecha en cargo:', JSON.stringify(cargo[1]));
             }
         }
         const fueraDeAnioPermitido = permitirFueraDeAnio === true && req.user?.rol === 'admin'; // DC-29: solo un administrador puede saltarse la regla del año del recibo
         if (permitirFueraDeAnio === true && !fueraDeAnioPermitido) {
-            console.log('API recibos.mjs: permitirFueraDeAnio ignorado: el usuario no es administrador');
+            console.log('recibos - permitirFueraDeAnio ignorado: el usuario no es administrador');
         }
         const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido);
-        console.log('API recibos.mjs: pushRecibo completado con éxito para ID:', id);
-        console.log('API recibos.mjs: ==== FIN PETICIÓN POST /recibos (ÉXITO) ====');
+        console.log('recibos - pushRecibo completado con éxito para ID:', id);
+        console.log('recibos - ==== FIN PETICIÓN POST /recibos (ÉXITO) ====');
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente', ...resultado });
     } catch (error) {
-        console.error('API recibos.mjs: Error al insertar/actualizar recibo:', error);
-        console.error('API recibos.mjs: Detalles del error:', error.stack);
-        console.log('API recibos.mjs: ==== FIN PETICIÓN POST /recibos (ERROR) ====');
+        console.error('recibos - alta o edición: ' + detalleParaLog(error));
+        console.log('recibos - ==== FIN PETICIÓN POST /recibos (ERROR) ====');
         responderError(res, error, 'No se pudo guardar el recibo.', { contexto: 'recibos - POST' });
     }
 });

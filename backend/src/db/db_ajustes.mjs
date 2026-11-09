@@ -8,17 +8,18 @@
  */
 
 import { esZonaValida, hoyEnZonaDe } from '../utils/tiempo.mjs';
+import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 import { getConnection } from './db_connection.mjs';
 
 const ZONA_POR_DEFECTO = 'Europe/Madrid';
 const TTL_CACHE_MS = 60000;
 let cacheZona = { valor: null, caduca: 0 };
 
-class ErrorDeAjuste extends Error {
+// F-48: hereda de ErrorDeNegocio y conserva el nombre, que reconoce esErrorDeNegocio
+class ErrorDeAjuste extends ErrorDeNegocio {
     constructor(mensaje, status) {
-        super(mensaje);
+        super(mensaje, status);
         this.name = 'ErrorDeAjuste';
-        this.status = status;
     }
 }
 
@@ -67,14 +68,14 @@ async function getZonaHoraria() {
  */
 async function setZonaHoraria(zona) {
     if (!esZonaValida(zona)) {
-        throw new ErrorDeAjuste('La zona horaria no es válida. Usa un nombre como Europe/Madrid.', 400);
+        throw new ErrorDeAjuste('La zona horaria elegida no es válida. Elige una de la lista, por ejemplo Europe/Madrid.', 400);
     }
     let connection;
     try {
         connection = await getConnection();
         const [[fila]] = await connection.execute("SELECT CONVERT_TZ('2000-01-01 00:00:00', '+00:00', ?) AS convertida", [zona]);
         if (fila.convertida === null) {
-            throw new ErrorDeAjuste('La base de datos no conoce esa zona horaria.', 400);
+            throw new ErrorDeAjuste('La aplicación no reconoce esa zona horaria. Elige otra de la lista.', 400);
         }
     } finally {
         if (connection) connection.release();

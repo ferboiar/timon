@@ -9,10 +9,11 @@
  * @module utils/parametros
  */
 
+import { ErrorDeNegocio } from './errorDeNegocio.mjs';
+
 function errorParametro(mensaje) {
-    const error = new Error(mensaje);
-    error.status = 400;
-    return error;
+    // F-48: un dato mal formado es un error de negocio, no un fallo interno
+    return new ErrorDeNegocio(mensaje, 400);
 }
 
 /**

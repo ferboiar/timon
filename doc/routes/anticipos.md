@@ -122,6 +122,20 @@ Las rutas de pagos escriben su actividad en el log del backend (DC-09):
 
 Este módulo depende directamente de las funciones de base de datos definidas en [`db_utilsAdv.mjs`](../db/db_utilsAdv.md), que manejan todas las operaciones de base de datos relacionadas con anticipos y pagos. La lectura y validación de ids y booleanos la hace `utils/parametros.mjs` (F-43, DC-39).
 
+## Manejo de errores (F-48)
+
+Esta ruta la usa cualquier usuario con sesión, así que los mensajes se redactan para esa audiencia, sin suponer conocimientos de administrador. Los errores de negocio conservan su estado, su mensaje y su código y se devuelven en el campo `error`; los técnicos componen el texto propio de la operación con la causa del [catálogo de causas](../utils/catalogoErrores.md). El detalle va al log (DC-09).
+
+| Situación | Estado | Código |
+|---|---|---|
+| Datos no válidos, pago pagado que se intenta cancelar, plan imposible | 400 | — |
+| Anticipo o pago inexistente | 404 | — |
+| Borrado bloqueado por datos asociados | **409** | `EN_USO` |
+| No se identifica el usuario de la sesión | **401** (antes 400) | `SESION_NO_IDENTIFICADA` |
+| Fallo técnico | 500 | — |
+
+Los errores de los parámetros (`advances`, identificador, `redistribuir`) son 400 y no llegan a consultar la base de datos.
+
 ## Referencias
 
 - [Documentación de AdvService](../services/AdvService.md) - Cliente que consume esta API

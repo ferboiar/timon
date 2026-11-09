@@ -3,10 +3,17 @@
  *
  * Este módulo proporciona funciones para obtener y probar la configuración de conexión.
  *
+ * Errores (F-48): son rutas de administrador, así que los mensajes pueden hablar del
+ * archivo de configuración, del servicio de la base de datos y de los permisos del
+ * servidor. La causa del motor se traduce con el catálogo compartido y el detalle
+ * completo queda en el log (DC-09).
+ *
  * @module routes/conexionDB
  */
 import * as dbConnUtils from '#backend/db/db_utilsConn.mjs';
 import { verifyAdmin } from '#backend/middleware/auth.mjs';
+import { AUDIENCIA_ADMIN } from '#backend/utils/catalogoErrores.mjs';
+import { responderError } from '#backend/utils/errorDeNegocio.mjs';
 import express from 'express';
 
 const router = express.Router();
@@ -21,7 +28,11 @@ router.get('/', verifyAdmin, async (req, res) => {
         const config = await dbConnUtils.getDbConfig();
         res.json(config);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se ha podido leer la configuración de la base de datos.', {
+            clave: 'message',
+            contexto: 'conexionDB - lectura de la configuración',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -35,7 +46,11 @@ router.get('/password', verifyAdmin, async (req, res) => {
         const password = await dbConnUtils.getDbPassword();
         res.json({ password });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se ha podido leer la contraseña guardada en la configuración.', {
+            clave: 'message',
+            contexto: 'conexionDB - lectura de la contraseña',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -47,9 +62,14 @@ router.get('/password', verifyAdmin, async (req, res) => {
 router.post('/test', verifyAdmin, async (req, res) => {
     try {
         await dbConnUtils.testDbConnection(req.body);
+        console.log('conexionDB - prueba de conexión: correcta');
         res.json({ message: 'La prueba de conexión fue exitosa.' });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        responderError(res, error, 'No se ha podido conectar con esos datos.', {
+            clave: 'message',
+            contexto: 'conexionDB - prueba de conexión',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -64,9 +84,17 @@ router.put('/', verifyAdmin, async (req, res) => {
         await dbConnUtils.testDbConnection(req.body);
         // Si la prueba es exitosa, guardar la configuración
         await dbConnUtils.saveDbConfig(req.body);
+
+        // DC-09: traza sin contraseña ni usuario
+        const { DB_HOST, DB_PORT, DB_DATABASE } = req.body || {};
+        console.log(`conexionDB - configuración guardada: ${DB_DATABASE} en ${DB_HOST}:${DB_PORT}`);
         res.json({ message: 'Configuración de la base de datos guardada correctamente.' });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        responderError(res, error, 'No se ha podido guardar la configuración de la base de datos.', {
+            clave: 'message',
+            contexto: 'conexionDB - guardado de la configuración',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 
@@ -78,9 +106,14 @@ router.put('/', verifyAdmin, async (req, res) => {
 router.post('/restore', verifyAdmin, async (req, res) => {
     try {
         await dbConnUtils.restoreDbConfig();
+        console.log('conexionDB - configuración restaurada desde la copia de seguridad');
         res.json({ message: 'Configuración de la base de datos restaurada correctamente desde la copia de seguridad.' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        responderError(res, error, 'No se ha podido restaurar la copia de la configuración.', {
+            clave: 'message',
+            contexto: 'conexionDB - restauración de la configuración',
+            audiencia: AUDIENCIA_ADMIN
+        });
     }
 });
 

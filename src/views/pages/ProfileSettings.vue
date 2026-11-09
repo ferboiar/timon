@@ -9,6 +9,16 @@ import { UsersService } from '@/service/UsersService';
 import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { cargarZonaHoraria, establecerZonaHoraria } from '@/composables/useZonaHoraria';
 import { getApiErrorMessage } from '@/utils/apiError';
+
+/**
+ * Mensaje de error de las pestañas que usan rutas de F-48 (U-14).
+ *
+ * Los servicios basados en `fetch` lanzan un `Error` con el texto del servidor y SIN
+ * `response`, así que el valor por defecto solo debe usarse cuando no hay mensaje.
+ */
+function mensajeDeErrorApi(error, porDefecto) {
+    return getApiErrorMessage({ message: error?.message || porDefecto, response: error?.response });
+}
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 
@@ -220,7 +230,7 @@ const fetchAndShowPassword = async () => {
         dbConfig.value.DB_PASSWORD = password;
         toast.add({ severity: 'info', summary: 'Contraseña mostrada', detail: 'Se ha cargado la contraseña actual.', life: 3000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo obtener la contraseña.', life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: mensajeDeErrorApi(error, 'No se pudo obtener la contraseña.'), life: 5000 });
     }
 };
 
@@ -232,7 +242,7 @@ const fetchDbConfig = async () => {
         dbConfigOriginal.value = { ...config };
         backupExists.value = hasBackup;
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la configuración de la base de datos.', life: 3000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: mensajeDeErrorApi(error, 'No se pudo cargar la configuración de la base de datos.'), life: 3000 });
         console.error('Error al cargar la configuración de la base de datos:', error);
     }
 };
@@ -242,7 +252,7 @@ const testDbConnection = async () => {
         await DbConfigService.testDbConnection(dbConfig.value);
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'La prueba de conexión fue bien.', life: 3000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error en la conexión', detail: getApiErrorMessage({ message: 'No se pudo conectar a la base de datos.', response: error?.response }), life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error en la conexión', detail: mensajeDeErrorApi(error, 'No se pudo conectar a la base de datos.'), life: 5000 });
     }
 };
 
@@ -260,7 +270,7 @@ const saveDbConfig = async () => {
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Configuración de la conexión con base de datos guardada.', life: 3000 });
         await fetchDbConfig(); // Recargar la configuración
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error al guardar', detail: getApiErrorMessage({ message: 'No se pudo guardar la configuración.', response: error?.response }), life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al guardar', detail: mensajeDeErrorApi(error, 'No se pudo guardar la configuración.'), life: 5000 });
     } finally {
         saveDbConfigDialog.value = false;
     }
@@ -272,7 +282,7 @@ const restoreDbConfig = async () => {
         toast.add({ severity: 'info', summary: 'Restaurado', detail: 'Configuración restaurada desde la copia de seguridad.', life: 3000 });
         await fetchDbConfig(); // Recargar la configuración
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error al restaurar', detail: getApiErrorMessage({ message: 'No se pudo restaurar la configuración.', response: error?.response }), life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error al restaurar', detail: mensajeDeErrorApi(error, 'No se pudo restaurar la configuración.'), life: 5000 });
     } finally {
         restoreDbConfigDialog.value = false;
     }
@@ -292,7 +302,7 @@ const backupDatabase = async () => {
         a.remove();
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Copia de seguridad de la base de datos descargada.', life: 3000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar la copia de seguridad.', life: 5000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: mensajeDeErrorApi(error, 'No se pudo descargar la copia de seguridad.'), life: 5000 });
         console.error('Error al descargar la copia de seguridad:', error);
     }
 };
@@ -321,7 +331,7 @@ const restoreDatabase = async () => {
         toast.add({
             severity: 'error',
             summary: 'Error en la restauración',
-            detail: getApiErrorMessage({ message: 'No se pudo restaurar la base de datos.', response: error?.response }),
+            detail: mensajeDeErrorApi(error, 'No se pudo restaurar la base de datos.'),
             life: 5000
         });
         console.error('Error al restaurar la base de datos:', error);
@@ -731,7 +741,18 @@ onMounted(() => {
                                 <p>Crea una copia de seguridad completa de la base de datos o restáurala a partir de un archivo previo.</p>
                                 <div class="flex flex-wrap gap-2 mt-4">
                                     <Button label="Respaldar" icon="pi pi-download" severity="secondary" @click="backupDatabase" />
-                                    <FileUpload mode="basic" name="backupSql" :auto="true" @uploader="onSelectFileToRestore" accept=".sql" customUpload chooseLabel="Restaurar" chooseIcon="pi pi-upload" class="p-button-secondary" />
+                                    <FileUpload
+                                        mode="basic"
+                                        name="backupSql"
+                                        :auto="true"
+                                        @uploader="onSelectFileToRestore"
+                                        accept=".sql"
+                                        customUpload
+                                        chooseLabel="Restaurar"
+                                        chooseIcon="pi pi-upload"
+                                        class="p-button-secondary"
+                                        invalidFileTypeMessage="El archivo «{0}» no es una copia de seguridad. Selecciona un archivo con extensión .sql."
+                                    />
                                 </div>
                             </div>
                         </div>

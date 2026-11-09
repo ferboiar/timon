@@ -4,6 +4,10 @@
  * Zona horaria de la aplicación (cualquier usuario autenticado puede leerla; solo el administrador la cambia),
  * interruptor de la creación automática de recibos y ejecución manual del procedimiento anual.
  *
+ * Errores (F-48): los mensajes se redactan para cualquier usuario (audiencia general),
+ * porque la pestaña la usa también quien no administra. Se usa la utilidad compartida y el
+ * detalle técnico queda en el log con el formato «módulo - acción: datos» (DC-09).
+ *
  * @module routes/ajustes
  */
 
@@ -11,33 +15,32 @@ import { getCrearRecibosAutomaticamente, getZonaHoraria, setCrearRecibosAutomati
 import { generarRecibosAnio } from '#backend/db/db_utils.mjs';
 import { verifyAdmin, verifyToken } from '#backend/middleware/auth.mjs';
 import { Router } from 'express';
+import { responderError } from '#backend/utils/errorDeNegocio.mjs';
 import { opcionesGeneracion, separarResultado } from '#backend/utils/generacionAnual.mjs';
 import { hoyIsoEnZonaDe } from '#backend/utils/tiempo.mjs';
 
 const router = Router();
 
-function responderError(res, error, mensaje) {
-    if (error.status) {
-        return res.status(error.status).json({ error: error.message });
-    }
-    console.error(`API ajustes. ${mensaje}:`, error);
-    return res.status(500).json({ error: mensaje });
-}
-
 router.get('/general', verifyToken, async (req, res) => {
     try {
         res.json({ zona_horaria: await getZonaHoraria(), ahora_utc: new Date().toISOString() });
     } catch (error) {
-        responderError(res, error, 'Error al obtener los ajustes generales');
+        responderError(res, error, 'No se han podido cargar tus ajustes.', {
+            contexto: 'ajustes - lectura de los ajustes generales'
+        });
     }
 });
 
 router.put('/general', verifyAdmin, async (req, res) => {
     try {
         await setZonaHoraria(req.body?.zona_horaria);
-        res.json({ zona_horaria: await getZonaHoraria() });
+        const zona = await getZonaHoraria();
+        console.log('ajustes - zona horaria: ' + zona);
+        res.json({ zona_horaria: zona });
     } catch (error) {
-        responderError(res, error, 'Error al guardar la zona horaria');
+        responderError(res, error, 'No se ha podido guardar la zona horaria.', {
+            contexto: 'ajustes - guardado de la zona horaria'
+        });
     }
 });
 
@@ -45,19 +48,25 @@ router.get('/recibos', verifyAdmin, async (req, res) => {
     try {
         res.json({ crear_recibos_automaticamente: await getCrearRecibosAutomaticamente() });
     } catch (error) {
-        responderError(res, error, 'Error al obtener los ajustes de recibos');
+        responderError(res, error, 'No se han podido cargar los ajustes de recibos.', {
+            contexto: 'ajustes - lectura de los ajustes de recibos'
+        });
     }
 });
 
 router.put('/recibos', verifyAdmin, async (req, res) => {
     try {
         if (typeof req.body?.crear_recibos_automaticamente !== 'boolean') {
-            return res.status(400).json({ error: 'crear_recibos_automaticamente debe ser verdadero o falso.' });
+            return res.status(400).json({ error: 'El ajuste de creación automática solo puede estar activado o desactivado.' });
         }
         await setCrearRecibosAutomaticamente(req.body.crear_recibos_automaticamente);
-        res.json({ crear_recibos_automaticamente: await getCrearRecibosAutomaticamente() });
+        const activo = await getCrearRecibosAutomaticamente();
+        console.log('ajustes - creación automática de recibos: ' + (activo ? 'activada' : 'desactivada'));
+        res.json({ crear_recibos_automaticamente: activo });
     } catch (error) {
-        responderError(res, error, 'Error al guardar los ajustes de recibos');
+        responderError(res, error, 'No se han podido guardar los ajustes de recibos.', {
+            contexto: 'ajustes - guardado de los ajustes de recibos'
+        });
     }
 });
 
@@ -65,14 +74,19 @@ router.put('/recibos', verifyAdmin, async (req, res) => {
 router.post('/recibos/generar-anio', verifyAdmin, async (req, res) => {
     try {
         if (req.body?.fecha !== undefined || req.body?.ahora !== undefined) {
-            return res.status(400).json({ error: 'No se admiten fechas libres.' });
+            return res.status(400).json({ error: 'La fecha no se puede enviar: el servidor la calcula a partir de hoy.' });
         }
         const opciones = opcionesGeneracion(req.body?.simular ?? true, req.body?.proximoDiciembre ?? false, hoyIsoEnZonaDe(await getZonaHoraria()));
         const resultado = separarResultado(await generarRecibosAnio(opciones.simular, opciones.fecha));
-        console.log('API ajustes - Resultado anual:', { simulacion: opciones.simular, fecha: opciones.fecha, recibos: resultado.filas.length, avisos: resultado.avisos.length });
+        console.log(
+            'ajustes - generación anual: simulación ' + opciones.simular + ', fecha ' + opciones.fecha +
+                ', recibos ' + resultado.filas.length + ', avisos ' + resultado.avisos.length
+        );
         res.json({ simulacion: opciones.simular, fecha_simulada: opciones.fecha, ...resultado });
     } catch (error) {
-        responderError(res, error, 'Error al generar los recibos del año');
+        responderError(res, error, 'No se han podido generar los recibos del año. Los ya generados no se han modificado.', {
+            contexto: 'ajustes - generación de los recibos del año'
+        });
     }
 });
 

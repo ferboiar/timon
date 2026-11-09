@@ -317,7 +317,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 - [Composable useAjustesSesion](./composables/useAjustesSesion.md) - Ajustes que solo duran la sesión
 - [API de Ajustes](./routes/ajustes.md), [API de conexión](./routes/conexionDB.md) y [API de mantenimiento](./routes/mantenimientoDB.md)
 - [Ajustes del sistema (db_ajustes)](./db/db_ajustes.md), [Procedimiento de recibos del año](./db/generar_recibos_anio.md), [Conexión (db_utilsConn)](./db/db_utilsConn.md) y [Copias de seguridad (db_maintenance)](./db/db_maintenance.md)
-- [Utilidades de tiempo](./utils/tiempo.md), [Utilidad de fechas de formulario](./utils/fechasFormulario.md), [Utilidad de CSV](./utils/csv.md), [Utilidad de errores de negocio](./utils/errorDeNegocio.md) y [Configuración de entorno](./config/env.md)
+- [Utilidades de tiempo](./utils/tiempo.md), [Utilidad de fechas de formulario](./utils/fechasFormulario.md), [Utilidad de CSV](./utils/csv.md), [Utilidad de errores de negocio](./utils/errorDeNegocio.md), [Catálogo de causas de error](./utils/catalogoErrores.md) y [Configuración de entorno](./config/env.md)
 
 ### Características clave
 

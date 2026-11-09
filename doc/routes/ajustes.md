@@ -20,6 +20,12 @@ El servidor calcula diciembre desde hoy en la zona de Ajustes: antes del día 1 
 
 Una respuesta sin candidatos devuelve `filas: []`; no implica un error. La simulación nunca crea recibos. En ejecución real se recalculan los candidatos: pueden no coincidir con una vista previa anterior.
 
+## Manejo de errores (F-48)
+
+Los mensajes se redactan para cualquier usuario (audiencia general), porque la pestaña la usa también quien no administra. Se usa la utilidad compartida con la clave `error` y el [catálogo de causas](../utils/catalogoErrores.md); el detalle va al log (DC-09).
+
+Los errores de estado conservan su mensaje y su 400: la zona horaria no válida, el ajuste de creación automática que no es booleano y la fecha libre. `ErrorDeAjuste` hereda de `ErrorDeNegocio`, así que la utilidad la reconoce sin casos especiales.
+
 ## Referencias
 
 - [Ajustes del sistema (db_ajustes)](../db/db_ajustes.md)

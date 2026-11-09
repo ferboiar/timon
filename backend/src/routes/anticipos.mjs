@@ -6,31 +6,27 @@
  * eliminar anticipos, gestionar pagos individuales, y recalcular planes de pago cuando
  * es necesario. Incluye funcionalidades para manejar diferentes periodicidades de pago.
  *
+ * Respuesta de error (DC-39, F-48):
+ * - Un error de negocio (datos no válidos 400, recurso inexistente 404, operación no
+ *   permitida 409, sesión no identificada 401) trae un mensaje breve y accionable que se
+ *   devuelve tal cual en el campo "error", que la pantalla muestra con getApiErrorMessage.
+ * - Cualquier otro error es un fallo interno (500): el mensaje visible compone el texto
+ *   propio de la operación con la causa del catálogo compartido, sin SQL ni nombres
+ *   internos; el detalle completo queda en el log del servidor (DC-09).
+ * - Esta ruta la usa cualquier usuario con sesión, así que el texto no supone
+ *   conocimientos de administrador (audiencia general).
+ * Todas las operaciones que escriben en varias filas son transaccionales: si responden con error, no han cambiado nada.
+ *
  * @module routes/anticipos
  */
 
 import { deleteAdvances, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan, sustituirPago } from '#backend/db/db_utilsAdv.mjs';
 import { verifyToken } from '#backend/middleware/auth.mjs';
+import { responderError } from '#backend/utils/errorDeNegocio.mjs';
 import { leerBooleano, leerEnteroPositivo, leerListaEnterosPositivos } from '#backend/utils/parametros.mjs';
 import { Router } from 'express';
 
 const router = Router();
-
-/*
- * Respuesta de error de estas rutas (DC-39):
- * - Un error con propiedad "status" (datos no válidos, 400; recurso inexistente, 404) trae un mensaje breve pensado
- *   para mostrarse tal cual al usuario: se devuelve con su código en el campo "error", que la pantalla muestra con
- *   getApiErrorMessage.
- * - Cualquier otro error es un fallo interno (500): solo se devuelve el texto genérico de la ruta, porque el detalle
- *   puede contener SQL o nombres internos. El detalle queda en el log del servidor.
- * Todas las operaciones que escriben en varias filas son transaccionales: si responden con error, no han cambiado nada.
- */
-function responderError(res, error, mensajeGenerico) {
-    const estado = error.status ?? 500;
-    const mensaje = error.status ? error.message : mensajeGenerico;
-    console.error('anticipos - Respuesta de error ' + estado + ': ' + mensaje + (error.status ? '' : ' (detalle: ' + error.message + ')'));
-    return res.status(estado).json({ error: mensaje });
-}
 
 // Obtener todos los anticipos
 router.get('/', verifyToken, async (req, res) => {
@@ -38,7 +34,7 @@ router.get('/', verifyToken, async (req, res) => {
         const advances = await getAdvances();
         res.json(advances);
     } catch (error) {
-        responderError(res, error, 'Error al obtener los anticipos');
+        responderError(res, error, 'No se han podido cargar los anticipos.', { contexto: 'anticipos - listado' });
     }
 });
 
@@ -47,9 +43,10 @@ router.post('/', verifyToken, async (req, res) => {
     const { id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad } = req.body;
     try {
         await pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.user.id);
+        console.log('anticipos - guardado: anticipo ' + (id || 'nuevo'));
         res.status(201).json({ message: 'Anticipo insertado o actualizado correctamente' });
     } catch (error) {
-        responderError(res, error, 'No se pudo guardar el anticipo');
+        responderError(res, error, 'No se ha podido guardar el anticipo.', { contexto: 'anticipos - guardado' });
     }
 });
 
@@ -57,17 +54,18 @@ router.post('/', verifyToken, async (req, res) => {
 router.delete('/', verifyToken, async (req, res) => {
     try {
         const { advances } = req.body;
-        console.log('DELETE /api/anticipos - IDs recibidos para eliminar:', advances);
+
         if (!Array.isArray(advances) || advances.length === 0) {
-            console.error('DELETE /api/anticipos - No se proporcionaron IDs de anticipos para eliminar');
-            return res.status(400).json({ error: 'No se proporcionaron IDs de anticipos para eliminar' });
+            return res.status(400).json({ error: 'Selecciona al menos un anticipo para eliminar.' });
         }
+
         // F-43: cada id debe ser un entero positivo; un valor mal formado no llega a la base de datos
-        await deleteAdvances(leerListaEnterosPositivos(advances, 'advances'));
-        console.log('DELETE /api/anticipos - Anticipos eliminados con éxito');
+        const ids = leerListaEnterosPositivos(advances, 'advances');
+        await deleteAdvances(ids);
+        console.log('anticipos - borrado: ' + ids.length + ' anticipo(s)');
         res.status(200).json({ message: 'Anticipo(s) eliminado(s) correctamente' });
     } catch (error) {
-        responderError(res, error, 'No se pudieron eliminar los anticipos');
+        responderError(res, error, 'No se han podido eliminar los anticipos.', { contexto: 'anticipos - borrado' });
     }
 });
 
@@ -77,7 +75,7 @@ router.get('/periodicidades', verifyToken, async (req, res) => {
         const periodicidades = await getPeriodicidades();
         res.json(periodicidades);
     } catch (error) {
-        responderError(res, error, 'Error al obtener las periodicidades');
+        responderError(res, error, 'No se han podido cargar las periodicidades.', { contexto: 'anticipos - periodicidades' });
     }
 });
 
@@ -88,7 +86,7 @@ router.get('/:anticipoId/pagos', verifyToken, async (req, res) => {
         const pagos = await getPagos(anticipoId);
         res.json(pagos);
     } catch (error) {
-        responderError(res, error, 'Error al obtener los pagos');
+        responderError(res, error, 'No se han podido cargar los pagos.', { contexto: 'anticipos - pagos' });
     }
 });
 
@@ -97,9 +95,10 @@ router.post('/pagos', verifyToken, async (req, res) => {
     const { id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id } = req.body;
     try {
         await pushPago(id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id);
+        console.log('anticipos - pago guardado: pago ' + (id || 'nuevo') + ' del anticipo ' + anticipo_id);
         res.status(201).json({ message: 'Pago insertado o actualizado correctamente' });
     } catch (error) {
-        responderError(res, error, 'No se pudo guardar el pago');
+        responderError(res, error, 'No se ha podido guardar el pago.', { contexto: 'anticipos - guardado del pago' });
     }
 });
 
@@ -108,11 +107,11 @@ router.post('/pagos', verifyToken, async (req, res) => {
 router.post('/pagos/:id/sustituir', verifyToken, async (req, res) => {
     try {
         const pagoId = leerEnteroPositivo(req.params.id, 'id');
-        console.log('sustituir-pago - Procesando pago ID: ' + pagoId);
         const { pagoNuevoId, anticipoId, pendiente } = await sustituirPago(pagoId, req.body);
+        console.log('anticipos - sustitución de pago: pago ' + pagoId + ' del anticipo ' + anticipoId + ' por el pago ' + pagoNuevoId);
         res.status(201).json({ message: 'Pago sustituido correctamente', pagoNuevoId, anticipoId, pendiente });
     } catch (error) {
-        responderError(res, error, 'No se pudo sustituir el pago');
+        responderError(res, error, 'No se ha podido guardar la sustitución del pago.', { contexto: 'anticipos - sustitución de pago' });
     }
 });
 
@@ -125,9 +124,11 @@ router.delete('/pagos/:id', verifyToken, async (req, res) => {
         // Lectura estricta: "?redistribuir=ture" es un 400, no un "no" silencioso
         const redistribuir = leerBooleano(req.query.redistribuir, 'redistribuir');
 
-        console.log('DELETE /pagos/:id - Procesando pago ID: ' + pagoId + ' (redistribuir: ' + redistribuir + ')');
         const { pendiente, anticipoId, redistribuido, pagosAjustados, pagosCreados } = await handlePaymentDeletion(pagoId, redistribuir);
-        console.log('DELETE /pagos/:id - Pago ' + pagoId + ' eliminado del anticipo ' + anticipoId + ' (pendiente ' + pendiente + ', redistribuido: ' + redistribuido + ', pagos ajustados: ' + pagosAjustados + ', pagos nuevos: ' + pagosCreados + ')');
+        console.log(
+            'anticipos - borrado de pago: pago ' + pagoId + ' del anticipo ' + anticipoId + ' (pendiente ' + pendiente +
+                ', redistribuido: ' + redistribuido + ', pagos ajustados: ' + pagosAjustados + ', pagos nuevos: ' + pagosCreados + ')'
+        );
         res.status(200).json({
             message: 'Pago eliminado correctamente',
             pendiente,
@@ -137,7 +138,7 @@ router.delete('/pagos/:id', verifyToken, async (req, res) => {
             pagosCreados
         });
     } catch (error) {
-        responderError(res, error, 'No se pudo eliminar el pago');
+        responderError(res, error, 'No se ha podido eliminar el pago.', { contexto: 'anticipos - borrado de pago' });
     }
 });
 
@@ -147,15 +148,14 @@ router.post('/recalculate-payment-plan', verifyToken, async (req, res) => {
         const { anticipoId } = req.body;
 
         if (!anticipoId) {
-            console.error('recalculate-payment-plan - Anticipo ID no proporcionado');
-            return res.status(400).json({ error: 'Anticipo ID es requerido' });
+            return res.status(400).json({ error: 'Selecciona el anticipo.' });
         }
 
-        console.log('recalculate-payment-plan - Procesando anticipo ID: ' + anticipoId);
         await recalculatePaymentPlan(leerEnteroPositivo(anticipoId, 'anticipoId')); // Los datos del anticipo los lee la propia función
+        console.log('anticipos - plan de pagos recalculado: anticipo ' + anticipoId);
         res.status(200).json({ message: 'Plan de pagos recalculado correctamente' });
     } catch (error) {
-        responderError(res, error, 'No se pudo recalcular el plan de pagos');
+        responderError(res, error, 'No se ha podido recalcular el plan de pagos.', { contexto: 'anticipos - recálculo del plan' });
     }
 });
 

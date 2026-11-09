@@ -32,6 +32,27 @@ export const MAPA_FUENTES = {
         'backend/src/utils/errorDeNegocio.mjs',
         'backend/src/db/migrations/0001_baseline.sql'
     ],
+    'tests/erroresConexion.spec.mjs': [
+        'src/views/pages/ProfileSettings.vue',
+        'src/service/DbConfigService.js',
+        'src/utils/apiError.js',
+        'src/router/index.js',
+        'backend/src/routes/conexionDB.mjs',
+        'backend/src/db/db_utilsConn.mjs',
+        'backend/src/utils/catalogoErrores.mjs',
+        'backend/src/utils/errorDeNegocio.mjs'
+    ],
+    'tests/usuarios.spec.mjs': [
+        'src/views/pages/ProfileSettings.vue',
+        'src/service/UsersService.js',
+        'src/utils/apiError.js',
+        'src/router/index.js',
+        'backend/src/routes/users.mjs',
+        'backend/src/db/db_utilsUsers.mjs',
+        'backend/src/utils/catalogoErrores.mjs',
+        'backend/src/utils/errorDeNegocio.mjs',
+        'backend/src/db/migrations/0001_baseline.sql'
+    ],
     'tests/smoke.spec.mjs': ['src/main.js', 'src/App.vue', 'src/router/index.js', 'vite.config.mjs']
 };
 

@@ -50,6 +50,11 @@ async function cargarUsuarios() {
 }
 ```
 
+### Origen del token (F-38)
+
+Los seis métodos toman el token de `localStorage` y, si no está, de `sessionStorage` (`localStorage.getItem('token') || sessionStorage.getItem('token')`). La sesión se guarda en `sessionStorage` cuando no se marca «Recordarme»; antes de F-38 (corregido el 2026-11-09) `saveUser`, `deleteUsers` y `changePassword` solo miraban `localStorage` y con sesión temporal enviaban `Bearer null`, que el servidor rechaza con **403** `Token inválido o expirado` (S-16).
+
+
 ### Manejo de errores
 
 Usa fetch. Comprueba response.ok y, ante respuesta no satisfactoria, lee JSON y lanza Error(error.message o un texto de respaldo). No implementa bloques catch ni registro propio de todos los errores. Los errores de red y de JSON se propagan directamente.
