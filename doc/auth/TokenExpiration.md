@@ -11,7 +11,7 @@ Fuentes: useAuth.js, AppLayout.vue, router/index.js, config/api.js y Login.vue. 
 
 ## Interceptor que no cubre los servicios actuales
 
-apiClient tiene un interceptor para 401/403 con mensajes Token inválido o expirado o Se requiere token de autenticación. Ningún servicio usa esa instancia: axios directo y fetch no ejecutan sus interceptores (S-07). No se debe presentar como detección activa de todas las llamadas.
+apiClient tiene un interceptor para 401/403 con mensajes Token inválido o expirado o Se requiere token de autenticación; desde S-16 el token inválido responde 401 y el 403 queda para la autorización (sin rol suficiente). Ningún servicio usa esa instancia: axios directo y fetch no ejecutan sus interceptores (S-07). No se debe presentar como detección activa de todas las llamadas.
 
 ## Limpieza y límites
 
