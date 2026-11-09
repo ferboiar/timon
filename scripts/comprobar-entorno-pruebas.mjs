@@ -85,6 +85,21 @@ export function basesPeligrosas(bases) {
 }
 
 /**
+ * Restablece los permisos 600 del fichero de entorno. Git no conserva el modo, así que un
+ * checkout nuevo lo deja legible por todos. Devuelve `true` si ha tenido que cambiarlo.
+ *
+ * @param {string} rutaFichero
+ * @returns {boolean}
+ */
+export function asegurarPermisos(rutaFichero) {
+    const modo = fs.statSync(rutaFichero).mode & 0o777;
+    if (modo === 0o600) return false;
+
+    fs.chmodSync(rutaFichero, 0o600);
+    return true;
+}
+
+/**
  * Revisa el fichero de entorno. Devuelve la lista de problemas; vacía si todo está bien.
  *
  * @param {string} rutaFichero Ruta absoluta o relativa a la raíz del repositorio.
@@ -99,9 +114,6 @@ export function revisarFichero(rutaFichero, fsSimulado = {}) {
     if (!fs.existsSync(rutaFichero)) {
         return { problemas: [`No existe ${rutaFichero}. Créalo siguiendo doc/pruebas/entorno-pruebas.md.`], variables: new Map() };
     }
-
-    const modo = leerStat(rutaFichero).mode & 0o777;
-    if (modo !== 0o600) problemas.push(`${rutaFichero} debe tener permisos 600 (tiene ${modo.toString(8)}).`);
 
     const variables = parsearEnv(leer(rutaFichero, 'utf8'));
 
@@ -118,6 +130,10 @@ export function revisarFichero(rutaFichero, fsSimulado = {}) {
 async function main() {
     const ruta = path.resolve(RAIZ_REPO, process.argv[2] || FICHERO_POR_DEFECTO);
     const { problemas, variables } = revisarFichero(ruta);
+
+    if (problemas.length === 0 && asegurarPermisos(ruta)) {
+        console.log(`${FICHERO_POR_DEFECTO}: permisos ajustados a 600 (git no conserva el modo).`);
+    }
 
     if (problemas.length > 0) {
         console.error('Entorno de pruebas no válido:');
