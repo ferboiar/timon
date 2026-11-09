@@ -10,6 +10,7 @@
         "start:backend": "NODE_ENV=production node backend/src/server.mjs",
         "dev:backend": "NODE_ENV=development nodemon backend/src/server.mjs",
         "test:backend": "node --test backend/test/",
+    "test:backend:local": "node scripts/comprobar-entorno-pruebas.mjs && node --env-file=backend/test/.env.test --test backend/test/",
         "dev:frontend": "vite",
         "build:frontend": "vite build",
         "preview:frontend": "vite preview",

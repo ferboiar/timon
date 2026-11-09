@@ -25,11 +25,12 @@ export const CABECERA_GITCRYPT = Buffer.from('\u0000GITCRYPT\u0000', 'binary');
 export const RAIZ_REPO = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 /** Patrones de nombres que se consideran sensibles aunque falten en `.gitattributes`. */
-const PATRONES_SENSIBLES = [/\.env$/, /\.db_connection/, /\.key$/, /\.pem$/, /(^|\/)id_rsa$/];
+const PATRONES_SENSIBLES = [/\.env(\.[^/]+)?$/, /\.db_connection/, /\.key$/, /\.pem$/, /(^|\/)id_rsa$/];
 
 /**
  * Rutas que encajan en los patrones pero no son secretas y están versionadas a propósito.
- * `.env` de la raíz solo contiene `VITE_API_URL` (S-10) y `*.env.example` son plantillas.
+ * `.env` de la raíz solo contiene `VITE_API_URL` (S-10), `*.env.example` son plantillas y
+ * `backend/test/.env.test` es sensible: va cifrado (DC-46).
  */
 const RUTAS_NO_SECRETAS = new Set(['.env']);
 

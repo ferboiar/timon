@@ -40,6 +40,15 @@ npm run test:backend
 docker compose -f docker-compose.test.yml down
 ```
 
+## Opción C: fichero de entorno cifrado (DC-46)
+
+```bash
+cd /workspaces/timon
+npm run test:backend:local
+```
+
+Carga `backend/test/.env.test` (versionado y cifrado con git-crypt, permisos 600) y, antes de lanzar nada, comprueba que están las cinco variables `TEST_DB_*` y que el usuario de pruebas **solo** tiene permisos sobre bases acabadas en `_test`. El detalle está en `doc/pruebas/entorno-pruebas.md`.
+
 ## Variables
 
 | Variable | Valor por defecto |

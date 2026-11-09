@@ -151,6 +151,7 @@ const docNavigation = [
                     { title: 'Calendario', path: 'components/Calendar' },
                     { title: 'Páginas vacías de la plantilla', path: 'components/PaginasVacias' },
                     { title: 'Suite E2E (Playwright)', path: 'pruebas/e2e' },
+                    { title: 'Entorno de pruebas del backend', path: 'pruebas/entorno-pruebas' },
                     { title: 'Estado del proyecto (entrada)', path: 'mantenimiento/estado-del-proyecto' },
                     { title: 'Estado: parte 1 de 3', path: 'mantenimiento/estado-del-proyecto_1de3' },
                     { title: 'Estado: parte 2 de 3', path: 'mantenimiento/estado-del-proyecto_2de3' },
