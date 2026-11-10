@@ -909,6 +909,8 @@ const inactiveBillsCount = (periodicity) => {
 
 <template>
     <div class="flex flex-col">
+        <!-- U-17: un único menú para las cuatro tarjetas; cardMenu es compartido -->
+        <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
         <div class="card">
             <div class="font-semibold text-xl mb-4"></div>
             <Toolbar class="mb-6">
@@ -958,7 +960,6 @@ const inactiveBillsCount = (periodicity) => {
                                 <InputText v-model="filtersAnual['global'].value" placeholder="Buscar..." />
                             </IconField>
                             <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'anual')" />
-                            <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                         </div>
                     </div>
                     <DataTable
@@ -1046,7 +1047,6 @@ const inactiveBillsCount = (periodicity) => {
                                 <InputText v-model="filtersTrimestral['global'].value" placeholder="Buscar..." />
                             </IconField>
                             <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'trimestral')" />
-                            <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                         </div>
                     </div>
                     <DataTable
@@ -1178,7 +1178,6 @@ const inactiveBillsCount = (periodicity) => {
                                 <InputText v-model="filtersBimestral['global'].value" placeholder="Buscar..." />
                             </IconField>
                             <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'bimestral')" />
-                            <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                         </div>
                     </div>
 
@@ -1310,7 +1309,6 @@ const inactiveBillsCount = (periodicity) => {
                                 <InputText v-model="filtersMensual['global'].value" placeholder="Buscar..." />
                             </IconField>
                             <Button icon="pi pi-ellipsis-v" class="p-button-text" @click="(event) => toggleCardMenu(event, 'mensual')" />
-                            <Menu id="config_menu" ref="menuRef" :model="cardMenu" :popup="true" />
                         </div>
                     </div>
 

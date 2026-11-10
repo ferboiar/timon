@@ -11,11 +11,11 @@ Fuentes: useAuth.js, AppLayout.vue, router/index.js, config/api.js y Login.vue. 
 
 ## Interceptor que no cubre los servicios actuales
 
-apiClient tiene un interceptor para 401/403 con mensajes Token inválido o expirado o Se requiere token de autenticación; desde S-16 el token inválido responde 401 y el 403 queda para la autorización (sin rol suficiente). Ningún servicio usa esa instancia: axios directo y fetch no ejecutan sus interceptores (S-07). No se debe presentar como detección activa de todas las llamadas.
+apiClient tiene un interceptor para 401/403 con mensajes Token inválido o expirado o Se requiere token de autenticación; desde S-16 el token inválido responde 401 y el 403 queda para la autorización (sin rol suficiente). Desde el 2026-11-10 los nueve servicios usan esa instancia y el interceptor se ejecuta de verdad (S-07); lo cubre la prueba E2E de sesión caducada.
 
 ## Limpieza y límites
 
-Logout elimina token/user de los dos almacenes, cancela su intervalo, vacía el usuario de esa instancia y reinicia ajustes de sesión; conserva rememberedUser y redirige al login. Los avisos de verificación se escriben en consola: no existe un aviso visual universal de caducidad.
+Logout elimina token/user de los dos almacenes, cancela su intervalo, vacía el usuario de esa instancia y reinicia ajustes de sesión; conserva rememberedUser y redirige al login. El guard y el interceptor redirigen a `/auth/login?motivo=caducada` y el login muestra «Tu sesión ha caducado. Vuelve a iniciar sesión.» (U-16).
 
 Recordarme cambia el almacenamiento, no prolonga el JWT. Su expiración sale de la configuración al emitirlo, por defecto 24h. No hay renovación automática ni revocación ni actualización del rol de tokens emitidos (S-04).
 

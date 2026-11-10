@@ -213,7 +213,10 @@ function importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo) {
  * @returns {{fechasReescritas: number, fechasConservadas: number}} - En modo automático sobre un recibo con fechas, cuántas fechas pendientes se reescribieron y cuántas se conservaron; en los demás casos, 0 y 0.
  * @throws {Error} - Si falta algún parámetro obligatorio o si algún parámetro no es válido.
  */
-async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio = false) {
+async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio = false, es_privado = null) {
+    // S-01/DC-48: null conserva la privacidad en la edición; 0 pública; 1 solo propietario y admin
+    const valorPrivado = es_privado === undefined || es_privado === null || es_privado === '' ? null : Number(es_privado) === 1 ? 1 : 0;
+
     console.log('API db_utils.mjs: ==== INICIO FUNCIÓN pushRecibo ====');
     console.log('API db_utils.mjs: Parámetros recibidos:');
     console.log('API db_utils.mjs: - ID:', id);
@@ -381,25 +384,25 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                 // Si se proporcionó una nueva fecha_inicial, actualizarla
                 if (fecha_inicial) {
                     // Actualizar recibo existente con la nueva fecha_inicial
-                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), propietario_id = ?, cuenta_id = ?, fecha_inicial = ? WHERE id = ?', [
+                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), cuenta_id = ?, fecha_inicial = ?, es_privado = COALESCE(?, es_privado) WHERE id = ?', [
                         concepto,
                         periodicidad,
                         importe,
                         categoria,
-                        propietarioId,
                         cuenta_id,
                         fecha_inicial,
+                        valorPrivado,
                         id
                     ]);
                 } else {
                     // Actualizar recibo existente sin cambiar fecha_inicial
-                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), propietario_id = ?, cuenta_id = ? WHERE id = ?', [
+                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), cuenta_id = ?, es_privado = COALESCE(?, es_privado) WHERE id = ?', [
                         concepto,
                         periodicidad,
                         importe,
                         categoria,
-                        propietarioId,
                         cuenta_id,
+                        valorPrivado,
                         id
                     ]);
                 }
@@ -578,9 +581,9 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
             }
         } else {
             // Insertar nuevo recibo
-            let query = 'INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, propietario_id, cuenta_id';
-            let valuesPart = 'VALUES (?, ?, ?, (SELECT id FROM categorias WHERE nombre = ?), ?, ?';
-            let params = [concepto, periodicidad, importe, categoria, propietarioId, cuenta_id];
+            let query = 'INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, propietario_id, cuenta_id, es_privado';
+            let valuesPart = 'VALUES (?, ?, ?, (SELECT id FROM categorias WHERE nombre = ?), ?, ?, COALESCE(?, 0)';
+            let params = [concepto, periodicidad, importe, categoria, propietarioId, cuenta_id, valorPrivado];
 
             // Si se proporcionó fecha_inicial, incluirla en la consulta
             if (fecha_inicial) {

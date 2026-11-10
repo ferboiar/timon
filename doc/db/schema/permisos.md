@@ -1,6 +1,6 @@
 # Sistema de Permisos - Documentación Técnica
 
-> Estado de implementación al 2026-10-23: Diseño, no implementación de autorización en endpoints: las columnas existen, pero los filtros de propiedad, privacidad y permisos por módulo no se aplican (S-01). Las consultas propuestas aquí no son las consultas actuales de los módulos db_utils.
+> Estado de implementación al 2026-10-23: Diseño, no implementación de autorización en endpoints: desde el 2026-11-10 el servidor aplica la matriz DC-48, comprueba la propiedad y filtra por visibilidad; cuentas y categorías son compartidas. La UI de `es_privado` queda en F-49 y la trazabilidad en F-50. Las consultas propuestas aquí no son las consultas actuales de los módulos db_utils.
 
 ## Tabla de Contenidos
 1. [Introducción](#introducción)

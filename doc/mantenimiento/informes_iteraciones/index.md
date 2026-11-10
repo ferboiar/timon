@@ -6,6 +6,7 @@
 |---|---|---|
 | 2026-11-10 | S-17 | [Prueba E2E de sesión caducada](./2026-11-10_S-17_sesion-caducada-e2e.md) |
 | 2026-11-10 | U-15 | [Prueba de comportamiento de F-30 con un recibo trimestral](./2026-11-10_U-15_prueba-f30-trimestrales.md) |
+| 2026-11-10 | S-01, S-06, S-12, S-07, U-16, U-17 | [Autorización en servidor, apiClient, aviso de caducidad y menús únicos](./2026-11-10_S01-S06-S12-S07-U16-U17_autorizacion-apiClient.md) |
 | 2026-11-10 | DC-47 | [Reglas de edición de ficheros y de publicación y fusiones](./2026-11-10_DC-47_reglas-edicion-y-publicacion.md) |
 | 2026-11-10 | D-32 | [Consolidación del seguimiento de los PR #69 a #74](./2026-11-10_D-32_consolidar-seguimiento.md) |
 | 2026-11-10 | D-31 | [Informes retroactivos de los PR #70 y #71](./2026-11-10_D-31_informes-retroactivos.md) |

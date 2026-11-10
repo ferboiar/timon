@@ -17,6 +17,7 @@
         "e2e:usuarios": "node lanzador.mjs tests/usuarios.spec.mjs",
         "e2e:recibos": "node lanzador.mjs tests/recibosBorrado.spec.mjs",
         "e2e:trimestrales": "node lanzador.mjs tests/recibosTrimestrales.spec.mjs",
+        "e2e:autorizacion": "node lanzador.mjs tests/autorizacion.spec.mjs",
         "e2e:documentacion": "node lanzador.mjs tests/documentacionReglas.spec.mjs",
         "e2e:sesion": "node lanzador.mjs tests/sesionCaducada.spec.mjs",
         "e2e:lista": "playwright test --list"

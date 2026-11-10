@@ -12,6 +12,9 @@
 
 import jwt from 'jsonwebtoken';
 import { config } from '#backend/config/env.mjs';
+import { getUserById } from '#backend/db/db_utilsUsers.mjs';
+import { puedeAcceder } from '#backend/utils/autorizacion.mjs';
+import { responderError } from '#backend/utils/errorDeNegocio.mjs';
 
 // Middleware para verificar token JWT
 export const verifyToken = (req, res, next) => {
@@ -64,6 +67,37 @@ export const checkRole = (roles = []) => {
                     success: false,
                     message: 'No tienes permisos para realizar esta acción'
                 });
+            }
+        });
+    };
+};
+
+/**
+ * Autorización por módulo y acción (S-12, DC-48).
+ *
+ * Valida el token, carga el usuario vigente (rol y perm_* actuales, no los del JWT) y aplica
+ * la matriz de `utils/autorizacion.mjs`. Deja el usuario en `req.usuario` para que la ruta
+ * pueda comprobar la propiedad del registro.
+ */
+export const autorizar = (modulo, accion = 'lectura') => {
+    return (req, res, next) => {
+        verifyToken(req, res, async () => {
+            try {
+                const usuario = await getUserById(req.user.id);
+
+                if (!puedeAcceder(usuario, modulo, accion)) {
+                    console.log(`auth - autorización denegada: usuario ${req.user.id} (${usuario.rol}) sin ${accion} en ${modulo}`);
+                    return res.status(403).json({
+                        success: false,
+                        message: 'No tienes permisos para realizar esta acción'
+                    });
+                }
+
+                req.usuario = usuario;
+                next();
+            } catch (error) {
+                console.error(`auth - error al autorizar ${modulo}/${accion}: ${error.message}`);
+                responderError(res, error, 'No se pudo comprobar la autorización.', { contexto: `auth - ${modulo}` });
             }
         });
     };

@@ -1,12 +1,9 @@
-import { API_BASE_URL } from '@/config/api';
+import { apiClient } from '@/config/api';
 import { getApiErrorMessage } from '@/utils/apiError';
 
-/**
- * Mensaje de error de una respuesta `fetch` no correcta.
- * El texto por defecto viaja en el hueco del mensaje del propio error.
- */
-function mensajeDeRespuestaError(cuerpo, porDefecto) {
-    return getApiErrorMessage({ message: porDefecto, response: { data: cuerpo } });
+/** Error con el mensaje del servidor o el texto por defecto (S-07). */
+function errorDe(error, porDefecto) {
+    return new Error(getApiErrorMessage({ message: porDefecto, response: error?.response }));
 }
 
 export const UsersService = {
@@ -15,17 +12,12 @@ export const UsersService = {
      * @returns {Promise<Array>} Lista de usuarios
      */
     async getUsers() {
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/users`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(mensajeDeRespuestaError(error, 'Error al obtener usuarios'));
+        try {
+            const { data } = await apiClient.get('/api/users');
+            return data;
+        } catch (error) {
+            throw errorDe(error, 'Error al obtener usuarios');
         }
-        return await response.json();
     },
 
     /**
@@ -34,25 +26,12 @@ export const UsersService = {
      * @returns {Promise<Object>} Usuario guardado
      */
     async saveUser(userData) {
-        const url = `${API_BASE_URL}/api/users`;
-        const method = userData.id ? 'PUT' : 'POST';
-        const body = JSON.stringify(userData);
-
-        const response = await fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
-            },
-            body
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(mensajeDeRespuestaError(error, 'Error al guardar usuario'));
+        try {
+            const { data } = userData.id ? await apiClient.put('/api/users', userData) : await apiClient.post('/api/users', userData);
+            return data;
+        } catch (error) {
+            throw errorDe(error, 'Error al guardar usuario');
         }
-
-        return await response.json();
     },
 
     /**
@@ -61,22 +40,12 @@ export const UsersService = {
      * @returns {Promise<Object>} Resultado de la operación
      */
     async deleteUsers(params) {
-        const url = `${API_BASE_URL}/api/users`;
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
-            },
-            body: JSON.stringify(params)
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(mensajeDeRespuestaError(error, 'Error al eliminar usuarios'));
+        try {
+            const { data } = await apiClient.delete('/api/users', { data: params });
+            return data;
+        } catch (error) {
+            throw errorDe(error, 'Error al eliminar usuarios');
         }
-
-        return await response.json();
     },
 
     /**
@@ -85,22 +54,12 @@ export const UsersService = {
      * @returns {Promise<Object>} Resultado de la operación
      */
     async changePassword(params) {
-        const url = `${API_BASE_URL}/api/users/password`;
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
-            },
-            body: JSON.stringify(params)
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(mensajeDeRespuestaError(error, 'Error al cambiar contraseña'));
+        try {
+            const { data } = await apiClient.put('/api/users/password', params);
+            return data;
+        } catch (error) {
+            throw errorDe(error, 'Error al cambiar contraseña');
         }
-
-        return await response.json();
     },
 
     /**
@@ -109,24 +68,12 @@ export const UsersService = {
      * @returns {Promise<Object>} Resultado de la operación
      */
     async saveStylePreferences(stylePrefs) {
-        const url = `${API_BASE_URL}/api/users/style-preferences`;
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(stylePrefs)
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(mensajeDeRespuestaError(error, 'Error al guardar preferencias de estilo'));
+        try {
+            const { data } = await apiClient.put('/api/users/style-preferences', stylePrefs);
+            return data;
+        } catch (error) {
+            throw errorDe(error, 'Error al guardar preferencias de estilo');
         }
-
-        return await response.json();
     },
 
     /**
@@ -134,20 +81,11 @@ export const UsersService = {
      * @returns {Promise<Object>} Preferencias de estilo del usuario
      */
     async getStylePreferences() {
-        const url = `${API_BASE_URL}/api/users/style-preferences`;
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
-        const response = await fetch(url, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(mensajeDeRespuestaError(error, 'Error al obtener preferencias de estilo'));
+        try {
+            const { data } = await apiClient.get('/api/users/style-preferences');
+            return data;
+        } catch (error) {
+            throw errorDe(error, 'Error al obtener preferencias de estilo');
         }
-
-        return await response.json();
     }
 };

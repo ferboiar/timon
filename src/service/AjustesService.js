@@ -1,6 +1,5 @@
-import { API_BASE_URL } from '@/config/api';
+import { API_BASE_URL, apiClient } from '@/config/api';
 import { getApiErrorMessage } from '@/utils/apiError';
-import axios from 'axios';
 
 // Ajustes del sistema: zona horaria, creación automática de recibos y generación manual del año (DC-24, DC-25)
 
@@ -14,7 +13,7 @@ function cabeceras() {
 /**
  * Error con el mensaje del servidor o, si no lo envía, el texto por defecto.
  * El texto por defecto viaja en el hueco del mensaje del propio error para que
- * no se muestre el mensaje genérico de axios.
+ * no se muestre el mensaje genérico de apiClient.
  */
 function errorDe(error, mensajePorDefecto) {
     return new Error(getApiErrorMessage({ message: mensajePorDefecto, response: error?.response }));
@@ -24,7 +23,7 @@ export class AjustesService {
     // Zona horaria de la aplicación (cualquier usuario autenticado)
     static async getGeneral() {
         try {
-            const respuesta = await axios.get(`${API_URL}/general`, { headers: cabeceras() });
+            const respuesta = await apiClient.get(`${API_URL}/general`, { headers: cabeceras() });
             return respuesta.data;
         } catch (error) {
             throw errorDe(error, 'No se pudieron obtener los ajustes generales');
@@ -34,7 +33,7 @@ export class AjustesService {
     // Cambia la zona horaria (solo administrador)
     static async saveZonaHoraria(zona) {
         try {
-            const respuesta = await axios.put(`${API_URL}/general`, { zona_horaria: zona }, { headers: cabeceras() });
+            const respuesta = await apiClient.put(`${API_URL}/general`, { zona_horaria: zona }, { headers: cabeceras() });
             return respuesta.data;
         } catch (error) {
             throw errorDe(error, 'No se pudo guardar la zona horaria');
@@ -44,7 +43,7 @@ export class AjustesService {
     // Interruptor de la creación automática de recibos (solo administrador)
     static async getRecibos() {
         try {
-            const respuesta = await axios.get(`${API_URL}/recibos`, { headers: cabeceras() });
+            const respuesta = await apiClient.get(`${API_URL}/recibos`, { headers: cabeceras() });
             return respuesta.data;
         } catch (error) {
             throw errorDe(error, 'No se pudieron obtener los ajustes de recibos');
@@ -53,7 +52,7 @@ export class AjustesService {
 
     static async saveCrearRecibosAutomaticamente(activo) {
         try {
-            const respuesta = await axios.put(`${API_URL}/recibos`, { crear_recibos_automaticamente: activo }, { headers: cabeceras() });
+            const respuesta = await apiClient.put(`${API_URL}/recibos`, { crear_recibos_automaticamente: activo }, { headers: cabeceras() });
             return respuesta.data;
         } catch (error) {
             throw errorDe(error, 'No se pudo guardar el ajuste');
@@ -63,7 +62,7 @@ export class AjustesService {
     // Vista previa (simular = true) o ejecución manual del procedimiento que crea los recibos del año
     static async generarRecibosAnio(simular = true, proximoDiciembre = false) {
         try {
-            const respuesta = await axios.post(`${API_URL}/recibos/generar-anio`, { simular, proximoDiciembre }, { headers: cabeceras() });
+            const respuesta = await apiClient.post(`${API_URL}/recibos/generar-anio`, { simular, proximoDiciembre }, { headers: cabeceras() });
             return respuesta.data;
         } catch (error) {
             throw errorDe(error, 'No se pudieron generar los recibos del año');

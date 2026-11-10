@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '@/config/api';
-import axios from 'axios';
+import { API_BASE_URL, apiClient } from '@/config/api';
 
 const API_URL = `${API_BASE_URL}/api/categorias`;
 
@@ -8,7 +7,7 @@ export class CatsService {
     static async getCategorias() {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(API_URL, {
+            const response = await apiClient.get(API_URL, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -24,7 +23,7 @@ export class CatsService {
     static async saveCategoria(categoria) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(API_URL, categoria, {
+            const response = await apiClient.post(API_URL, categoria, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -40,7 +39,7 @@ export class CatsService {
     static async deleteCategorias(categoriaIds) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.delete(API_URL, {
+            const response = await apiClient.delete(API_URL, {
                 data: { categoriaIds },
                 headers: {
                     Authorization: `Bearer ${token}`

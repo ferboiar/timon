@@ -2,8 +2,9 @@
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { API_BASE_URL } from '@/config/api';
 import { getApiErrorMessage } from '@/utils/apiError';
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { hayAvisoSesion } from '@/utils/sesion';
 
 const username = ref('');
 const password = ref('');
@@ -11,6 +12,9 @@ const checked = ref(false);
 const errorMessage = ref('');
 const isLoading = ref(false);
 const router = useRouter();
+const route = useRoute();
+// U-16: aviso de caducidad por la URL o por la marca que deja el guard/interceptor
+const avisoSesion = computed(() => route.query.motivo === 'caducada' || hayAvisoSesion());
 
 // Verificar si hay un username guardado al cargar el componente
 onMounted(() => {
@@ -71,6 +75,9 @@ const handleLogin = async () => {
             localStorage.removeItem('user');
             // Mantenemos rememberedUser para facilidad de uso
         }
+
+        // El aviso de caducidad ya no aplica tras un login correcto
+        sessionStorage.removeItem('timon.avisoSesion');
 
         // Redireccionar al dashboard después de iniciar sesión
         router.push('/dashboard');
@@ -152,6 +159,7 @@ verifySession();
                         </svg>
                         <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">¡Bienvenido a Timón!</div>
                         <span class="text-muted-color font-medium">Inicia sesión para continuar</span>
+                        <div v-if="avisoSesion" class="text-orange-500 font-medium mt-2">Tu sesión ha caducado. Vuelve a iniciar sesión.</div>
                     </div>
 
                     <form @submit.prevent="handleLogin">

@@ -1,6 +1,5 @@
-import { API_BASE_URL } from '@/config/api';
+import { API_BASE_URL, apiClient } from '@/config/api';
 import { getApiErrorMessage } from '@/utils/apiError';
-import axios from 'axios';
 
 const API_URL = `${API_BASE_URL}/api/db`;
 
@@ -8,7 +7,7 @@ export class MtoDBService {
     static async backupDatabase() {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/backup`, {
+            const response = await apiClient.get(`${API_URL}/backup`, {
                 responseType: 'blob', // Importante para manejar la descarga de archivos
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
@@ -22,7 +21,7 @@ export class MtoDBService {
     static async restoreDatabase(formData) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(`${API_URL}/restore`, formData, {
+            const response = await apiClient.post(`${API_URL}/restore`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     ...(token && { Authorization: `Bearer ${token}` })

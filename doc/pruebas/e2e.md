@@ -15,8 +15,9 @@ del despliegue.
 | `tests/usuarios.spec.mjs` | Pestaña Usuarios: alta de un usuario `e2e_` y rechazo del nombre duplicado con el mensaje completo del servidor (409, `USUARIO_DUPLICADO`) |
 | `tests/recibosBorrado.spec.mjs` | Recibos: el diálogo de borrado muestra el concepto del recibo y no un nombre vacío (F-31). No crea ni borra datos: abre el diálogo y cancela |
 | `tests/recibosTrimestrales.spec.mjs` | Recibos: crea un `e2e_trimestral_…` (y un `e2e_bimestral_…` de apoyo si el año no tiene bimestrales), comprueba que la selección de trimestrales es propia frente a la de bimestrales (F-30) y que el diálogo muestra el concepto (F-31), y los borra por la interfaz; limpieza por API si el test falla |
+| `tests/autorizacion.spec.mjs` | Autorización (S-01, S-06, S-12, DC-48): crea usuarios `e2e_rol_*` (user, limited_user y reader) y comprueba la matriz sobre `/api/cuentas` y `/api/users`, las rutas de documentación con administrador y que un recibo privado solo lo ven su dueño y el admin; limpia usuarios, cuentas y recibos `e2e_` |
 | `tests/documentacionReglas.spec.mjs` | Documentación: en `/tech-docs`, los centinelas de las reglas (DC-47) no se ven y los dos bloques se pintan. No crea ni borra datos: solo lee el DOM |
-| `tests/sesionCaducada.spec.mjs` | Sesión caducada (S-17): un token caducado lleva al login, limpia los dos almacenes y el servidor responde 401. No crea ni borra datos |
+| `tests/sesionCaducada.spec.mjs` | Sesión caducada (S-17, U-16): un token caducado lleva al login con el aviso de caducidad, limpia los dos almacenes y el servidor responde 401; el interceptor de `apiClient` avisa al recibir un 401 (S-07). No crea ni borra datos |
 
 Las aserciones se apoyan en roles accesibles, etiquetas, textos únicos y estructura DOM estable
 de la interfaz; cada spec documenta en comentarios de qué fichero de Timón sale cada selector.

@@ -8,7 +8,7 @@
  * - Manejo de tokens expirados con redirección a login
  */
 
-import { useAuth } from '@/composables/useAuth';
+import { cerrarSesionPorCaducidad, rutaLoginPorCaducidad } from '@/utils/sesion';
 import axios from 'axios';
 
 // URL base para todas las peticiones API
@@ -51,22 +51,19 @@ apiClient.interceptors.response.use(
         return response;
     },
     (error) => {
-        // Verificar si el error es de autenticación (401) o autorización (403)
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            // Si el error es por token expirado o inválido
-            if (error.response.data && (error.response.data.message === 'Token inválido o expirado' || error.response.data.message === 'Se requiere token de autenticación')) {
-                console.warn('Sesión expirada o inválida. Redirigiendo a login...');
+        // S-16: el token inválido o ausente responde 401. El 403 es autorización y no cierra la sesión.
+        const mensaje = error.response?.data?.message;
 
-                // Usar useAuth() para cerrar la sesión correctamente
-                const { logout } = useAuth();
-                logout();
+        if (error.response?.status === 401 && (mensaje === 'Token inválido o expirado' || mensaje === 'Se requiere token de autenticación')) {
+            console.warn('Sesión expirada o inválida. Redirigiendo a login...');
 
-                // No propagamos el error ya que el logout ya maneja la redirección
-                return Promise.reject(new Error('Sesión expirada. Por favor, inicie sesión nuevamente.'));
-            }
+            // S-07/U-16: sin useAuth (evita el ciclo api.js ↔ useAuth.js); deja el aviso para el login
+            cerrarSesionPorCaducidad();
+            window.location.assign(rutaLoginPorCaducidad());
+
+            return Promise.reject(new Error('Sesión expirada. Por favor, inicie sesión nuevamente.'));
         }
 
-        // Para otros errores, los propagamos normalmente
         return Promise.reject(error);
     }
 );

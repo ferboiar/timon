@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '@/config/api';
-import axios from 'axios';
+import { API_BASE_URL, apiClient } from '@/config/api';
 
 // Operaciones CRUD (Crear, Leer, Actualizar, Eliminar) sobre los datos de los recibos
 
@@ -10,7 +9,7 @@ export class BillService {
     static async getBills() {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(API_URL, {
+            const response = await apiClient.get(API_URL, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
             return response.data;
@@ -33,7 +32,7 @@ export class BillService {
             console.log('BillService. Modo fechas:', bill.modoFechas);
             console.log('BillService. Cargos:', bill.cargo);
 
-            const response = await axios.post(API_URL, bill, {
+            const response = await apiClient.post(API_URL, bill, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
             console.log('BillService. Respuesta exitosa:', response.data);
@@ -63,7 +62,7 @@ export class BillService {
     static async deleteBill(id, fecha, periodicidad, permitirPagados = false) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.delete(`${API_URL}/${id}`, {
+            const response = await apiClient.delete(`${API_URL}/${id}`, {
                 params: { fecha, periodicidad, ...(permitirPagados ? { permitirPagados: 1 } : {}) },
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
@@ -81,7 +80,7 @@ export class BillService {
     static async getBillsByPeriodicity(periodicity, year) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(API_URL, {
+            const response = await apiClient.get(API_URL, {
                 params: { periodicidad: periodicity, ...(year ? { año: year } : {}) },
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
@@ -96,7 +95,7 @@ export class BillService {
     static async getOverdueBills(periodicity, year) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(API_URL, {
+            const response = await apiClient.get(API_URL, {
                 params: { periodicidad: periodicity, estado: 'pendiente', fecha: '1900-01-01a' + (year - 1) + '-12-31' },
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
@@ -111,7 +110,7 @@ export class BillService {
     static async getBillsByYear(year) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}?año=${year}`, {
+            const response = await apiClient.get(`${API_URL}?año=${year}`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
             return response.data;
@@ -125,7 +124,7 @@ export class BillService {
     static async getInactiveBills() {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}?activo=0`, {
+            const response = await apiClient.get(`${API_URL}?activo=0`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
             return response.data;
@@ -139,7 +138,7 @@ export class BillService {
     static async generateBillDates(id) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(
+            const response = await apiClient.post(
                 `${API_URL}/${id}/generar-fechas`,
                 {},
                 {
