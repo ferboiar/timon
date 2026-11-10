@@ -195,6 +195,8 @@ doc/mantenimiento/instruccion-persistente.md
 y sus partes obligatorias, si existen.
 No mantengas copias normativas independientes.
 
+Excepción (DC-47): `.cline/rules/00-timon-obligatorio.md` mantiene una copia deliberada de los bloques `regla:edicion-ficheros` y `regla:publicacion-fusiones`, con el mismo texto que la instrucción persistente. Esa copia es la única admitida y no es una segunda fuente normativa; `scripts/comprobar-reglas.mjs` y `backend/test/reglas.test.mjs` comprueban que no diverge.
+
 Cambiar las reglas es una iteración de proceso con aprobación, decisión registrada, referencias y navegación correspondientes.
 
 Si el usuario entrega otra versión para revisarla, no la adoptes automáticamente en el repositorio.

@@ -63,6 +63,8 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #73 | D-31 | Informes de cierre retroactivos de los PR #70 y #71 |
 | #74 | F-30, F-31 | Selección propia de la tabla de trimestrales y `bill.concepto` en el diálogo de borrado |
 
+| #75 | D-32 | Consolidación del seguimiento de los PR #69 a #74 |
+
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
