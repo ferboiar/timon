@@ -59,6 +59,13 @@ export const MAPA_FUENTES = {
         'src/router/index.js',
         'backend/src/routes/recibos.mjs'
     ],
+    'tests/sesionCaducada.spec.mjs': [
+        'src/router/index.js',
+        'src/config/api.js',
+        'src/views/pages/auth/Login.vue',
+        'backend/src/routes/auth.mjs',
+        'backend/src/middleware/auth.mjs'
+    ],
     'tests/documentacionReglas.spec.mjs': [
         'src/views/pages/Tech-documentation.vue',
         'src/router/index.js',

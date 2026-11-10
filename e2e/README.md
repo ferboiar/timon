@@ -75,6 +75,7 @@ El lanzador (`lanzador.mjs`):
 | `tests/usuarios.spec.mjs` | Usuarios: alta `e2e_` y duplicado con el mensaje completo del servidor |
 | `tests/recibosBorrado.spec.mjs` | Recibos: el diálogo de borrado muestra el concepto del recibo (no crea ni borra datos) |
 | `tests/documentacionReglas.spec.mjs` | Documentación: los centinelas de las reglas no se ven en el visor y los bloques se pintan (DC-47), sin datos |
+| `tests/sesionCaducada.spec.mjs` | Sesión caducada: redirección al login y limpieza de almacenes (S-17), sin datos |
 
 ## Aislamiento y sesión
 
