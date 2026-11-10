@@ -184,22 +184,32 @@ onMounted(async () => {
             fetchBills('mensual'),
             BillService.getInactiveBills() // Nuevo endpoint para obtener recibos inactivos
         ]);
+    } catch (error) {
+        console.error('onMounted. Error al cargar los recibos:', error);
+    }
 
-        // Cargar categorías desde la base de datos
+    // U-18: cuentas y categorías son compartidas, pero su lectura exige su propio permiso.
+    // Si falta, Recibos sigue funcionando y se avisa de que los desplegables están incompletos.
+    try {
         const categoriasData = await CatsService.getCategorias();
         categorias.value = categoriasData.map((cat) => ({
             label: cat.nombre.charAt(0).toUpperCase() + cat.nombre.slice(1),
             value: cat.nombre
         }));
+    } catch (error) {
+        console.error('onMounted. No se pudieron cargar las categorías:', error);
+        toast.add({ severity: 'warn', summary: 'Aviso', detail: 'No se pudieron cargar las categorías: revisa tus permisos de categorías.', life: 6000 });
+    }
 
-        // Obtener cuentas disponibles
+    try {
         const cuentasData = await AccService.getAccounts();
         cuentas.value = cuentasData.map((cuenta) => ({
             label: cuenta.nombre,
             value: cuenta.id
         }));
     } catch (error) {
-        console.error('onMounted. Error al cargar los datos:', error);
+        console.error('onMounted. No se pudieron cargar las cuentas:', error);
+        toast.add({ severity: 'warn', summary: 'Aviso', detail: 'No se pudieron cargar las cuentas: revisa tus permisos de cuentas.', life: 6000 });
     }
 });
 

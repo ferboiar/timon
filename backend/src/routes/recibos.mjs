@@ -98,7 +98,7 @@ router.post('/', autorizar('recibos', 'escritura'), async (req, res) => {
                 console.log('recibos - Segunda fecha en cargo:', JSON.stringify(cargo[1]));
             }
         }
-        const fueraDeAnioPermitido = permitirFueraDeAnio === true && req.user?.rol === 'admin'; // DC-29: solo un administrador puede saltarse la regla del año del recibo
+        const fueraDeAnioPermitido = permitirFueraDeAnio === true && req.usuario.rol === 'admin'; // DC-29: solo un administrador puede saltarse la regla del año del recibo
         if (permitirFueraDeAnio === true && !fueraDeAnioPermitido) {
             console.log('recibos - permitirFueraDeAnio ignorado: el usuario no es administrador');
         }
@@ -122,7 +122,7 @@ router.delete('/:id', autorizar('recibos', 'borrado'), async (req, res) => {
     try {
         const { id } = req.params;
         const { fecha, periodicidad } = req.query;
-        const forzar = req.query.permitirPagados === '1' && req.user?.rol === 'admin'; // Opción de sesión del administrador (DC-21)
+        const forzar = req.query.permitirPagados === '1' && req.usuario.rol === 'admin'; // Opción de sesión del administrador (DC-21)
         asegurarBorrado(req.usuario, await registroDeRecibo(id), 'recibos');
         const success = await deleteRecibo(id, fecha, periodicidad, undefined, forzar);
         if (success) {

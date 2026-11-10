@@ -71,7 +71,7 @@ Este módulo depende directamente de las funciones de base de datos definidas en
 
 ## Autorización implementada
 
-Las rutas exigen sesión (verifyToken), pero no aplican filtros de propietario, privacidad ni permisos por módulo (S-01). Tener columnas propietario_id, es_privado o perm_* no equivale a aplicar esos permisos.
+Las rutas usan `autorizar('categorias', …)`: escritura y borrado según `perm_categorias` y el rol (DC-48). Las categorías son globales (DC-02): no aplica propietario ni `es_privado`. La lectura está disponible con cualquier sesión válida (DC-49); por eso un usuario con `perm_recibos = escritura` y `perm_categorias = no` sí carga el desplegable de categorías en Recibos (U-18).
 
 ## Compatibilidad del borrado
 

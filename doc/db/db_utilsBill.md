@@ -25,7 +25,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `categoria_id` | INT | Referencia a la categoría asociada |
 | `cuenta_id` | INT | ID de la cuenta bancaria asociada al recibo |
 | `propietario_id` | INT | ID del usuario propietario del recibo |
-| `es_privado` | TINYINT | Campo previsto para privacidad; getRecibos no aplica este filtro ni autorización por propietario (S-01) |
+| `es_privado` | TINYINT | 1 = solo lo ven su propietario y el admin; 0 = visible según permisos. La ruta de listado filtra con `filtrarVisibles` (S-01, DC-48) |
 | `fecha_inicial` | DATE | Fecha desde la que se generan las fechas en modo automático; en modo manual se guarda la primera fecha de cargo. En un recibo creado por la migración 0003 o por el evento anual es la primera fecha de la secuencia en su año (DC-16, DC-23) |
 | `recibo_origen_id` | INT | Recibo del año anterior del que procede; único, así que cada recibo tiene como mucho un sucesor (DC-14). `deleteRecibo` impide borrar un recibo con sucesor y lo usa para marcar `replicar = 0` en su origen |
 | `replicar` | TINYINT | 1 por defecto; con 0 no se crea el recibo del año siguiente (DC-17). `deleteRecibo` lo pone a 0 en el origen del recibo que borra (DC-18) |
@@ -155,14 +155,14 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 ### Asignación automática de propietario
 
 - Al crear un nuevo recibo, el sistema asigna automáticamente el `propietario_id` a partir del token JWT
-- El usuario no envía el propietario en este flujo; la ruta toma su ID del token. Esto no garantiza autorización sobre la fila editada: sigue pendiente S-01
+- El usuario no envía el propietario en este flujo; la ruta toma su ID del token. Editar o borrar exige visibilidad y permiso (`autorizar` y `propiedad.mjs`), y el `UPDATE` no reasigna el propietario (S-01)
 - El frontend no necesita manejar este campo, siendo responsabilidad completa del backend
 
 ### Filtrado por propietario
 
-- Las consultas actuales no aplican permisos por usuario (S-01)
-- No existe filtro por propietario en getRecibos; autenticar no equivale a limitar filas
-- es_privado no se aplica en estas consultas (S-01)
+- `getRecibos` no filtra en SQL; la ruta aplica `filtrarVisibles(req.usuario, filas, 'recibos')` antes de responder
+- `es_privado = 1` solo llega a su propietario y al admin
+- Un registro no visible tampoco se edita ni se borra (403)
 
 ## Validaciones y Manejo de Errores
 

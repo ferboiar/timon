@@ -2,9 +2,9 @@
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { API_BASE_URL } from '@/config/api';
 import { getApiErrorMessage } from '@/utils/apiError';
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { hayAvisoSesion } from '@/utils/sesion';
+import { consumirAvisoSesion } from '@/utils/sesion';
 
 const username = ref('');
 const password = ref('');
@@ -14,7 +14,11 @@ const isLoading = ref(false);
 const router = useRouter();
 const route = useRoute();
 // U-16: aviso de caducidad por la URL o por la marca que deja el guard/interceptor
-const avisoSesion = computed(() => route.query.motivo === 'caducada' || hayAvisoSesion());
+// U-19: la marca se consume siempre, también cuando el motivo viene en la URL, para que
+// el aviso no reaparezca al volver a esta pantalla en la misma pestaña.
+const avisoEnUrl = route.query.motivo === 'caducada';
+const avisoGuardado = consumirAvisoSesion() === 'caducada';
+const avisoSesion = ref(avisoEnUrl || avisoGuardado);
 
 // Verificar si hay un username guardado al cargar el componente
 onMounted(() => {

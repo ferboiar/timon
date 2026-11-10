@@ -6,7 +6,8 @@
  * editarlo o borrarlo. Las reglas están en `autorizacion.mjs`; aquí solo se leen los datos
  * y se traducen a errores de negocio (404 si no existe, 403 si no se puede tocar).
  *
- * Subrecursos (pagos y movimientos) resuelven el propietario de su padre: anticipo o ahorro.
+ * Subrecursos (pagos y movimientos) resuelven el propietario de su padre: anticipo o ahorro. Las
+ * consultas devuelven también el id del padre para que la ruta compruebe que coincide con el enviado (S-18).
  * Cuentas y categorías son compartidas y no pasan por estas comprobaciones.
  */
 import { getConnection } from '#backend/db/db_connection.mjs';
@@ -32,10 +33,10 @@ export const registroDeAhorro = (id) => unaFila(`${SQL_BASE}ahorros WHERE id = ?
 export const registroDeAnticipo = (id) => unaFila(`${SQL_BASE}anticipos WHERE id = ?`, [id]);
 
 export const registroDePago = (id) =>
-    unaFila('SELECT p.id, a.propietario_id, a.es_privado FROM anticipos_pagos p JOIN anticipos a ON a.id = p.anticipo_id WHERE p.id = ?', [id]);
+    unaFila('SELECT p.id, p.anticipo_id, a.propietario_id, a.es_privado FROM anticipos_pagos p JOIN anticipos a ON a.id = p.anticipo_id WHERE p.id = ?', [id]);
 
 export const registroDeMovimiento = (id) =>
-    unaFila('SELECT m.id, a.propietario_id, a.es_privado FROM ahorros_movimientos m JOIN ahorros a ON a.id = m.ahorro_id WHERE m.id = ?', [id]);
+    unaFila('SELECT m.id, m.ahorro_id, a.propietario_id, a.es_privado FROM ahorros_movimientos m JOIN ahorros a ON a.id = m.ahorro_id WHERE m.id = ?', [id]);
 
 /** Lanza 404 si el registro no existe y 403 si el usuario no puede editarlo. */
 export function asegurarEdicion(usuario, registro, modulo) {

@@ -14,7 +14,7 @@ import { Router } from 'express';
 import { autorizar } from '#backend/middleware/auth.mjs';
 import { filtrarVisibles, puedeVerRegistro } from '../utils/autorizacion.mjs';
 import { asegurarBorrado, asegurarEdicion, registroDeAhorro, registroDeMovimiento } from '../utils/propiedad.mjs';
-import { responderError } from '../utils/errorDeNegocio.mjs';
+import { ErrorDeNegocio, responderError } from '../utils/errorDeNegocio.mjs';
 
 const router = Router();
 
@@ -88,8 +88,16 @@ router.get('/:ahorroId/movimientos', autorizar('ahorros', 'lectura'), async (req
 router.post('/movimientos', autorizar('ahorros', 'escritura'), async (req, res) => {
     const { id, ahorro_id, importe, fecha, tipo, descripcion } = req.body;
     try {
-        asegurarEdicion(req.usuario, await registroDeAhorro(ahorro_id), 'ahorros');
+        // S-18: al editar, el padre se resuelve del propio movimiento; el del cuerpo solo vale al crear
+        const registro = id ? await registroDeMovimiento(id) : await registroDeAhorro(ahorro_id);
+        asegurarEdicion(req.usuario, registro, 'ahorros');
+
+        if (id && Number(registro.ahorro_id) !== Number(ahorro_id)) {
+            throw new ErrorDeNegocio('El movimiento no pertenece al ahorro indicado.', 400, 'PADRE_INCORRECTO');
+        }
+
         await pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion);
+        console.log('ahorros - movimiento guardado: movimiento ' + (id || 'nuevo') + ' del ahorro ' + (id ? registro.ahorro_id : ahorro_id));
         res.status(201).json({ message: 'Movimiento insertado o actualizado correctamente' });
     } catch (error) {
         responderError(res, error, 'No se pudo guardar el movimiento.', { contexto: 'ahorros - POST movimiento' });

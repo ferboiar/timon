@@ -30,6 +30,7 @@ El servicio `BillService` actúa como intermediario entre la interfaz de usuario
 - Soporte para filtrado avanzado por diversos criterios
 - Manejo detallado de errores con mensajes descriptivos en consola
 - Operaciones asíncronas utilizando Promises/async-await
+- Usa `apiClient`: el interceptor añade el token y centraliza el cierre de sesión ante un 401 (S-07)
 
 ## Uso Común
 

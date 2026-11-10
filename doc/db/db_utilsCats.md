@@ -22,7 +22,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `nombre` | VARCHAR | Nombre de la categoría. El servidor rechaza duplicados, pero el índice único del esquema sigue pendiente de la migración DC-02 (F-22) |
 | `descripcion` | VARCHAR | Descripción detallada (opcional) |
 | `propietario_id` | INT | Usuario que creó la categoría; no limita su visibilidad, las categorías son globales (DC-02) |
-| `es_privado` | TINYINT | Columna del esquema sin filtrado en los endpoints; en categorías no limita la visibilidad (S-01, DC-02) |
+| `es_privado` | TINYINT | Sin efecto: las categorías son compartidas y visibles para todos (DC-02, DC-48) |
 
 ## Funciones Principales
 

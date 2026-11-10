@@ -31,7 +31,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `cuenta_origen_id` | INT | ID de la cuenta de origen |
 | `periodicidad` | ENUM | Frecuencia de pagos: 'mensual', 'bimestral', 'trimestral', 'anual' |
 | `propietario_id` | INT | Usuario que creó el anticipo; obligatorio al crear |
-| `es_privado` | TINYINT | Columna del esquema sin filtrado en los endpoints; en categorías no limita la visibilidad (S-01, DC-02) |
+| `es_privado` | TINYINT | 1 = solo lo ven su propietario y el admin; los pagos heredan la visibilidad del anticipo. El listado filtra con `filtrarVisibles` (S-01, DC-48) |
 
 ### Tabla `anticipos_pagos`
 

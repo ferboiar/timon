@@ -293,7 +293,15 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresAdmin) {
         // S-06/S-07: el rol se lee del usuario guardado; useAuth() no está montado en un guard
         const guardado = localStorage.getItem('user') || sessionStorage.getItem('user');
-        const usuario = guardado ? JSON.parse(guardado) : null;
+        let usuario = null;
+
+        if (guardado) {
+            try {
+                usuario = JSON.parse(guardado);
+            } catch (error) {
+                console.warn('Guard: el usuario guardado no es JSON válido; se ignora.', error);
+            }
+        }
 
         if (usuario?.rol !== 'admin') {
             return next('/auth/access'); // Redirigir a página de acceso denegado

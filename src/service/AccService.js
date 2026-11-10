@@ -6,12 +6,7 @@ export class AccService {
     // Obtener todas las cuentas
     static async getAccounts() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(API_URL, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(API_URL);
             return response.data;
         } catch (error) {
             console.error('Error al obtener las cuentas:', error);
@@ -22,12 +17,7 @@ export class AccService {
     // Guardar una cuenta (crear o actualizar)
     static async saveAccount(account) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(API_URL, account, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.post(API_URL, account);
             return response.data;
         } catch (error) {
             console.error('Error al guardar la cuenta:', error);
@@ -38,12 +28,8 @@ export class AccService {
     // Eliminar una o más cuentas
     static async deleteAccounts(accounts) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.delete(API_URL, {
-                data: { accounts },
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                data: { accounts }
             });
             return response.data;
         } catch (error) {
@@ -55,12 +41,7 @@ export class AccService {
     // Obtener tipos de cuenta
     static async getTipos() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(`${API_URL}/tipos`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(`${API_URL}/tipos`);
             return response.data;
         } catch (error) {
             console.error('Error al obtener los tipos:', error);

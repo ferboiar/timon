@@ -6,12 +6,7 @@ export class CatsService {
     // Obtener todas las categorías
     static async getCategorias() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(API_URL, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(API_URL);
             return response.data;
         } catch (error) {
             console.error('Error al obtener las categorías:', error);
@@ -22,12 +17,7 @@ export class CatsService {
     // Guardar una categoría (crear o actualizar)
     static async saveCategoria(categoria) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(API_URL, categoria, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.post(API_URL, categoria);
             return response.data;
         } catch (error) {
             console.error('Error al guardar la categoría:', error);
@@ -38,12 +28,8 @@ export class CatsService {
     // Eliminar una o más categorías
     static async deleteCategorias(categoriaIds) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.delete(API_URL, {
-                data: { categoriaIds },
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                data: { categoriaIds }
             });
             return response.data;
         } catch (error) {

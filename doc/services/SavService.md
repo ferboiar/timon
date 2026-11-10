@@ -63,6 +63,6 @@ El servicio captura y registra en consola todos los errores que ocurren durante 
 
 ## Transporte y contrato comprobados
 
-Usa axios directamente, no apiClient: no pasa por sus interceptores (S-07). Construye la URL desde API_BASE_URL (`VITE_API_URL`, con respaldo `http://localhost:3000`). Cada método obtiene token de localStorage o sessionStorage, lo envía en Authorization y devuelve response.data. Registra y relanza el error original, sin convertirlo en un mensaje específico de negocio. No valida permisos en el cliente; estos deben comprobarse en el servidor.
+Usa `apiClient` (`src/config/api.js`): su interceptor añade la cabecera `Authorization` con el token de `localStorage` o `sessionStorage`, sin construirla a mano (S-07). La URL sale de `API_BASE_URL` (`VITE_API_URL`, con respaldo `http://localhost:3000`) y cada método devuelve `response.data`. Registra y relanza el error original, sin convertirlo en un mensaje específico de negocio. No valida permisos en el cliente: el servidor aplica la matriz DC-48.
 
 `deleteSavings(ids)` envía `{ savings: ids }`. `getPeriodicidades` obtiene opciones del esquema a través del servidor. `saveMovimiento` envía una aportación individual, no programa una secuencia.

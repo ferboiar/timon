@@ -303,7 +303,7 @@ Guardar sin cambios (DC-30) está implementado en Ahorros, Categorías, Cuentas,
 - Panel de administración para gestión de usuarios (solo administradores)
 - Creación, edición y eliminación de usuarios con diferentes niveles de acceso
 - Personalización de la interfaz con preferencias por usuario
-- Distinción administrativa por rol; restricciones de reader/limited_user y permisos granulares pendientes (S-01, S-12)
+- Distinción administrativa por rol; la matriz DC-48 se aplica en servidor desde el PR #79 (S-01 y S-12 corregidas) y los permisos por módulo deciden lectura, escritura y borrado
 
 ## Ajustes, zona horaria y mantenimiento
 
@@ -345,7 +345,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 
 ## Estado de implementación y cierre de revisión
 
-El informe de [auditoría documental](./mantenimiento/auditoria-documentacion.md) diferencia diseño, implementación y fallos conocidos. Campos de permisos no equivalen a autorización aplicada (S-01); saldos manuales no equivalen a conciliación automática; aportaciones con periodicidad no equivalen a generación automática de movimientos. La sección 10 del registro y TODO incluyen las correcciones pendientes con sus IDs.
+El informe de [auditoría documental](./mantenimiento/auditoria-documentacion.md) diferencia diseño, implementación y fallos conocidos. La autorización se aplica en servidor con la matriz DC-48 (S-01 y S-12); saldos manuales no equivalen a conciliación automática; aportaciones con periodicidad no equivalen a generación automática de movimientos. La sección 10 del registro y TODO incluyen las correcciones pendientes con sus IDs.
 
 ## Documentación de raíz y vigencia
 

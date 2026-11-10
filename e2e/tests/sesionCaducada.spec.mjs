@@ -5,14 +5,16 @@
  * Deducciones:
  * - `src/router/index.js` (guard `beforeEach`, hacia la línea 235): lee el token de
  *   `localStorage` o `sessionStorage`; si la ruta no es pública y `/api/auth/verify` no
- *   responde `ok`, limpia `token` y `user` de los dos almacenes y hace `next('/auth/login')`.
+ *   responde `ok`, limpia `token` y `user` de los dos almacenes y lleva a
+ *   `/auth/login?motivo=caducada` (`rutaLoginPorCaducidad`).
  * - `backend/src/routes/auth.mjs`: `GET /api/auth/verify` responde 401 con
  *   `{ message: 'Token inválido o expirado' }` cuando `jwt.verify` falla (S-16).
- * - `src/config/api.js`: su interceptor de respuesta hace `logout()` ante un 401 con ese
- *   mensaje, pero ningún módulo importa `apiClient` (S-07), así que en la aplicación el
- *   cierre lo ejecuta el guard. Este spec documenta lo que ocurre de verdad.
- * - `src/views/pages/auth/Login.vue`: no hay aviso de caducidad; solo el subtítulo
- *   «Inicia sesión para continuar» (U-16).
+ * - `src/config/api.js`: su interceptor de respuesta cierra la sesión ante un 401 con ese
+ *   mensaje; desde S-07 los nueve servicios usan `apiClient`, así que el interceptor también
+ *   actúa (tercer caso).
+ * - `src/views/pages/auth/Login.vue`: muestra «Tu sesión ha caducado. Vuelve a iniciar sesión.»
+ *   leyendo `motivo=caducada` o la marca de `sessionStorage`, que se consume una sola vez
+ *   (U-16, U-19).
  *
  * El token se construye en el navegador con `exp` en el pasado: el servidor lo rechaza por
  * firma y por caducidad. No se crea ni se borra ningún dato de la aplicación.
@@ -34,7 +36,9 @@ function tokenCaducado() {
 
 /** Deja una sesión caducada en el almacén indicado. */
 async function sembrarSesion(page, almacen) {
-    await page.goto(urlDe('/auth/login'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    // Se siembra desde una ruta pública sin el componente Login: montarlo con el token ya
+    // escrito haría que su verificación lo borrase antes de navegar a la ruta protegida.
+    await page.goto(urlDe('/pages/notfound'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
 
     await page.evaluate(
         ({ almacen, token }) => {
@@ -153,5 +157,19 @@ test.describe('Autenticación: sesión caducada (S-17)', () => {
         await expect(page).toHaveURL(/\/auth\/login(\?|$)/, { timeout: 30_000 });
         await expect(page.getByText('Tu sesión ha caducado. Vuelve a iniciar sesión.')).toBeVisible({ timeout: 20_000 });
         await expect.poll(() => respuestas401.length, { timeout: 15_000 }).toBeGreaterThan(0);
+    });
+
+    test('el aviso de caducidad se consume una sola vez (U-16, U-19)', async ({ paginaAuth: page }) => {
+        await sembrarSesion(page, 'local');
+        await page.goto(urlDe(RUTA_PROTEGIDA), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+        await comprobarCaducidad(page);
+
+        const aviso = page.getByText('Tu sesión ha caducado. Vuelve a iniciar sesión.');
+        await expect(aviso).toBeVisible();
+
+        // Volver al login sin el motivo ni la marca: ya se consumió en el primer montaje
+        await page.goto(urlDe('/auth/login'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+        await expect(page.getByRole('button', { name: 'Iniciar Sesión' })).toBeVisible();
+        await expect(aviso).toBeHidden();
     });
 });

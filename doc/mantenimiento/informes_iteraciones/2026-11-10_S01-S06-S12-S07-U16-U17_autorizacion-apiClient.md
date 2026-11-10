@@ -39,7 +39,8 @@
 | `src/config/api.js`, `src/utils/sesion.js`, `src/router/index.js`, `Login.vue` | Sí | Sí | S-07 y U-16 |
 | Nueve servicios de `src/service` | Sí | Sí | `apiClient` |
 | `src/views/pages/ListBills.vue` | Sí | Sí | U-17 |
-| `doc/middleware/auth.md`, `doc/auth/*`, `doc/router/routeGuards.md`, `doc/db/schema/permisos.md`, `doc/components/ListBills.md` | Sí | Sí | Descripción real |
+| `doc/middleware/auth.md`, `doc/auth/*`, `doc/router/routeGuards.md`, `doc/db/schema/permisos.md` | Sí | Sí | Descripción real |
+| `doc/components/ListBills.md`, `doc/services/*`, `doc/routes/*`, `doc/db/*` y `doc/composables/useAuth.md` | Sí | No | Quedaron pendientes; se corrigen en el PR de corrección posterior (D-34) |
 | `doc/mantenimiento/*`, `TODO`, índice | Sí | Sí | Cierres e IDs |
 | `doc/index.md` y `docNavigation` | Sí | No | Sin documento nuevo |
 | `README.md`, `README_en.md`, `package.json.md` | Sí | No | Sin cambios de comandos |

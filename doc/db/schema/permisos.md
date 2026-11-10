@@ -1,6 +1,6 @@
 # Sistema de Permisos - Documentación Técnica
 
-> Estado de implementación al 2026-10-23: Diseño, no implementación de autorización en endpoints: desde el 2026-11-10 el servidor aplica la matriz DC-48, comprueba la propiedad y filtra por visibilidad; cuentas y categorías son compartidas. La UI de `es_privado` queda en F-49 y la trazabilidad en F-50. Las consultas propuestas aquí no son las consultas actuales de los módulos db_utils.
+> Estado de implementación al 2026-10-23: Diseño, no implementación de autorización en endpoints: desde el 2026-11-10 el servidor aplica la matriz DC-48, comprueba la propiedad y filtra por visibilidad; cuentas y categorías son compartidas y, desde DC-49, su lectura no depende de `perm_*` (escritura y borrado sí). La UI de `es_privado` queda en F-49 y la trazabilidad en F-50. Las consultas propuestas aquí no son las consultas actuales de los módulos db_utils.
 
 ## Tabla de Contenidos
 1. [Introducción](#introducción)
@@ -59,6 +59,8 @@ Cada columna `perm_[modulo]` puede tener uno de estos tres valores:
 | `escritura` | Acceso completo. Incluye todas las capacidades de lectura más la habilidad de crear, modificar y eliminar registros. |
 
 Es importante destacar que el permiso de `escritura` implica automáticamente la capacidad de `lectura`. No es necesario otorgar ambos permisos por separado.
+
+**DC-49:** `perm_cuentas` y `perm_categorias` no limitan la lectura: cualquier sesión válida puede leer los catálogos compartidos. Sí limitan su escritura y borrado.
 
 #### Estructura completa de permisos en `users`
 

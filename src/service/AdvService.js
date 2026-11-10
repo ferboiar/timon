@@ -6,12 +6,7 @@ export class AdvService {
     // Obtener todos los anticipos
     static async getAdvances() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(API_URL, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(API_URL);
             return response.data;
         } catch (error) {
             console.error('Error al obtener anticipos:', error);
@@ -22,12 +17,7 @@ export class AdvService {
     // Guardar un anticipo (crear o actualizar)
     static async saveAdvance(advance) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(API_URL, advance, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.post(API_URL, advance);
             return response.data;
         } catch (error) {
             console.error('Error al guardar el anticipo:', error);
@@ -43,12 +33,8 @@ export class AdvService {
             throw new Error('No se proporcionaron IDs de anticipos para eliminar');
         }
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.delete(API_URL, {
-                data: { advances },
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                data: { advances }
             });
             console.log('deleteAdvances - Respuesta del servidor:', response.data);
             return response.data;
@@ -61,12 +47,7 @@ export class AdvService {
     // Obtener periodicidades de anticipos
     static async getPeriodicidades() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(`${API_URL}/periodicidades`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(`${API_URL}/periodicidades`);
             return response.data;
         } catch (error) {
             console.error('Error al obtener las periodicidades:', error);
@@ -77,12 +58,7 @@ export class AdvService {
     // Obtener pagos de un anticipo específico
     static async getPagos(anticipoId) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(`${API_URL}/${anticipoId}/pagos`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(`${API_URL}/${anticipoId}/pagos`);
             return response.data;
         } catch (error) {
             console.error('Error al obtener los pagos:', error);
@@ -93,12 +69,7 @@ export class AdvService {
     // Guardar un pago (crear o actualizar)
     static async savePago(pago) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(`${API_URL}/pagos`, pago, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.post(`${API_URL}/pagos`, pago);
             return response.data;
         } catch (error) {
             console.error('Error al guardar el pago:', error);
@@ -110,12 +81,8 @@ export class AdvService {
     // el borrado y el reparto van en la misma transacción
     static async handlePaymentDeletion(pagoId, redistribuir = false) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.delete(`${API_URL}/pagos/${pagoId}`, {
-                params: { redistribuir },
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                params: { redistribuir }
             });
             return response.data;
         } catch (error) {
@@ -128,12 +95,7 @@ export class AdvService {
     // el servidor crea el pago nuevo (pendiente) y borra el antiguo en la misma transacción
     static async replacePago(pagoId, pago) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(`${API_URL}/pagos/${pagoId}/sustituir`, pago, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.post(`${API_URL}/pagos/${pagoId}/sustituir`, pago);
             return response.data;
         } catch (error) {
             console.error('Error al sustituir el pago:', error);
@@ -144,16 +106,7 @@ export class AdvService {
     // Recalcular plan de pagos
     static async recalculatePaymentPlan(anticipoId) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(
-                `${API_URL}/recalculate-payment-plan`,
-                { anticipoId },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+            const response = await apiClient.post(`${API_URL}/recalculate-payment-plan`, { anticipoId });
             return response.data;
         } catch (error) {
             console.error('Error al recalcular el plan de pagos:', error);

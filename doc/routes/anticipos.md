@@ -144,4 +144,4 @@ Los errores de los parámetros (`advances`, identificador, `redistribuir`) son 4
 
 ## Autorización implementada
 
-Las rutas exigen sesión (verifyToken), pero no aplican filtros de propietario, privacidad ni permisos por módulo (S-01). Tener columnas propietario_id, es_privado o perm_* no equivale a aplicar esos permisos.
+Las rutas usan `autorizar('anticipos', …)` con la matriz DC-48: `reader` solo lee; `limited_user` crea y edita lo propio, pero no borra; `user` edita y borra lo visible con escritura; `admin` todo. Los listados filtran por visibilidad y `GET /:anticipoId/pagos` comprueba además la visibilidad del anticipo. En `POST /pagos`, si llega `id`, el padre se resuelve del propio pago y debe coincidir con `anticipo_id`; si no, 400 `PADRE_INCORRECTO` (S-18).

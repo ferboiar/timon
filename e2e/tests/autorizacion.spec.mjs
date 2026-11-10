@@ -42,7 +42,7 @@ const ROLES = {
 const PREFIJO_RECIBO = 'e2e_auth_';
 const PREFIJO_CUENTA = 'e2e_auth_cuenta_';
 
-const estado = { api: null, idsUsuarios: [], idsCuentas: [], conceptos: [] };
+const estado = { api: null, idAdmin: null, idsUsuarios: [], idsCuentas: [], conceptos: [] };
 
 function conceptoDe(etiqueta) {
     const concepto = `${PREFIJO_RECIBO}${etiqueta}_${SUFIJO.slice(-6)}`;
@@ -207,6 +207,10 @@ test.describe.serial('Autorización en servidor (S-01, S-06, S-12, DC-48)', () =
 
         estado.api = new URL(respuestas[0].url()).origin;
 
+        const sesion = await page.evaluate(() => JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user')));
+        estado.idAdmin = sesion?.id ?? null;
+        expect(estado.idAdmin, 'la sesión E2E debe tener un id de usuario').toBeTruthy();
+
         const usuarios = await peticion(page, { metodo: 'GET', ruta: '/api/users' });
         expect(usuarios.status, 'la sesión E2E debe ser administradora para crear usuarios').toBe(200);
 
@@ -313,15 +317,26 @@ test.describe.serial('Autorización en servidor (S-01, S-06, S-12, DC-48)', () =
         const conceptoAdmin = conceptoDe('deladmin');
         const idAdmin = await crearRecibo(pageAdmin, conceptoAdmin, false);
 
-        // user edita un recibo del admin: permitido y sin reasignar el propietario
-        const idAdminUsuario = estado.idsUsuarios[0];
+        // user edita un recibo del admin: permitido y el propietario sigue siendo el admin
         await conRol(conexion, ROLES.userA, async (page) => {
             const edicion = await editarRecibo(page, idAdmin, conceptoAdmin, false);
             expect(edicion.status, edicion.texto).toBe(201);
         });
 
         const trasEdicion = (await filasDeRecibo(pageAdmin, conceptoAdmin))[0];
-        expect(Number(trasEdicion.propietario_id), 'el propietario no cambia al editar').not.toBe(idAdminUsuario);
+        expect(Number(trasEdicion.propietario_id), 'el propietario sigue siendo el admin').toBe(Number(estado.idAdmin));
+
+        // admin edita un recibo de un user: el propietario sigue siendo el user
+        const conceptoDelUser = conceptoDe('deluser');
+        let idDelUser = null;
+        await conRol(conexion, ROLES.userA, async (page) => {
+            idDelUser = await crearRecibo(page, conceptoDelUser, false);
+        });
+
+        expect((await editarRecibo(pageAdmin, idDelUser, conceptoDelUser, false)).status, 'el admin edita el recibo del user').toBe(201);
+
+        const trasEdicionAdmin = (await filasDeRecibo(pageAdmin, conceptoDelUser))[0];
+        expect(Number(trasEdicionAdmin.propietario_id), 'el propietario sigue siendo el user').toBe(Number(estado.idsUsuarios[0]));
 
         // limited_user no puede editar un recibo ajeno ni borrarlo
         await conRol(conexion, ROLES.limited, async (page) => {
@@ -371,6 +386,7 @@ test.describe.serial('Autorización en servidor (S-01, S-06, S-12, DC-48)', () =
         });
 
         // Limpieza de los recibos que quedan
+        await borrarRecibo(pageAdmin, idDelUser);
         await borrarRecibo(pageAdmin, idPrivado);
         await borrarRecibo(pageAdmin, idLimited);
     });

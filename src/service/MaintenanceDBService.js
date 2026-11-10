@@ -6,10 +6,8 @@ const API_URL = `${API_BASE_URL}/api/db`;
 export class MtoDBService {
     static async backupDatabase() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.get(`${API_URL}/backup`, {
-                responseType: 'blob', // Importante para manejar la descarga de archivos
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
+                responseType: 'blob' // Importante para manejar la descarga de archivos
             });
             return response;
         } catch (error) {
@@ -20,11 +18,9 @@ export class MtoDBService {
 
     static async restoreDatabase(formData) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.post(`${API_URL}/restore`, formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
-                    ...(token && { Authorization: `Bearer ${token}` })
+                    'Content-Type': 'multipart/form-data'
                 }
             });
             return response.data;
