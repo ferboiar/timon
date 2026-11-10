@@ -62,17 +62,17 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #72 | S-16 | Un token inválido responde 401 y no 403 |
 | #73 | D-31 | Informes de cierre retroactivos de los PR #70 y #71 |
 | #74 | F-30, F-31 | Selección propia de la tabla de trimestrales y `bill.concepto` en el diálogo de borrado |
-
 | #75 | D-32 | Consolidación del seguimiento de los PR #69 a #74 |
 | #76 | DC-47 | Reglas de edición de ficheros y de publicación y fusiones, y baja de `.github/copilot-instructions.md` |
-| #77 | S-17, U-16 | Prueba E2E de sesión caducada y registro del aviso ausente |
-| — | S-01, S-06, S-12, S-07, U-16, U-17 | Autorización en servidor (DC-48), `apiClient`, aviso de caducidad y menús únicos |
+| #77 | S-17 | Prueba E2E de sesión caducada y registro del aviso ausente (U-16) |
+| #78 | U-15 | Prueba de comportamiento de F-30 con un recibo trimestral (merge `db11bad`) |
+| #79 | S-01, S-06, S-12, S-07, U-16, U-17 | Autorización en servidor (DC-48), `apiClient`, aviso de caducidad y menús únicos (merge `1c59443`) |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
 
-La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). F-14 (grupo 3 de la fase 1) está cerrado: los pasos a, b y d se incorporaron en los PR #53, #54 y #55 y el resto del paso c se declara no aplicable por DC-42 (solo se implementó el recálculo al editar un pagado, DC-40). F-19 y D-24 se incorporaron en el PR #58, D-25 en el #59, F-20/F-21 en el #60, F-28 con D-26 en el #61, F-47 en el #62 (F-48 quedó solo registrado: D-30) y D-29 en el #68. O-02, DC-44 y D-27 se incorporaron en el PR #63 (2026-11-06), el PR #64 versionó las reglas de Cline y los PR #65, #66 y #67 completaron D-28, el cifrado (S-09 y DC-45) y S-15. F-48, DC-46, S-16 y F-30/F-31 están fusionados (PR #69 a #74), DC-47 con el #76, S-17/U-16 con el #77 y U-15 con el #78. La autorización (S-01/S-06/S-12), S-07, U-16 y U-17 están preparadas en `mantenimiento/S01-S06-S12-S07-U16-U17-sincronizacion`; el siguiente trabajo es la limpieza de las ramas locales fusionadas y después F-50, y a continuación el backlog por prioridad, con S-01/S-06/S-12 (autorización efectiva en servidor) en cabeza. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). F-14 (grupo 3 de la fase 1) está cerrado: los pasos a, b y d se incorporaron en los PR #53, #54 y #55 y el resto del paso c se declara no aplicable por DC-42 (solo se implementó el recálculo al editar un pagado, DC-40). F-19 y D-24 se incorporaron en el PR #58, D-25 en el #59, F-20/F-21 en el #60, F-28 con D-26 en el #61, F-47 en el #62 (F-48 quedó solo registrado: D-30) y D-29 en el #68. O-02, DC-44 y D-27 se incorporaron en el PR #63 (2026-11-06), el PR #64 versionó las reglas de Cline y los PR #65, #66 y #67 completaron D-28, el cifrado (S-09 y DC-45) y S-15. F-48, DC-46, S-16 y F-30/F-31 están fusionados (PR #69 a #74), DC-47 con el #76, S-17/U-16 con el #77 y U-15 con el #78. La autorización (S-01/S-06/S-12), S-07, U-16 y U-17 se incorporaron con el PR #79 (merge `1c59443`). El siguiente trabajo es la corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49); después, la limpieza de las ramas locales fusionadas y F-50, y a continuación el backlog por prioridad, con S-04 y S-02/S-03 en cabeza. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo la usa (F-12 corregido el 2026-11-01).

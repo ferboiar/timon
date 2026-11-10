@@ -26,7 +26,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `descripcion` | TEXT | Descripción detallada (opcional) |
 | `activa` | TINYINT | Estado de la cuenta (1 activa, 0 inactiva) |
 | `propietario_id` | INT | Usuario que creó la cuenta; se guarda al crearla (F-01) |
-| `es_privado` | TINYINT | Columna del esquema sin filtrado en los endpoints; en categorías no limita la visibilidad (S-01, DC-02) |
+| `es_privado` | TINYINT | Sin efecto: las cuentas son compartidas y visibles para todos (DC-48) |
 
 ## Funciones Principales
 

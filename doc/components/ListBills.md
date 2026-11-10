@@ -94,7 +94,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 
 | Función | Descripción |
 |---------|-------------|
-| `onMounted` | Carga las categorías con `CatsService.getCategorias()` y las cuentas con `AccService.getAccounts()`; no existen funciones `fetchCategories` ni `fetchAccounts` |
+| `onMounted` | Carga primero los recibos y después, en bloques `try/catch` separados, las categorías con `CatsService.getCategorias()` y las cuentas con `AccService.getAccounts()`. Si un catálogo falla al cargar, la pantalla sigue funcionando y muestra un aviso (U-18); la lectura de cuentas y categorías está disponible con cualquier sesión válida (DC-49); no existen funciones `fetchCategories` ni `fetchAccounts` |
 
 ## Asociación con Cuentas Bancarias
 
@@ -134,9 +134,9 @@ La propiedad de los recibos se maneja automáticamente a través del sistema de 
 
 1. **Asignación automática**: El campo `propietario_id` no se maneja explícitamente en el frontend, sino que se asigna automáticamente en el backend basándose en el token JWT del usuario autenticado.
 
-2. **Sin filtrado de propiedad implementado**: los endpoints devuelven registros sin aplicar propietario, es_privado ni permisos por módulo (S-01).
+2. **Autorización en servidor**: los endpoints aplican la matriz DC-48. Un `admin` ve y edita todo; `user` ve lo que permiten sus `perm_*` y edita lo visible con escritura; `limited_user` edita solo sus registros y no borra; `reader` solo lee. `es_privado = 1` queda para su propietario y el admin (S-01 y S-12 corregidas el 2026-11-10).
 
-3. **Limitación**: no se garantiza acceso limitado a registros del usuario; la autorización real queda pendiente de fase 2 (S-01).
+3. **Propietario intacto**: editar un recibo no reasigna `propietario_id` a quien lo guarda; los dos `UPDATE` de `pushRecibo` conservan el propietario original.
 
 ## Eventos y Estados
 
@@ -185,11 +185,12 @@ El diálogo de confirmación muestra el **concepto** del recibo (`bill.concepto`
 ## Comportamiento auxiliar de la pantalla
 
 - toggleCardMenu construye las opciones Añadir, Actualizar, Multiselección y Exportar; en trimestrales, bimestrales y mensuales añade Expandir y Contraer.
-- showSelector alterna la columna de selección múltiple. Las tablas trimestral y bimestral comparten selección por error (F-30).
+- La plantilla monta un único `<Menu id="config_menu" ref="menuRef">` para las cuatro tarjetas (U-17); antes había uno por tarjeta con el mismo `id` y el mismo `ref`.
+- showSelector alterna la columna de selección múltiple. Las tablas trimestral y bimestral mantienen selecciones independientes (F-30).
 - agruparPorRecibo agrupa filas por ID y controla la visibilidad de inactivos; groupedInactiveBills se construye aparte.
 - copiarExpansion y restaurarExpansion conservan las filas abiertas al recargar; el cambio de año las contrae.
 - expandir, contraer, toggleExpandCollapseAll y checkGlobalExpandState controlan la expansión global y por tabla.
 - toggleComment, saveComment y hideComment gestionan las ventanas emergentes de comentarios.
 - exportCSV admite una periodicidad o all; el botón superior exporta todas a allBills.csv. Usa el importe del cargo si existe, BOM UTF-8, separador punto y coma y coma decimal. Desde F-19 construye el fichero con la utilidad común ([utils/csv](../utils/csv.md)): escape de `;`, comillas y saltos de línea, neutralización de fórmulas y `null`/`undefined` como campo vacío.
 - El botón Actualizar fechas y el botón Cargar están comentados en la plantilla.
-- El diálogo de borrado usa bill.name en vez de concepto (F-31).
+- El diálogo de borrado muestra `bill.concepto` (F-31).

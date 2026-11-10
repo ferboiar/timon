@@ -10,6 +10,8 @@ Archivo: `src/service/DbConfigService.js`. Cliente de la [API de conexión](../r
 | `saveDbConfig(config)` | Guarda una configuración | `PUT /api/db-config` |
 | `restoreDbConfig()` | Restaura la configuración desde la copia | `POST /api/db-config/restore` |
 
+Usa `apiClient`: el interceptor añade el token y centraliza el cierre de sesión ante un 401.
+
 ## Referencias
 
 - [Componente ProfileSettings](../components/ProfileSettings.md)

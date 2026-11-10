@@ -25,7 +25,7 @@ El servicio `UsersService` actúa como intermediario entre la interfaz de usuari
 ## Características Principales
 
 - Gestión completa de operaciones CRUD para usuarios
-- getUsers y los métodos de preferencias consultan localStorage y sessionStorage; saveUser, deleteUsers y changePassword consultan solo localStorage (F-38)
+- Los seis métodos usan `apiClient`, que añade el token de `localStorage` o `sessionStorage` en su interceptor; F-38 se corrigió el 2026-11-09 y la suite E2E lo cubre con una sesión temporal
 - Soporte para roles de usuario (admin, user, limited_user, reader)
 - Personalización de la interfaz mediante preferencias de estilo
 - Manejo de errores con mensajes descriptivos
@@ -52,12 +52,12 @@ async function cargarUsuarios() {
 
 ### Origen del token (F-38)
 
-Los seis métodos toman el token de `localStorage` y, si no está, de `sessionStorage` (`localStorage.getItem('token') || sessionStorage.getItem('token')`). La sesión se guarda en `sessionStorage` cuando no se marca «Recordarme»; antes de F-38 (corregido el 2026-11-09) `saveUser`, `deleteUsers` y `changePassword` solo miraban `localStorage` y con sesión temporal enviaban `Bearer null`, que el servidor rechaza con **403** `Token inválido o expirado` (S-16).
+Ningún método construye la cabecera: la añade el interceptor de `apiClient` con el token de `localStorage` o, si no está, de `sessionStorage`. La sesión se guarda en `sessionStorage` cuando no se marca «Recordarme». Antes de F-38 (corregido el 2026-11-09) `saveUser`, `deleteUsers` y `changePassword` solo miraban `localStorage` y con sesión temporal enviaban `Bearer null`, que el servidor rechaza con **401** `Token inválido o expirado` (S-16).
 
 
 ### Manejo de errores
 
-Usa fetch. Comprueba response.ok y, ante respuesta no satisfactoria, lee JSON y lanza Error(error.message o un texto de respaldo). No implementa bloques catch ni registro propio de todos los errores. Los errores de red y de JSON se propagan directamente.
+Usa `apiClient` y el ayudante `getApiErrorMessage` (F-28, S-07): ante una respuesta no satisfactoria lanza un `Error` con el mensaje del servidor o uno por defecto. Los errores de red se propagan por el mismo camino.
 
 ## Estructura de datos
 

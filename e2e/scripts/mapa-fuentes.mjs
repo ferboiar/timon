@@ -76,6 +76,20 @@ export const MAPA_FUENTES = {
         'backend/src/routes/cuentas.mjs',
         'backend/src/routes/users.mjs'
     ],
+    'tests/autorizacionSubrecursos.spec.mjs': [
+        'src/views/pages/ListBills.vue',
+        'src/router/index.js',
+        'backend/src/middleware/auth.mjs',
+        'backend/src/utils/autorizacion.mjs',
+        'backend/src/utils/propiedad.mjs',
+        'backend/src/routes/anticipos.mjs',
+        'backend/src/routes/ahorros.mjs',
+        'backend/src/routes/cuentas.mjs',
+        'backend/src/routes/categorias.mjs',
+        'backend/src/routes/recibos.mjs',
+        'backend/src/routes/users.mjs',
+        'backend/src/db/db_utilsUsers.mjs'
+    ],
     'tests/sesionCaducada.spec.mjs': [
         'src/router/index.js',
         'src/config/api.js',

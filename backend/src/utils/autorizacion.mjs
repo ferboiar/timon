@@ -18,6 +18,8 @@
  * - propietario_id no cambia nunca al editar.
  * - Subrecursos (pagos, movimientos, fechas): heredan visibilidad y permisos del padre.
  * - Cuentas y categorías: compartidas, sin privacidad ni comprobación de propiedad.
+ * - DC-49: la lectura de cuentas y categorías está disponible con cualquier sesión válida;
+ *   escritura y borrado siguen sujetos a perm_*.
  */
 
 export const MODULOS = ['recibos', 'presupuestos', 'ahorros', 'anticipos', 'transacciones', 'categorias', 'cuentas'];
@@ -31,6 +33,9 @@ export const MODULOS_COMPARTIDOS = ['cuentas', 'categorias'];
 export function puedeAcceder(usuario, modulo, accion) {
     if (!usuario) return false;
     if (usuario.rol === 'admin') return true;
+
+    // DC-49: los catálogos compartidos se leen con cualquier sesión válida; escritura y borrado siguen sujetos a perm_*
+    if (accion === 'lectura' && MODULOS_COMPARTIDOS.includes(modulo)) return true;
 
     const permiso = usuario[`perm_${modulo}`];
 

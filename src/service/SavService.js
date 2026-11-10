@@ -6,12 +6,7 @@ export class SavService {
     // Obtener todos los ahorros
     static async getSavings() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(API_URL, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(API_URL);
             return response.data;
         } catch (error) {
             console.error('Error al obtener los ahorros:', error);
@@ -22,12 +17,7 @@ export class SavService {
     // Guardar un ahorro (crear o actualizar)
     static async saveSaving(saving) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(API_URL, saving, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.post(API_URL, saving);
             return response.data;
         } catch (error) {
             console.error('Error al guardar el ahorro:', error);
@@ -38,12 +28,8 @@ export class SavService {
     // Eliminar uno o más ahorros
     static async deleteSavings(savings) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.delete(API_URL, {
-                data: { savings },
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                data: { savings }
             });
             return response.data;
         } catch (error) {
@@ -55,12 +41,7 @@ export class SavService {
     // Obtener periodicidades
     static async getPeriodicidades() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(`${API_URL}/periodicidades`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(`${API_URL}/periodicidades`);
             return response.data;
         } catch (error) {
             console.error('Error al obtener las periodicidades:', error);
@@ -71,12 +52,7 @@ export class SavService {
     // Obtener movimientos por ahorro_id
     static async getMovimientos(ahorroId) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(`${API_URL}/${ahorroId}/movimientos`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.get(`${API_URL}/${ahorroId}/movimientos`);
             return response.data;
         } catch (error) {
             console.error('Error al obtener los movimientos:', error);
@@ -87,12 +63,7 @@ export class SavService {
     // Guardar un movimiento (crear o actualizar)
     static async saveMovimiento(movimiento) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(`${API_URL}/movimientos`, movimiento, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.post(`${API_URL}/movimientos`, movimiento);
             return response.data;
         } catch (error) {
             console.error('Error al guardar el movimiento:', error);
@@ -103,12 +74,7 @@ export class SavService {
     // Eliminar un movimiento
     static async deleteMovimiento(movimientoId) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.delete(`${API_URL}/movimientos/${movimientoId}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await apiClient.delete(`${API_URL}/movimientos/${movimientoId}`);
             return response.data;
         } catch (error) {
             console.error('Error al eliminar el movimiento:', error);

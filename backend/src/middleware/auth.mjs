@@ -83,10 +83,23 @@ export const autorizar = (modulo, accion = 'lectura') => {
     return (req, res, next) => {
         verifyToken(req, res, async () => {
             try {
-                const usuario = await getUserById(req.user.id);
+                let usuario;
+
+                try {
+                    usuario = await getUserById(req.user.id);
+                } catch (error) {
+                    // F-51: token válido de un usuario que ya no existe. La sesión no vale;
+                    // el 401 usa el mensaje que reconoce el interceptor (S-16, U-16).
+                    if (error?.codigo === 'USUARIO_NO_ENCONTRADO') {
+                        console.log(`auth - sesión no válida: el usuario ${req.user.id} ya no existe`);
+                        return res.status(401).json({ success: false, message: 'Token inválido o expirado' });
+                    }
+
+                    throw error;
+                }
 
                 if (!puedeAcceder(usuario, modulo, accion)) {
-                    console.log(`auth - autorización denegada: usuario ${req.user.id} (${usuario.rol}) sin ${accion} en ${modulo}`);
+                    console.log(`auth - autorización denegada: usuario ${req.user.id} (${usuario?.rol ?? 'desconocido'}) sin ${accion} en ${modulo}`);
                     return res.status(403).json({
                         success: false,
                         message: 'No tienes permisos para realizar esta acción'

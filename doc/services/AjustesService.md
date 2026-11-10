@@ -10,7 +10,7 @@ Cliente de la API de ajustes del sistema (DC-24, DC-25).
 | `saveCrearRecibosAutomaticamente(activo)` | Activa o desactiva la creación automática (administrador) | `PUT /api/ajustes/recibos` |
 | `generarRecibosAnio(simular, proximoDiciembre = false)` | Vista previa o ejecución del procedimiento anual (administrador) | `POST /api/ajustes/recibos/generar-anio` |
 
-Los errores se relanzan con el mensaje que devuelve el servidor.
+Los errores se relanzan con el mensaje que devuelve el servidor. Usa `apiClient`: el interceptor añade el token y centraliza el cierre de sesión ante un 401 (S-07).
 
 ## Referencias
 

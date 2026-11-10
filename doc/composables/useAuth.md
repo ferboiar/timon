@@ -97,4 +97,4 @@ hasRole compara igualdad; hasAnyRole busca pertenencia a una lista. isUser acept
 
 verifySessionValidity llama con fetch a /api/auth/verify, cierra sesión ante rechazo y la mantiene ante error de red. La llaman la verificación periódica y AppLayout al montarse. refreshUser vuelve a leer el almacenamiento, no consulta un usuario actualizado al servidor.
 
-Cada invocación de useAuth mantiene su propio estado e intervalo (S-07). La existencia de vRole y de las columnas perm_* no garantiza autorización efectiva (S-01, S-12).
+Cada invocación de useAuth mantiene su propio estado e intervalo (S-07). `src/config/api.js` ya no importa `useAuth`: usa `src/utils/sesion.js`, así que el interceptor no depende del composable. La autorización efectiva la aplica el servidor con la matriz DC-48 (S-01 y S-12 corregidas el 2026-11-10); la ocultación de controles en el cliente no sustituye esa comprobación.

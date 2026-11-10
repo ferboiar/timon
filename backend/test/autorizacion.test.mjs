@@ -54,7 +54,7 @@ test('user depende de perm_*: escritura completa, lectura solo lectura y no sin 
         assert.equal(puedeAcceder(usuario('user', 'lectura'), modulo, 'lectura'), true);
         assert.equal(puedeAcceder(usuario('user', 'lectura'), modulo, 'escritura'), false);
         assert.equal(puedeAcceder(usuario('user', 'lectura'), modulo, 'borrado'), false);
-        assert.equal(puedeAcceder(usuario('user', 'no'), modulo, 'lectura'), false);
+        assert.equal(puedeAcceder(usuario('user', 'no'), modulo, 'lectura'), MODULOS_COMPARTIDOS.includes(modulo), `${modulo} (DC-49)`);
     }
 });
 
@@ -64,7 +64,7 @@ test('limited_user lee y escribe con escritura, pero nunca borra', () => {
         assert.equal(puedeAcceder(usuario('limited_user', 'escritura'), modulo, 'escritura'), true);
         assert.equal(puedeAcceder(usuario('limited_user', 'escritura'), modulo, 'borrado'), false);
         assert.equal(puedeAcceder(usuario('limited_user', 'lectura'), modulo, 'escritura'), false);
-        assert.equal(puedeAcceder(usuario('limited_user', 'no'), modulo, 'lectura'), false);
+        assert.equal(puedeAcceder(usuario('limited_user', 'no'), modulo, 'lectura'), MODULOS_COMPARTIDOS.includes(modulo), `${modulo} (DC-49)`);
     }
 });
 
@@ -73,7 +73,23 @@ test('reader solo lee, y solo los módulos con permiso distinto de no', () => {
         assert.equal(puedeAcceder(usuario('reader', 'escritura'), modulo, 'lectura'), true);
         assert.equal(puedeAcceder(usuario('reader', 'escritura'), modulo, 'escritura'), false);
         assert.equal(puedeAcceder(usuario('reader', 'escritura'), modulo, 'borrado'), false);
-        assert.equal(puedeAcceder(usuario('reader', 'no'), modulo, 'lectura'), false);
+        assert.equal(puedeAcceder(usuario('reader', 'no'), modulo, 'lectura'), MODULOS_COMPARTIDOS.includes(modulo), `${modulo} (DC-49)`);
+    }
+});
+
+test('DC-49: la lectura de cuentas y categorías no depende de perm_*', () => {
+    for (const rol of ['user', 'limited_user', 'reader']) {
+        assert.equal(puedeAcceder(usuario(rol, 'no'), 'cuentas', 'lectura'), true, `${rol}/cuentas`);
+        assert.equal(puedeAcceder(usuario(rol, 'no'), 'categorias', 'lectura'), true, `${rol}/categorias`);
+        assert.equal(puedeAcceder(usuario(rol, 'no'), 'cuentas', 'escritura'), false, `${rol}/cuentas escritura`);
+        assert.equal(puedeAcceder(usuario(rol, 'no'), 'categorias', 'escritura'), false, `${rol}/categorias escritura`);
+        assert.equal(puedeAcceder(usuario(rol, 'no'), 'cuentas', 'borrado'), false, `${rol}/cuentas borrado`);
+        assert.equal(puedeAcceder(usuario(rol, 'no'), 'categorias', 'borrado'), false, `${rol}/categorias borrado`);
+    }
+
+    // El resto de módulos sigue sujeto a perm_*: la lectura compartida no los abre
+    for (const modulo of MODULOS.filter((m) => !MODULOS_COMPARTIDOS.includes(m))) {
+        assert.equal(puedeAcceder(usuario('reader', 'no'), modulo, 'lectura'), false, modulo);
     }
 });
 

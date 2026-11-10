@@ -24,7 +24,7 @@ import { deleteAdvances, getAdvances, getPagos, getPeriodicidades, handlePayment
 import { autorizar } from '#backend/middleware/auth.mjs';
 import { filtrarVisibles, puedeVerRegistro } from '../utils/autorizacion.mjs';
 import { asegurarBorrado, asegurarEdicion, registroDeAnticipo, registroDePago } from '../utils/propiedad.mjs';
-import { responderError } from '#backend/utils/errorDeNegocio.mjs';
+import { ErrorDeNegocio, responderError } from '#backend/utils/errorDeNegocio.mjs';
 import { leerBooleano, leerEnteroPositivo, leerListaEnterosPositivos } from '#backend/utils/parametros.mjs';
 import { Router } from 'express';
 
@@ -116,9 +116,16 @@ router.get('/:anticipoId/pagos', autorizar('anticipos', 'lectura'), async (req, 
 router.post('/pagos', autorizar('anticipos', 'escritura'), async (req, res) => {
     const { id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id } = req.body;
     try {
-        asegurarEdicion(req.usuario, await registroDeAnticipo(anticipo_id), 'anticipos');
+        // S-18: al editar, el padre se resuelve del propio pago; el del cuerpo solo vale al crear
+        const registro = id ? await registroDePago(id) : await registroDeAnticipo(anticipo_id);
+        asegurarEdicion(req.usuario, registro, 'anticipos');
+
+        if (id && Number(registro.anticipo_id) !== Number(anticipo_id)) {
+            throw new ErrorDeNegocio('El pago no pertenece al anticipo indicado.', 400, 'PADRE_INCORRECTO');
+        }
+
         await pushPago(id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id);
-        console.log('anticipos - pago guardado: pago ' + (id || 'nuevo') + ' del anticipo ' + anticipo_id);
+        console.log('anticipos - pago guardado: pago ' + (id || 'nuevo') + ' del anticipo ' + (id ? registro.anticipo_id : anticipo_id));
         res.status(201).json({ message: 'Pago insertado o actualizado correctamente' });
     } catch (error) {
         responderError(res, error, 'No se ha podido guardar el pago.', { contexto: 'anticipos - guardado del pago' });

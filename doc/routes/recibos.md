@@ -107,13 +107,17 @@ Cuando se crea un nuevo recibo a través del endpoint POST, el sistema:
 
 1. Obtiene el ID del usuario desde el token JWT presente en la cabecera de autenticación
 2. Asigna automáticamente este ID como `propietario_id` del recibo
-3. El cuerpo no decide el propietario en esta ruta. Al editar, pushRecibo también escribe el ID del usuario que guarda; no impone autorización por propietario y puede reasignar el recibo al editor (S-01)
+3. El cuerpo no decide el propietario en esta ruta. Al editar, `pushRecibo` conserva el propietario original: los dos `UPDATE` no escriben `propietario_id` (S-01)
 
 ```javascript
 // Extracto del código que maneja la asignación del propietario
 const propietarioId = req.user.id; // Obtenemos el ID del usuario del token JWT
 await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id);
 ```
+
+### Autorización
+
+Las rutas usan `autorizar('recibos', …)` con la matriz DC-48. `GET /` filtra con `filtrarVisibles`; editar y borrar exigen visibilidad y permiso (`propiedad.mjs`). `permitirPagados=1` (`forzar`) y `permitirFueraDeAnio` solo se admiten si el rol vigente del usuario es `admin` (`req.usuario`, no el rol congelado en el JWT; F-51).
 
 ### Validación de Cuenta Bancaria
 

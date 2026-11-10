@@ -7,7 +7,7 @@ Fuente: `backend/src/middleware/auth.mjs`. Revisión estática: 2026-10-23.
 | verifyToken | Extrae el token de Authorization, verifica firma y expiración con config.jwt.secret, asigna el payload a req.user y llama a next |
 | verifyAdmin | Ejecuta verifyToken y exige rol admin; ya incluye autenticación |
 | checkRole(roles = []) | Ejecuta verifyToken y comprueba roles.includes(req.user.rol); se debe usar un array. Ninguna ruta actual lo utiliza |
-| autorizar(modulo, accion) | Ejecuta verifyToken, carga el usuario vigente con `getUserById` (rol y `perm_*` actuales), aplica la matriz DC-48 y deja el usuario en `req.usuario` para que la ruta compruebe la propiedad |
+| autorizar(modulo, accion) | Ejecuta verifyToken, carga el usuario vigente con `getUserById` (rol y `perm_*` actuales), aplica la matriz DC-48 y deja el usuario en `req.usuario` para que la ruta compruebe la propiedad. Si el usuario del token ya no existe, responde 401 (F-51) |
 
 ## Respuestas de error
 
@@ -15,6 +15,7 @@ Todas llevan `{ success: false, message }`:
 
 - Sin token: 401, `Se requiere token de autenticación`.
 - Inválido o caducado: **401**, `Token inválido o expirado` (S-16; antes 403).
+- Usuario del token ya no existe: **401**, `Token inválido o expirado` (F-51; antes 404).
 - Sin rol administrador: 403, `Acceso restringido a administradores`.
 - Fuera de checkRole: 403, `No tienes permisos para realizar esta acción`.
 

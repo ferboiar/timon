@@ -8,10 +8,7 @@ export class BillService {
     // Obtener todos los recibos
     static async getBills() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(API_URL, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
-            });
+            const response = await apiClient.get(API_URL);
             return response.data;
         } catch (error) {
             console.error('Error al obtener los recibos:', error);
@@ -23,18 +20,14 @@ export class BillService {
     static async saveBill(bill) {
         try {
             console.log('BillService. Guardando recibo:', bill);
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
             // Imprimir información detallada antes de enviar
             console.log('BillService. Detalles de la petición:');
             console.log('BillService. URL:', API_URL);
-            console.log('BillService. Token presente:', !!token);
             console.log('BillService. Modo fechas:', bill.modoFechas);
             console.log('BillService. Cargos:', bill.cargo);
 
-            const response = await apiClient.post(API_URL, bill, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
-            });
+            const response = await apiClient.post(API_URL, bill);
             console.log('BillService. Respuesta exitosa:', response.data);
             return response.data;
         } catch (error) {
@@ -61,10 +54,8 @@ export class BillService {
     // Eliminar un recibo
     static async deleteBill(id, fecha, periodicidad, permitirPagados = false) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.delete(`${API_URL}/${id}`, {
-                params: { fecha, periodicidad, ...(permitirPagados ? { permitirPagados: 1 } : {}) },
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
+                params: { fecha, periodicidad, ...(permitirPagados ? { permitirPagados: 1 } : {}) }
             });
             return response.data;
         } catch (error) {
@@ -79,10 +70,8 @@ export class BillService {
     // Obtener recibos por periodicidad
     static async getBillsByPeriodicity(periodicity, year) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.get(API_URL, {
-                params: { periodicidad: periodicity, ...(year ? { año: year } : {}) },
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
+                params: { periodicidad: periodicity, ...(year ? { año: year } : {}) }
             });
             return response.data;
         } catch (error) {
@@ -94,10 +83,8 @@ export class BillService {
     // Obtener los cargos pendientes de años anteriores al indicado (atrasados) de una periodicidad
     static async getOverdueBills(periodicity, year) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await apiClient.get(API_URL, {
-                params: { periodicidad: periodicity, estado: 'pendiente', fecha: '1900-01-01a' + (year - 1) + '-12-31' },
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
+                params: { periodicidad: periodicity, estado: 'pendiente', fecha: '1900-01-01a' + (year - 1) + '-12-31' }
             });
             return response.data;
         } catch (error) {
@@ -109,10 +96,7 @@ export class BillService {
     // Obtener recibos por año
     static async getBillsByYear(year) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(`${API_URL}?año=${year}`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
-            });
+            const response = await apiClient.get(`${API_URL}?año=${year}`);
             return response.data;
         } catch (error) {
             console.error(`BillService. Error al obtener los recibos del año ${year}: `, error);
@@ -123,10 +107,7 @@ export class BillService {
     // Obtener recibos inactivos
     static async getInactiveBills() {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.get(`${API_URL}?activo=0`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
-            });
+            const response = await apiClient.get(`${API_URL}?activo=0`);
             return response.data;
         } catch (error) {
             console.error('BillService. Error al obtener los recibos inactivos: ', error);
@@ -137,14 +118,7 @@ export class BillService {
     // Generar nuevas fechas para un recibo
     static async generateBillDates(id) {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await apiClient.post(
-                `${API_URL}/${id}/generar-fechas`,
-                {},
-                {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {}
-                }
-            );
+            const response = await apiClient.post(`${API_URL}/${id}/generar-fechas`, {});
             return response.data;
         } catch (error) {
             console.error(`BillService. Error al generar nuevas fechas para el recibo con ID ${id}: `, error);
