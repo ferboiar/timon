@@ -113,7 +113,14 @@ No afirmes haber revisado una salida que el usuario aún no ha enviado.
 En ejecución remota delegada, comprueba el conjunto exacto de archivos, el contenido y el resultado del commit con las herramientas disponibles.
 No finjas que has ejecutado git add o git commit -F en un contenedor.
 
-No abras, fusiones ni borres ramas remotas sin autorización específica.
+<!-- regla:publicacion-fusiones -->
+**Publicación y fusiones (DC-47).** Cada una de estas operaciones exige confirmación expresa del usuario, nombrada y por separado: `git commit`, `git push`, `git push origin --delete`, `gh pr create`, `gh pr edit`, `gh pr merge`, el borrado de ramas locales y el borrado de ramas remotas.
+
+- «Continúa», «siguiente», «PR hecho, seguimos» o una lista de tareas aprobada no autorizan ninguna de esas operaciones.
+- La confirmación se da para la operación concreta y, si hay varias ramas o PR, para cada una. Sin ella, el asistente se detiene y espera.
+- Preparar el índice con `git add` y su manifiesto, y comprobar el conjunto de archivos, no publica nada.
+- Antes de escribir en el remoto se comprueba el estado real: rama, `HEAD` y PR abiertos o fusionados. Una fusión no se declara sin verificarla.
+<!-- /regla:publicacion-fusiones -->
 
 “PR hecho” no demuestra fusión:
 comprueba PR abiertos y cerrados, buscando también por rama o título, o pregunta si la diferencia afecta a la continuación.

@@ -44,6 +44,15 @@ script o parche con validación previa; no instrucciones vagas ni sobrescrituras
 
 Para un cambio trivial con una única coincidencia puedes comprobar con grep -c que hay exactamente una y aplicar sed -i. En cualquier otro caso, entrega un script con --check y --apply.
 
+<!-- regla:edicion-ficheros -->
+**Edición de ficheros (DC-47).** Todo cambio en un fichero existente del repositorio se hace con `dev/utils/ayudas.mjs`; los ficheros nuevos se crean con `cat`. El ayudante se usa con `--check` antes de `--apply` y con un manifiesto explícito de los archivos que se tocan.
+
+- Los ficheros nuevos se crean con `cat > ruta/del/archivo <<'EOF'`, con su contenido, y no con el editor de parches.
+- Un cambio trivial con una única coincidencia se comprueba con `grep -c` (debe devolver exactamente 1) y se aplica con `sed -i`. Cualquier otro cambio va con el ayudante: `--check` y, si no hay errores, `--apply`.
+- Los ficheros fuera del repositorio se editan con `cat` o `sed -i`.
+- No se usan Python ni scripts ad hoc para modificar ficheros. La excepción solo cabe si no es posible con las herramientas anteriores, el alcance lo justifica, se explica antes y el usuario lo confirma expresamente.
+<!-- /regla:edicion-ficheros -->
+
 Preferiblemente créalo con cat > /tmp/<nombre-descriptivo>.mjs <<'EOF'.
 Usa nombres descriptivos, no dependientes de la numeración de otro chat.
 
@@ -118,7 +127,6 @@ Revisa y actualiza cuando estén afectados:
 - doc/index.md y documentos específicos.
 - README.md y README_en.md.
 - backend/test/README.md.
-- .github/copilot-instructions.md.
 - package.json.md y notas de raíz.
 - docNavigation.
 

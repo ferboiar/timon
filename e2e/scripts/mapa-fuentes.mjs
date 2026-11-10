@@ -59,6 +59,13 @@ export const MAPA_FUENTES = {
         'src/router/index.js',
         'backend/src/routes/recibos.mjs'
     ],
+    'tests/documentacionReglas.spec.mjs': [
+        'src/views/pages/Tech-documentation.vue',
+        'src/router/index.js',
+        'doc/mantenimiento/instruccion-persistente_2de4.md',
+        'doc/mantenimiento/instruccion-persistente_3de4.md',
+        '.cline/rules/00-timon-obligatorio.md'
+    ],
     'tests/smoke.spec.mjs': ['src/main.js', 'src/App.vue', 'src/router/index.js', 'vite.config.mjs']
 };
 

@@ -14,6 +14,7 @@ del despliegue.
 | `tests/erroresConexion.spec.mjs` | Pestaña Base de Datos: una prueba de conexión con una dirección inalcanzable (`127.0.0.1` y un puerto sin escuchar) muestra el mensaje de usuario completo, sin código del sistema, y no guarda nada |
 | `tests/usuarios.spec.mjs` | Pestaña Usuarios: alta de un usuario `e2e_` y rechazo del nombre duplicado con el mensaje completo del servidor (409, `USUARIO_DUPLICADO`) |
 | `tests/recibosBorrado.spec.mjs` | Recibos: el diálogo de borrado muestra el concepto del recibo y no un nombre vacío (F-31). No crea ni borra datos: abre el diálogo y cancela |
+| `tests/documentacionReglas.spec.mjs` | Documentación: en `/tech-docs`, los centinelas de las reglas (DC-47) no se ven y los dos bloques se pintan. No crea ni borra datos: solo lee el DOM |
 
 Las aserciones se apoyan en roles accesibles, etiquetas, textos únicos y estructura DOM estable
 de la interfaz; cada spec documenta en comentarios de qué fichero de Timón sale cada selector.

@@ -31,3 +31,23 @@ No releas íntegramente el relevo, el registro, `TODO` ni todos los informes en 
 - Declara qué has leído completo y qué queda pendiente.
 - Propón objetivo, alcance, exclusiones, aceptación y verificaciones.
 - No modifiques nada hasta que el usuario apruebe el alcance.
+
+## Reglas de edición de ficheros y de publicación
+
+<!-- regla:edicion-ficheros -->
+**Edición de ficheros (DC-47).** Todo cambio en un fichero existente del repositorio se hace con `dev/utils/ayudas.mjs`; los ficheros nuevos se crean con `cat`. El ayudante se usa con `--check` antes de `--apply` y con un manifiesto explícito de los archivos que se tocan.
+
+- Los ficheros nuevos se crean con `cat > ruta/del/archivo <<'EOF'`, con su contenido, y no con el editor de parches.
+- Un cambio trivial con una única coincidencia se comprueba con `grep -c` (debe devolver exactamente 1) y se aplica con `sed -i`. Cualquier otro cambio va con el ayudante: `--check` y, si no hay errores, `--apply`.
+- Los ficheros fuera del repositorio se editan con `cat` o `sed -i`.
+- No se usan Python ni scripts ad hoc para modificar ficheros. La excepción solo cabe si no es posible con las herramientas anteriores, el alcance lo justifica, se explica antes y el usuario lo confirma expresamente.
+<!-- /regla:edicion-ficheros -->
+
+<!-- regla:publicacion-fusiones -->
+**Publicación y fusiones (DC-47).** Cada una de estas operaciones exige confirmación expresa del usuario, nombrada y por separado: `git commit`, `git push`, `git push origin --delete`, `gh pr create`, `gh pr edit`, `gh pr merge`, el borrado de ramas locales y el borrado de ramas remotas.
+
+- «Continúa», «siguiente», «PR hecho, seguimos» o una lista de tareas aprobada no autorizan ninguna de esas operaciones.
+- La confirmación se da para la operación concreta y, si hay varias ramas o PR, para cada una. Sin ella, el asistente se detiene y espera.
+- Preparar el índice con `git add` y su manifiesto, y comprobar el conjunto de archivos, no publica nada.
+- Antes de escribir en el remoto se comprueba el estado real: rama, `HEAD` y PR abiertos o fusionados. Una fusión no se declara sin verificarla.
+<!-- /regla:publicacion-fusiones -->
