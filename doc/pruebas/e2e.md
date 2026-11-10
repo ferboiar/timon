@@ -14,6 +14,7 @@ del despliegue.
 | `tests/erroresConexion.spec.mjs` | Pestaña Base de Datos: una prueba de conexión con una dirección inalcanzable (`127.0.0.1` y un puerto sin escuchar) muestra el mensaje de usuario completo, sin código del sistema, y no guarda nada |
 | `tests/usuarios.spec.mjs` | Pestaña Usuarios: alta de un usuario `e2e_` y rechazo del nombre duplicado con el mensaje completo del servidor (409, `USUARIO_DUPLICADO`) |
 | `tests/recibosBorrado.spec.mjs` | Recibos: el diálogo de borrado muestra el concepto del recibo y no un nombre vacío (F-31). No crea ni borra datos: abre el diálogo y cancela |
+| `tests/recibosTrimestrales.spec.mjs` | Recibos: crea un `e2e_trimestral_…` (y un `e2e_bimestral_…` de apoyo si el año no tiene bimestrales), comprueba que la selección de trimestrales es propia frente a la de bimestrales (F-30) y que el diálogo muestra el concepto (F-31), y los borra por la interfaz; limpieza por API si el test falla |
 | `tests/documentacionReglas.spec.mjs` | Documentación: en `/tech-docs`, los centinelas de las reglas (DC-47) no se ven y los dos bloques se pintan. No crea ni borra datos: solo lee el DOM |
 | `tests/sesionCaducada.spec.mjs` | Sesión caducada (S-17): un token caducado lleva al login, limpia los dos almacenes y el servidor responde 401. No crea ni borra datos |
 
@@ -57,6 +58,7 @@ npm run e2e:lista                 # lista los tests sin ejecutarlos
   `E2E_LIMPIAR_HUERFANAS=0` solo se informa.
 - La suite no borra ninguna otra categoría.
 - Los usuarios de prueba siguen el formato exacto `e2e_usuario_AAAAMMDD_HHMMSS` (26 caracteres; `users.username` es `varchar(50)`) con correo `…@e2e.invalid` (38 caracteres; `varchar(100)`) y una contraseña de un solo uso. Cada ejecución crea y borra solo su usuario; los huérfanos con ese formato solo se informan.
+- Los recibos de prueba de U-15 siguen el formato exacto `e2e_trimestral_AAAAMMDD_HHMMSS` (30 caracteres, el máximo de `recibos.concepto`) y `e2e_bimestral_AAAAMMDD_HHMMSS` (29). Se crean desde la propia página, se borran por la interfaz y, si el test falla antes, se borran por API en `afterEach`. No se toca ningún otro recibo.
 - La prueba de conexión usa `POST /api/db-config/test`, que abre una conexión y la cierra: no escribe `.db_connection` ni crea `.db_connection.backup`, y el spec comprueba que no se emite ningún guardado ni restauración.
 
 ## Triage de fallos
