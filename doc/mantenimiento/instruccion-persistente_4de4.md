@@ -132,7 +132,7 @@ La opción activa del backend procede del relevo y backend/test/README.md, no de
 
 Si falta o no coincide, acláralo antes de ejecutar.
 
-Si el relevo confirma la opción mariadb01, timon_test y conta_hogar_test, el comando completo es:
+Si el relevo confirma la opción mariadb01, timon_test y conta_hogar_test y **no existe** `backend/test/.env.test`, el comando completo es:
 
 cd /workspaces/timon
 read -r -s -p "Contraseña timon_test: " TEST_DB_PASSWORD
@@ -146,16 +146,16 @@ Entrega el comando concreto de la opción confirmada.
 Comprueba host, puerto, usuario y base; no heredes variables accidentalmente.
 
 Antes de ejecutar `npm run test:backend`, lee `backend/test/README.md` (opciones A, B y C) y el relevo.
-Nunca lances la suite sin TEST_DB_HOST, TEST_DB_USER y TEST_DB_PASSWORD definidos: los valores por defecto (`mariadb-test`, `root`) son los de la opción B y dan ENOTFOUND.
+Nunca lances la suite sin TEST_DB_HOST, TEST_DB_USER y TEST_DB_PASSWORD definidos **en el entorno o en `backend/test/.env.test`**: los valores por defecto (`mariadb-test`, `root`) son los de la opción B y dan ENOTFOUND.
 No leas `.db_connection` para obtener credenciales de pruebas: son las de `conta_hogar`, no las de `conta_hogar_test`.
-No pidas ni escribas la contraseña en el chat, en el código, en los commits ni en los logs.
+No pidas ni escribas la contraseña en el chat, en el código **en claro**, en los commits **en claro** ni en los logs; el fichero cifrado de DC-46 es la excepción prevista.
 Si existe `backend/test/.env.test` (versionado y cifrado con git-crypt, opción C, DC-46), puedes ejecutar `npm run test:backend:local`: el comprobador `scripts/comprobar-entorno-pruebas.mjs` valida permisos, variables y que el usuario de pruebas solo tenga permisos sobre bases `_test`, y `node --env-file` carga el fichero. No imprimas su contenido ni lo copies fuera de su ruta.
 Sin ese fichero y sin TEST_DB_PASSWORD definida, no ejecutes la suite: entrega el comando al usuario y espera el resumen (`# tests`, `# pass`, `# fail`, `# cancelled`).
 En ambos casos conserva y cita el código de salida y no declares nada en verde sin la salida real.
 
 Pruebas destructivas solo en entorno autorizado y bases *_test, nunca conta_hogar. El sufijo no sustituye comprobar el destino.
 
-Contraseñas en terminal, no en chat ni commits.
+Contraseñas en terminal, no en el chat ni en los commits **en claro**.
 Logs saneados, sin secretos.
 Los ficheros cifrados con git-crypt (`backend/.env`, `backend/src/db/.db_connection`, `backend/src/db/.db_connection.backup`, `e2e/.env` y `backend/test/.env.test`) se descifran en el clon local con la clave o contraseña del proyecto (`git-crypt unlock`) para poder usarlos, y el asistente verifica el cifrado antes de subirlos: el filtro `clean` cifra al preparar, `git-crypt status -e` confirma las rutas y `scripts/hooks/pre-push` con `scripts/comprobar-cifrado.mjs` rechazan cualquier blob en claro (DC-45).
 Si el clon no está desbloqueado y no hay clave disponible, detente y pide la clave; no ejecutes `git-crypt lock`.

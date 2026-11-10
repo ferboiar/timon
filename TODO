@@ -26,7 +26,7 @@ La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola lo
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
 
-Estado operativo: 2026-11-09, base b5c175a (PR #69 a #74 fusionados: F-48/D-30/F-38/U-14, DC-46 y su arreglo, S-16, informes retroactivos de D-31 y F-30/F-31). F-14 cerrado por DC-42. Sin trabajo en curso. La suite del backend se ejecuta con `npm run test:backend:local` (DC-46). Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-10, base b5c175a (PR #69 a #74 fusionados: F-48/D-30/F-38/U-14, DC-46 y su arreglo, S-16, informes retroactivos de D-31 y F-30/F-31). F-14 cerrado por DC-42. Sin trabajo en curso. La suite del backend se ejecuta con `npm run test:backend:local` (DC-46). Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Siguiente (un PR por punto; mantener este orden)
 - [x] D-15 (tarea previa): ayudante revisado el 2026-10-30 (ayudas.mjs, pruebas y README). Sin cambios necesarios: protege `.db_connection` y `.env*` por diseño, verifica identidad/contenido antes de escribir y hace copia previa. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.

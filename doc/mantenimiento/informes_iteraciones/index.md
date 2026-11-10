@@ -5,8 +5,8 @@
 | Fecha | IDs | Informe |
 |---|---|---|
 | 2026-11-08 | F-48, D-30 | [Errores de negocio y técnicos en el resto del backend](./2026-11-08_F-48_D-30_errores-negocio-resto.md) |
-| 2026-11-09 | D-32 | [Consolidación del seguimiento de los PR #69 a #74](./2026-11-09_D-32_consolidar-seguimiento.md) |
-| 2026-11-09 | D-31 | [Informes retroactivos de los PR #70 y #71](./2026-11-09_D-31_informes-retroactivos.md) |
+| 2026-11-10 | D-32 | [Consolidación del seguimiento de los PR #69 a #74](./2026-11-10_D-32_consolidar-seguimiento.md) |
+| 2026-11-10 | D-31 | [Informes retroactivos de los PR #70 y #71](./2026-11-10_D-31_informes-retroactivos.md) |
 | 2026-11-09 | S-16 | [Token inválido: 401 en vez de 403](./2026-11-09_S-16_token-invalido-401.md) |
 | 2026-11-09 | DC-46 (arreglo) | [Permisos 600 del entorno de pruebas](./2026-11-09_DC-46_permisos-600.md) |
 | 2026-11-09 | DC-46 | [Entorno de pruebas cifrado y `test:backend:local`](./2026-11-09_DC-46_entorno-pruebas-cifrado.md) |

@@ -16,8 +16,8 @@
 - `doc/mantenimiento/registro-hallazgos_3de3.md` (S-16 con su PR; filas nuevas **D-31**, **D-32**, **S-17** y **U-15**; plan §10).
 - `doc/mantenimiento/instruccion-persistente_4de4.md` (apartado 10: vía preferente y lista de rutas cifradas).
 - `doc/pruebas/entorno-pruebas.md` (la contraseña de pruebas no es un secreto del proyecto).
-- `doc/mantenimiento/informes_iteraciones/2026-11-09_D-31_informes-retroactivos.md` (nuevo).
-- `doc/mantenimiento/informes_iteraciones/2026-11-09_D-32_consolidar-seguimiento.md` (**nuevo, este informe**).
+- `doc/mantenimiento/informes_iteraciones/2026-11-10_D-31_informes-retroactivos.md` (nuevo).
+- `doc/mantenimiento/informes_iteraciones/2026-11-10_D-32_consolidar-seguimiento.md` (**nuevo, este informe**).
 - `doc/mantenimiento/informes_iteraciones/index.md` (dos filas).
 - `TODO` (estado operativo y lista ordenada).
 
@@ -39,5 +39,5 @@
 ### Continuidad
 
 - **PR pendiente con Fase A, uno por hallazgo**: S-17 (prueba E2E de sesión caducada) y U-15 (prueba de comportamiento de F-30 con un recibo `e2e_trimestral_…`, crear y borrar).
-- **Propuesta para la Fase A**: añadir a `.cline/rules` que el asistente no ejecuta `git push`, `gh pr create` ni `gh pr merge`; entrega mensaje, título, descripción y comandos, y los lanza solo cuando el usuario lo confirme.
+- **DC-47, planificado** (PR propio después de fusionar D-32 y sincronizar `main`): dos reglas con texto íntegro en la instrucción persistente (edición de ficheros en el apartado 6, publicación y fusiones en el apartado 3) y **copia deliberada** en `.cline/rules/00-timon-obligatorio.md`, con excepción explícita en el apartado 12 y la prueba de divergencia `scripts/comprobar-reglas.mjs` + `backend/test/reglas.test.mjs` (sin añadirla al hook `pre-commit` en ese PR). La regla de publicación incluye `git commit`, `git push`, `git push origin --delete`, `gh pr create`, `gh pr edit`, `gh pr merge` y el borrado de ramas locales y remotas.
 - Qué no asumir: que los commits y PR ya fusionados se reescriban; que el token de `gh` tenga solo los scopes necesarios; ni que las fusiones de la tanda anterior respetaran la espera de los checks.
