@@ -140,6 +140,8 @@ echo
 export TEST_DB_PASSWORD
 TEST_DB_HOST=mariadb01 TEST_DB_PORT=3306 TEST_DB_USER=timon_test TEST_DB_NAME=conta_hogar_test npm run test:backend
 
+Con `backend/test/.env.test` (DC-46) no hace falta exportar nada: usa `npm run test:backend:local`. El bloque anterior queda como alternativa cuando ese fichero no existe.
+
 Entrega el comando concreto de la opción confirmada.
 Comprueba host, puerto, usuario y base; no heredes variables accidentalmente.
 
@@ -155,7 +157,7 @@ Pruebas destructivas solo en entorno autorizado y bases *_test, nunca conta_hoga
 
 Contraseñas en terminal, no en chat ni commits.
 Logs saneados, sin secretos.
-Los ficheros cifrados con git-crypt (`backend/.env`, `backend/src/db/.db_connection`, `backend/src/db/.db_connection.backup` y `e2e/.env`) se descifran en el clon local con la clave o contraseña del proyecto (`git-crypt unlock`) para poder usarlos, y el asistente verifica el cifrado antes de subirlos: el filtro `clean` cifra al preparar, `git-crypt status -e` confirma las rutas y `scripts/hooks/pre-push` con `scripts/comprobar-cifrado.mjs` rechazan cualquier blob en claro (DC-45).
+Los ficheros cifrados con git-crypt (`backend/.env`, `backend/src/db/.db_connection`, `backend/src/db/.db_connection.backup`, `e2e/.env` y `backend/test/.env.test`) se descifran en el clon local con la clave o contraseña del proyecto (`git-crypt unlock`) para poder usarlos, y el asistente verifica el cifrado antes de subirlos: el filtro `clean` cifra al preparar, `git-crypt status -e` confirma las rutas y `scripts/hooks/pre-push` con `scripts/comprobar-cifrado.mjs` rechazan cualquier blob en claro (DC-45).
 Si el clon no está desbloqueado y no hay clave disponible, detente y pide la clave; no ejecutes `git-crypt lock`.
 
 No confundas fallos de DNS/conexión/preparación con defectos funcionales.

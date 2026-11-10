@@ -51,7 +51,7 @@ El script hace dos cosas, en este orden:
 
 ## Límites
 
-- El fichero contiene un secreto: es la misma política que `e2e/.env`. Los hooks `pre-commit` y `pre-push` (`scripts/comprobar-cifrado.mjs`) rechazan que viaje en claro; el patrón de rutas sensibles cubre `.env` y `.env.*` (por eso `.env.test` se vigila igual que `.env`).
+- La contraseña de pruebas **no** es un secreto del proyecto, pero el fichero se cifra igual que `e2e/.env` por la política de ficheros de entorno (DC-45). Los hooks `pre-commit` y `pre-push` (`scripts/comprobar-cifrado.mjs`) rechazan que viaje en claro; el patrón de rutas sensibles cubre `.env` y `.env.*` (por eso `.env.test` se vigila igual que `.env`).
 - `--env-file` no interpreta comillas, comentarios al final de línea ni interpolación: una comilla mal puesta llega literal al valor.
 - Este fichero no sustituye a la opción B de `backend/test/README.md` (MariaDB efímero con Docker), que sigue siendo la más portable.
 - Si cambia la contraseña de `timon_test`, hay que editar el fichero y volver a prepararlo para que el blob cifrado se actualice.

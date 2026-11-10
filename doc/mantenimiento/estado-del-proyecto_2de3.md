@@ -56,12 +56,18 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #66 | S-09, DC-45 | Cifrado con git-crypt: `e2e/.env` cifrado, hooks de comprobación y política |
 | #67 | S-15 | Hooks ejecutables con `core.fileMode=false` |
 | #68 | D-29 | Sincronización del seguimiento tras los PR #65, #66 y #67 |
+| #69 | F-48, D-30, F-38, U-14 | Errores de negocio y mensajes comprensibles en el resto del backend; catálogo de causas y arreglos de sesión y de mensajes en pantalla |
+| #70 | DC-46 | Entorno de pruebas cifrado (`backend/test/.env.test`) y `npm run test:backend:local` |
+| #71 | DC-46 | Restablecer los permisos `600` del entorno de pruebas (git no conserva el modo) |
+| #72 | S-16 | Un token inválido responde 401 y no 403 |
+| #73 | D-31 | Informes de cierre retroactivos de los PR #70 y #71 |
+| #74 | F-30, F-31 | Selección propia de la tabla de trimestrales y `bill.concepto` en el diálogo de borrado |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
 
-La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). F-14 (grupo 3 de la fase 1) está cerrado: los pasos a, b y d se incorporaron en los PR #53, #54 y #55 y el resto del paso c se declara no aplicable por DC-42 (solo se implementó el recálculo al editar un pagado, DC-40). F-19 y D-24 se incorporaron en el PR #58, D-25 en el #59, F-20/F-21 en el #60, F-28 con D-26 en el #61, F-47 en el #62 (F-48 quedó solo registrado: D-30) y D-29 en el #68. O-02, DC-44 y D-27 se incorporaron en el PR #63 (2026-11-06), el PR #64 versionó las reglas de Cline y los PR #65, #66 y #67 completaron D-28, el cifrado (S-09 y DC-45) y S-15. El punto en curso es F-48 y el siguiente es F-30/F-31. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). F-14 (grupo 3 de la fase 1) está cerrado: los pasos a, b y d se incorporaron en los PR #53, #54 y #55 y el resto del paso c se declara no aplicable por DC-42 (solo se implementó el recálculo al editar un pagado, DC-40). F-19 y D-24 se incorporaron en el PR #58, D-25 en el #59, F-20/F-21 en el #60, F-28 con D-26 en el #61, F-47 en el #62 (F-48 quedó solo registrado: D-30) y D-29 en el #68. O-02, DC-44 y D-27 se incorporaron en el PR #63 (2026-11-06), el PR #64 versionó las reglas de Cline y los PR #65, #66 y #67 completaron D-28, el cifrado (S-09 y DC-45) y S-15. F-48, DC-46, S-16 y F-30/F-31 están fusionados (PR #69 a #74). El siguiente trabajo es el backlog por prioridad, con S-01/S-06/S-12 (autorización efectiva en servidor) en cabeza. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo la usa (F-12 corregido el 2026-11-01).
