@@ -11,7 +11,9 @@
 
 // Importamos Router de express para crear rutas
 import { completarFechasAnio, deleteRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
-import { verifyToken } from '#backend/middleware/auth.mjs';
+import { autorizar } from '#backend/middleware/auth.mjs';
+import { filtrarVisibles } from '../utils/autorizacion.mjs';
+import { asegurarBorrado, asegurarEdicion, registroDeRecibo } from '../utils/propiedad.mjs';
 import { detalleParaLog, responderError } from '../utils/errorDeNegocio.mjs';
 import { Router } from 'express';
 
@@ -19,22 +21,22 @@ import { Router } from 'express';
 const router = Router();
 
 // Definimos una ruta GET para obtener recibos
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', autorizar('recibos', 'lectura'), async (req, res) => {
     // Obtenemos los filtros de la consulta
     const filters = req.query;
     try {
         // Llamamos a la función getRecibos con los filtros y enviamos la respuesta en formato JSON
         const recibos = await getRecibos(filters);
         //It sends the recibos data as a JSON response to the client, facilitating the transfer of structured data between the server and the client.
-        res.json(recibos);
+        res.json(filtrarVisibles(req.usuario, recibos, 'recibos'));
     } catch (error) {
         // Si hay un error, enviamos una respuesta con el código de estado y el mensaje de error
         responderError(res, error, 'No se pudieron obtener los recibos.', { contexto: 'recibos - GET' });
     }
 });
 
-router.post('/', verifyToken, async (req, res) => {
-    const { id, concepto, periodicidad, importe, categoria, cargo, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio } = req.body;
+router.post('/', autorizar('recibos', 'escritura'), async (req, res) => {
+    const { id, concepto, periodicidad, importe, categoria, cargo, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio, es_privado } = req.body;
 
     // Si estamos en modo automático y no se proporciona fecha_inicial, error
     if (modoFechas === 'auto' && !fecha_inicial) {
@@ -71,6 +73,10 @@ router.post('/', verifyToken, async (req, res) => {
         return res.status(400).json({ error: 'El campo cuenta_id es obligatorio.' });
     }
 
+    if (es_privado !== undefined && ![0, 1, '0', '1'].includes(es_privado)) {
+        return res.status(400).json({ error: 'es_privado debe ser 0 o 1.' });
+    }
+
     try {
         // Verificar que req.user y req.user.id existen
         if (!req.user || !req.user.id) {
@@ -96,7 +102,11 @@ router.post('/', verifyToken, async (req, res) => {
         if (permitirFueraDeAnio === true && !fueraDeAnioPermitido) {
             console.log('recibos - permitirFueraDeAnio ignorado: el usuario no es administrador');
         }
-        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido);
+        if (id) {
+            asegurarEdicion(req.usuario, await registroDeRecibo(id), 'recibos');
+        }
+
+        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido, es_privado);
         console.log('recibos - pushRecibo completado con éxito para ID:', id);
         console.log('recibos - ==== FIN PETICIÓN POST /recibos (ÉXITO) ====');
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente', ...resultado });
@@ -108,11 +118,12 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // Definimos una ruta DELETE para eliminar recibos
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', autorizar('recibos', 'borrado'), async (req, res) => {
     try {
         const { id } = req.params;
         const { fecha, periodicidad } = req.query;
         const forzar = req.query.permitirPagados === '1' && req.user?.rol === 'admin'; // Opción de sesión del administrador (DC-21)
+        asegurarBorrado(req.usuario, await registroDeRecibo(id), 'recibos');
         const success = await deleteRecibo(id, fecha, periodicidad, undefined, forzar);
         if (success) {
             res.status(200).send({ message: 'Recibo eliminado correctamente' });
@@ -125,9 +136,10 @@ router.delete('/:id', verifyToken, async (req, res) => {
 });
 
 // Ruta para generar nuevas fechas de cargo para un recibo específico
-router.post('/:id/generar-fechas', verifyToken, async (req, res) => {
+router.post('/:id/generar-fechas', autorizar('recibos', 'escritura'), async (req, res) => {
     try {
         const { id } = req.params;
+        asegurarEdicion(req.usuario, await registroDeRecibo(id), 'recibos');
         const creadas = await completarFechasAnio(id);
         res.status(200).json({
             message: creadas > 0 ? 'Se han añadido ' + creadas + ' fecha(s) de cargo hasta completar el año' : 'No faltan fechas de cargo para completar el año',

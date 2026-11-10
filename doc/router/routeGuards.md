@@ -8,7 +8,7 @@ beforeEach usa publicPages: /auth/login, /auth/access, /auth/error, /landing y /
 
 En rutas protegidas valida el token con fetch contra /api/auth/verify. Ante rechazo limpia token/user de ambos almacenes y redirige al login; ante error de red permite continuar. Al entrar al login con token, verifica primero: válido redirige al dashboard; inválido limpia datos y deja entrar; fallo de red deja entrar.
 
-Contempla to.meta.requiresAdmin y useAuth().isAdmin, con redirección a /auth/access. Sin embargo ninguna ruta define meta, de modo que esta restricción no está activada (S-06). Las pestañas administrativas de Ajustes se ocultan dentro del componente; los endpoints deben protegerse de forma independiente.
+Desde el 2026-11-10 `/documentation` y `/tech-docs` definen `meta.requiresAdmin` y redirigen a `/auth/access` (S-06); `/manual` queda libre. El guard lee el rol del usuario guardado, porque `useAuth()` no está montado fuera de un componente. Las pestañas administrativas de Ajustes se ocultan dentro del componente; los endpoints se protegen de forma independiente con `autorizar()`.
 
 No existen las configuraciones meta.public, onlyWhenLoggedOut, roles, /unauthorized ni el parámetro redirect que describía el documento anterior.
 

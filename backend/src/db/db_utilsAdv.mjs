@@ -90,7 +90,10 @@ async function getAdvances() {
  * falla (por ejemplo, porque superaría los 1200 pagos), el anticipo ni se crea ni se modifica.
  * Devuelve el id del anticipo.
  */
-async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista = null, descripcion = null, estado = 'activo', cuenta_origen_id, periodicidad, propietario_id) {
+async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista = null, descripcion = null, estado = 'activo', cuenta_origen_id, periodicidad, propietario_id, es_privado = null) {
+    // S-01/DC-48: null conserva la privacidad en la edición; 0 pública; 1 solo propietario y admin
+    const valorPrivado = es_privado === undefined || es_privado === null || es_privado === '' ? null : Number(es_privado) === 1 ? 1 : 0;
+
     try {
         // Asegurarse de que los valores undefined sean tratados como null
         concepto = concepto ?? null;
@@ -128,8 +131,8 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
 
                 // Actualizar anticipo existente
                 const [result] = await connection.execute(
-                    'UPDATE anticipos SET concepto = ?, importe_original = ?, pago_sugerido = ?, fecha_inicio = ?, fecha_fin_prevista = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_origen_id = ?, periodicidad = ? WHERE id = ?',
-                    [concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, id]
+                    'UPDATE anticipos SET concepto = ?, importe_original = ?, pago_sugerido = ?, fecha_inicio = ?, fecha_fin_prevista = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_origen_id = ?, periodicidad = ?, es_privado = COALESCE(?, es_privado) WHERE id = ?',
+                    [concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, valorPrivado, id]
                 );
                 console.log('Actualización realizada en anticipos, filas afectadas: ' + result.affectedRows);
 
@@ -144,7 +147,7 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
 
             // Insertar nuevo anticipo
             if (!propietario_id) throw errorHttp(400, 'Falta el propietario para crear el anticipo');
-            const [result] = await connection.execute('INSERT INTO anticipos (concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            const [result] = await connection.execute('INSERT INTO anticipos (concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id, es_privado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0))', [
                 concepto,
                 importe_original,
                 pago_sugerido,
@@ -154,7 +157,8 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
                 estado,
                 cuenta_origen_id,
                 periodicidad,
-                propietario_id
+                propietario_id,
+                valorPrivado
             ]);
             console.log('Inserción realizada en anticipos, filas afectadas: ' + result.affectedRows);
 

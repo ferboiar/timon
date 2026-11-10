@@ -16,7 +16,7 @@ Logout borra token/user de ambos almacenes, limpia el estado de esa instancia, c
 
 ## Límites
 
-La autorización administrativa comprueba el rol del token. Los endpoints de datos no aplican perm_* ni filtros privados (S-01). Los JWT no se revocan ni actualizan al cambiar un rol (S-04). apiClient define interceptores, pero los servicios usan axios directo o fetch (S-07); HTTPS depende del despliegue.
+La autorización administrativa comprueba el rol y, desde el 2026-11-10, los endpoints de datos aplican la matriz DC-48 y el filtro de visibilidad (S-01, S-12). Los JWT no se revocan ni actualizan al cambiar un rol (S-04). Los nueve servicios usan `apiClient`, que ejecuta los interceptores (S-07); HTTPS depende del despliegue.
 
 ## Referencias
 

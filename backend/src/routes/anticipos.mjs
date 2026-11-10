@@ -21,7 +21,9 @@
  */
 
 import { deleteAdvances, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan, sustituirPago } from '#backend/db/db_utilsAdv.mjs';
-import { verifyToken } from '#backend/middleware/auth.mjs';
+import { autorizar } from '#backend/middleware/auth.mjs';
+import { filtrarVisibles, puedeVerRegistro } from '../utils/autorizacion.mjs';
+import { asegurarBorrado, asegurarEdicion, registroDeAnticipo, registroDePago } from '../utils/propiedad.mjs';
 import { responderError } from '#backend/utils/errorDeNegocio.mjs';
 import { leerBooleano, leerEnteroPositivo, leerListaEnterosPositivos } from '#backend/utils/parametros.mjs';
 import { Router } from 'express';
@@ -29,20 +31,27 @@ import { Router } from 'express';
 const router = Router();
 
 // Obtener todos los anticipos
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', autorizar('anticipos', 'lectura'), async (req, res) => {
     try {
         const advances = await getAdvances();
-        res.json(advances);
+        res.json(filtrarVisibles(req.usuario, advances, 'anticipos'));
     } catch (error) {
         responderError(res, error, 'No se han podido cargar los anticipos.', { contexto: 'anticipos - listado' });
     }
 });
 
 // Guardar un anticipo (crear o actualizar)
-router.post('/', verifyToken, async (req, res) => {
-    const { id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad } = req.body;
+router.post('/', autorizar('anticipos', 'escritura'), async (req, res) => {
+    const { id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, es_privado } = req.body;
     try {
-        await pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.user.id);
+        if (es_privado !== undefined && ![0, 1, '0', '1'].includes(es_privado)) {
+            return res.status(400).json({ error: 'es_privado debe ser 0 o 1.' });
+        }
+        if (id) {
+            asegurarEdicion(req.usuario, await registroDeAnticipo(id), 'anticipos');
+        }
+
+        await pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.user.id, es_privado);
         console.log('anticipos - guardado: anticipo ' + (id || 'nuevo'));
         res.status(201).json({ message: 'Anticipo insertado o actualizado correctamente' });
     } catch (error) {
@@ -51,7 +60,7 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // Eliminar uno o más anticipos (con todos sus pagos, en una sola transacción)
-router.delete('/', verifyToken, async (req, res) => {
+router.delete('/', autorizar('anticipos', 'borrado'), async (req, res) => {
     try {
         const { advances } = req.body;
 
@@ -61,6 +70,11 @@ router.delete('/', verifyToken, async (req, res) => {
 
         // F-43: cada id debe ser un entero positivo; un valor mal formado no llega a la base de datos
         const ids = leerListaEnterosPositivos(advances, 'advances');
+
+        for (const id of ids) {
+            asegurarBorrado(req.usuario, await registroDeAnticipo(id), 'anticipos');
+        }
+
         await deleteAdvances(ids);
         console.log('anticipos - borrado: ' + ids.length + ' anticipo(s)');
         res.status(200).json({ message: 'Anticipo(s) eliminado(s) correctamente' });
@@ -70,7 +84,7 @@ router.delete('/', verifyToken, async (req, res) => {
 });
 
 // Obtener periodicidades de anticipos
-router.get('/periodicidades', verifyToken, async (req, res) => {
+router.get('/periodicidades', autorizar('anticipos', 'lectura'), async (req, res) => {
     try {
         const periodicidades = await getPeriodicidades();
         res.json(periodicidades);
@@ -80,9 +94,17 @@ router.get('/periodicidades', verifyToken, async (req, res) => {
 });
 
 // Obtener los pagos de un anticipo
-router.get('/:anticipoId/pagos', verifyToken, async (req, res) => {
+router.get('/:anticipoId/pagos', autorizar('anticipos', 'lectura'), async (req, res) => {
     try {
         const anticipoId = leerEnteroPositivo(req.params.anticipoId, 'anticipoId');
+        const anticipo = await registroDeAnticipo(anticipoId);
+        if (!anticipo) {
+            return res.status(404).json({ error: 'Anticipo no encontrado' });
+        }
+        if (!puedeVerRegistro(req.usuario, anticipo, 'anticipos')) {
+            return res.status(403).json({ error: 'No tienes permisos para ver este anticipo' });
+        }
+
         const pagos = await getPagos(anticipoId);
         res.json(pagos);
     } catch (error) {
@@ -91,9 +113,10 @@ router.get('/:anticipoId/pagos', verifyToken, async (req, res) => {
 });
 
 // Guardar un pago (crear o actualizar). Un pago pagado no puede pasar a cancelado (400, DC-38)
-router.post('/pagos', verifyToken, async (req, res) => {
+router.post('/pagos', autorizar('anticipos', 'escritura'), async (req, res) => {
     const { id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id } = req.body;
     try {
+        asegurarEdicion(req.usuario, await registroDeAnticipo(anticipo_id), 'anticipos');
         await pushPago(id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id);
         console.log('anticipos - pago guardado: pago ' + (id || 'nuevo') + ' del anticipo ' + anticipo_id);
         res.status(201).json({ message: 'Pago insertado o actualizado correctamente' });
@@ -104,9 +127,10 @@ router.post('/pagos', verifyToken, async (req, res) => {
 
 // Sustituir un pago por uno nuevo en una sola transacción (F-25, F-27, DC-39)
 // Cuerpo: importe, fecha (AAAA-MM-DD), tipo, descripcion y cuenta_destino_id del pago nuevo, que siempre queda pendiente.
-router.post('/pagos/:id/sustituir', verifyToken, async (req, res) => {
+router.post('/pagos/:id/sustituir', autorizar('anticipos', 'escritura'), async (req, res) => {
     try {
         const pagoId = leerEnteroPositivo(req.params.id, 'id');
+        asegurarEdicion(req.usuario, await registroDePago(pagoId), 'anticipos');
         const { pagoNuevoId, anticipoId, pendiente } = await sustituirPago(pagoId, req.body);
         console.log('anticipos - sustitución de pago: pago ' + pagoId + ' del anticipo ' + anticipoId + ' por el pago ' + pagoNuevoId);
         res.status(201).json({ message: 'Pago sustituido correctamente', pagoNuevoId, anticipoId, pendiente });
@@ -118,9 +142,10 @@ router.post('/pagos/:id/sustituir', verifyToken, async (req, res) => {
 // Eliminar un pago (DC-39). Una sola ruta para los dos casos:
 // - sin parámetro (o redistribuir=false): se borra el pago y nada más;
 // - redistribuir=true: además se coloca su importe en el resto del plan (DC-12), con el borrado y el reparto en la misma transacción.
-router.delete('/pagos/:id', verifyToken, async (req, res) => {
+router.delete('/pagos/:id', autorizar('anticipos', 'borrado'), async (req, res) => {
     try {
         const pagoId = leerEnteroPositivo(req.params.id, 'id');
+        asegurarBorrado(req.usuario, await registroDePago(pagoId), 'anticipos');
         // Lectura estricta: "?redistribuir=ture" es un 400, no un "no" silencioso
         const redistribuir = leerBooleano(req.query.redistribuir, 'redistribuir');
 
@@ -143,7 +168,7 @@ router.delete('/pagos/:id', verifyToken, async (req, res) => {
 });
 
 // Generar o completar el plan de pagos de un anticipo
-router.post('/recalculate-payment-plan', verifyToken, async (req, res) => {
+router.post('/recalculate-payment-plan', autorizar('anticipos', 'escritura'), async (req, res) => {
     try {
         const { anticipoId } = req.body;
 
@@ -151,7 +176,9 @@ router.post('/recalculate-payment-plan', verifyToken, async (req, res) => {
             return res.status(400).json({ error: 'Selecciona el anticipo.' });
         }
 
-        await recalculatePaymentPlan(leerEnteroPositivo(anticipoId, 'anticipoId')); // Los datos del anticipo los lee la propia función
+        const anticipoIdValidado = leerEnteroPositivo(anticipoId, 'anticipoId');
+        asegurarEdicion(req.usuario, await registroDeAnticipo(anticipoIdValidado), 'anticipos');
+        await recalculatePaymentPlan(anticipoIdValidado); // Los datos del anticipo los lee la propia función
         console.log('anticipos - plan de pagos recalculado: anticipo ' + anticipoId);
         res.status(200).json({ message: 'Plan de pagos recalculado correctamente' });
     } catch (error) {

@@ -75,8 +75,9 @@ El lanzador (`lanzador.mjs`):
 | `tests/usuarios.spec.mjs` | Usuarios: alta `e2e_` y duplicado con el mensaje completo del servidor |
 | `tests/recibosBorrado.spec.mjs` | Recibos: el diálogo de borrado muestra el concepto del recibo (no crea ni borra datos) |
 | `tests/recibosTrimestrales.spec.mjs` | Recibos: selección propia de trimestrales frente a bimestrales (F-30) y concepto en el diálogo (F-31); crea y borra sus recibos `e2e_…` |
+| `tests/autorizacion.spec.mjs` | Autorización: matriz de roles, propiedad, privacidad y rutas de documentación (S-01, S-06, S-12); crea y borra usuarios, cuentas y recibos `e2e_` |
 | `tests/documentacionReglas.spec.mjs` | Documentación: los centinelas de las reglas no se ven en el visor y los bloques se pintan (DC-47), sin datos |
-| `tests/sesionCaducada.spec.mjs` | Sesión caducada: redirección al login y limpieza de almacenes (S-17), sin datos |
+| `tests/sesionCaducada.spec.mjs` | Sesión caducada: redirección al login con aviso y limpieza de almacenes (S-17, U-16), incluido el interceptor de `apiClient` (S-07), sin datos |
 
 ## Aislamiento y sesión
 

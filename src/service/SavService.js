@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '@/config/api';
-import axios from 'axios';
+import { API_BASE_URL, apiClient } from '@/config/api';
 
 const API_URL = `${API_BASE_URL}/api/ahorros`;
 
@@ -8,7 +7,7 @@ export class SavService {
     static async getSavings() {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(API_URL, {
+            const response = await apiClient.get(API_URL, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -24,7 +23,7 @@ export class SavService {
     static async saveSaving(saving) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(API_URL, saving, {
+            const response = await apiClient.post(API_URL, saving, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -40,7 +39,7 @@ export class SavService {
     static async deleteSavings(savings) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.delete(API_URL, {
+            const response = await apiClient.delete(API_URL, {
                 data: { savings },
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -57,7 +56,7 @@ export class SavService {
     static async getPeriodicidades() {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/periodicidades`, {
+            const response = await apiClient.get(`${API_URL}/periodicidades`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -73,7 +72,7 @@ export class SavService {
     static async getMovimientos(ahorroId) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/${ahorroId}/movimientos`, {
+            const response = await apiClient.get(`${API_URL}/${ahorroId}/movimientos`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -89,7 +88,7 @@ export class SavService {
     static async saveMovimiento(movimiento) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(`${API_URL}/movimientos`, movimiento, {
+            const response = await apiClient.post(`${API_URL}/movimientos`, movimiento, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -105,7 +104,7 @@ export class SavService {
     static async deleteMovimiento(movimientoId) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.delete(`${API_URL}/movimientos/${movimientoId}`, {
+            const response = await apiClient.delete(`${API_URL}/movimientos/${movimientoId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }

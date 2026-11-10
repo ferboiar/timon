@@ -26,13 +26,14 @@ La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola lo
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
 
-Estado operativo: 2026-11-10, base bd343a3 (PR #69 a #77 fusionados: F-48/D-30/F-38/U-14, DC-46 y su arreglo, S-16, informes retroactivos de D-31, F-30/F-31, D-32, DC-47 y S-17/U-16). F-14 cerrado por DC-42. Sin trabajo en curso; U-15 preparado en `mantenimiento/U-15-f30-recibo-trimestral-e2e`. La suite del backend se ejecuta con `npm run test:backend:local` (DC-46). Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-10, base db11bad (PR #69 a #78 fusionados: F-48/D-30/F-38/U-14, DC-46 y su arreglo, S-16, informes retroactivos de D-31, F-30/F-31, D-32, DC-47, S-17/U-16 y U-15). F-14 cerrado por DC-42. Trabajo preparado: autorización (S-01/S-06/S-12), S-07, U-16 y U-17 en `mantenimiento/S01-S06-S12-S07-U16-U17-sincronizacion`. La suite del backend se ejecuta con `npm run test:backend:local` (DC-46). Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Trabajo acordado antes de S-01/S-06/S-12 (un PR por punto, en este orden)
 - [x] 1. DC-47: reglas de edición de ficheros y de publicación y fusiones. Incorporado el 2026-11-10 (PR #76).
 - [x] 2. S-17: prueba E2E de sesión caducada (PR propio con su Fase A). Incorporado el 2026-11-10 (PR #77, merge `bd343a3`).
-- [x] 3. U-15: prueba de comportamiento de F-30 con un recibo `e2e_trimestral_…` que se crea y se borra (PR propio con su Fase A). Preparado en `mantenimiento/U-15-f30-recibo-trimestral-e2e`; pendiente de revisión y fusión.
-- [ ] 4. Limpieza de las 9 ramas locales fusionadas: solo con confirmación expresa, rama por rama o con una lista aprobada; no es un PR.
+- [x] 3. U-15: prueba de comportamiento de F-30 con un recibo `e2e_trimestral_…` que se crea y se borra (PR propio con su Fase A). Incorporado el 2026-11-10 (PR #78, merge `db11bad`).
+- [x] 4. S-01/S-06/S-12 (autorización en servidor con DC-48), S-07 (`apiClient`), U-16 (aviso de caducidad) y U-17 (menús únicos). Preparado en `mantenimiento/S01-S06-S12-S07-U16-U17-sincronizacion`; pendiente de revisión y fusión.
+- [ ] 5. Limpieza de las 9 ramas locales fusionadas: solo con confirmación expresa, rama por rama o con una lista aprobada; no es un PR.
 
 Ya hecho: la edición de la descripción del PR #70. Después de esta lista, la siguiente tarea oficial es S-01/S-06/S-12 (autorización efectiva en servidor).
 

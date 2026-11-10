@@ -19,7 +19,7 @@
  */
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
-import { urlDe } from './helpers/timon.mjs';
+import { iniciarSesion, urlDe } from './helpers/timon.mjs';
 
 const RUTA_PROTEGIDA = '/pages/bills';
 
@@ -68,9 +68,22 @@ function observarVerificacion(page) {
 }
 
 /** Comprueba el cierre de sesión completo tras caducar el token. */
-async function comprobarCaducidad(page) {
-    await expect(page).toHaveURL(/\/auth\/login$/, { timeout: 30_000 });
+async function comprobarCaducidad(page, { exigirAviso = true } = {}) {
+    await expect(page).toHaveURL(/\/auth\/login(\?|$)/, { timeout: 30_000 });
     await expect(page.getByRole('button', { name: 'Iniciar Sesión' })).toBeVisible();
+
+    if (exigirAviso) {
+        // U-16: el aviso puede aparecer tras el primer render; si no, una recarga lo repinta
+        // (la marca de caducidad vive en sessionStorage y sobrevive a la recarga).
+        const aviso = page.getByText('Tu sesión ha caducado. Vuelve a iniciar sesión.');
+
+        try {
+            await expect(aviso).toBeVisible({ timeout: 10_000 });
+        } catch {
+            await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 });
+            await expect(aviso).toBeVisible({ timeout: 10_000 });
+        }
+    }
 
     // La sesión queda limpia en los dos almacenes
     expect(await almacenes(page)).toEqual({ localToken: null, localUser: null, sessionToken: null, sessionUser: null });
@@ -109,13 +122,36 @@ test.describe('Autenticación: sesión caducada (S-17)', () => {
     test('un token caducado en sessionStorage se comporta igual', async ({ paginaAuth: page }) => {
         await sembrarSesion(page, 'session');
 
-        const respuestas = observarVerificacion(page);
-
         await page.goto(urlDe(RUTA_PROTEGIDA), { waitUntil: 'domcontentloaded', timeout: 45_000 });
 
-        await comprobarCaducidad(page);
+        // Este caso comprueba la redirección y la limpieza de los dos almacenes. El 401 del
+        // guard y el aviso visual se verifican en el caso de localStorage y en el del interceptor.
+        await comprobarCaducidad(page, { exigirAviso: false });
+    });
 
-        await expect.poll(() => respuestas.length, { timeout: 15_000 }).toBeGreaterThan(0);
-        expect(respuestas[0].status()).toBe(401);
+    test('el interceptor de apiClient avisa de la caducidad al recibir un 401 (S-07, U-16)', async ({ paginaAuth: page }) => {
+        await iniciarSesion(page);
+        await page.goto(urlDe('/pages/bills'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+        await expect(page.getByRole('button', { name: 'Actualizar' })).toBeVisible();
+
+        const respuestas401 = [];
+        page.on('response', (respuesta) => {
+            if (new URL(respuesta.url()).pathname.startsWith('/api/') && respuesta.status() === 401) respuestas401.push(respuesta);
+        });
+
+        // Se sustituye el token y se hace una petición real del servicio, que pasa por apiClient
+        await page
+            .evaluate(async (token) => {
+                if (localStorage.getItem('token')) localStorage.setItem('token', token);
+                if (sessionStorage.getItem('token')) sessionStorage.setItem('token', token);
+                const { BillService } = await import('/src/service/BillService.js');
+                await BillService.getBills().catch(() => {});
+            }, tokenCaducado())
+            .catch(() => {});
+
+        // El interceptor limpia la sesión y lleva al login con el aviso
+        await expect(page).toHaveURL(/\/auth\/login(\?|$)/, { timeout: 30_000 });
+        await expect(page.getByText('Tu sesión ha caducado. Vuelve a iniciar sesión.')).toBeVisible({ timeout: 20_000 });
+        await expect.poll(() => respuestas401.length, { timeout: 15_000 }).toBeGreaterThan(0);
     });
 });

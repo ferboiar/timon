@@ -11,12 +11,12 @@
 
 import { deleteAccounts, getAccounts, getTipos, pushAccount } from '#backend/db/db_utilsAcc.mjs';
 import { Router } from 'express';
-import { verifyToken } from '#backend/middleware/auth.mjs';
+import { autorizar } from '#backend/middleware/auth.mjs';
 import { responderError } from '../utils/errorDeNegocio.mjs';
 
 const router = Router();
 
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', autorizar('cuentas', 'lectura'), async (req, res) => {
     try {
         const accounts = await getAccounts();
         res.json(accounts);
@@ -25,7 +25,7 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', autorizar('cuentas', 'escritura'), async (req, res) => {
     const { id, nombre, tipo, iban, saldo_actual, descripcion, activa } = req.body;
     try {
         await pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa, req.user.id);
@@ -38,7 +38,7 @@ router.post('/', verifyToken, async (req, res) => {
     }
 });
 
-router.delete('/', verifyToken, async (req, res) => {
+router.delete('/', autorizar('cuentas', 'borrado'), async (req, res) => {
     const { accounts } = req.body;
     try {
         await deleteAccounts(accounts);
@@ -48,7 +48,7 @@ router.delete('/', verifyToken, async (req, res) => {
     }
 });
 
-router.get('/tipos', verifyToken, async (req, res) => {
+router.get('/tipos', autorizar('cuentas', 'lectura'), async (req, res) => {
     try {
         const tipos = await getTipos();
         res.json(tipos);

@@ -21,8 +21,8 @@
  * del usuario autenticado.
  */
 
-import { useAuth } from '@/composables/useAuth';
 import { API_BASE_URL } from '@/config/api';
+import { cerrarSesionPorCaducidad, rutaLoginPorCaducidad } from '@/utils/sesion';
 import AppLayout from '@/layout/AppLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -100,12 +100,14 @@ const router = createRouter({
                 {
                     path: '/documentation',
                     name: 'documentation',
-                    component: () => import('@/views/pages/Documentation.vue')
+                    component: () => import('@/views/pages/Documentation.vue'),
+                    meta: { requiresAdmin: true }
                 },
                 {
                     path: '/tech-docs',
                     name: 'tech-docs',
-                    component: () => import('@/views/pages/Tech-documentation.vue')
+                    component: () => import('@/views/pages/Tech-documentation.vue'),
+                    meta: { requiresAdmin: true }
                 },
                 {
                     path: '/manual',
@@ -253,12 +255,9 @@ router.beforeEach(async (to, from, next) => {
             });
 
             if (!response.ok) {
-                // Token inválido o expirado, limpiar datos de usuario y permitir acceso a login
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                sessionStorage.removeItem('token');
-                sessionStorage.removeItem('user');
-                return next();
+                // Token inválido o expirado: limpiar y avisar en el login (U-16)
+                cerrarSesionPorCaducidad();
+                return next(rutaLoginPorCaducidad());
             }
 
             return next('/dashboard');
@@ -278,14 +277,11 @@ router.beforeEach(async (to, from, next) => {
             });
 
             if (!response.ok) {
-                // Token inválido o expirado, limpiar datos y redirigir a login
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                sessionStorage.removeItem('token');
-                sessionStorage.removeItem('user');
+                // Token inválido o expirado: limpiar, dejar el aviso y redirigir (U-16)
+                cerrarSesionPorCaducidad();
 
                 console.warn('Sesión expirada detectada en navegación. Redirigiendo a login...');
-                return next('/auth/login');
+                return next(rutaLoginPorCaducidad());
             }
         } catch (error) {
             console.error('Error verificando token en guard de navegación:', error);
@@ -295,8 +291,11 @@ router.beforeEach(async (to, from, next) => {
 
     // Verificar restricciones de rutas por roles
     if (to.meta.requiresAdmin) {
-        const { isAdmin } = useAuth();
-        if (!isAdmin.value) {
+        // S-06/S-07: el rol se lee del usuario guardado; useAuth() no está montado en un guard
+        const guardado = localStorage.getItem('user') || sessionStorage.getItem('user');
+        const usuario = guardado ? JSON.parse(guardado) : null;
+
+        if (usuario?.rol !== 'admin') {
             return next('/auth/access'); // Redirigir a página de acceso denegado
         }
     }

@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '@/config/api';
-import axios from 'axios';
+import { API_BASE_URL, apiClient } from '@/config/api';
 
 const API_URL = `${API_BASE_URL}/api/anticipos`;
 
@@ -8,7 +7,7 @@ export class AdvService {
     static async getAdvances() {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(API_URL, {
+            const response = await apiClient.get(API_URL, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -24,7 +23,7 @@ export class AdvService {
     static async saveAdvance(advance) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(API_URL, advance, {
+            const response = await apiClient.post(API_URL, advance, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -45,7 +44,7 @@ export class AdvService {
         }
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.delete(API_URL, {
+            const response = await apiClient.delete(API_URL, {
                 data: { advances },
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -63,7 +62,7 @@ export class AdvService {
     static async getPeriodicidades() {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/periodicidades`, {
+            const response = await apiClient.get(`${API_URL}/periodicidades`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -79,7 +78,7 @@ export class AdvService {
     static async getPagos(anticipoId) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/${anticipoId}/pagos`, {
+            const response = await apiClient.get(`${API_URL}/${anticipoId}/pagos`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -95,7 +94,7 @@ export class AdvService {
     static async savePago(pago) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(`${API_URL}/pagos`, pago, {
+            const response = await apiClient.post(`${API_URL}/pagos`, pago, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -112,7 +111,7 @@ export class AdvService {
     static async handlePaymentDeletion(pagoId, redistribuir = false) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.delete(`${API_URL}/pagos/${pagoId}`, {
+            const response = await apiClient.delete(`${API_URL}/pagos/${pagoId}`, {
                 params: { redistribuir },
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -130,7 +129,7 @@ export class AdvService {
     static async replacePago(pagoId, pago) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(`${API_URL}/pagos/${pagoId}/sustituir`, pago, {
+            const response = await apiClient.post(`${API_URL}/pagos/${pagoId}/sustituir`, pago, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -146,7 +145,7 @@ export class AdvService {
     static async recalculatePaymentPlan(anticipoId) {
         try {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            const response = await axios.post(
+            const response = await apiClient.post(
                 `${API_URL}/recalculate-payment-plan`,
                 { anticipoId },
                 {
