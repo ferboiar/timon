@@ -6,28 +6,26 @@ Documento de relevo: léelo primero si retomas el proyecto o abres una conversac
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-11, main en ecf83bb (PR #80: corrección post-#79). Antes, main en 1c59443 (PR #79: autorización, apiClient, U-16 y U-17), db11bad (PR #78), bd343a3 (PR #77), 43e01a7 (PR #76), 943ca69 (PR #75) y b5c175a (PR #74). F-14 cerrado por DC-42. La corrección posterior al #79 está incorporada; el trabajo actual es F-50/F-22/F-52/F-43/F-42/F-41/F-10/D-35/DC-50/DC-51.
+Corte operativo: 2026-11-11, `main` en c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). Antes, ecf83bb (PR #80: corrección post-#79). La migración 0006 está aplicada en `conta_hogar` (verificado en solo lectura el 2026-11-11): `uq_categorias_nombre` y `modificado_por` con FK `ON DELETE SET NULL`. F-14 cerrado por DC-42.
 
-**D-15 (cerrada el 2026-10-30):** ayudante revisado; sin cambios necesarios. Protege `.db_connection`/`.env*` por diseño, verifica identidad y contenido, y crea copias antes de escribir. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
+**Siguiente trabajo:** no hay trabajo de código preparado. Toca seguridad: S-02/S-03 (con DC-06), S-04 desglosado, S-05, S-11 (10 PR de Snyk abiertos) y S-21. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las 9 ramas locales y de la rama remota del PR #81 queda pendiente, con confirmación expresa y separada por rama.
 
-**Siguiente trabajo:** no hay trabajo en curso. La corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49) se incorporó con el PR #80 (merge ecf83bb). Queda como trabajo preparado este PR (F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51) y, después, la limpieza de las 9 ramas locales fusionadas y el backlog, con S-04 y S-02/S-03 en cabeza. F-14/DC-38 está cerrado: pasos a, b y d incorporados y el resto del paso c no aplicable por DC-42.
+**D-36 incorporado con el PR #82:** auditoría y sincronización documental; TODO y registro actualizados.
 
-**SET USER temporal (2026-11-11):** permiso global temporal concedido a timon_admin para restaurar volcados con DEFINER=root (conta_hogar_restore_test). No se revoca en esta iteración; se revisará/revocará en una futura limpieza de permisos, sin fecha ni compromiso inmediato. Mientras exista, timon_admin conserva ALL sobre conta_hogar% y SET USER global. El comando previsto para esa limpieza futura es el bloque siguiente.
+SHA de fusión de D-36: pendiente de registrar (DC-52). No asumir que F-49, F-53 o F-54 estén implementadas.
 
-**Despliegue (2026-11-11):** la 0006 debe aplicarse a una base antes de arrancar este código contra ella; de lo contrario fallan las escrituras de recibos, ahorros y anticipos.
+**SET USER temporal (2026-11-11):** permiso global temporal concedido a `timon_admin` para restaurar volcados con `DEFINER=root`; `SHOW GRANTS` confirma `SET USER ON *.*` y `ALL` sobre `conta_hogar` y el patrón `conta\_hogar%`. No se revoca en esta iteración; S-22 lo registra sin fecha. Comando previsto:
 
 ```sql
 REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%';
 FLUSH PRIVILEGES;
 ```
 
-**Incorporado:** división del registro en partes (D-16, DC-28), PR #38, 2026-10-28; validación de un solo año al editar recibos (DC-14, DC-29), PR #39, 2026-10-28; F-17 y retirada de `saldoRestante` (variable no usada de `Advances.vue`), PR #40, 2026-10-28; F-07, F-08, F-09, F-22 y F-10 (Ahorros y categorías), PR #41, 2026-10-29; D-17 y DC-33 (instrucción persistente dividida), PR #42, 2026-10-29; U-09, U-10, U-11 parcial, U-12 y F-44 (homogeneidad del front), PR #43, 2026-10-30; D-15 (revisión del ayudante de parches), PR #44, 2026-10-30; D-18 (informes de cierre retroactivos y relevo al día), PR #45, 2026-10-30; F-12 (secuencia anclada en `generarFechasFuturas`) y DC-35 (el grupo 2 se divide en dos PR), PR #46, 2026-11-01; F-45 (guardar sin cambios con el modo de fechas) y D-19 (errata del informe del PR #43), PR #47, 2026-11-01; F-13 y DC-05 (fechas `DATE` como texto en el pool de MariaDB), PR #48, 2026-11-02; D-20 (documentación técnica e índice de informes), PR #49, 2026-11-02; U-13/DC-36 (simulación de diciembre), PR #50, 2026-11-02; D-21 (contraste documental de cambios recientes e informe retroactivo del PR #42), PR #51, 2026-11-02; D-22 y DC-37 (relevo dividido en entrada y tres partes), PR #52, 2026-11-03; F-14 / DC-38 paso a (principal guardado e importe pendiente derivado, migración 0005), PR #53, 2026-11-03; F-27, DC-39 y DC-40 (transacciones, ruta de borrado única, sustitución atómica y recálculo al editar un pagado), PR #54, 2026-11-04; F-46 y DC-41 (fechas ancladas de Anticipos), PR #55, 2026-11-04; D-23 y DC-42 (cierre del paso c de DC-38 y de F-14), PR #56, 2026-11-04; F-16 (payloads de fechas inmutables en Ahorros y Anticipos), PR #57, 2026-11-04; F-19 y D-24 (exportación CSV segura y sincronización del seguimiento), PR #58, 2026-11-05; D-25 (sincronización del seguimiento tras el PR #58 y fila D-23), PR #59, 2026-11-05; F-20 y F-21 (retirada de `BillService.getBillById` y decisión DC-43 del saldo manual), PR #60, 2026-11-05; F-28 y D-26 (mensajes del servidor y sincronización del seguimiento), PR #61, 2026-11-05.
+**Despliegue:** la 0006 debe aplicarse a cualquier base antes de arrancar este código contra ella.
 
-**Sin trabajo en curso:** S-16 se incorporó con el PR #72 y DC-46 con el #70, más su arreglo de permisos en el #71 (`npm run test:backend:local` ejecuta la suite completa del backend con `backend/test/.env.test` cifrado). El PR #73 consolidó los informes retroactivos de ambos (D-31) y el #74 cerró F-30 y F-31. D-29 se incorporó con el PR #68. O-02, DC-44 y D-27 se incorporaron con el PR #63, y F-47 con el #62 (utilidad `backend/src/utils/errorDeNegocio.mjs` en cuentas, ahorros, categorías y recibos; F-48 quedó registrado allí, no implementado). Los PR #55 (F-46 / DC-41), #56 (D-23 / DC-42), #57 (F-16), #58 (F-19 / D-24), #59 (D-25), #60 (F-20 / F-21), #61 (F-28 / D-26) y #62 (F-47 / F-48) están fusionados; el resto del paso c de DC-38 se declara no aplicable por DC-42. U-13 está incorporado (PR #50); su ejecución real nueva y bloqueo concurrente siguen sin ejercitarse.
+**Historial:** el detalle por PR está en la sección 4 (parte 2 de 3) y en el TODO. Conservar Generar nuevas fechas y la generación anual. No borrar `generarFechasFuturas`, usada por `pushRecibo` (F-12 corregido: secuencia anclada). Leer la sección 5 y el relevo de la sección 8 antes de preparar código.
 
-Conservar Generar nuevas fechas y la generación anual. No borrar generarFechasFuturas, usada por pushRecibo (F-12 corregido: calcula la secuencia anclada). Leer la sección 5 y el relevo de la sección 8 antes de preparar código. La tabla de prioridad técnica no cambia silenciosamente este orden operativo.
-
-La rama local, archivos sin confirmar y la ejecución de pruebas no se pueden deducir del estado remoto: comprobarlos al retomar.
+La rama local, los archivos sin confirmar y la ejecución de pruebas no se pueden deducir del estado remoto: comprobarlos al retomar.
 
 ## 1. Qué es y cómo está montado
 

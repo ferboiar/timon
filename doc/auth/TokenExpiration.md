@@ -9,7 +9,7 @@ Fuentes: useAuth.js, AppLayout.vue, router/index.js, config/api.js y Login.vue. 
 - El guardia comprueba al navegar por páginas protegidas y al entrar al login con token.
 - Login también dispone de comprobación de una sesión existente.
 
-## Interceptor que no cubre los servicios actuales
+## Interceptor activo en los nueve servicios
 
 apiClient tiene un interceptor para 401/403 con mensajes Token inválido o expirado o Se requiere token de autenticación; desde S-16 el token inválido responde 401 y el 403 queda para la autorización (sin rol suficiente). Desde el 2026-11-10 los nueve servicios usan esa instancia y el interceptor se ejecuta de verdad (S-07); lo cubre la prueba E2E de sesión caducada.
 

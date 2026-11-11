@@ -25,7 +25,7 @@ Al montar: `cargarZonaHoraria`, `fetchAdvances`, `fetchPeriodicidades`, `fetchAl
 | `confirmCreatePaymentPlan(id)` / `handleCreatePaymentPlan()` | Piden confirmación y llaman a `createPaymentPlan` |
 | `createPaymentPlan(id)` | Exige anticipo existente y pago sugerido numérico mayor que cero, llama a `recalculatePaymentPlan` del servicio y recarga listas |
 
-El botón Guardar exige concepto, cuenta y fecha inicial; pago sugerido y periodicidad deben acompañarse. Las descripciones se limitan a 255 caracteres en los controles. Las fechas se mutan antes del POST, por lo que un reintento tras fallo puede fallar por tipo (F-16).
+El botón Guardar exige concepto, cuenta y fecha inicial; pago sugerido y periodicidad deben acompañarse. Las descripciones se limitan a 255 caracteres en los controles. Las fechas se preparan en un payload nuevo sin mutar el modelo; un reintento tras un error envía un payload válido (F-16, PR #57).
 
 ## Operaciones de pagos
 

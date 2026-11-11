@@ -45,8 +45,8 @@ El requisito del usuario permite ahorros diarios, semanales, otras cadencias o p
 
 - F-07 y F-08 corregidos el 2026-10-29 (PR #41).
 - U-09 y U-10 resueltos el 2026-10-30: el diálogo de movimientos aplica DC-30 y el modelo de inactivos quedó acordado en DC-34 (Ahorros ya lo cumplía). U-12: la ayuda de la vista se muestra como tooltip de un `QuestionCircle` junto al título.
-- F-16: saveSaving muta fecha_objetivo a texto antes del POST; el reintento sin reabrir puede fallar. No es una garantía de reintento seguro.
-- F-28: los avisos de borrado usan `getApiErrorMessage`; el resto usa error.message.
+- F-16: corregido en el PR #57; `saveSaving` y `saveMovimiento` preparan un payload nuevo sin mutar el modelo y el reintento tras un error envía fechas válidas. Detalle en «F-16: payloads de fechas».
+- F-28: corregido en los PR #61 y #69; los avisos muestran el mensaje del servidor mediante `getApiErrorMessage` y los servicios de F-48 usan `mensajeDeErrorApi`.
 - F-10: `ahorros_movimientos` tiene ON DELETE CASCADE en 0001 (comprobado en la migración): borrar un ahorro con movimientos también borra sus movimientos y no falla por FK. La traducción de ER_ROW_IS_REFERENCED_2 a «No se puede eliminar el ahorro porque tiene registros asociados» (409) es defensiva, por si una tabla futura referencia `ahorros` sin cascada; no se ha provocado.
 
 Ver [SavService](../services/SavService.md), [acceso a datos](../db/db_utilsSav.md) y [registro de hallazgos](../mantenimiento/registro-hallazgos.md).
