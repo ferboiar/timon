@@ -54,11 +54,11 @@ Si encuentra un usuario, actualiza el estado y carga las preferencias de estilo 
 
 ## Sistema de Roles
 
-Los valores siguientes expresan roles previstos, no restricciones completas implementadas. Hoy solo se distingue administrador del resto (S-12):
-- **admin**: Acceso completo a todas las funcionalidades
-- **user**: Usuario estándar con acceso a la mayoría de funcionalidades
-- **limited_user**: previsto como acceso limitado; hoy no tiene restricciones de datos diferentes de user
-- **reader**: previsto como solo lectura, pero hoy puede invocar las operaciones de escritura protegidas únicamente por sesión
+Estos atajos del cliente no sustituyen la autorización del servidor, que aplica la matriz DC-48 con el rol y los `perm_*` vigentes (S-01, S-12):
+- **admin**: ve, crea, edita y borra todo, privados incluidos
+- **user**: ve lo que permita `perm_*` y crea, edita y borra cualquier registro visible con `escritura`
+- **limited_user**: ve lo que permita `perm_*`, crea con `escritura`, edita solo sus registros y nunca borra
+- **reader**: solo lee
 
 ## Preferencias de Estilo
 

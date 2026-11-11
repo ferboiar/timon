@@ -107,7 +107,7 @@ El componente depende del servicio `CatsService` para realizar todas las operaci
 
 ## Edición y renombrado
 
-La pantalla transmite el ID y `pushCategoria` edita esa fila por ID, de modo que renombrar ya no crea otra categoría (F-09). El servidor guarda el nombre en minúsculas (DC-31) y rechaza duplicados (F-22); sin índice único en la base de datos hasta la migración DC-02 no hay garantía ante concurrencia. Guardar sin cambios no llama al servidor (DC-30).
+La pantalla transmite el ID y `pushCategoria` edita esa fila por ID, de modo que renombrar ya no crea otra categoría (F-09). El servidor guarda el nombre en minúsculas (DC-31) y rechaza duplicados (F-22) y el índice único `uq_categorias_nombre` (migración 0006) los impide también ante concurrencia. Guardar sin cambios no llama al servidor (DC-30).
 
 ## Particularidades verificadas
 

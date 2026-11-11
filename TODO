@@ -1,133 +1,191 @@
 # TAREAS PENDIENTES
 
-## Punto de reanudación (D-22)
+## Punto de reanudación (D-36, 2026-11-11)
 
-La corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49) se incorporó el 2026-11-10 (PR #80, merge ecf83bb, 2026-11-10T22:39:40Z). Trabajo preparado: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51 en la rama de Fase A; pendiente de revisión y fusión. Después, la limpieza de las 9 ramas locales fusionadas y el backlog, con S-04 y S-02/S-03 en cabeza. La limpieza de Actualizar fechas (F-11/F-23/F-32) se completó el 2026-10-27. La prioridad técnica del backlog no la sustituye por decisión del asistente.
+Corte: `main` = c07aed8 (2026-11-11), merge del PR #81 (F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
 
-Para la limpieza conservar generateDates/generateBillDates/completarFechasAnio y la generación anual; conservar generarFechasFuturas porque sigue en pushRecibo (corregida en F-12). Criterios, archivos, pruebas y protocolo de otro chat: secciones 5, 7 y 8 del relevo (doc/mantenimiento/estado-del-proyecto.md y sus partes: las secciones 5 y 7 están en la parte 2 de 3 y la 8 en la parte 3 de 3). No considerar /tmp ni _adjuntos parte del relevo persistente.
+No hay trabajo de código preparado. Único cambio local ajeno: `backend/src/db/.db_connection`.
 
+Siguiente trabajo acordado: seguridad, con S-02/S-03 (y DC-06), S-04 desglosado, S-05 (CORS y trazas), S-11 (10 PR de Snyk abiertos) y S-21. Después, F-49/F-53/F-54/F-55 y el resto del backlog por prioridad.
+
+Pendiente operativo: limpieza de las 9 ramas locales fusionadas y de la rama remota del PR #81, cada una con confirmación expresa y separada; retirada del `SET USER` de `timon_admin` (S-22); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
+
+D-36 se incorpora con el PR #82: la auditoría y sincronización documental se completó en siete lotes. No asumir que la UI de privacidad exista (F-49), que la trazabilidad por fila exista (F-53) ni que `useAuth` sea único por aplicación (F-54).
 ## Prioridad técnica de trabajo futuro (D-13)
 
-La siguiente tabla ordena por riesgo y dependencias. No reordena por sí sola los tres micro-PR ya acordados (Actualizar fechas, validación de un año y F-17); si se prepara un despliegue real, los riesgos P0/P1 deben resolverse antes de ampliaciones funcionales. P0 es la prioridad mayor.
+Ordena el backlog por riesgo y dependencias. P0 es la prioridad mayor y no la sustituye una decisión del asistente. Las propuestas R-nn no son funcionalidades aprobadas. Si se prepara un despliegue real, los riesgos P0/P1 deben resolverse antes de ampliaciones funcionales.
 
 | Prioridad | Trabajo | Dependencias/criterio |
 |---|---|---|
-| P0 | S-01/S-06/S-12: autorización efectiva en servidor | reader no debe poder escribir; la ocultación de controles no es seguridad |
-| P1 | F-14/F-16/F-27 y S-02/S-03: saldos, transacciones, reintentos y recuperación | Evitar pérdidas, duplicados y operaciones parciales |
-| P1 | F-41/F-42/F-43 y entorno de tests | Validación coherente, respuestas claras y ejecución reproducible de pruebas |
-| P2 | R-02/R-03 y R-11: movimientos y presupuestos por periodo | Primero un modelo común, sin fuentes de saldo paralelas |
-| P2 | R-01/R-12: recepción de recibos y diferencias | Depende de presupuestos, respeta DC-14 y no duplica estados de pago |
-| P2 | R-09: reglas de aportación automática de Ahorros | Idempotencia, pausa, historial y política de fallos; distinto de uso manual/F-37 |
-| P2 | R-10: cadencias adicionales de Anticipos | Rediseño de calendario y pruebas, no solo ENUM; relacionado con F-40 |
-| P2 | R-13: detalle de transacciones por presupuesto/periodo | Depende de R-02/R-11 y de autorización efectiva |
-| P3 | R-05/R-07: progreso e informes básicos | Dependen de objetivos definidos y cifras conciliables |
-| P3 | R-08: paginación/búsqueda de usuarios | Solo si el volumen lo justifica |
+| P0 | S-02/S-03/S-04/S-05 y S-11/S-21/S-22: seguridad y permisos | Contraseñas, sesión, CORS, dependencias y `SET USER` |
+| P1 | F-15 restante, F-49, F-53, F-54, F-55, S-20 y DC-01 | Cierra deuda funcional con evidencia |
+| P2 | F-37, F-39 y F-40: cadencias y borrado múltiple | Cambios de alcance medio en Ahorros y Anticipos |
+| P2 | U-02/U-20 y U-09/U-11: manual y homogeneidad | Contenido y coherencia de pantallas |
+| P3 | U-01, U-03 a U-08 y U-21 | Plantilla y pruebas de pantalla |
+| P3 | O-01, O-03, D-37, D-38 y D-39 | Despliegue y documentación |
+| P3 | R-01 a R-13 | Propuestas: revalidar y diseñar antes de implementar |
 
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
 
-Estado operativo: 2026-11-11, base ecf83bb (PR #69 a #80 fusionados; el #80 con S-18, S-19, F-51, U-18, U-19, D-34 y DC-49). F-14 cerrado por DC-42. Trabajo preparado: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51 en la rama de Fase A. La suite del backend se ejecuta con npm run test:backend:local (DC-46). Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-11, base c07aed8 (PR #81 fusionado). F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar. D-36 en curso. Los cierres documentales no acreditan una auditoría funcional integral.
 
-## Trabajo acordado antes de S-01/S-06/S-12 (un PR por punto, en este orden)
-- [x] 1. DC-47: reglas de edición de ficheros y de publicación y fusiones. Incorporado el 2026-11-10 (PR #76).
-- [x] 2. S-17: prueba E2E de sesión caducada (PR propio con su Fase A). Incorporado el 2026-11-10 (PR #77, merge `bd343a3`).
-- [x] 3. U-15: prueba de comportamiento de F-30 con un recibo `e2e_trimestral_…` que se crea y se borra (PR propio con su Fase A). Incorporado el 2026-11-10 (PR #78, merge `db11bad`).
-- [x] 4. S-01/S-06/S-12 (autorización en servidor con DC-48), S-07 (`apiClient`), U-16 (aviso de caducidad) y U-17 (menús únicos). Incorporado el 2026-11-10 (PR #79, merge `1c59443`).
-- [x] 5. Corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49). Incorporado el 2026-11-10 (PR #80, merge ecf83bb, 2026-11-10T22:39:40Z).
-- [ ] 6. Limpieza de las 9 ramas locales fusionadas: solo con confirmación expresa, rama por rama o con una lista aprobada; no es un PR.
+## Trabajo acordado (un PR por punto)
 
-Ya hecho: la edición de la descripción del PR #70. Trabajo actual: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51 en la rama de Fase A. Después, la limpieza de las 9 ramas y el backlog.
+- [x] 1. DC-47: reglas de edición de ficheros y de publicación y fusiones. PR #76, 2026-11-10.
+- [x] 2. S-17: prueba E2E de sesión caducada. PR #77, 2026-11-10.
+- [x] 3. U-15: prueba de comportamiento de F-30 con un recibo `e2e_trimestral_…`. PR #78, 2026-11-10.
+- [x] 4. S-01/S-06/S-12 (autorización), S-07 (`apiClient`), U-16 y U-17. PR #79, 2026-11-10.
+- [x] 5. Corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49). PR #80, 2026-11-10.
+- [x] 6. Fase A: trazabilidad, índice único y validaciones (F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). PR #81, 2026-11-11.
+- [ ] 7. Limpieza de las 9 ramas locales fusionadas y de la rama remota del PR #81: solo con confirmación expresa y separada, rama por rama. No es un PR.
 
-## Siguiente (un PR por punto; mantener este orden)
-- [x] D-15 (tarea previa): ayudante revisado el 2026-10-30 (ayudas.mjs, pruebas y README). Sin cambios necesarios: protege `.db_connection` y `.env*` por diseño, verifica identidad/contenido antes de escribir y hace copia previa. El incidente de `.db_connection` de esta iteración no fue causado por el ayudante.
-- [x] F-11/F-23/F-32: Actualizar fechas retirado el 2026-10-27 (updateAllDates, botón comentado, updateAllBillsDates, ruta global y dos funciones antiguas del backend); los dos errores de eslint de ListBills corregidos. Conservados generateDates/generateBillDates/completarFechasAnio.
-- [x] D-16/DC-28: registro dividido en partes (PR #38, incorporado el 2026-10-28).
-- [x] DC-14/DC-29: rechazar en pantalla y servidor las fechas fuera del año del recibo (PR #39, incorporado el 2026-10-28). Incluye el interruptor de sesión «Permitir declarar fechas fuera del año en curso» y mover «Generar los recibos del año ahora» bajo «Crear recibos del año automáticamente» en Ajustes › Administrar recibos.
-- [x] F-17: corregir re/turn de confirmDeleteAdvance (2026-10-28, rama `correccion/fase-1-f17-return-confirmdeleteadvance`; PR #40, incorporado). Alcance ampliado con aprobación del usuario: retirar `saldoRestante`, variable no usada de `Advances.vue`; F-14 sigue abierto.
+Ya hecho: la edición de la descripción del PR #70.
 
-## PR intercalados acordados (2026-10-29)
+## Backlog por prioridad (2026-11-11)
 
-- [x] D-21: contraste documental de cambios desde el 28 de octubre hasta el PR #50; discrepancias identificadas corregidas, diff revisado e informe retroactivo de #42 añadido. Alcance y límites en el informe de D-21. Incorporado el 2026-11-02 (PR #51); no certifica alineación integral del repositorio.
-- [x] D-22 / DC-37: dividir `doc/mantenimiento/estado-del-proyecto.md` en entrada y tres partes, como el registro (DC-28) y la instrucción persistente (DC-33), con referencias, índice, navegación y seguimiento al día (rama `mantenimiento/D-22-DC-37-dividir-estado-del-proyecto`; 2026-11-03). Incorporado el 2026-11-03 (PR #52); informe en `doc/mantenimiento/informes_iteraciones/2026-11-03_D-22_DC-37_division-relevo.md`.
+### P0 — Seguridad
 
-Se intercalan en el flujo definido, tras el grupo 1 de la fase 1:
+- [ ] S-02 (con DC-06): `db_maintenance.mjs` interpola comandos; la contraseña aparece en `ps` y en el log. La app usa `timon_admin` hasta separar el mantenimiento. Incluye revisar el `GRANT ALL` sobre el patrón `conta\_hogar%`.
+- [ ] S-03: `saveDbConfig` sin validación, pool no recreado, `initPool` sin memoizar, TLS fijo con `rejectUnauthorized:false` y `GET /api/db-config/password` devuelve la contraseña.
+- [ ] S-04, desglosado: (a) revocación de JWT de 24 h con rol embebido; (b) rate limiting en `/login`; (c) guarda de último administrador en `DELETE /api/users` y al degradar un admin.
+- [~] S-05: `error.stack` corregido; quedan CORS abierto (`backend/src/server.mjs:29`) y ~218 `console.log`.
+- [ ] S-11: revisar los 10 PR de Snyk abiertos (#4 a #13) y reducir las 108 vulnerabilidades de Dependabot.
+- [ ] S-21: autorización de presupuestos cuando existan rutas de escritura; hoy no hay ruta ni pantalla. `modificado_por` ya está en la tabla.
+- [ ] S-22: retirar el `SET USER` temporal de `timon_admin`, sin fecha pero visible. `REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%'; FLUSH PRIVILEGES;`
+- [ ] S-20: prueba de que `POST /api/recibos` ignora `permitirFueraDeAnio` sin rol admin; hoy solo existe la prueba positiva de `pushRecibo`.
 
-- [x] D-17 / DC-33: instrucción persistente dividida en entrada y cuatro partes, y `.md` próximos al límite de lectura revisados (2026-10-29, PR #42, incorporado).
-- [ ] U-09: parcial. DC-30 implementado en Ahorros, Categorías, Cuentas, Anticipos, Recibos y movimientos de Ahorros (PR #41 y #43); Recibos incorpora F-45 (PR #47). Pendientes: Usuarios y Ajustes.
-- [x] U-10: homogeneizar la vista de inactivos de Ahorros con la de Recibos. Resuelto el 2026-10-30 (DC-34): Recibos conserva su tarjeta «Inactivos» y su botón se deshabilita cuando no hay inactivos; Ahorros ya cumplía el modelo acordado.
-- [x] F-44 / DC-31: base de datos en minúsculas y capitalización solo en pantalla para el resto de entidades. Aplicado el 2026-10-30 en `pushSaving`, `pushRecibo`, `pushAdvance` y `pushAccount`.
-- [ ] U-11 / DC-32: parcial. Filtro y selección de Anticipos implementados; Presupuestos solo preparado (PR #43). Pendientes: Usuarios y futuras vistas. Cuentas quedó excluida en DC-34, pero sí existe el campo activa: no confundir la exclusión de pantalla con ausencia del campo. No se amplía aquí la funcionalidad ni se cambia la decisión.
-- [x] U-12: la ayuda de Ahorros y Anticipos se muestra como tooltip de un `QuestionCircle` junto al título, en lugar de texto en pantalla (2026-10-30).
-- [x] D-18: informes de cierre retroactivos de los PR #43 y #44 y relevo al día (2026-10-30, PR #45, incorporado).
-- [x] D-19: errata del informe retroactivo del PR #43: la incidencia de `.db_connection` sí tuvo efecto (2026-11-01, PR #47, incorporado).
-- [x] D-20: documentación técnica e índice de informes incorporados el 2026-11-02 (PR #49).
-- [x] U-13 / DC-36: textos, vista previa de hoy y simulación del próximo 1 de diciembre sin selector; avisos separados y ejecución manual independiente. Incorporado el 2026-11-02 (PR #50). Límites: ejecución real nueva y bloqueo concurrente no ejercitados.
-- [x] Verificado a mano el 2026-10-29: «Borrar» actuaba sobre filas de Ahorros ocultas con «Ocultar inactivos» (`selectedSavings`). Corregido con un `watch` sobre `visibleSavings` (PR #41).
+### P1 — Función y datos
 
-## Correcciones funcionales que deben abordarse después
-- [x] F-07: no llamar a getCurrentInstance tras el await del borrado de Ahorros (2026-10-29, PR #41).
-- [x] F-08: filtro de inactivos e interruptor «Ahorro activo» en Ahorros (2026-10-29, PR #41). Homogeneidad con Recibos: U-10.
-- [x] F-09: editar categorías por ID, sin crear otra al renombrar, y nombre en minúsculas (DC-31) (2026-10-29, PR #41).
-- [ ] F-22: el servidor rechaza nombres duplicados y la migración 0006 prepara el índice único uq_categorias_nombre. Preparado en la rama de Fase A; pendiente de revisión y fusión.
-- [x] F-10 en categorías: borrado bloqueado por FK con mensaje de negocio y 409 (2026-10-29, PR #41). En ahorros solo hay una traducción defensiva: `ahorros_movimientos` tiene ON DELETE CASCADE.
-- [ ] F-10 en cuentas, anticipos y recibos: traducción de FK a 409 de negocio. Preparado en la rama de Fase A; pendiente de revisión y fusión.
-- [x] F-12: `generarFechasFuturas` calcula la secuencia anclada y ajusta al último día del mes (DC-16), sin desbordar con los días 29 a 31 ni depender de la zona horaria; prueba nueva sin base de datos (2026-11-01, PR #46, incorporado).
-- [x] F-45: la comprobación de «guardar sin cambios» de `guardarRecibo` (DC-30) tiene en cuenta `modoFechas`: con el diálogo abierto en manual, pasar a automático cuenta como cambio y se guarda (2026-11-01, PR #47, incorporado).
-- [x] F-46: corregido como paso d de DC-38 con el criterio de DC-41 (secuencia anclada en el día de fecha_inicio, último día del mes si el día no existe, sin depender de la zona horaria; prueba sin base de datos). Incorporado el 2026-11-04 (PR #55, informe de F-46 / DC-41). Antes, `recalculatePaymentPlan` y `Advances.vue` usaban `setMonth(getMonth() + n)` y desbordaban con los días 29 a 31 (registrado el 2026-11-02).
-- [x] F-13/DC-05: `dateStrings: ['DATE']` en el pool de `mysql2`; los `DATE` llegan como texto y `TIMESTAMP`/`DATETIME` siguen como `Date`. El desplazamiento de un día era latente: `timezone: 'Z'` ya construía los `DATE` a medianoche UTC. Sin `toISOString` que retirar sobre columnas leídas (2026-11-02, PR #48, incorporado).
-- [x] F-14: decidido en DC-38 por pasos: a) principal guardado e importe pendiente derivado, incorporado (PR #53, informe de F-14 / DC-38); b) transacciones, ruta de borrado única y recálculo al editar un pagado, incorporado (PR #54, informe de F-27 / DC-39 / DC-40); c) plan automático o manual con vista previa, no aplicable por DC-42 (solo se implementó el recálculo al editar un pagado, DC-40); d) fechas ancladas, incorporado (PR #55, informe de F-46 / DC-41). Cerrado por DC-42.
-- [x] F-16: payloads de Ahorros y Anticipos preparados sin mutar las fechas del modelo vivo; utilidad `fechaIsoDeCalendario` y pruebas unitarias. Reintento manual pendiente de ejecutar.
-- [x] F-19: escapar CSV y neutralizar fórmulas, conservando el IBAN como texto seguro. Preparado el 2026-11-04 con D-24 en `correccion/fase-1-F19-csv-seguro`: utilidad `src/utils/csv.js` (BOM, separador `;`, escape RFC 4180 y apóstrofo de neutralización), pruebas en `backend/test/csv.test.mjs`, cinco exportaciones migradas y `/pages/crud` excluida por ser plantilla con datos demo (U-08). Prueba manual de interfaz confirmada por el usuario el 2026-11-05 e incorporado el 2026-11-05 (PR #58).
-- [x] D-24: sincronización del seguimiento tras el PR #57 (relevo §0 y §2, registro §0, TODO e índice de informes). Incorporado el 2026-11-05 (PR #58).
-- [x] D-25: sincronización posterior al PR #58 y registro de la fila D-23 en la sección 7 del registro. Incorporado el 2026-11-05 (PR #59).
-- [x] D-26: sincronización posterior al PR #60 (relevo §4 con la fila #60, base y F-20/F-21 incorporados), contigüidad de la fila DC-43 en la tabla de decisiones y limpieza de la cláusula histórica de F-46. Preparado el 2026-11-05 en `correccion/fase-1-F28-mensajes-servidor`; incorporado el 2026-11-05 (PR #61).
-- [x] F-20/F-21: `getBillById` retirado de `BillService` (no tenía consumidores) y su fila documental; no se crea `GET /api/recibos/:id`. F-21 cerrado como decisión DC-43: el saldo de cuentas es manual y su cálculo automático depende de R-02, sin prometer conciliación. Incorporado el 2026-11-05 (PR #60).
-- [x] F-27: transacciones para operaciones compuestas de Anticipos y sustitución de pago. Paso b de DC-38 (DC-39), incorporado (2026-11-04, PR #54; informe de F-27 / DC-39 / DC-40).
-- [x] F-28: corregido el 2026-11-05 en `correccion/fase-1-F28-mensajes-servidor`. `getApiErrorMessage` entiende `{ error }` y `{ message }`, ignora los textos vacíos y admite un texto por defecto; migrados `UsersService`, `DbConfigService`, `AjustesService` y `MaintenanceDBService` (que ya no lanza un objeto) y las pantallas `ProfileSettings`, `ListBills`, `Savings`, `Advances`, `Categories` y `Login`, con sus prefijos intactos. Pruebas: `backend/test/apiError.test.mjs` (8 casos). Prueba manual de pantalla confirmada por el usuario el 2026-11-05 (login incorrecto, categoría duplicada e IBAN duplicado); incorporado el 2026-11-05 (PR #61).
-- [x] F-30/F-31: selección propia de la tabla de trimestrales y `bill.concepto` en el diálogo de borrado. Corregido el 2026-11-09, con guarda estática y spec E2E.
-- [x] F-47: clasificar error de negocio y error técnico en el backend. Preparado el 2026-11-05 en `correccion/fase-1-F47-errores-negocio-tecnicos`: utilidad `backend/src/utils/errorDeNegocio.mjs` (`ErrorDeNegocio`, `esErrorDeNegocio`, `respuestaDeError` y `responderError`), aplicada a `db_utilsAcc`, `db_utilsSav`, `db_utilsCats`, `db_utils` y a las rutas de cuentas, ahorros, categorías y recibos; sin `details: error.stack`, sin prefijos técnicos y con el IBAN duplicado en 409 con `IBAN_DUPLICADO`. Pruebas: `backend/test/errorDeNegocio.test.mjs` y `backend/test/rutasErrores.test.mjs`. Incorporado el 2026-11-05 (PR #62).
-- [x] F-48: extender la normalización de errores a usuarios, conexión, mantenimiento, anticipos y ajustes (`routes/users.mjs`, `routes/conexionDB.mjs`, `routes/mantenimientoDB.mjs`, `routes/anticipos.mjs`, `routes/ajustes.mjs`, `db/db_utilsUsers.mjs` y `db/db_ajustes.mjs`, con la migración de `ErrorDeAjuste` a `ErrorDeNegocio`). Mismo mecanismo, sin prefijos técnicos ni `details`, mensaje genérico ante el error técnico y detalle en el log, conservando las claves `error` y `message`. Registrado el 2026-11-05; corregido el 2026-11-08 (F-48 y D-30): catálogo de causas y extensión a conexión, mantenimiento, anticipos y ajustes, con los cambios de status documentados y el seguimiento corregido.
-- [x] O-02/DC-44/D-27: suite E2E persistente en `e2e/` (Playwright contra el Edge real por CDP), con lanzador `npm run e2e`, arranque y parada autónomos de front y back en un grupo de procesos propio, sesión única por ejecución, ventana maximizada por CDP, triage con `.last-green.json`, documentación en `doc/pruebas/e2e.md` y sincronización del seguimiento con los PR #61 y #62. Tiempos y estabilidad medidos el 2026-11-06 con el lanzador definitivo: 5 ejecuciones con servidores vivos (101, 90, 100, 87 y 99 s) y 5 en frío (85, 82, 84, 86 y 85 s), todas con `exit=0` y `10 passed`, comprobando puertos y procesos antes y después de cada una y sin restos de categorías E2E. Preparado el 2026-11-06 en `mantenimiento/fase-1-O02-DC44-D27-suite-e2e`; incorporado el 2026-11-06 (PR #63, fusionado a las 21:29:10Z).
-- [ ] F-37: opciones explícitas diaria/semanal y otras cadencias de Ahorros según requisito; conservar aportaciones manuales sin patrón, que ya existen con periodicidad NULL.
-- [x] F-38: obtener token de ambos almacenes en saveUser/deleteUsers/changePassword; probar con y sin Recordarme. Corregido el 2026-11-09 (F-48) y verificado con la suite E2E (alta y borrado de un usuario `e2e_` con sesión temporal).
-- [x] S-16: `auth.mjs` responde 401 (antes 403) ante un token inválido o caducado, con el mismo mensaje que reconoce el interceptor de `src/config/api.js`; `verifyAdmin` y `checkRole` conservan el 403. Corregido el 2026-11-09.
-- [x] DC-46: entorno de pruebas cifrado (`backend/test/.env.test`) y script `test:backend:local` con comprobación de permisos sobre bases `_test` (2026-11-09).
-- [ ] F-39: completar confirmación, ejecución y recarga del borrado múltiple en Anticipos, o retirar temporalmente el botón.
-- [ ] F-40: unificar propuestas de fecha de pagos manuales con periodicidad o acordar excepción explícita; hoy siempre incrementan un mes.
-- [ ] DC-01: migración del estado rechazado; DC-02: índice único de categorías.
-- [ ] Anticipos: pruebas de invariantes de suma, redondeos, reducción mínima de 0,01 y ajuste al último pago en recalculatePostEditPayments; documentar los resultados, no presumir garantía de conciliación.
+- [ ] DC-01: migración del estado `rechazado` en `fechas_cargo` (0001:101 solo admite `cargado` y `pendiente`).
+- [ ] F-15 (resto, código): retirar `comentario: 'Fecha inicial'` de `backend/src/db/db_utils.mjs:140` y `:168`; se persiste en `:454` y `:574`. Residuo del modelo anterior a DC-14/DC-23.
+- [ ] F-37: cadencias diaria/semanal y otras de Ahorros; conservar las aportaciones manuales sin patrón.
+- [ ] F-39: confirmación, ejecución y recarga del borrado múltiple de Anticipos, o retirar el botón.
+- [ ] F-40: unificar la fecha propuesta manual de Anticipos con la periodicidad, o acordar excepción explícita.
+- [ ] F-49: interfaz de privacidad en recibos, anticipos, ahorros y presupuestos. `es_privado = 1` solo lo ven su propietario y admin; el servidor ya lo respeta (DC-48, PR #79).
+- [ ] F-53: trazabilidad por fila en `anticipos_pagos`, `ahorros_movimientos`, `fechas_cargo`, categorías y cuentas.
+- [ ] F-54: `useAuth` crea estado e intervalo por invocación (`src/composables/useAuth.js`).
+- [ ] F-55: nombre de categoría de más de 30 caracteres responde 500; debe ser 400 de negocio (`validacionCategorias.mjs`, `categorias.nombre varchar(30)`).
+- [ ] Anticipos: pruebas de invariantes de suma, redondeos, reducción mínima de 0,01 y ajuste al último pago en `recalculatePostEditPayments`; documentar resultados, sin presumir conciliación.
 
-## Seguridad, operación e interfaz (fases posteriores)
-- [ ] Fase 2: permisos por módulo/propietario/privacidad y guardas reales de rutas (S-01/S-04/S-06).
-- [ ] Fase 3: backup/restore y configuración de conexión (S-02/S-03), sesión/cliente API/interceptores (S-07), despliegue O-01, ignorados/entorno S-08/S-09 y migración de mantenimiento.
-- [x] BD de pruebas configurada y suite reejecutada: mariadb01:3306, timon_test, conta_hogar_test; 85 pruebas pasadas, EXIT:0 (2026-11-02, U-13). El ENOTFOUND anterior era un bloqueo de entorno ya superado.
-- [ ] Fase 4: Dashboard/manual/páginas de plantilla, idiomas, calendario y resto U-01 a U-08. Mantener doc/ y navegación en cada PR, no aplazar su revisión actual.
-- [ ] Fase 5: dependencias (S-11) y ramas Snyk, con pruebas disponibles.
-- [ ] Fase 6: hoja funcional del Excel, R-01 a R-04.
-- [ ] Revisar presentación de bloques de código Markdown y diálogos de fechas de ListBills.
+### P2 — Interfaz
 
-## Incorporado
-- [x] PR #14: fase 0, registro, migración base y tests.
-- [x] Correcciones de fase 1 consignadas en el registro; no confundirlas con los fallos abiertos anteriores.
-- [x] PR #22 a #28: recibos por año, Ajustes, zona horaria y Aspecto.
-- [x] PR #29: primer documento de relevo y puesta al día inicial.
-- [x] PR #30, D-11: nueve documentos antes pendientes contrastados con código; README inglés, pruebas y autenticación actualizados. Sin cambios funcionales.
-- [x] PR #33, D-14: relevo operativo y protocolo de otro chat.
-- [x] PR #34, DC-27: editor de parches reforzado en dev/utils/ayudas.mjs.
-- [x] PR #35: instrucción persistente de funcionamiento incorporada a doc/mantenimiento (sin ID de hallazgo).
-- [x] D-15: actualización del punto de reanudación a base 4d73e06 y regla de commit remoto delegado erróneo en §3.
-- [x] PR #38, D-16/DC-28: registro de hallazgos dividido en partes.
-- [x] PR #39, DC-14/DC-29: un recibo no puede tener fechas de otro año; interruptor de sesión en Ajustes › Administrar recibos.
-- [x] PR #40, F-17: `return` en `confirmDeleteAdvance` y retirada de `saldoRestante`.
-- [x] PR #41, F-07/F-08/F-09/F-22/F-10: Ahorros y categorías (borrado, inactivos, renombrado por ID, duplicados y borrados bloqueados por FK), DC-30 y DC-31.
+- [ ] U-01: Dashboard de la plantilla Sakai.
+- [~] U-02: `/manual` y `/documentation` cargan la plantilla en inglés; se cierra con U-20.
+- [ ] U-03: menú «UI Components/Pages/Hierarchy» y páginas vacías.
+- [ ] U-04: `className` en vez de `class` en `Budgets.vue` y `ProfileSettings.vue`.
+- [ ] U-05: idioma mezclado (Cancel, Save, Yes, Confirm…).
+- [ ] U-06: formatos inconsistentes (saldo sin moneda, «Importe periódico» frente a «Ahorro sugerido»).
+- [ ] U-07: Calendario no pinta mensuales pero los suma; tooltip solo del primer evento.
+- [ ] U-08: servicios de demo y `views/uikit` en el repositorio.
+- [ ] U-09: DC-30 en Usuarios y Ajustes.
+- [ ] U-11: homogeneidad en Usuarios y futuras vistas; normalizar `CatsService.deleteCategorias` (doble envoltorio).
+- [ ] U-20: manual de usuario real en `/manual`, accesible a todos los roles incluido `reader`, sin `requiresAdmin`. Cierra U-02 al sustituir también `/documentation` o retirarla.
+- [ ] U-21: prueba de pantalla de «guardar sin cambios» (F-45) y de la normalización de F-44.
 
-## Incorporado por verificación documental D-12 (2026-10-24)
+### P3 — Operación y documentación
 
-- [ ] F-41: límite de descripción de Categorías unificado en 255 (control, servidor y columna). Preparado en la rama de Fase A; pendiente de revisión y fusión.
-- [ ] F-42: validación coherente de usuarios en servidor y pantalla, con DC-51. Preparado en la rama de Fase A; pendiente de revisión y fusión.
-- [ ] F-43: validación de cuerpos e identificadores de borrado de cuentas y ahorros. Preparado en la rama de Fase A; pendiente de revisión y fusión.
-- [ ] S-12, junto a S-01/S-06: matriz de permisos efectiva para reader/limited_user, aplicada primero en servidor.
-- [ ] Limpieza de Categorías: pasar el array directamente a CatsService.deleteCategorias y retirar el doble envoltorio cuando deje de necesitarse.
+- [ ] O-01: `VITE_API_URL` apunta a localhost; configurar en el despliegue.
+- [ ] S-08: no hay herramienta de migraciones (las 0001 a 0006 son ficheros manuales); `.gitignore` ya cubre `backend/src/db/.db_connection*`. Mejora de proceso, prioridad baja: runner mínimo que aplique y compruebe migraciones en bases `_test` y documente la reversión (ver D-37).
+- [ ] O-03: verificar reconstrucción de la imagen, `postCreateCommand` y `git-crypt unlock` con clave.
+- [x] D-36: auditoría y sincronización documental aplicada en siete lotes e incorporada con el PR #82.
+- [ ] D-37: documentar la reversión de las migraciones 0001 y 0002.
+- [ ] D-38: unificar el umbral de reparto (30 000 / 20 000) y decidir si el registro se divide otra vez.
+- [ ] D-39: `anticipos.estado` conserva `completado` en el ENUM tras la 0005, aunque la documentación dice que no se guarda; documentarlo o estrecharlo en una migración futura.
+- [x] O-04: no aplicable. Comprobado en solo lectura el 2026-11-11: no existen recibos con id 170 a 173. Si reaparecieran, haría falta la confirmación separada BORRADO-O04.
+
+### Despliegue vigente
+
+- La migración 0006 debe aplicarse a cualquier base antes de arrancar el código del PR #81 contra ella. No es una tarea hecha: es una nota de despliegue.
+
+## Preguntas abiertas para el usuario
+
+Ninguna. La frase «admin debe permitir editarlo todo sin restricciones de propiedad» queda cubierta por DC-48; DC-53 está aprobada; la confirmación V se ejecutó el 2026-11-11.
+
+## Verificaciones pendientes de ejecutar
+
+- [ ] `npm run test:backend:local`, citando `# tests`, `# pass`, `# fail`, `# cancelled` y el código de salida.
+- [ ] `npm run e2e`, solo con autorización separada.
+- [ ] Reintento manual de F-16 tras un rechazo del servidor.
+- [ ] Ejecución real y bloqueo concurrente de U-13.
+- [ ] Borrado de un recibo con cargos pagados (origen PR #62).
+- [ ] Reconstrucción de imagen y desbloqueo con clave (O-03).
+- [ ] Restauración real de BD: destructiva, solo con base `*_test`.
+
+## Historial completo por PR (2026-10-17 a 2026-11-11)
+
+| IDs | PR | Fusión |
+|---|---|---|
+| Fase 0 | #14 | 2026-10-17 |
+| F-01 | #15 | 2026-10-17 |
+| F-02, F-24 | #16 | 2026-10-17 |
+| F-25, F-26 | #17 | 2026-10-18 |
+| F-03 | #18 | 2026-10-18 |
+| F-06 | #19 | 2026-10-18 |
+| F-04, F-18, F-29 | #20 | 2026-10-19 |
+| F-33, F-36 | #21 | 2026-10-19 |
+| D-08, DC-13, F-05 | #22 | 2026-10-20 |
+| DC-15, DC-16, DC-18 a DC-22 | #23 | 2026-10-21 |
+| DC-14, DC-23 (migración 0003) | #24 | 2026-10-22 |
+| DC-17, DC-24, DC-25 | #25 | 2026-10-22 |
+| DC-25 (servidor) | #26 | 2026-10-22 |
+| DC-21, DC-25 | #27 | 2026-10-23 |
+| DC-26 | #28 | 2026-10-23 |
+| D-10, DC-27 | #29 | 2026-10-23 |
+| D-11 | #30 | 2026-10-24 |
+| D-12 | #31 | 2026-10-24 |
+| D-13 | #32 | 2026-10-24 |
+| D-14 | #33 | 2026-10-25 |
+| DC-27 (editor de parches) | #34 | 2026-10-26 |
+| Instrucción persistente (sin ID; mal etiquetada D-15) | #35 | 2026-10-27 |
+| D-15 | #36 | 2026-10-27 |
+| F-11, F-23, F-32 | #37 | 2026-10-27 |
+| D-16, DC-28 | #38 | 2026-10-28 |
+| DC-14, DC-29 | #39 | 2026-10-28 |
+| F-17 | #40 | 2026-10-28 |
+| F-07, F-08, F-09, F-22 (duplicado en servidor), F-10 (categorías y ahorros), DC-30, DC-31, DC-32 | #41 | 2026-10-29 |
+| D-17, DC-33 | #42 | 2026-10-29 |
+| U-09 (parcial), U-10, U-11 (parcial), U-12, F-44, DC-30 (extensión), DC-31 (aplicación), DC-32 (implementación), DC-34 | #43 | 2026-10-29 |
+| D-15 (cierre del ayudante) | #44 | 2026-10-29 |
+| D-18 | #45 | 2026-10-30 |
+| F-12, DC-35 | #46 | 2026-11-01 |
+| F-45, D-19 | #47 | 2026-11-01 |
+| F-13, DC-05 | #48 | 2026-11-02 |
+| D-20 | #49 | 2026-11-02 |
+| U-13, DC-36 | #50 | 2026-11-02 |
+| D-21 | #51 | 2026-11-02 |
+| D-22, DC-37 | #52 | 2026-11-03 |
+| F-14, DC-38 | #53 | 2026-11-03 |
+| F-27, F-25 (sustitución), DC-39, DC-40 | #54 | 2026-11-04 |
+| F-46, DC-41 | #55 | 2026-11-04 |
+| D-23, DC-42 | #56 | 2026-11-04 |
+| F-16 | #57 | 2026-11-04 |
+| F-19, D-24 | #58 | 2026-11-05 |
+| D-25 | #59 | 2026-11-05 |
+| F-20, F-21, DC-43 | #60 | 2026-11-05 |
+| F-28, D-26 | #61 | 2026-11-05 |
+| F-47 | #62 | 2026-11-05 |
+| O-02, DC-44, D-27 | #63 | 2026-11-06 |
+| Reglas de Cline (sin ID) | #64 | 2026-11-06 |
+| D-28 | #65 | 2026-11-06 |
+| S-09, DC-45 | #66 | 2026-11-06 |
+| S-15 | #67 | 2026-11-06 |
+| D-29 | #68 | 2026-11-07 |
+| F-48, F-38, U-14, D-30 | #69 | 2026-11-09 |
+| DC-46 | #70 | 2026-11-09 |
+| DC-46 (permisos 600) | #71 | 2026-11-09 |
+| S-16 | #72 | 2026-11-09 |
+| D-31 | #73 | 2026-11-09 |
+| F-30, F-31 | #74 | 2026-11-09 |
+| D-32 | #75 | 2026-11-10 |
+| DC-47 | #76 | 2026-11-10 |
+| S-17, U-16 (registro) | #77 | 2026-11-10 |
+| U-15, U-17 (registro) | #78 | 2026-11-10 |
+| S-01, S-06, S-07, S-12, U-16, U-17, D-33 | #79 | 2026-11-10 |
+| S-18, S-19, F-51, U-18, U-19, D-34, DC-49 | #80 | 2026-11-10 |
+| F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-02, DC-50, DC-51 | #81 | 2026-11-11 |
+
+D-06 y D-09 figuran como «corregido en la fase 1» sin PR: **PR sin determinar** (octubre de 2026). D-01 a D-05 y D-07 son decisiones documentales que se resuelven con DC-01, D-20 o F-21, no con un PR propio.
 
 ### Propuestas útiles pendientes de evaluación
 

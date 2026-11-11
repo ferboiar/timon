@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-11 | D-36 | [Auditoría y sincronización documental](./2026-11-11_D-36_auditoria-sincronizacion.md) |
 | 2026-11-11 | F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50, DC-51 | [Trazabilidad de autor, índice único de categorías y validaciones](./2026-11-11_F50-F22-F52-F43-F42-F41-F10-D35-DC-50-DC-51_trazabilidad-y-validaciones.md) |
 | 2026-11-10 | S-18, S-19, F-51, U-18, U-19, D-34, DC-49 | [Corrección posterior al PR #79: subrecursos, propiedad y seguimiento](./2026-11-10_S-18_S-19_F-51_U-18_U-19_D-34_correccion-post-pr79.md) |
 | 2026-11-10 | S-01, S-06, S-12, S-07, U-16, U-17 | [Autorización en servidor, apiClient, aviso de caducidad y menús únicos](./2026-11-10_S01-S06-S12-S07-U16-U17_autorizacion-apiClient.md) |
@@ -15,6 +16,7 @@
 | 2026-11-09 | S-16 | [Token inválido: 401 en vez de 403](./2026-11-09_S-16_token-invalido-401.md) |
 | 2026-11-09 | DC-46 (arreglo) | [Permisos 600 del entorno de pruebas](./2026-11-09_DC-46_permisos-600.md) |
 | 2026-11-09 | DC-46 | [Entorno de pruebas cifrado y `test:backend:local`](./2026-11-09_DC-46_entorno-pruebas-cifrado.md) |
+| 2026-11-09 | F-30, F-31 | [Selección propia de trimestrales y concepto en el borrado](./2026-11-09_F-30_F-31_recibos-seleccion-borrado.md) |
 | 2026-11-08 | F-48, D-30 | [Errores de negocio y técnicos en el resto del backend](./2026-11-08_F-48_D-30_errores-negocio-resto.md) |
 | 2026-11-06 | D-29 | [Sincronización posterior a los PR #65, #66 y #67](./2026-11-06_D-29_sincronizacion-post-pr66-67.md) |
 | 2026-11-06 | S-15 | [Hooks ejecutables con `core.fileMode=false`](./2026-11-06_S-15-hooks-ejecutables.md) |

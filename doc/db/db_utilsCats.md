@@ -19,7 +19,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `id` | INT | Clave primaria |
-| `nombre` | VARCHAR | Nombre de la categoría. El servidor rechaza duplicados, pero el índice único del esquema sigue pendiente de la migración DC-02 (F-22) |
+| `nombre` | VARCHAR | Nombre de la categoría. El servidor rechaza duplicados y el índice único `uq_categorias_nombre` (migración 0006) los impide también ante concurrencia o escrituras externas (F-22, DC-02) |
 | `descripcion` | VARCHAR | Descripción detallada (opcional) |
 | `propietario_id` | INT | Usuario que creó la categoría; no limita su visibilidad, las categorías son globales (DC-02) |
 | `es_privado` | TINYINT | Sin efecto: las categorías son compartidas y visibles para todos (DC-02, DC-48) |
@@ -46,7 +46,7 @@ La función `deleteCategorias()` convierte la entrada a array y aplica `Number` 
 
 ## Validaciones y Manejo de Errores
 
-- Normaliza el nombre (trim y minúsculas) y comprueba si otra categoría lo tiene antes de insertar o actualizar; sin índice único no hay garantía ante concurrencia hasta la migración DC-02 (F-22)
+- Normaliza el nombre (trim y minúsculas) y comprueba si otra categoría lo tiene antes de insertar o actualizar; el índice único `uq_categorias_nombre` (migración 0006) cubre la concurrencia y el duplicado se traduce a 400 de negocio (F-22, DC-02)
 - Convierte IDs con Number, sin verificar explícitamente que sean válidos
 - Si el borrado choca con una clave foránea (ER_ROW_IS_REFERENCED_2), lanza «No se puede eliminar la categoría porque está en uso (recibos, presupuestos u otros registros)» (F-10)
 - Trazas (DC-09): `pushCategoria - Nueva categoría: …`, `pushCategoria - Categoría ID: nombre A -> B`, `pushCategoria - Rechazado: …` y `deleteCategorias - Rechazado: …`

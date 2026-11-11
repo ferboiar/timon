@@ -76,6 +76,6 @@ Esta API se integra con los siguientes middlewares para proteger rutas:
 
 ## Códigos y validación reales
 
-POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 500 por fallo del servidor. GET /verify: 200 con identidad del token o 401 sin token/inválido/caducado. Verify valida directamente con jwt.verify, no utiliza verifyToken; este último devuelve 403 por token inválido/caducado.
+POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 500 por fallo del servidor. GET /verify: 200 con identidad del token o 401 sin token/inválido/caducado. Verify valida directamente con jwt.verify, no utiliza verifyToken; este último devuelve 401 por token inválido o caducado (S-16).
 
 La validación criptográfica comprueba firma y caducidad; no consulta revocación, rol actualizado ni existencia actual del usuario en la base de datos.

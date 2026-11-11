@@ -24,15 +24,15 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `id` | INT | Clave primaria |
 | `username` | VARCHAR(50) | Nombre de usuario único |
 | `email` | VARCHAR(100) | Correo electrónico único |
-| `password` | VARCHAR(255) | Contraseña encriptada |
+| `password` | VARCHAR(100) | Contraseña encriptada (hash bcrypt de 60 caracteres) |
 | `rol` | ENUM | Rol del usuario ('admin', 'user', 'limited_user', 'reader') |
-| `perm_recibos` | ENUM | Nivel de permiso para recibos ('escritura', 'lectura', 'ninguno') |
-| `perm_presupuestos` | ENUM | Nivel de permiso para presupuestos ('escritura', 'lectura', 'ninguno') |
-| `perm_ahorros` | ENUM | Nivel de permiso para ahorros ('escritura', 'lectura', 'ninguno') |
-| `perm_anticipos` | ENUM | Nivel de permiso para anticipos ('escritura', 'lectura', 'ninguno') |
-| `perm_transacciones` | ENUM | Nivel de permiso para transacciones ('escritura', 'lectura', 'ninguno') |
-| `perm_categorias` | ENUM | Nivel de permiso para categorías ('escritura', 'lectura', 'ninguno') |
-| `perm_cuentas` | ENUM | Nivel de permiso para cuentas ('escritura', 'lectura', 'ninguno') |
+| `perm_recibos` | ENUM | Nivel de permiso para recibos ('no', 'lectura', 'escritura') |
+| `perm_presupuestos` | ENUM | Nivel de permiso para presupuestos ('no', 'lectura', 'escritura') |
+| `perm_ahorros` | ENUM | Nivel de permiso para ahorros ('no', 'lectura', 'escritura') |
+| `perm_anticipos` | ENUM | Nivel de permiso para anticipos ('no', 'lectura', 'escritura') |
+| `perm_transacciones` | ENUM | Nivel de permiso para transacciones ('no', 'lectura', 'escritura') |
+| `perm_categorias` | ENUM | Nivel de permiso para categorías ('no', 'lectura', 'escritura') |
+| `perm_cuentas` | ENUM | Nivel de permiso para cuentas ('no', 'lectura', 'escritura') |
 | `created_at` | TIMESTAMP | Fecha de creación |
 | `updated_at` | TIMESTAMP | Fecha de última actualización |
 

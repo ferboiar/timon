@@ -25,6 +25,8 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #33 | D-14 | Relevo operativo: punto de reanudación, alcance del primer PR y protocolo de otro chat |
 | #34 | DC-27 | Editor de parches reforzado en dev/utils/ayudas.mjs con pruebas |
 | #35 | — | Instrucción persistente de funcionamiento incorporada a doc/mantenimiento (sin ID de hallazgo) |
+| #36 | D-15 | Actualización del relevo a 4d73e06 y regla de commit remoto delegado erróneo |
+| #37 | F-11, F-23, F-32 | Retirada del flujo global «Actualizar fechas» |
 | #38 | D-16, DC-28 | Registro de hallazgos dividido en partes |
 | #39 | DC-14, DC-29 | Un recibo no puede tener fechas de otro año; interruptor de sesión en Ajustes |
 | #40 | F-17 | `return` en `confirmDeleteAdvance` y retirada de `saldoRestante` |
@@ -68,14 +70,15 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #78 | U-15 | Prueba de comportamiento de F-30 con un recibo trimestral (merge `db11bad`) |
 | #79 | S-01, S-06, S-12, S-07, U-16, U-17 | Autorización en servidor (DC-48), `apiClient`, aviso de caducidad y menús únicos (merge `1c59443`) |
 | #80 | S-18, S-19, F-51, U-18, U-19, D-34, DC-49 | Corrección post-#79: subrecursos, propiedad, permisos mixtos y seguimiento (merge ecf83bb) |
+| #81 | F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50, DC-51 | Trazabilidad de autor, índice único de categorías (0006) y validaciones en servidor (merge c07aed8) |
 
 Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualización de dependencias (Snyk), sin fusionar salvo #1 y #2.
 
 ## 5. Siguiente paso operativo
 
-Estado 2026-11-11: la corrección posterior al #79 está incorporada (PR #80, merge ecf83bb). El trabajo preparado es F-50/F-22/F-52/F-43/F-42/F-41/F-10/D-35/DC-50/DC-51; después, la limpieza de las 9 ramas y el backlog, con S-04 y S-02/S-03 en cabeza.
+Estado 2026-11-11: `main` en c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). No hay trabajo preparado. Siguiente bloque: seguridad (S-02/S-03 con DC-06, S-04 desglosado, S-05, S-11 con 10 PR de Snyk y S-21); después F-49, F-53, F-54, F-55 y el backlog del TODO. D-36 se incorpora con el PR #82.
 
-La limpieza de Actualizar fechas (F-11/F-23/F-32) ya está hecha (2026-10-27). F-14 (grupo 3 de la fase 1) está cerrado: los pasos a, b y d se incorporaron en los PR #53, #54 y #55 y el resto del paso c se declara no aplicable por DC-42 (solo se implementó el recálculo al editar un pagado, DC-40). F-19 y D-24 se incorporaron en el PR #58, D-25 en el #59, F-20/F-21 en el #60, F-28 con D-26 en el #61, F-47 en el #62 (F-48 quedó solo registrado: D-30) y D-29 en el #68. O-02, DC-44 y D-27 se incorporaron en el PR #63 (2026-11-06), el PR #64 versionó las reglas de Cline y los PR #65, #66 y #67 completaron D-28, el cifrado (S-09 y DC-45) y S-15. F-48, DC-46, S-16 y F-30/F-31 están fusionados (PR #69 a #74), DC-47 con el #76, S-17/U-16 con el #77 y U-15 con el #78. La autorización (S-01/S-06/S-12), S-07, U-16 y U-17 se incorporaron con el PR #79 (merge `1c59443`). El siguiente trabajo es la corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49); después, la limpieza de las ramas locales fusionadas y F-50, y a continuación el backlog por prioridad, con S-04 y S-02/S-03 en cabeza. No hay que implementar automáticamente el backlog P0/P1 ni reiniciar una auditoría sin petición del usuario.
+Pendiente operativo: limpieza de las 9 ramas locales fusionadas y de la rama remota del PR #81, cada una con confirmación expresa y separada; S-22 (`SET USER`); despliegue de la 0006. F-14 está cerrado (pasos a, b y d en los PR #53, #54 y #55; el resto del paso c no aplicable por DC-42). El detalle histórico de los PR #14 a #81 está en la sección 4.
 
 1. [x] Retirar el flujo global antiguo: updateAllDates (ListBills), updateAllBillsDates (BillService), POST /api/recibos/actualizar-fechas, actualizarFechasRecibos y generarNuevasFechasRecibo (db_utils). Hecho el 2026-10-27; los dos errores de eslint de ListBills corregidos.
 2. Conservar generateDates, generateBillDates, POST /:id/generar-fechas, completarFechasAnio y la generación anual. Conservar generarFechasFuturas: pushRecibo la usa (F-12 corregido el 2026-11-01).
