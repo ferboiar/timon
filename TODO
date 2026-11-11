@@ -2,7 +2,7 @@
 
 ## Punto de reanudación (D-36, 2026-11-11)
 
-Corte: `main` = c07aed8 (2026-11-11), merge del PR #81 (F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
+Corte: `main` = 2744e5a (PR #82, fusionado 2026-11-11T20:22:07Z). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
 
 No hay trabajo de código preparado. Único cambio local ajeno: `backend/src/db/.db_connection`.
 
@@ -28,7 +28,7 @@ Ordena el backlog por riesgo y dependencias. P0 es la prioridad mayor y no la su
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
 
-Estado operativo: 2026-11-11, base c07aed8 (PR #81 fusionado). F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar. D-36 en curso. Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-11, base 2744e5a (PR #82 fusionado a las 20:22:07Z). F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar. D-36 cerrado con el PR #82. Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Trabajo acordado (un PR por punto)
 
