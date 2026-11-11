@@ -126,6 +126,10 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 | `pushSaving - Concepto normalizado a minúsculas: …` | Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 | `deleteSavings - Rechazado: …` | Si el borrado falla por una clave foránea (defensivo, F-10) |
 
+## Trazabilidad y campos opcionales (F-50, F-52)
+
+pushSaving normaliza a NULL descripcion, fecha_objetivo, periodicidad e importe_periodico cuando el cliente los omite. Las altas y ediciones guardan modificado_por; pushMovimiento y deleteMovimiento actualizan ahorros.modificado_por y ahorros.updated_at en la misma transacción que ahorrado.
+
 ## Referencias
 
 - [API de Ahorros](../routes/ahorros.md) - Rutas que utilizan estas funciones

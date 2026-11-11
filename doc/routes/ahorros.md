@@ -19,7 +19,7 @@ Este módulo implementa las rutas de la API REST para la gestión de ahorros y s
 ## Características Principales
 
 - Gestión completa de ahorros y sus movimientos asociados 
-- La ruta delega las comprobaciones en pushSaving/pushMovimiento; el borrado no valida de forma consistente el cuerpo ni los identificadores (F-43)
+- El borrado valida la lista de IDs con leerListaEnterosPositivos y los movimientos validan sus identificadores antes de la base (F-43); pushSaving normaliza a NULL los campos opcionales (F-52)
 - Manejo detallado de errores con mensajes descriptivos
 - Soporte para operaciones en lote (eliminación múltiple)
 - Endpoints específicos para obtener valores enumerados (periodicidades)
@@ -84,6 +84,10 @@ Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
 ## Dependencias
 
 Este módulo depende directamente de las funciones de base de datos definidas en [`db_utilsSav.mjs`](../db/db_utilsSav.md), que manejan todas las operaciones de base de datos relacionadas con ahorros y movimientos.
+
+## Validación y campos opcionales (F-43, F-52)
+
+El borrado de ahorros valida la lista savings antes de la base y responde 400 si falta, no es un array, está vacía o contiene un ID inválido. Los movimientos validan sus IDs y el ahorro padre. pushSaving normaliza a NULL descripcion, fecha_objetivo, periodicidad e importe_periodico cuando el cliente los omite, para que mysql2 no reciba undefined.
 
 ## Referencias
 

@@ -48,7 +48,7 @@ Esta ruta permite eliminar una o más categorías basándose en sus IDs. Acepta 
 
 La API implementa las siguientes validaciones:
 - El nombre de la categoría es obligatorio para crear o actualizar
-- Un nombre que ya tiene otra categoría se rechaza con 400 (F-22); sin índice único en la base de datos hasta DC-02
+- Un nombre que ya tiene otra categoría se rechaza con 400 (F-22); desde la migración 0006 existe el índice único uq_categorias_nombre
 - Los IDs de categoría deben ser proporcionados como un array para eliminar
 - No se permite enviar un array vacío de IDs para eliminar
 
@@ -62,6 +62,10 @@ Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
 ## Dependencias
 
 Este módulo depende directamente de las funciones de base de datos definidas en [`db_utilsCats.mjs`](../db/db_utilsCats.md), que manejan todas las operaciones de base de datos relacionadas con categorías.
+
+## Límite de descripción e índice único (F-41, F-22)
+
+La descripción de una categoría admite como máximo 255 caracteres, el mismo límite del control de la pantalla y de la columna categorias.descripcion (VARCHAR(255)). El servidor valida antes de escribir y responde 400 si se supera. El índice único uq_categorias_nombre (migración 0006) garantiza la unicidad también ante concurrencia; pushCategoria traduce el duplicado a un 400 de negocio.
 
 ## Referencias
 

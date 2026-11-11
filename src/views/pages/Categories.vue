@@ -22,9 +22,10 @@ const categoryDialog = ref(false);
 const categoryOriginal = ref(null);
 const snapshotCategory = (c) => ({ nombre: (c.nombre ?? '').trim().toLowerCase(), descripcion: c.descripcion ?? '' });
 const deleteCategoryDialog = ref(false);
+const LONGITUD_MAXIMA_DESCRIPCION = 255;
 const deleteSelectedCategoriesDialog = ref(false);
 
-const isSaveDisabled = computed(() => !category.value.nombre);
+const isSaveDisabled = computed(() => !category.value.nombre || (category.value.descripcion?.length ?? 0) > LONGITUD_MAXIMA_DESCRIPCION);
 
 const fetchCategories = async () => {
     try {
@@ -192,8 +193,8 @@ onMounted(() => {
             </div>
             <div>
                 <label for="descripcion" class="block font-bold mb-3">Descripción</label>
-                <Textarea id="descripcion" v-model="category.descripcion" rows="3" cols="20" :maxlength="260" fluid />
-                <small v-if="category.descripcion.length > 255" class="text-red-500">La descripción no puede tener más de 255 caracteres.</small>
+                <Textarea id="descripcion" v-model="category.descripcion" rows="3" cols="20" :maxlength="LONGITUD_MAXIMA_DESCRIPCION" fluid />
+                <small class="text-surface-500">{{ category.descripcion.length }}/{{ LONGITUD_MAXIMA_DESCRIPCION }}</small>
             </div>
         </div>
 

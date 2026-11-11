@@ -83,7 +83,7 @@ router.post('/', autorizar('recibos', 'escritura'), async (req, res) => {
             return res.status(401).json({ error: 'No se pudo identificar al usuario. Posible error de autenticación.' });
         }
 
-        const propietarioId = req.user.id; // Obtenemos el ID del usuario del token JWT
+        const propietarioId = req.usuario.id; // Obtenemos el ID del usuario del token JWT
 
         console.log('recibos - ==== INICIO PETICIÓN POST /recibos ====');
         console.log('recibos - Datos validados correctamente, procediendo a llamar pushRecibo');
@@ -106,7 +106,7 @@ router.post('/', autorizar('recibos', 'escritura'), async (req, res) => {
             asegurarEdicion(req.usuario, await registroDeRecibo(id), 'recibos');
         }
 
-        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido, es_privado);
+        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido, es_privado, req.usuario.id);
         console.log('recibos - pushRecibo completado con éxito para ID:', id);
         console.log('recibos - ==== FIN PETICIÓN POST /recibos (ÉXITO) ====');
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente', ...resultado });
@@ -124,7 +124,7 @@ router.delete('/:id', autorizar('recibos', 'borrado'), async (req, res) => {
         const { fecha, periodicidad } = req.query;
         const forzar = req.query.permitirPagados === '1' && req.usuario.rol === 'admin'; // Opción de sesión del administrador (DC-21)
         asegurarBorrado(req.usuario, await registroDeRecibo(id), 'recibos');
-        const success = await deleteRecibo(id, fecha, periodicidad, undefined, forzar);
+        const success = await deleteRecibo(id, fecha, periodicidad, undefined, forzar, req.usuario.id);
         if (success) {
             res.status(200).send({ message: 'Recibo eliminado correctamente' });
         } else {
@@ -140,7 +140,7 @@ router.post('/:id/generar-fechas', autorizar('recibos', 'escritura'), async (req
     try {
         const { id } = req.params;
         asegurarEdicion(req.usuario, await registroDeRecibo(id), 'recibos');
-        const creadas = await completarFechasAnio(id);
+        const creadas = await completarFechasAnio(id, undefined, undefined, req.usuario.id);
         res.status(200).json({
             message: creadas > 0 ? 'Se han añadido ' + creadas + ' fecha(s) de cargo hasta completar el año' : 'No faltan fechas de cargo para completar el año',
             creadas

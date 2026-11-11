@@ -49,7 +49,8 @@ async function ejecutarMigracion(conexion, sql) {
 let db;
 let cerrarPool;
 let completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo;
-let deleteCategorias, deleteSavings, pushCategoria;
+let deleteCategorias, deleteSavings, pushCategoria, pushSaving, pushMovimiento, deleteMovimiento;
+let deleteAccounts;
 let deleteAdvances, getAdvances, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan, sustituirPago;
 
 before(async () => {
@@ -71,7 +72,8 @@ before(async () => {
     ({ closePool: cerrarPool } = await import('../src/db/db_connection.mjs'));
     ({ completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, getRecibos, importeDelCargo, pushRecibo } = await import('../src/db/db_utils.mjs'));
     ({ deleteCategorias, pushCategoria } = await import('../src/db/db_utilsCats.mjs'));
-    ({ deleteSavings } = await import('../src/db/db_utilsSav.mjs'));
+    ({ deleteSavings, pushSaving, pushMovimiento, deleteMovimiento } = await import('../src/db/db_utilsSav.mjs'));
+    ({ deleteAccounts } = await import('../src/db/db_utilsAcc.mjs'));
     ({ deleteAdvances, getAdvances, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan, sustituirPago } = await import('../src/db/db_utilsAdv.mjs'));
 });
 
@@ -103,7 +105,7 @@ describe('paridad con el entorno de referencia', () => {
 });
 
 describe('esquema de la línea base', () => {
-    test('14 tablas y 18 claves foráneas', async () => {
+    test('14 tablas y 22 claves foráneas', async () => {
         const [[v]] = await db.query(
             `SELECT
                (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?) AS tablas,
@@ -111,7 +113,7 @@ describe('esquema de la línea base', () => {
             [dbName, dbName]
         );
         assert.equal(Number(v.tablas), 14);
-        assert.equal(Number(v.fks), 18);
+        assert.equal(Number(v.fks), 22);
     });
 
     test('propietario_id es obligatorio y no tiene valor por defecto', async () => {
@@ -572,6 +574,210 @@ describe('F-09, F-22, F-10, DC-31: categorías y borrados con las funciones real
             assert.equal(Number(m.total), 0);
         } finally {
             await db.query('DELETE FROM ahorros WHERE id = ?', [ahorro.insertId]);
+        }
+    });
+});
+
+describe('Migración 0006: trazabilidad y unicidad (F-50, F-22, DC-50)', () => {
+    let sqlMigracion;
+    before(async () => {
+        sqlMigracion = await readFile(new URL('../src/db/migrations/0006_trazabilidad_y_categoria_unica.sql', import.meta.url), 'utf8');
+    });
+
+    test('crea columnas, FK SET NULL, updated_at ON UPDATE e índice único', async () => {
+        const [columnas] = await db.query(
+            "SELECT TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND COLUMN_NAME = 'modificado_por' AND TABLE_NAME IN ('recibos','ahorros','anticipos','presupuestos') ORDER BY TABLE_NAME",
+            [dbName]
+        );
+        assert.deepEqual(columnas.map((fila) => fila.TABLE_NAME), ['ahorros', 'anticipos', 'presupuestos', 'recibos']);
+
+        const [fechas] = await db.query(
+            "SELECT COLUMN_NAME, EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'recibos' AND COLUMN_NAME IN ('created_at','updated_at') ORDER BY COLUMN_NAME",
+            [dbName]
+        );
+        assert.deepEqual(fechas.map((fila) => fila.COLUMN_NAME), ['created_at', 'updated_at']);
+        assert.match(String(fechas[1].EXTRA), /on update CURRENT_TIMESTAMP/i);
+
+        const [fks] = await db.query(
+            "SELECT TABLE_NAME, DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_NAME IN ('fk_recibos_modificado_por','fk_ahorros_modificado_por','fk_anticipos_modificado_por','fk_presupuestos_modificado_por') ORDER BY TABLE_NAME",
+            [dbName]
+        );
+        assert.deepEqual(fks.map((fila) => [fila.TABLE_NAME, String(fila.DELETE_RULE).toUpperCase()]), [
+            ['ahorros', 'SET NULL'],
+            ['anticipos', 'SET NULL'],
+            ['presupuestos', 'SET NULL'],
+            ['recibos', 'SET NULL']
+        ]);
+
+        const [indice] = await db.query(
+            "SELECT NON_UNIQUE FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'categorias' AND INDEX_NAME = 'uq_categorias_nombre'",
+            [dbName]
+        );
+        assert.equal(indice.length, 1);
+        assert.equal(Number(indice[0].NON_UNIQUE), 0);
+    });
+
+    test('es repetible', async () => {
+        await ejecutarMigracion(db, sqlMigracion);
+        const [[cuenta]] = await db.query(
+            "SELECT COUNT(*) AS n FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = ? AND CONSTRAINT_NAME = 'fk_recibos_modificado_por'",
+            [dbName]
+        );
+        assert.equal(Number(cuenta.n), 1);
+    });
+
+    test('la guarda SIGNAL rechaza categorías duplicadas antes de tocar el esquema', async () => {
+        await db.query('ALTER TABLE categorias DROP INDEX uq_categorias_nombre');
+        try {
+            await db.query("INSERT INTO categorias (nombre, descripcion, propietario_id) VALUES ('zz-m06-dup', NULL, 2), ('zz-m06-dup', NULL, 2)");
+            await assert.rejects(() => ejecutarMigracion(db, sqlMigracion), /0006: hay categorias con el mismo nombre/);
+        } finally {
+            await db.query("DELETE FROM categorias WHERE nombre = 'zz-m06-dup'");
+            await ejecutarMigracion(db, sqlMigracion);
+        }
+    });
+});
+
+describe('F-50: trazabilidad de autor en recibos, ahorros y anticipos', () => {
+    const crearUsuario = async (nombre) => {
+        const [resultado] = await db.execute('INSERT INTO users (username, email, password, rol) VALUES (?, ?, ?, ?)', [nombre, nombre + '@example.test', 'x', 'user']);
+        return resultado.insertId;
+    };
+    const idDeRecibo = async (concepto) => {
+        const [filas] = await db.query('SELECT id FROM recibos WHERE concepto = ?', [concepto]);
+        return filas.length ? filas[0].id : null;
+    };
+    const borrarRecibo = async (id) => {
+        if (!id) return;
+        await db.query('DELETE FROM fechas_cargo WHERE recibo_id = ?', [id]);
+        await db.query('DELETE FROM recibos WHERE id = ?', [id]);
+    };
+
+    test('el alta y la edición guardan modificado_por y conservan propietario_id', async () => {
+        const usuarioId = await crearUsuario('zz-f50-user-a');
+        let reciboId;
+        try {
+            await pushRecibo(undefined, 'zz-f50-recibo-a', 'mensual', 10, 'General', [], 2, 1, '2026-01-15', 'auto', false, null, usuarioId);
+            reciboId = await idDeRecibo('zz-f50-recibo-a');
+            assert.ok(reciboId);
+
+            let [[fila]] = await db.query('SELECT propietario_id, modificado_por, created_at, updated_at FROM recibos WHERE id = ?', [reciboId]);
+            assert.equal(Number(fila.propietario_id), 2);
+            assert.equal(Number(fila.modificado_por), usuarioId);
+            assert.ok(fila.created_at);
+            assert.ok(fila.updated_at);
+
+            await db.query("UPDATE recibos SET updated_at = '2020-01-01 00:00:00' WHERE id = ?", [reciboId]);
+            await pushRecibo(reciboId, 'zz-f50-recibo-a-edit', 'mensual', 11, 'General', [], 2, 1, '2026-01-15', 'auto', false, null, usuarioId);
+            [[fila]] = await db.query('SELECT propietario_id, modificado_por, updated_at FROM recibos WHERE id = ?', [reciboId]);
+            assert.equal(Number(fila.propietario_id), 2);
+            assert.equal(Number(fila.modificado_por), usuarioId);
+            assert.ok(new Date(fila.updated_at).getTime() > new Date('2020-01-01T00:00:00Z').getTime());
+        } finally {
+            await borrarRecibo(reciboId);
+            await db.query('DELETE FROM users WHERE id = ?', [usuarioId]);
+        }
+    });
+
+    test('ON DELETE SET NULL deja modificado_por nulo al borrar el usuario', async () => {
+        const usuarioId = await crearUsuario('zz-f50-user-b');
+        let reciboId;
+        try {
+            await pushRecibo(undefined, 'zz-f50-recibo-b', 'mensual', 10, 'General', [], 2, 1, '2026-01-15', 'auto', false, null, usuarioId);
+            reciboId = await idDeRecibo('zz-f50-recibo-b');
+            await db.query('DELETE FROM users WHERE id = ?', [usuarioId]);
+            const [[fila]] = await db.query('SELECT modificado_por FROM recibos WHERE id = ?', [reciboId]);
+            assert.equal(fila.modificado_por, null);
+        } finally {
+            await borrarRecibo(reciboId);
+            await db.query('DELETE FROM users WHERE id = ?', [usuarioId]);
+        }
+    });
+
+    test('los movimientos y pagos actualizan el autor del padre', async () => {
+        const usuarioId = await crearUsuario('zz-f50-user-c');
+        let ahorroId;
+        let anticipoId;
+        try {
+            await pushSaving(undefined, 'zz-f50-ahorro', null, 0, null, null, 0, 1, 2, null, usuarioId);
+            const [[ahorro]] = await db.query("SELECT id FROM ahorros WHERE concepto = 'zz-f50-ahorro'");
+            ahorroId = ahorro.id;
+            await pushMovimiento(undefined, ahorroId, 10, '2026-01-01', 'regular', null, usuarioId);
+            let [[fila]] = await db.query('SELECT modificado_por FROM ahorros WHERE id = ?', [ahorroId]);
+            assert.equal(Number(fila.modificado_por), usuarioId);
+            const [[movimiento]] = await db.query('SELECT id FROM ahorros_movimientos WHERE ahorro_id = ?', [ahorroId]);
+            await deleteMovimiento(movimiento.id, usuarioId);
+            [[fila]] = await db.query('SELECT modificado_por FROM ahorros WHERE id = ?', [ahorroId]);
+            assert.equal(Number(fila.modificado_por), usuarioId);
+
+            await pushAdvance(undefined, 'zz-f50-anticipo', 100, null, '2026-01-01', null, null, 'activo', 1, null, 2, null, usuarioId);
+            const [[anticipo]] = await db.query("SELECT id FROM anticipos WHERE concepto = 'zz-f50-anticipo'");
+            anticipoId = anticipo.id;
+            await pushPago(undefined, anticipoId, 10, '2026-01-01', 'regular', null, 'pendiente', 1, usuarioId);
+            [[fila]] = await db.query('SELECT modificado_por FROM anticipos WHERE id = ?', [anticipoId]);
+            assert.equal(Number(fila.modificado_por), usuarioId);
+        } finally {
+            if (ahorroId) {
+                await db.query('DELETE FROM ahorros_movimientos WHERE ahorro_id = ?', [ahorroId]);
+                await db.query('DELETE FROM ahorros WHERE id = ?', [ahorroId]);
+            }
+            if (anticipoId) {
+                await db.query('DELETE FROM anticipos_pagos WHERE anticipo_id = ?', [anticipoId]);
+                await db.query('DELETE FROM anticipos WHERE id = ?', [anticipoId]);
+            }
+            await db.query('DELETE FROM users WHERE id = ?', [usuarioId]);
+        }
+    });
+});
+
+describe('F-52: campos opcionales de ahorros', () => {
+    test('pushSaving acepta undefined y guarda NULL', async () => {
+        let id;
+        try {
+            await pushSaving(undefined, 'zz-f52', undefined, undefined, undefined, undefined, undefined, undefined, 2, undefined, 2);
+            const [[fila]] = await db.query("SELECT id, descripcion, fecha_objetivo, periodicidad, importe_periodico FROM ahorros WHERE concepto = 'zz-f52'");
+            id = fila.id;
+            assert.equal(fila.descripcion, null);
+            assert.equal(fila.fecha_objetivo, null);
+            assert.equal(fila.periodicidad, null);
+            assert.equal(fila.importe_periodico, null);
+        } finally {
+            if (id) await db.query('DELETE FROM ahorros WHERE id = ?', [id]);
+        }
+    });
+});
+
+describe('F-41: descripción de categorías', () => {
+    test('rechaza 256 caracteres y acepta 255', async () => {
+        try {
+            await assert.rejects(() => pushCategoria(undefined, 'zz-f41', 'x'.repeat(256), 2), /no puede superar los 255/);
+            const [[n]] = await db.query("SELECT COUNT(*) AS n FROM categorias WHERE nombre = 'zz-f41'");
+            assert.equal(Number(n.n), 0);
+            await pushCategoria(undefined, 'zz-f41', 'x'.repeat(255), 2);
+            const [[fila]] = await db.query("SELECT CHAR_LENGTH(descripcion) AS n FROM categorias WHERE nombre = 'zz-f41'");
+            assert.equal(Number(fila.n), 255);
+        } finally {
+            await db.query("DELETE FROM categorias WHERE nombre = 'zz-f41'");
+        }
+    });
+});
+
+describe('F-10: borrado de cuentas bloqueado por FK', () => {
+    test('una cuenta usada por un recibo responde 409 de negocio', async () => {
+        let cuentaId;
+        let reciboId;
+        try {
+            const [cuenta] = await db.execute("INSERT INTO cuentas (nombre, tipo, iban, propietario_id) VALUES ('zz-f10-cuenta', 'corriente', NULL, 2)");
+            cuentaId = cuenta.insertId;
+            const [recibo] = await db.execute("INSERT INTO recibos (concepto, periodicidad, importe, cuenta_id, categoria_id, propietario_id, fecha_inicial) VALUES ('zz-f10-recibo', 'anual', 10, ?, 1, 2, '2026-12-31')", [cuentaId]);
+            reciboId = recibo.insertId;
+            await assert.rejects(
+                () => deleteAccounts([cuentaId]),
+                (error) => error.name === 'ErrorDeNegocio' && error.status === 409 && /en uso/.test(error.message)
+            );
+        } finally {
+            if (reciboId) await db.query('DELETE FROM recibos WHERE id = ?', [reciboId]);
+            if (cuentaId) await db.query('DELETE FROM cuentas WHERE id = ?', [cuentaId]);
         }
     });
 });

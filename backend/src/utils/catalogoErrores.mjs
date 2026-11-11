@@ -68,6 +68,11 @@ export function codigoDeError(error) {
     return codigo === null || codigo === undefined ? '' : String(codigo);
 }
 
+/** ¿El error es una clave foránea que impide borrar? (F-10) */
+export function esErrorDeReferencia(error) {
+    return DATO_REFERENCIADO.includes(codigoDeError(error));
+}
+
 /** Cierre del mensaje cuando la causa no se puede identificar. */
 export function avisoDesconocido(audiencia = AUDIENCIA_GENERAL) {
     return AVISOS[audiencia] || AVISOS[AUDIENCIA_GENERAL];

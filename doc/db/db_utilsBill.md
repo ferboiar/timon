@@ -194,6 +194,10 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 | `pushRecibo - Recibo …: fechas fuera del año … admitidas por permitirFueraDeAnio` | Un administrador las admitió con el interruptor de sesión (DC-29) |
 | `pushRecibo - Concepto normalizado a minúsculas: …` | Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 
+## Trazabilidad y borrado (F-50, F-10)
+
+pushRecibo escribe modificado_por en el alta y en los dos UPDATE, y actualiza recibos.modificado_por/updated_at cuando cambian las fechas de cargo. completarFechasAnio y el borrado de una sola fecha también actualizan el padre. deleteRecibo traduce defensivamente una referencia FK a 409 de negocio (F-10).
+
 ## Referencias
 
 - [API de Recibos](../routes/recibos.md) - Rutas que utilizan estas funciones

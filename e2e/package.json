@@ -21,6 +21,9 @@
         "e2e:subrecursos": "node lanzador.mjs tests/autorizacionSubrecursos.spec.mjs",
         "e2e:documentacion": "node lanzador.mjs tests/documentacionReglas.spec.mjs",
         "e2e:sesion": "node lanzador.mjs tests/sesionCaducada.spec.mjs",
+        "e2e:trazabilidad": "node lanzador.mjs tests/recibosTrazabilidad.spec.mjs",
+        "e2e:validacionUsuarios": "node lanzador.mjs tests/usuariosValidacion.spec.mjs",
+        "e2e:borrados": "node lanzador.mjs tests/borradosEnUso.spec.mjs",
         "e2e:lista": "playwright test --list"
     },
     "keywords": [

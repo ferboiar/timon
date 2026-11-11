@@ -11,6 +11,8 @@
 
 import { getConnection } from './db_connection.mjs';
 import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
+import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
+import { validarCategoria } from '../utils/validacionCategorias.mjs';
 
 async function getCategorias() {
     let connection;
@@ -33,6 +35,7 @@ async function getCategorias() {
 }
 
 async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
+    validarCategoria({ nombre, descripcion });
     // DC-31: en la base de datos los nombres de categoría van en minúsculas; la pantalla los muestra con la primera letra en mayúscula
     nombre = typeof nombre === 'string' ? nombre.trim().toLowerCase() : nombre;
     let connection;
@@ -65,6 +68,10 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
         }
     } catch (error) {
         console.error('Error al insertar o actualizar la categoría:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            console.log('pushCategoria - Rechazado por el índice único: ' + nombre);
+            throw new ErrorDeNegocio(`Ya existe otra categoría con el nombre «${nombre}».`);
+        }
         throw error;
     } finally {
         if (connection) connection.release();
@@ -85,7 +92,7 @@ async function deleteCategorias(categoriaIds) {
         console.log(`API. Delete realizado correctamente en tabla categorias. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('API. Error al eliminar las categorías:', error);
-        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        if (esErrorDeReferencia(error)) {
             console.log('deleteCategorias - Rechazado: categorías en uso: ' + categoriaIds.join(', '));
             throw new ErrorDeNegocio('No se puede eliminar la categoría porque está en uso (recibos, presupuestos u otros registros)', 409);
         }

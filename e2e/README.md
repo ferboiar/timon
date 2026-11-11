@@ -80,6 +80,14 @@ El lanzador (`lanzador.mjs`):
 | `tests/documentacionReglas.spec.mjs` | Documentación: los centinelas de las reglas no se ven en el visor y los bloques se pintan (DC-47), sin datos |
 | `tests/sesionCaducada.spec.mjs` | Sesión caducada: redirección al login con aviso y limpieza de almacenes (S-17, U-16), incluido el interceptor de `apiClient` (S-07) y el consumo único del aviso (U-19), sin datos |
 
+## Specs de la Fase A (F-50, F-42, F-10, F-43)
+
+- tests/recibosTrazabilidad.spec.mjs: un user edita un recibo público del admin; comprueba que propietario_id no cambia, que modificado_por es el user y que updated_at avanza. Usa datos e2e_traz_* y espera más de un segundo entre alta y edición.
+- tests/usuariosValidacion.spec.mjs: la pantalla deshabilita Guardar con correo o contraseña inválidos; la API responde 400; la edición acepta contraseña omitida y valida la que llegue (F-42, DC-51).
+- tests/borradosEnUso.spec.mjs: una categoría y una cuenta usadas por un recibo responden 409 con mensaje de negocio; los cuerpos de borrado inválidos de cuentas y ahorros responden 400 (F-10, F-43).
+
+Comandos: npm run e2e:trazabilidad, npm run e2e:validacionUsuarios y npm run e2e:borrados. Los tres declaran timeout de 180 s y se ejecutan con --repeat-each=2 en la verificación de la Fase A.
+
 ## Aislamiento y sesión
 
 - Cada ejecución abre un **contexto propio** (`browser.newContext`) sobre el Edge remoto,

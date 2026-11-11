@@ -70,4 +70,4 @@ Las rutas usan `autorizar('cuentas', …)`: escritura y borrado según `perm_cue
 
 ## Validación del borrado
 
-DELETE /api/cuentas delega accounts directamente al módulo de datos. No comprueba de forma consistente presencia, array no vacío y validez de cada identificador antes de acceder a la base de datos (F-43).
+DELETE /api/cuentas valida la lista accounts con leerListaEnterosPositivos antes de consultar la base: falta, no es array, está vacío o contiene un ID inválido responde 400 (F-43). Si la cuenta está en uso por recibos, anticipos, pagos o presupuestos, deleteAccounts traduce la clave foránea a un 409 con mensaje de negocio (F-10).
