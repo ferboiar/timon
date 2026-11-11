@@ -2,33 +2,37 @@
 
 ## Punto de reanudación (D-36, 2026-11-11)
 
-Corte: `main` = 2744e5a (PR #82, fusionado 2026-11-11T20:22:07Z). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
+Corte: `main` = ef5e57d (2026-11-11): PR #82 (merge 2744e5a, 2026-11-11T20:22:07Z) más dos commits de seguimiento directos a main (342b87c y ef5e57d). Los cambios de D-41 se incorporan con el PR #83 (SHA de fusión pendiente de registrar, DC-52). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
 
 No hay trabajo de código preparado. Único cambio local ajeno: `backend/src/db/.db_connection`.
 
 Siguiente trabajo acordado: seguridad, con S-02/S-03 (y DC-06), S-04 desglosado, S-05 (CORS y trazas), S-11 (10 PR de Snyk abiertos) y S-21. Después, F-49/F-53/F-54/F-55 y el resto del backlog por prioridad.
 
-Pendiente operativo: limpieza de las 9 ramas locales fusionadas y de la rama remota del PR #81, cada una con confirmación expresa y separada; retirada del `SET USER` de `timon_admin` (S-22); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
+Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; retirada del `SET USER` de `timon_admin` (S-22); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
 
 D-36 se incorpora con el PR #82: la auditoría y sincronización documental se completó en siete lotes. No asumir que la UI de privacidad exista (F-49), que la trazabilidad por fila exista (F-53) ni que `useAuth` sea único por aplicación (F-54).
+
 ## Prioridad técnica de trabajo futuro (D-13)
 
 Ordena el backlog por riesgo y dependencias. P0 es la prioridad mayor y no la sustituye una decisión del asistente. Las propuestas R-nn no son funcionalidades aprobadas. Si se prepara un despliegue real, los riesgos P0/P1 deben resolverse antes de ampliaciones funcionales.
 
 | Prioridad | Trabajo | Dependencias/criterio |
 |---|---|---|
-| P0 | S-02/S-03/S-04/S-05 y S-11/S-21/S-22: seguridad y permisos | Contraseñas, sesión, CORS, dependencias y `SET USER` |
-| P1 | F-15 restante, F-49, F-53, F-54, F-55, S-20 y DC-01 | Cierra deuda funcional con evidencia |
-| P2 | F-37, F-39 y F-40: cadencias y borrado múltiple | Cambios de alcance medio en Ahorros y Anticipos |
-| P2 | U-02/U-20 y U-09/U-11: manual y homogeneidad | Contenido y coherencia de pantallas |
-| P3 | U-01, U-03 a U-08 y U-21 | Plantilla y pruebas de pantalla |
-| P3 | O-01, O-03, D-37, D-38 y D-39 | Despliegue y documentación |
-| P3 | R-01 a R-13 | Propuestas: revalidar y diseñar antes de implementar |
+| P0 | S-02/S-03/S-04/S-05/S-11/S-21/S-22: seguridad y permisos | Contraseñas, sesión, CORS, dependencias y `SET USER` |
+| P1 | DC-01/F-15/F-49/F-53/F-54/F-55/S-20/D-38 | Cierra deuda funcional y de seguimiento con evidencia |
+| P2 | F-37/F-39/F-40, U-02/U-20, U-09/U-11 y pruebas de invariantes de Anticipos | Alcance medio en Ahorros, Anticipos, manual y homogeneidad |
+| P3 | U-01, U-03 a U-08, U-21, U-22, U-23, O-01, O-03, O-05, S-08, D-37, D-39, D-40 | Plantilla, pruebas de interfaz, operación y documentación |
+| P2 | R-02/R-03 y R-11: movimientos y presupuestos por periodo | Primero un modelo común, sin fuentes de saldo paralelas |
+| P2 | R-01/R-12: recepción de recibos y diferencias | Depende de presupuestos, respeta DC-14 y no duplica estados de pago |
+| P2 | R-09: reglas de aportación automática de Ahorros | Idempotencia, pausa, historial y política de fallos; distinto de uso manual/F-37 |
+| P2 | R-10: cadencias adicionales de Anticipos | Rediseño de calendario y pruebas, no solo ENUM; relacionado con F-40 |
+| P2 | R-13: detalle de transacciones por presupuesto/periodo | Depende de R-02/R-11 y de autorización efectiva |
+| P3 | R-05/R-07: progreso e informes básicos | Dependen de objetivos definidos y cifras conciliables |
+| P3 | R-08: paginación/búsqueda de usuarios | Solo si el volumen lo justifica |
 
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
-
-Estado operativo: 2026-11-11, base 2744e5a (PR #82 fusionado a las 20:22:07Z). F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar. D-36 cerrado con el PR #82. Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-11, base ef5e57d (PR #82 y dos commits de seguimiento). F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar. D-36 cerrado con el PR #82; D-41 se incorpora con el PR #83. Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Trabajo acordado (un PR por punto)
 
@@ -38,7 +42,7 @@ Estado operativo: 2026-11-11, base 2744e5a (PR #82 fusionado a las 20:22:07Z). F
 - [x] 4. S-01/S-06/S-12 (autorización), S-07 (`apiClient`), U-16 y U-17. PR #79, 2026-11-10.
 - [x] 5. Corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49). PR #80, 2026-11-10.
 - [x] 6. Fase A: trazabilidad, índice único y validaciones (F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). PR #81, 2026-11-11.
-- [ ] 7. Limpieza de las 9 ramas locales fusionadas y de la rama remota del PR #81: solo con confirmación expresa y separada, rama por rama. No es un PR.
+- [ ] 7. Limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto): solo con confirmación expresa y separada, rama por rama. No es un PR.
 
 Ya hecho: la edición de la descripción del PR #70.
 
@@ -46,53 +50,68 @@ Ya hecho: la edición de la descripción del PR #70.
 
 ### P0 — Seguridad
 
-- [ ] S-02 (con DC-06): `db_maintenance.mjs` interpola comandos; la contraseña aparece en `ps` y en el log. La app usa `timon_admin` hasta separar el mantenimiento. Incluye revisar el `GRANT ALL` sobre el patrón `conta\_hogar%`.
+- [ ] S-02 (con DC-06): `db_maintenance.mjs` interpola comandos; la contraseña aparece en `ps` y en el log. DC-06 declara que la app usa `timon_admin` hasta separar el mantenimiento. Incluye revisar el `GRANT ALL` sobre el patrón `conta\_hogar%`.
 - [ ] S-03: `saveDbConfig` sin validación, pool no recreado, `initPool` sin memoizar, TLS fijo con `rejectUnauthorized:false` y `GET /api/db-config/password` devuelve la contraseña.
 - [ ] S-04, desglosado: (a) revocación de JWT de 24 h con rol embebido; (b) rate limiting en `/login`; (c) guarda de último administrador en `DELETE /api/users` y al degradar un admin.
-- [~] S-05: `error.stack` corregido; quedan CORS abierto (`backend/src/server.mjs:29`) y ~218 `console.log`.
-- [ ] S-11: revisar los 10 PR de Snyk abiertos (#4 a #13) y reducir las 108 vulnerabilidades de Dependabot.
+- [~] S-05: `error.stack` corregido; quedan CORS abierto (`app.use(cors())` en `backend/src/server.mjs`, línea 36) y 218 `console.log`.
+- [ ] S-11: revisar los 10 PR de Snyk abiertos (#4 a #13), revisar también la rama `snyk-fix-acaa3422a5a0a99d0814f1e5071aca2d`, sin PR abierto, y reducir las 124 vulnerabilidades de Dependabot (3 críticas, 64 altas, 48 moderadas, 9 bajas; aviso de GitHub del 2026-11-11).
 - [ ] S-21: autorización de presupuestos cuando existan rutas de escritura; hoy no hay ruta ni pantalla. `modificado_por` ya está en la tabla.
 - [ ] S-22: retirar el `SET USER` temporal de `timon_admin`, sin fecha pero visible. `REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%'; FLUSH PRIVILEGES;`
-- [ ] S-20: prueba de que `POST /api/recibos` ignora `permitirFueraDeAnio` sin rol admin; hoy solo existe la prueba positiva de `pushRecibo`.
 
 ### P1 — Función y datos
 
 - [ ] DC-01: migración del estado `rechazado` en `fechas_cargo` (0001:101 solo admite `cargado` y `pendiente`).
-- [ ] F-15 (resto, código): retirar `comentario: 'Fecha inicial'` de `backend/src/db/db_utils.mjs:140` y `:168`; se persiste en `:454` y `:574`. Residuo del modelo anterior a DC-14/DC-23.
-- [ ] F-37: cadencias diaria/semanal y otras de Ahorros; conservar las aportaciones manuales sin patrón.
-- [ ] F-39: confirmación, ejecución y recarga del borrado múltiple de Anticipos, o retirar el botón.
-- [ ] F-40: unificar la fecha propuesta manual de Anticipos con la periodicidad, o acordar excepción explícita.
+- [ ] F-15 (resto, código): retirar el `comentario: 'Fecha inicial'` que escriben `generarFechasFuturas` y `generarFechasDelAnio` en `backend/src/db/db_utils.mjs`; se persiste en `fechas_cargo` mediante `pushRecibo`. Residuo del modelo anterior a DC-14/DC-23.
 - [ ] F-49: interfaz de privacidad en recibos, anticipos, ahorros y presupuestos. `es_privado = 1` solo lo ven su propietario y admin; el servidor ya lo respeta (DC-48, PR #79).
 - [ ] F-53: trazabilidad por fila en `anticipos_pagos`, `ahorros_movimientos`, `fechas_cargo`, categorías y cuentas.
 - [ ] F-54: `useAuth` crea estado e intervalo por invocación (`src/composables/useAuth.js`).
 - [ ] F-55: nombre de categoría de más de 30 caracteres responde 500; debe ser 400 de negocio (`validacionCategorias.mjs`, `categorias.nombre varchar(30)`).
+- [ ] S-20: prueba de que `POST /api/recibos` ignora `permitirFueraDeAnio` sin rol admin; hoy solo existe la prueba positiva de `pushRecibo`.
+- [ ] D-38: unificar el umbral de reparto (30 000 / 20 000), decidir si el registro se divide otra vez y documentar el truncado del conector.
+
+### P2 — Alcance medio
+
+- [ ] F-37: cadencias diaria/semanal y otras de Ahorros; conservar las aportaciones manuales sin patrón.
+- [ ] F-39: confirmación, ejecución y recarga del borrado múltiple de Anticipos, o retirar el botón.
+- [ ] F-40: unificar la fecha propuesta manual de Anticipos con la periodicidad, o acordar excepción explícita.
+- [~] U-02: `/manual` y `/documentation` cargan la plantilla en inglés; se cierra con U-20.
+- [ ] U-09: DC-30 en Usuarios y Ajustes.
+- [ ] U-11: homogeneidad en Usuarios y futuras vistas; normalizar `CatsService.deleteCategorias` (doble envoltorio).
+- [ ] U-20: manual de usuario real en `/manual`, accesible a todos los roles incluido `reader`, sin `requiresAdmin`. Cierra U-02 al sustituir también `/documentation` o retirarla.
 - [ ] Anticipos: pruebas de invariantes de suma, redondeos, reducción mínima de 0,01 y ajuste al último pago en `recalculatePostEditPayments`; documentar resultados, sin presumir conciliación.
 
-### P2 — Interfaz
+### P3 — Interfaz, operación y documentación
 
 - [ ] U-01: Dashboard de la plantilla Sakai.
-- [~] U-02: `/manual` y `/documentation` cargan la plantilla en inglés; se cierra con U-20.
 - [ ] U-03: menú «UI Components/Pages/Hierarchy» y páginas vacías.
 - [ ] U-04: `className` en vez de `class` en `Budgets.vue` y `ProfileSettings.vue`.
 - [ ] U-05: idioma mezclado (Cancel, Save, Yes, Confirm…).
 - [ ] U-06: formatos inconsistentes (saldo sin moneda, «Importe periódico» frente a «Ahorro sugerido»).
 - [ ] U-07: Calendario no pinta mensuales pero los suma; tooltip solo del primer evento.
 - [ ] U-08: servicios de demo y `views/uikit` en el repositorio.
-- [ ] U-09: DC-30 en Usuarios y Ajustes.
-- [ ] U-11: homogeneidad en Usuarios y futuras vistas; normalizar `CatsService.deleteCategorias` (doble envoltorio).
-- [ ] U-20: manual de usuario real en `/manual`, accesible a todos los roles incluido `reader`, sin `requiresAdmin`. Cierra U-02 al sustituir también `/documentation` o retirarla.
 - [ ] U-21: prueba de pantalla de «guardar sin cambios» (F-45) y de la normalización de F-44.
-
-### P3 — Operación y documentación
-
+- [ ] U-22: ampliar la cobertura E2E de ListBills: borrado múltiple desde la barra, selección de las tablas de anuales y mensuales y rama del bimestral de apoyo (PR #78).
+- [ ] U-23: revisar la presentación de bloques de código Markdown y los diálogos de fechas de ListBills.
 - [ ] O-01: `VITE_API_URL` apunta a localhost; configurar en el despliegue.
-- [ ] S-08: no hay herramienta de migraciones (las 0001 a 0006 son ficheros manuales); `.gitignore` ya cubre `backend/src/db/.db_connection*`. Mejora de proceso, prioridad baja: runner mínimo que aplique y compruebe migraciones en bases `_test` y documente la reversión (ver D-37).
 - [ ] O-03: verificar reconstrucción de la imagen, `postCreateCommand` y `git-crypt unlock` con clave.
-- [x] D-36: auditoría y sincronización documental aplicada en siete lotes e incorporada con el PR #82.
+- [ ] O-05: `e2e/**` está fuera de ESLint (`.eslintrc.cjs`); su única comprobación es la ejecución real de los specs (PR #77).
+- [ ] S-08: no hay herramienta de migraciones (las 0001 a 0006 son ficheros manuales); `.gitignore` ya cubre `backend/src/db/.db_connection*`. Mejora de proceso, prioridad baja: runner mínimo que aplique y compruebe migraciones en bases `_test` y documente la reversión (ver D-37).
 - [ ] D-37: documentar la reversión de las migraciones 0001 y 0002.
-- [ ] D-38: unificar el umbral de reparto (30 000 / 20 000) y decidir si el registro se divide otra vez.
 - [ ] D-39: `anticipos.estado` conserva `completado` en el ENUM tras la 0005, aunque la documentación dice que no se guarda; documentarlo o estrecharlo en una migración futura.
-- [x] O-04: no aplicable. Comprobado en solo lectura el 2026-11-11: no existen recibos con id 170 a 173. Si reaparecieran, haría falta la confirmación separada BORRADO-O04.
+- [ ] D-40: faltan los informes de cierre de los PR #64 y #65 (no se crearon por indicación expresa); decidir si se redactan retroactivos o se deja constancia en el índice.
+- [x] D-41: auditoría posterior al PR #82 y sincronización de TODO, registro, relevo, instrucción y documentación; incorporada con el PR #83.
+- [ ] S-23 (propuesta): protección de la rama `main` (revisión obligatoria o checks antes de fusionar), relacionada con DC-54.
+- [ ] DC-54 (aprobada; se registra en el lote 2): micro-commits de seguimiento y autorizaciones compuestas.
+- [ ] DC-55 (aprobada; se registra en el lote 2): sincronización obligatoria de seguimiento.
+
+### Propuestas (no aprobadas)
+
+- [ ] R-01: reserva mensual de recibos no mensuales, con marca de pagado o pendiente.
+- [ ] R-02: movimientos con saldo corrido y conciliación entre cuentas.
+- [ ] R-03: disponible del mes = nómina − recibos − gastos − previstos netos de reservas.
+- [ ] R-04: reparto de sueldos entre dos personas (políticas A, B y C).
+
+R-05 a R-13 se detallan en las secciones posteriores de este TODO; su prioridad es la de la tabla anterior.
 
 ### Despliegue vigente
 
@@ -184,6 +203,9 @@ Ninguna. La frase «admin debe permitir editarlo todo sin restricciones de propi
 | S-01, S-06, S-07, S-12, U-16, U-17, D-33 | #79 | 2026-11-10 |
 | S-18, S-19, F-51, U-18, U-19, D-34, DC-49 | #80 | 2026-11-10 |
 | F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-02, DC-50, DC-51 | #81 | 2026-11-11 |
+| D-36, DC-52, DC-53 | #82 | 2026-11-11 |
+
+Tras el #82 se publicaron dos commits de seguimiento directos a main: `342b87c` (SHA de fusión de D-36) y `ef5e57d` (base y recuento de S-11).
 
 D-06 y D-09 figuran como «corregido en la fase 1» sin PR: **PR sin determinar** (octubre de 2026). D-01 a D-05 y D-07 son decisiones documentales que se resuelven con DC-01, D-20 o F-21, no con un PR propio.
 

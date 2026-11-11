@@ -114,7 +114,7 @@ En ejecución remota delegada, comprueba el conjunto exacto de archivos, el cont
 No finjas que has ejecutado git add o git commit -F en un contenedor.
 
 <!-- regla:publicacion-fusiones -->
-**Publicación y fusiones (DC-47).** Cada una de estas operaciones exige confirmación expresa del usuario, nombrada y por separado: `git commit`, `git push`, `git push origin --delete`, `gh pr create`, `gh pr edit`, `gh pr merge`, el borrado de ramas locales y el borrado de ramas remotas.
+**Publicación y fusiones (DC-47, DC-54).** Cada una de estas operaciones exige confirmación expresa del usuario, nombrada y por separado, salvo la excepción de DC-54 (micro-commit de seguimiento directo a main autorizado expresamente): `git commit`, `git push`, `git push origin --delete`, `gh pr create`, `gh pr edit`, `gh pr merge`, el borrado de ramas locales y el borrado de ramas remotas.
 
 - «Continúa», «siguiente», «PR hecho, seguimos» o una lista de tareas aprobada no autorizan ninguna de esas operaciones.
 - La confirmación se da para la operación concreta y, si hay varias ramas o PR, para cada una. Sin ella, el asistente se detiene y espera.

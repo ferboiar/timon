@@ -98,6 +98,7 @@ Estos quedan en Git/GitHub y se entregan en B.
 
 No crees bucles de commits para registrar metadatos.
 Consolida estados posteriores en la siguiente actualización sustantiva.
+Excepción (DC-54): un micro-commit de seguimiento directo a main está permitido si toca solo TODO, registro o relevo, es una corrección trivial y el usuario lo autoriza expresamente.
 
 Los informes deben ser localizables desde mantenimiento y el relevo, con navegación razonable.
 
@@ -180,8 +181,7 @@ Conserva archivos relevantes, exclusiones, decisiones, propuestas, verificación
 
 No acumules mensajes indefinidamente ni dupliques todo el backlog.
 
-Un PR no se presenta como incorporado dentro de su propio contenido antes de fusionarse.
-Puede figurar como trabajo preparado en esa rama, pendiente de revisión y fusión.
+La documentación de un PR describe el estado posterior a su fusión, con el número de PR previsto y sin SHA de fusión (DC-52): un PR no puede conocer su propio SHA. El SHA de fusión y la base del siguiente corte los registra la sección «Sincronización del corte anterior» del PR siguiente (DC-52).
 
 Otro chat comprueba la situación actual antes de seguir un relevo antiguo.
 No exige reaprobación de decisiones vigentes sin motivo.

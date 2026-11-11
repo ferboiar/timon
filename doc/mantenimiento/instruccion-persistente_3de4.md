@@ -145,6 +145,22 @@ Actualiza referencias cuando cambien comportamiento, API, esquema, validaciones,
 
 Al dividir o mover archivos, revisa enlaces y herramientas dependientes.
 
+7.1. Sincronización obligatoria de seguimiento (DC-55)
+
+Todo lo que quede registrado en el apartado «Pendiente» de un PR —tareas derivadas, límites, verificaciones ausentes, riesgos, decisiones pendientes o trabajo futuro— debe reflejarse, en el mismo PR, en:
+
+- El registro de hallazgos (fila nueva o actualización de la fila existente).
+- El TODO (línea nueva o actualización de la línea existente).
+- El relevo (sección 0 y/o 5, según corresponda).
+
+Si un elemento del «Pendiente» no cabe en ninguna de estas tres categorías, debe registrarse igualmente en el documento que corresponda (por ejemplo, una decisión nueva en DC, una propuesta en R, una verificación pendiente en la lista de verificaciones del TODO).
+
+Ningún elemento del «Pendiente» de un PR puede quedar sin reflejo en el repositorio. El apartado «Pendiente» del PR es una promesa de trabajo futuro; el registro, el TODO y el relevo son la fuente de verdad que hace esa promesa trazable y verificable.
+
+Si un PR deja algo en «Pendiente» y no lo registra en el mismo PR en registro, TODO y relevo, se considera un defecto de proceso (DC-55) y debe corregirse en el siguiente PR de seguimiento, antes de continuar con trabajo nuevo.
+
+La instrucción persistente, el relevo, el registro y el TODO son la fuente de verdad absoluta para el seguimiento del proyecto y su continuidad entre chats. Ningún otro documento (informe de iteración, descripción del PR, conversación del chat) sustituye a estos cuatro como fuente de verdad.
+
 8. AUDITORÍAS
 
 Una auditoría exhaustiva necesita inventario por archivo y versión.

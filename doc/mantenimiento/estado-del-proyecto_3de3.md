@@ -2,6 +2,8 @@
 
 Parte 3 de 3 del [relevo](./estado-del-proyecto.md): sección 8 y cierres históricos (relevo histórico de la limpieza de 2026-10-27; cierres de auditoría de 2026-10-23 y 2026-10-24; alcance corregido de D-13). Se lee completa y en orden con las demás: [parte 1 de 3](./estado-del-proyecto_1de3.md) · [parte 2 de 3](./estado-del-proyecto_2de3.md) · [parte 3 de 3](./estado-del-proyecto_3de3.md).
 
+Nota de vigencia (2026-11-11): esta parte conserva el relevo histórico de 2026-10-27 y los cierres de auditoría de 2026-10-23 y 2026-10-24. Están superados: el índice único de DC-02 (0006, PR #81), los permisos reales (S-01, PR #79), el esquema 0001 a 0006, apiClient (S-07, PR #79), F-12 (PR #46) y F-16, F-19, F-28 y F-38 (PR #57, #58, #61 y #69). El estado vigente está en las secciones 0 y 5, en el TODO y en el registro.
+
 ## 8. Relevo histórico de la limpieza (2026-10-27)
 
 Esta sección conserva el alcance y las comprobaciones históricas de la limpieza; no define la siguiente tarea actual, que figura en las secciones 0 y 5.

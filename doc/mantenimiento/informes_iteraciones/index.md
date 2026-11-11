@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-11 | D-41 | [Auditoría posterior al PR #82](./2026-11-11_D-41_auditoria-posterior-pr82.md) |
 | 2026-11-11 | D-36 | [Auditoría y sincronización documental](./2026-11-11_D-36_auditoria-sincronizacion.md) |
 | 2026-11-11 | F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50, DC-51 | [Trazabilidad de autor, índice único de categorías y validaciones](./2026-11-11_F50-F22-F52-F43-F42-F41-F10-D35-DC-50-DC-51_trazabilidad-y-validaciones.md) |
 | 2026-11-10 | S-18, S-19, F-51, U-18, U-19, D-34, DC-49 | [Corrección posterior al PR #79: subrecursos, propiedad y seguimiento](./2026-11-10_S-18_S-19_F-51_U-18_U-19_D-34_correccion-post-pr79.md) |
