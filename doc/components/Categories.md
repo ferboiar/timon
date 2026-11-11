@@ -93,9 +93,15 @@ El template está estructurado en varias secciones:
 
 - El nombre de la categoría es obligatorio
 - El servidor rechaza (400) un nombre que ya tiene otra categoría y la pantalla muestra su mensaje (F-22)
-- La descripción muestra un aviso por encima de 255 caracteres, pero el control admite hasta 260 y el aviso no impide guardar (F-41)
+- La descripción admite como máximo 255 caracteres en el control, en la validación del servidor y en la columna (F-41)
+
+## Límite y unicidad (F-41, F-22)
+
+El campo Descripción usa maxlength 255 y el contador muestra el límite. El servidor valida la longitud antes de escribir. El índice único uq_categorias_nombre de la migración 0006 garantiza la unicidad del nombre.
 
 ## Dependencias
+
+## Referencias
 
 El componente depende del servicio `CatsService` para realizar todas las operaciones CRUD relacionadas con las categorías.
 
@@ -106,6 +112,6 @@ La pantalla transmite el ID y `pushCategoria` edita esa fila por ID, de modo que
 ## Particularidades verificadas
 
 - La validación del botón Guardar solo comprueba el nombre.
-- El aviso de longitud de descripción y el máximo del control no coinciden (F-41).
+- El control y el servidor comparten el máximo de 255 caracteres (F-41).
 - La pantalla pasa un objeto a CatsService.deleteCategorias; el servicio lo envuelve otra vez. La ruta admite y desenvuelve ese cuerpo anidado. Funciona, pero conviene normalizar el contrato a un array.
 - El renombrado se hace por ID en el servidor (F-09). Los avisos de guardar y borrar muestran el mensaje del servidor (F-10, F-22); borrar una categoría en uso responde 409.

@@ -23,6 +23,16 @@ del despliegue.
 Las aserciones se apoyan en roles accesibles, etiquetas, textos únicos y estructura DOM estable
 de la interfaz; cada spec documenta en comentarios de qué fichero de Timón sale cada selector.
 
+## Specs de la Fase A (F-50, F-42, F-10, F-43)
+
+| Spec | Qué valida |
+|---|---|
+| tests/recibosTrazabilidad.spec.mjs | Un user edita un recibo público del admin: propietario_id intacto, modificado_por = user y updated_at avanza (F-50, DC-50). Datos e2e_traz_* |
+| tests/usuariosValidacion.spec.mjs | Validación de usuarios en pantalla y API, edición sin contraseña y con contraseña inválida (F-42, DC-51) |
+| tests/borradosEnUso.spec.mjs | Categoría y cuenta en uso responden 409; cuerpos de borrado inválidos responden 400 (F-10, F-43) |
+
+Los tres usan datos e2e_ y limpieza en afterAll/afterEach. Se ejecutan con npm run e2e:trazabilidad, npm run e2e:validacionUsuarios y npm run e2e:borrados.
+
 ## Cómo se ejecuta
 
 - Navegador: el Microsoft Edge real de un equipo remoto, gobernado por CDP

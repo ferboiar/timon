@@ -349,3 +349,37 @@ export async function eliminarUsuario(page, nombre) {
 
     return respuesta;
 }
+
+/** Abre /pages/accounts y espera la tabla de cuentas. */
+export async function abrirCuentas(page) {
+    await page.goto(urlDe('/pages/accounts'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await expect(page.getByRole('button', { name: 'Nueva' })).toBeVisible();
+    await expect(page.getByRole('table')).toBeVisible();
+}
+
+/** Fila de la tabla de cuentas que contiene el nombre indicado. */
+export function filaCuenta(page, nombre) {
+    return page.locator('table tbody tr').filter({ hasText: new RegExp(nombre, 'i') });
+}
+
+/**
+ * Borra una cuenta desde la interfaz. Devuelve la respuesta del DELETE /api/cuentas,
+ * o null si la cuenta no está en la tabla.
+ */
+export async function eliminarCuenta(page, nombre) {
+    const fila = filaCuenta(page, nombre);
+
+    if ((await fila.count()) === 0) return null;
+
+    await fila.first().locator('button:has(.pi-trash)').click();
+
+    const confirmacion = page.getByRole('dialog', { name: 'Confirm' });
+    await expect(confirmacion).toBeVisible();
+
+    const [respuesta] = await Promise.all([
+        page.waitForResponse((r) => r.url().includes('/api/cuentas') && r.request().method() === 'DELETE', { timeout: 30_000 }),
+        confirmacion.getByRole('button', { name: 'Yes' }).click()
+    ]);
+
+    return respuesta;
+}

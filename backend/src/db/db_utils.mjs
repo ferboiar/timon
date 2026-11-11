@@ -12,6 +12,7 @@
 import { hoyEnZona } from './db_ajustes.mjs';
 import { getConnection } from './db_connection.mjs';
 import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
+import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
 
 const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 'estado', 'activo'];
 
@@ -213,9 +214,10 @@ function importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo) {
  * @returns {{fechasReescritas: number, fechasConservadas: number}} - En modo automático sobre un recibo con fechas, cuántas fechas pendientes se reescribieron y cuántas se conservaron; en los demás casos, 0 y 0.
  * @throws {Error} - Si falta algún parámetro obligatorio o si algún parámetro no es válido.
  */
-async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio = false, es_privado = null) {
+async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio = false, es_privado = null, usuarioId = null) {
     // S-01/DC-48: null conserva la privacidad en la edición; 0 pública; 1 solo propietario y admin
     const valorPrivado = es_privado === undefined || es_privado === null || es_privado === '' ? null : Number(es_privado) === 1 ? 1 : 0;
+    usuarioId = usuarioId ?? null;
 
     console.log('API db_utils.mjs: ==== INICIO FUNCIÓN pushRecibo ====');
     console.log('API db_utils.mjs: Parámetros recibidos:');
@@ -384,7 +386,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                 // Si se proporcionó una nueva fecha_inicial, actualizarla
                 if (fecha_inicial) {
                     // Actualizar recibo existente con la nueva fecha_inicial
-                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), cuenta_id = ?, fecha_inicial = ?, es_privado = COALESCE(?, es_privado) WHERE id = ?', [
+                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), cuenta_id = ?, fecha_inicial = ?, es_privado = COALESCE(?, es_privado), modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [
                         concepto,
                         periodicidad,
                         importe,
@@ -392,17 +394,19 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                         cuenta_id,
                         fecha_inicial,
                         valorPrivado,
+                        usuarioId,
                         id
                     ]);
                 } else {
                     // Actualizar recibo existente sin cambiar fecha_inicial
-                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), cuenta_id = ?, es_privado = COALESCE(?, es_privado) WHERE id = ?', [
+                    await connection.execute('UPDATE recibos SET concepto = ?, periodicidad = ?, importe = ?, categoria_id = (SELECT id FROM categorias WHERE nombre = ?), cuenta_id = ?, es_privado = COALESCE(?, es_privado), modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [
                         concepto,
                         periodicidad,
                         importe,
                         categoria,
                         cuenta_id,
                         valorPrivado,
+                        usuarioId,
                         id
                     ]);
                 }
@@ -581,9 +585,9 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
             }
         } else {
             // Insertar nuevo recibo
-            let query = 'INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, propietario_id, cuenta_id, es_privado';
-            let valuesPart = 'VALUES (?, ?, ?, (SELECT id FROM categorias WHERE nombre = ?), ?, ?, COALESCE(?, 0)';
-            let params = [concepto, periodicidad, importe, categoria, propietarioId, cuenta_id, valorPrivado];
+            let query = 'INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, propietario_id, cuenta_id, es_privado, modificado_por';
+            let valuesPart = 'VALUES (?, ?, ?, (SELECT id FROM categorias WHERE nombre = ?), ?, ?, COALESCE(?, 0), ?';
+            let params = [concepto, periodicidad, importe, categoria, propietarioId, cuenta_id, valorPrivado, usuarioId];
 
             // Si se proporcionó fecha_inicial, incluirla en la consulta
             if (fecha_inicial) {
@@ -676,8 +680,9 @@ class ErrorDeRecibo extends ErrorDeNegocio {
  * - Al borrar un recibo que procede de otro, el origen queda con replicar = 0 para que el evento anual no lo recree.
  * @returns {boolean} - false si el recibo no existe
  */
-async function deleteRecibo(id, fecha, periodicidad, hoy, forzar = false) {
+async function deleteRecibo(id, fecha, periodicidad, hoy, forzar = false, usuarioId = null) {
     let connection;
+    usuarioId = usuarioId ?? null;
     try {
         connection = await getConnection();
         await connection.beginTransaction();
@@ -708,6 +713,7 @@ async function deleteRecibo(id, fecha, periodicidad, hoy, forzar = false) {
         if (soloUnaFecha) {
             const [[restantes]] = await connection.execute('SELECT COUNT(*) AS total FROM fechas_cargo WHERE recibo_id = ?', [id]);
             if (Number(restantes.total) > 0) {
+                await connection.execute('UPDATE recibos SET modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [usuarioId, id]);
                 await connection.commit();
                 return true;
             }
@@ -720,12 +726,15 @@ async function deleteRecibo(id, fecha, periodicidad, hoy, forzar = false) {
 
         const [result] = await connection.execute('DELETE FROM recibos WHERE id = ?', [id]);
         if (reciboOrigenId) {
-            await connection.execute('UPDATE recibos SET replicar = 0 WHERE id = ?', [reciboOrigenId]);
+            await connection.execute('UPDATE recibos SET replicar = 0, modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [usuarioId, reciboOrigenId]);
         }
         await connection.commit();
         return result.affectedRows > 0;
     } catch (error) {
         if (connection) await connection.rollback();
+        if (esErrorDeReferencia(error)) {
+            throw new ErrorDeRecibo('No se puede borrar el recibo porque tiene datos asociados.', 409);
+        }
         if (error.status !== 409) console.error('API. Error al eliminar el recibo: ', error);
         throw error;
     } finally {
@@ -785,8 +794,9 @@ function fechasFaltantes(fechaInicial, periodicidad, fechasExistentes, anioActua
  * @returns {number} - Número de fechas añadidas
  * @throws {Error} - Con status 404 si el recibo no existe, o 409 si no tiene fechas o su ejercicio está cerrado
  */
-async function completarFechasAnio(reciboId, anioActual, hoy) {
+async function completarFechasAnio(reciboId, anioActual, hoy, usuarioId = null) {
     let connection;
+    usuarioId = usuarioId ?? null;
     try {
         connection = await getConnection();
         await connection.beginTransaction();
@@ -811,6 +821,9 @@ async function completarFechasAnio(reciboId, anioActual, hoy) {
         const faltantes = fechasFaltantes(recibos[0].fecha_inicial ?? cargos[0].fecha, recibos[0].periodicidad, cargos.map((c) => c.fecha), anioActual, hoy).filter((f) => f.generable);
         for (const f of faltantes) {
             await connection.execute("INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, 'pendiente', '', ?)", [reciboId, f.fecha, ultima.activo]);
+        }
+        if (faltantes.length > 0) {
+            await connection.execute('UPDATE recibos SET modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [usuarioId, reciboId]);
         }
         await connection.commit();
         return faltantes.length;

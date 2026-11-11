@@ -9,6 +9,7 @@ import { UsersService } from '@/service/UsersService';
 import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { cargarZonaHoraria, establecerZonaHoraria } from '@/composables/useZonaHoraria';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { errorEmail as errorEmailUsuario, errorNombreUsuario, errorPassword as errorPasswordUsuario, errorRol as errorRolUsuario } from '@/utils/validacionUsuarios';
 
 /**
  * Mensaje de error de las pestañas que usan rutas de F-48 (U-14).
@@ -114,14 +115,16 @@ const passwordData = ref({
     confirmPassword: ''
 });
 
-// Validación de email (comprueba si contiene @)
-const isEmailValid = computed(() => {
-    return !user.value.email || user.value.email.includes('@');
-});
+// F-42/DC-51: mismas reglas y mensajes que el servidor.
+const errorUsuarioNombre = computed(() => errorNombreUsuario(user.value.username));
+const errorUsuarioEmail = computed(() => errorEmailUsuario(user.value.email));
+const errorUsuarioRol = computed(() => errorRolUsuario(user.value.rol));
+const errorUsuarioPassword = computed(() => errorPasswordUsuario(user.value.password, { obligatoria: user.value.id === null }));
+const errorPasswordCambio = computed(() => errorPasswordUsuario(passwordData.value.password, { obligatoria: true }));
 
-const isSaveDisabled = computed(() => !user.value.username || !user.value.email || !isEmailValid.value || (user.value.id === null && !user.value.password));
+const isSaveDisabled = computed(() => Boolean(errorUsuarioNombre.value || errorUsuarioEmail.value || errorUsuarioRol.value || errorUsuarioPassword.value));
 
-const isPasswordChangeDisabled = computed(() => !passwordData.value.password || passwordData.value.password !== passwordData.value.confirmPassword);
+const isPasswordChangeDisabled = computed(() => Boolean(errorPasswordCambio.value || passwordData.value.password !== passwordData.value.confirmPassword));
 
 const isDbConfigChanged = computed(() => {
     return (
@@ -402,6 +405,11 @@ function hideDialog() {
 
 async function saveUser() {
     try {
+        if (isSaveDisabled.value) {
+            toast.add({ severity: 'error', summary: 'Revisa los datos', detail: 'Corrige los campos marcados antes de guardar.', life: 5000 });
+            return;
+        }
+
         await UsersService.saveUser(user.value);
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario guardado correctamente', life: 3000 });
         fetchUsers();
@@ -414,6 +422,11 @@ async function saveUser() {
 
 async function changePassword() {
     try {
+        if (isPasswordChangeDisabled.value) {
+            toast.add({ severity: 'error', summary: 'Revisa los datos', detail: 'Corrige la contraseña antes de guardar.', life: 5000 });
+            return;
+        }
+
         await UsersService.changePassword({
             id: passwordData.value.id,
             password: passwordData.value.password
@@ -908,29 +921,32 @@ onMounted(() => {
     <!-- Diálogo para crear/editar usuario -->
     <Dialog v-model:visible="userDialog" :style="{ width: '450px' }" header="Detalle del usuario" :modal="true">
         <div class="flex flex-col gap-6">
-            <small v-if="!user.username || !user.email || (!user.password && !user.id)" class="text-red-500">Todos los campos son obligatorios</small>
+            <small v-if="errorUsuarioNombre || errorUsuarioEmail || errorUsuarioRol || errorUsuarioPassword" class="text-red-500">Revisa los campos marcados antes de guardar.</small>
 
             <!-- Si el usuario existe, username ocupa todo el ancho. Si es nuevo, se muestran username y password en dos columnas -->
             <div class="grid" :class="{ 'grid-cols-1': user.id, 'grid-cols-2': !user.id, 'gap-4': !user.id }">
                 <div :class="{ 'col-span-2': user.id }">
                     <label for="username" class="block font-bold mb-3">Usuario</label>
-                    <InputText id="username" v-model.trim="user.username" :required="true" autofocus class="w-full" />
+                    <InputText id="username" v-model.trim="user.username" :required="true" autofocus class="w-full" :maxlength="50" />
+                    <small v-if="errorUsuarioNombre" class="text-red-500">{{ errorUsuarioNombre }}</small>
                 </div>
                 <div v-if="!user.id">
                     <label for="password" class="block font-bold mb-3">Contraseña</label>
-                    <Password id="password" v-model="user.password" :required="true" :feedback="true" class="w-full" toggle-mask promptLabel="Elige contraseña" weakLabel="Débil" mediumLabel="Media" strongLabel="Fuerte" />
+                    <Password id="password" v-model="user.password" :required="true" :feedback="true" class="w-full" toggle-mask promptLabel="Elige contraseña" weakLabel="Débil" mediumLabel="Media" strongLabel="Fuerte" :maxlength="72" />
+                    <small v-if="errorUsuarioPassword" class="text-red-500">{{ errorUsuarioPassword }}</small>
                 </div>
             </div>
 
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-8">
                     <label for="email" class="block font-bold mb-3">Email</label>
-                    <InputText id="email" v-model.trim="user.email" :required="true" type="email" class="w-full" :class="{ 'p-invalid': user.email && !isEmailValid }" />
-                    <small v-if="user.email && !isEmailValid" class="text-red-500">Indica un e-mail válido</small>
+                    <InputText id="email" v-model.trim="user.email" :required="true" type="email" class="w-full" :maxlength="100" :class="{ 'p-invalid': errorUsuarioEmail }" />
+                    <small v-if="errorUsuarioEmail" class="text-red-500">{{ errorUsuarioEmail }}</small>
                 </div>
                 <div class="col-span-4">
                     <label for="rol" class="block font-bold mb-3">Rol</label>
                     <Select id="rol" v-model="user.rol" :options="rolesArray" placeholder="Seleccione un rol" class="w-full" />
+                    <small v-if="errorUsuarioRol" class="text-red-500">{{ errorUsuarioRol }}</small>
                 </div>
             </div>
         </div>
@@ -947,7 +963,8 @@ onMounted(() => {
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="newPassword" class="block font-bold mb-3">Nueva contraseña</label>
-                    <Password id="newPassword" v-model="passwordData.password" :required="true" :feedback="true" class="w-full" toggle-mask promptLabel=" " weakLabel="Débil" mediumLabel="Media" strongLabel="Fuerte" />
+                    <Password id="newPassword" v-model="passwordData.password" :required="true" :feedback="true" class="w-full" toggle-mask promptLabel=" " weakLabel="Débil" mediumLabel="Media" strongLabel="Fuerte" :maxlength="72" />
+                    <small v-if="errorPasswordCambio" class="text-red-500">{{ errorPasswordCambio }}</small>
                 </div>
                 <div>
                     <label for="confirmPassword" class="block font-bold mb-3">Confirmar contraseña</label>

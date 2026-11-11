@@ -136,6 +136,10 @@ Esta ruta la usa cualquier usuario con sesión, así que los mensajes se redacta
 
 Los errores de los parámetros (`advances`, identificador, `redistribuir`) son 400 y no llegan a consultar la base de datos.
 
+## Trazabilidad y borrado (F-50, F-10)
+
+Las escrituras de anticipos y pagos actualizan anticipos.modificado_por y updated_at dentro de la misma transacción. El borrado de anticipos traduce defensivamente una clave foránea a un 409 EN_USO; hoy anticipos_pagos tiene ON DELETE CASCADE, así que la traducción es defensiva y no una corrección de un bloqueo real.
+
 ## Referencias
 
 - [Documentación de AdvService](../services/AdvService.md) - Cliente que consume esta API

@@ -19,6 +19,7 @@
 import { enTransaccion, getConnection } from './db_connection.mjs';
 import { fechaISO, siguienteFechaAnclada, sumarMesesAnclado } from '../utils/fechasAnticipos.mjs';
 import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
+import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
 
 // DC-38: el importe pendiente no se guarda; es el principal menos la suma de los pagos pagados. El estado completado se deduce de él.
 const SQL_PENDIENTE = "a.importe_original - COALESCE((SELECT SUM(p.importe) FROM anticipos_pagos p WHERE p.anticipo_id = a.id AND p.estado = 'pagado'), 0)";
@@ -43,6 +44,11 @@ function traducirErrorBD(error) {
 // F-48: es un error de negocio de la utilidad compartida, no un error con `status` suelto
 function errorHttp(estado, mensaje, codigo = null) {
     return new ErrorDeNegocio(mensaje, estado, codigo);
+}
+
+/** Marca el anticipo como modificado por el usuario, dentro de la transacción que lo bloquea. */
+async function marcarAnticipoModificado(connection, anticipoId, usuarioId) {
+    await connection.execute('UPDATE anticipos SET modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [usuarioId ?? null, anticipoId]);
 }
 
 /**
@@ -90,9 +96,10 @@ async function getAdvances() {
  * falla (por ejemplo, porque superaría los 1200 pagos), el anticipo ni se crea ni se modifica.
  * Devuelve el id del anticipo.
  */
-async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista = null, descripcion = null, estado = 'activo', cuenta_origen_id, periodicidad, propietario_id, es_privado = null) {
+async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista = null, descripcion = null, estado = 'activo', cuenta_origen_id, periodicidad, propietario_id, es_privado = null, usuarioId = null) {
     // S-01/DC-48: null conserva la privacidad en la edición; 0 pública; 1 solo propietario y admin
     const valorPrivado = es_privado === undefined || es_privado === null || es_privado === '' ? null : Number(es_privado) === 1 ? 1 : 0;
+    usuarioId = usuarioId ?? null;
 
     try {
         // Asegurarse de que los valores undefined sean tratados como null
@@ -131,8 +138,8 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
 
                 // Actualizar anticipo existente
                 const [result] = await connection.execute(
-                    'UPDATE anticipos SET concepto = ?, importe_original = ?, pago_sugerido = ?, fecha_inicio = ?, fecha_fin_prevista = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_origen_id = ?, periodicidad = ?, es_privado = COALESCE(?, es_privado) WHERE id = ?',
-                    [concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, valorPrivado, id]
+                    'UPDATE anticipos SET concepto = ?, importe_original = ?, pago_sugerido = ?, fecha_inicio = ?, fecha_fin_prevista = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_origen_id = ?, periodicidad = ?, es_privado = COALESCE(?, es_privado), modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    [concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, valorPrivado, usuarioId, id]
                 );
                 console.log('Actualización realizada en anticipos, filas afectadas: ' + result.affectedRows);
 
@@ -147,7 +154,7 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
 
             // Insertar nuevo anticipo
             if (!propietario_id) throw errorHttp(400, 'Falta el propietario para crear el anticipo');
-            const [result] = await connection.execute('INSERT INTO anticipos (concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id, es_privado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0))', [
+            const [result] = await connection.execute('INSERT INTO anticipos (concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, propietario_id, es_privado, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0), ?)', [
                 concepto,
                 importe_original,
                 pago_sugerido,
@@ -158,7 +165,8 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
                 cuenta_origen_id,
                 periodicidad,
                 propietario_id,
-                valorPrivado
+                valorPrivado,
+                usuarioId
             ]);
             console.log('Inserción realizada en anticipos, filas afectadas: ' + result.affectedRows);
 
@@ -262,7 +270,7 @@ async function generarPlanDePagos(connection, anticipoId) {
 
         // Actualizar la fecha fin prevista del anticipo con la fecha del último pago
         if (ultimaFechaPago) {
-            await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ? WHERE id = ?', [ultimaFechaPago, anticipoId]);
+            await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [ultimaFechaPago, anticipoId]);
             console.log('recalculatePaymentPlan - Fecha fin prevista actualizada a: ' + ultimaFechaPago);
         }
 
@@ -278,12 +286,14 @@ async function generarPlanDePagos(connection, anticipoId) {
  * Es la versión pública de generarPlanDePagos: abre su propia transacción y bloquea el anticipo, o se une a la de
  * quien la llame si se le pasa una conexión.
  */
-async function recalculatePaymentPlan(anticipoId, conexion = null) {
+async function recalculatePaymentPlan(anticipoId, conexion = null, usuarioId = null) {
     return enTransaccion(conexion, async (connection) => {
         if (!(await bloquearAnticipo(connection, anticipoId))) {
             throw errorHttp(404, 'Anticipo con ID ' + anticipoId + ' no encontrado');
         }
-        return generarPlanDePagos(connection, anticipoId);
+        const resultado = await generarPlanDePagos(connection, anticipoId);
+        await marcarAnticipoModificado(connection, anticipoId, usuarioId);
+        return resultado;
     });
 }
 
@@ -329,6 +339,9 @@ async function deleteAdvances(advances) {
         });
     } catch (error) {
         console.error('deleteAdvances - Error al eliminar los anticipos:', error);
+        if (esErrorDeReferencia(error)) {
+            throw errorHttp(409, 'No se puede eliminar el anticipo porque tiene datos asociados.', 'EN_USO');
+        }
         throw error;
     }
 }
@@ -378,7 +391,8 @@ async function getPagos(anticipoId) {
  * Si cambia el importe de un pago que queda pendiente, o que queda pagado con el plan cuadrado, la diferencia se reparte
  * entre los pagos pendientes posteriores (DC-08, DC-40).
  */
-async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = null, estado = 'pendiente', cuenta_destino_id) {
+async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = null, estado = 'pendiente', cuenta_destino_id, usuarioId = null) {
+    usuarioId = usuarioId ?? null;
     try {
         return await enTransaccion(null, async (connection) => {
             if (id) {
@@ -432,6 +446,7 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                 } else if (importeCambia && estado === 'pagado') {
                     console.log('pushPago - Anticipo ' + anticipoDelPago + ': el plan no cuadraba con el importe pendiente antes de editar el pago; los pagos pendientes no se recalculan.');
                 }
+                await marcarAnticipoModificado(connection, anticipoDelPago, usuarioId);
                 return id;
             }
 
@@ -454,6 +469,7 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
             if (tipo === 'extraordinario') {
                 await generarPlanDePagos(connection, anticipo_id);
             }
+            await marcarAnticipoModificado(connection, anticipo_id, usuarioId);
             return result.insertId;
         });
     } catch (error) {
@@ -744,7 +760,8 @@ async function completarPlanTrasBorrado(connection, anticipoId) {
  * superaría los 1200 pagos, el pago no se borra. Errores con código: 404 si el pago no existe y 400 si se pide
  * repartir y el anticipo no tiene pago sugerido y periodicidad (se comprueba antes de borrar nada).
  */
-async function handlePaymentDeletion(pagoId, redistribuir = false) {
+async function handlePaymentDeletion(pagoId, redistribuir = false, usuarioId = null) {
+    usuarioId = usuarioId ?? null;
     try {
         return await enTransaccion(null, async (connection) => {
             // Se localiza el anticipo del pago y se bloquea antes de leer o borrar nada
@@ -793,6 +810,7 @@ async function handlePaymentDeletion(pagoId, redistribuir = false) {
             }
 
             // El importe pendiente devuelto es el de antes del reparto: el reparto solo mueve importes entre pagos pendientes
+            await marcarAnticipoModificado(connection, anticipo_id, usuarioId);
             return { pendiente, anticipoId: anticipo_id, redistribuido, pagosAjustados, pagosCreados };
         });
     } catch (error) {
@@ -809,7 +827,8 @@ async function handlePaymentDeletion(pagoId, redistribuir = false) {
  * los dos pagos. Datos del pago nuevo: importe (mayor que 0), fecha (AAAA-MM-DD), tipo (regular o extraordinario),
  * descripcion (opcional) y cuenta_destino_id. Devuelve el id del pago nuevo, el anticipo y el importe pendiente.
  */
-async function sustituirPago(pagoId, datos) {
+async function sustituirPago(pagoId, datos, usuarioId = null) {
+    usuarioId = usuarioId ?? null;
     try {
         const { importe, fecha, tipo = 'regular', descripcion = null, cuenta_destino_id } = datos ?? {};
 
@@ -861,6 +880,7 @@ async function sustituirPago(pagoId, datos) {
             console.log('sustituirPago - Pago ' + pagoId + ' sustituido por el pago ' + resultadoAlta.insertId + ' en el anticipo ' + anticipo_id + ' (filas borradas: ' + resultadoBaja.affectedRows + ')');
 
             const pendiente = await leerPendiente(connection, anticipo_id);
+            await marcarAnticipoModificado(connection, anticipo_id, usuarioId);
             return { pagoNuevoId: resultadoAlta.insertId, anticipoId: anticipo_id, pendiente };
         });
     } catch (error) {

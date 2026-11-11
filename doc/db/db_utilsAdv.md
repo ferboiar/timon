@@ -151,6 +151,10 @@ Cada paso deja trazas en el log del backend con el formato «módulo - acción: 
 
 `errorHttp(estado, mensaje, codigo)` devuelve un `ErrorDeNegocio`: los errores de negocio (400, 404 y 409) conservan estado, mensaje y código, y la ruta los devuelve tal cual. El propietario ausente al crear un anticipo pasa a **401** `SESION_NO_IDENTIFICADA` (antes 400). Los errores del motor no se envuelven: la ruta los compone con el [catálogo de causas](../utils/catalogoErrores.md) y el detalle va al log (DC-09).
 
+## Trazabilidad y borrado (F-50, F-10)
+
+pushAdvance, pushPago, handlePaymentDeletion, sustituirPago y recalculatePaymentPlan actualizan anticipos.modificado_por y updated_at dentro de la transacción que bloquea el anticipo. deleteAdvances traduce defensivamente una referencia FK a 409 EN_USO; hoy anticipos_pagos tiene ON DELETE CASCADE.
+
 ## Referencias
 
 - [Documentación de la API de Anticipos](../routes/anticipos.md) - Rutas que utilizan estas funciones

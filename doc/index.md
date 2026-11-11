@@ -345,6 +345,8 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 
 ## Estado de implementación y cierre de revisión
 
+La migración 0006 (F-50, F-22, DC-50) añade trazabilidad de autor y el índice único de categorías. F-41, F-42, F-43 y F-52 se preparan en la rama de corrección con validación en servidor y pantalla; no se declaran incorporados hasta la fusión del PR.
+
 El informe de [auditoría documental](./mantenimiento/auditoria-documentacion.md) diferencia diseño, implementación y fallos conocidos. La autorización se aplica en servidor con la matriz DC-48 (S-01 y S-12); saldos manuales no equivalen a conciliación automática; aportaciones con periodicidad no equivalen a generación automática de movimientos. La sección 10 del registro y TODO incluyen las correcciones pendientes con sus IDs.
 
 ## Documentación de raíz y vigencia

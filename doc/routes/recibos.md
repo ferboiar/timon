@@ -157,6 +157,10 @@ Al guardar un recibo en modo automático, `pushRecibo` registra en el log cada f
 
 Este módulo depende directamente de las funciones de base de datos definidas en `db_utils.mjs`, que manejan todas las operaciones de base de datos relacionadas con recibos y sus fechas de cargo.
 
+## Trazabilidad y borrado (F-50, F-10)
+
+Desde la migración 0006, cada recibo incluye modificado_por, created_at y updated_at. Las escrituras de la ruta rellenan modificado_por con el usuario vigente; las fechas de cargo actualizan el padre en la misma transacción. El borrado traduce defensivamente una clave foránea que impida borrar el recibo a un 409 con mensaje de negocio (F-10); el esquema actual ya borra las fechas y comprueba los sucesores antes.
+
 ## Referencias
 
 - [Documentación de BillService](../services/BillService.md) - Cliente que consume esta API

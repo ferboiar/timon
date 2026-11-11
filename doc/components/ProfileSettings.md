@@ -146,6 +146,10 @@ Antes de U-14 (corregido el 2026-11-09) esas llamadas pasaban `{ message: '<text
 
 La pestaña **Base de Datos** muestra además `invalidFileTypeMessage` en español al elegir un archivo que no es `.sql`: «El archivo «{0}» no es una copia de seguridad. Selecciona un archivo con extensión .sql.». Es un aviso en línea del `FileUpload` (modo `basic`), no un *toast*.
 
+## Validación de usuarios (F-42, DC-51)
+
+Los mensajes por campo se calculan con src/utils/validacionUsuarios.js, espejo de la validación del servidor. En la edición la contraseña es opcional; si se escribe, se valida. El botón Guardar se deshabilita con datos inválidos y saveUser/changePassword vuelven a comprobarlo antes de llamar a la API.
+
 ## Referencias
 
 - [Servicio de Usuarios](../services/UsersService.md) - Operaciones CRUD para gestionar usuarios
@@ -161,8 +165,8 @@ La pestaña **Base de Datos** muestra además `invalidFileTypeMessage` en españ
 
 ## Estado y validaciones auxiliares
 
-- isSaveDisabled exige username, email, un correo con @ y contraseña al crear.
-- isPasswordChangeDisabled exige contraseña no vacía y confirmación idéntica; no comprueba fortaleza.
+- isSaveDisabled usa las mismas reglas que el servidor: nombre 1–50, correo válido, rol del catálogo y contraseña DC-51 al crear.
+- isPasswordChangeDisabled exige la política DC-51 y confirmación idéntica.
 - rolesArray alimenta el selector de rol; no hay controles para editar perm_*.
 - hasUnsavedChanges compara preset, menú, apariencia, primario y superficie.
 - Los observadores aplican la vista previa del estilo y el menú. Reset aplica y guarda inmediatamente los valores por defecto.

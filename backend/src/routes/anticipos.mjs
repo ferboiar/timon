@@ -51,7 +51,7 @@ router.post('/', autorizar('anticipos', 'escritura'), async (req, res) => {
             asegurarEdicion(req.usuario, await registroDeAnticipo(id), 'anticipos');
         }
 
-        await pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.user.id, es_privado);
+        await pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.usuario.id, es_privado, req.usuario.id);
         console.log('anticipos - guardado: anticipo ' + (id || 'nuevo'));
         res.status(201).json({ message: 'Anticipo insertado o actualizado correctamente' });
     } catch (error) {
@@ -124,7 +124,7 @@ router.post('/pagos', autorizar('anticipos', 'escritura'), async (req, res) => {
             throw new ErrorDeNegocio('El pago no pertenece al anticipo indicado.', 400, 'PADRE_INCORRECTO');
         }
 
-        await pushPago(id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id);
+        await pushPago(id, anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id, req.usuario.id);
         console.log('anticipos - pago guardado: pago ' + (id || 'nuevo') + ' del anticipo ' + (id ? registro.anticipo_id : anticipo_id));
         res.status(201).json({ message: 'Pago insertado o actualizado correctamente' });
     } catch (error) {
@@ -138,7 +138,7 @@ router.post('/pagos/:id/sustituir', autorizar('anticipos', 'escritura'), async (
     try {
         const pagoId = leerEnteroPositivo(req.params.id, 'id');
         asegurarEdicion(req.usuario, await registroDePago(pagoId), 'anticipos');
-        const { pagoNuevoId, anticipoId, pendiente } = await sustituirPago(pagoId, req.body);
+        const { pagoNuevoId, anticipoId, pendiente } = await sustituirPago(pagoId, req.body, req.usuario.id);
         console.log('anticipos - sustitución de pago: pago ' + pagoId + ' del anticipo ' + anticipoId + ' por el pago ' + pagoNuevoId);
         res.status(201).json({ message: 'Pago sustituido correctamente', pagoNuevoId, anticipoId, pendiente });
     } catch (error) {
@@ -156,7 +156,7 @@ router.delete('/pagos/:id', autorizar('anticipos', 'borrado'), async (req, res) 
         // Lectura estricta: "?redistribuir=ture" es un 400, no un "no" silencioso
         const redistribuir = leerBooleano(req.query.redistribuir, 'redistribuir');
 
-        const { pendiente, anticipoId, redistribuido, pagosAjustados, pagosCreados } = await handlePaymentDeletion(pagoId, redistribuir);
+        const { pendiente, anticipoId, redistribuido, pagosAjustados, pagosCreados } = await handlePaymentDeletion(pagoId, redistribuir, req.usuario.id);
         console.log(
             'anticipos - borrado de pago: pago ' + pagoId + ' del anticipo ' + anticipoId + ' (pendiente ' + pendiente +
                 ', redistribuido: ' + redistribuido + ', pagos ajustados: ' + pagosAjustados + ', pagos nuevos: ' + pagosCreados + ')'
@@ -185,7 +185,7 @@ router.post('/recalculate-payment-plan', autorizar('anticipos', 'escritura'), as
 
         const anticipoIdValidado = leerEnteroPositivo(anticipoId, 'anticipoId');
         asegurarEdicion(req.usuario, await registroDeAnticipo(anticipoIdValidado), 'anticipos');
-        await recalculatePaymentPlan(anticipoIdValidado); // Los datos del anticipo los lee la propia función
+        await recalculatePaymentPlan(anticipoIdValidado, null, req.usuario.id); // Los datos del anticipo los lee la propia función
         console.log('anticipos - plan de pagos recalculado: anticipo ' + anticipoId);
         res.status(200).json({ message: 'Plan de pagos recalculado correctamente' });
     } catch (error) {

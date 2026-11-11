@@ -101,6 +101,6 @@ SET time_zone = "+00:00";
 - Las fechas utilizan `DATE` para días específicos y `TIMESTAMP` para auditoría
 - Los importes monetarios usan `DECIMAL(10,2)` o `DECIMAL(12,2)`
 - Se usan enumeraciones (`ENUM`) para estados y tipos predefinidos
-- Los campos de auditoría incluyen `created_at` y `updated_at`
+- Los campos de auditoría incluyen created_at y updated_at; desde la migración 0006, recibos, ahorros, anticipos y presupuestos tienen modificado_por (FK a users con ON DELETE SET NULL)
 - El sistema de permisos utiliza el campo `propietario_id` y `es_privado` en las tablas principales para control de visibilidad
 - Los permisos a nivel de módulo funcional se definen en la tabla `users` mediante campos `perm_[modulo]`

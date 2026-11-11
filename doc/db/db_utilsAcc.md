@@ -75,6 +75,10 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 | `pushAccount - Nombre normalizado a minúsculas: …` | Cuando el nombre llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 | `Error: Entrada duplicada para IBAN: …` | Cuando el IBAN ya existe |
 
+## Borrado bloqueado por FK (F-10)
+
+deleteAccounts traduce ER_ROW_IS_REFERENCED_2 y ER_ROW_IS_REFERENCED a un ErrorDeNegocio 409 con el mensaje «No se puede eliminar la cuenta porque está en uso (recibos, anticipos o presupuestos).». Es el caso real de las cuatro claves foráneas RESTRICT que apuntan a cuentas.
+
 ## Referencias
 
 - [API de Cuentas](../routes/cuentas.md) - Rutas que utilizan estas funciones

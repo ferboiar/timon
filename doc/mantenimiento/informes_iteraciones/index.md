@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-11 | F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50, DC-51 | [Trazabilidad de autor, índice único de categorías y validaciones](./2026-11-11_F50-F22-F52-F43-F42-F41-F10-D35-DC-50-DC-51_trazabilidad-y-validaciones.md) |
 | 2026-11-10 | S-18, S-19, F-51, U-18, U-19, D-34, DC-49 | [Corrección posterior al PR #79: subrecursos, propiedad y seguimiento](./2026-11-10_S-18_S-19_F-51_U-18_U-19_D-34_correccion-post-pr79.md) |
 | 2026-11-10 | S-01, S-06, S-12, S-07, U-16, U-17 | [Autorización en servidor, apiClient, aviso de caducidad y menús únicos](./2026-11-10_S01-S06-S12-S07-U16-U17_autorizacion-apiClient.md) |
 | 2026-11-10 | U-15 | [Prueba de comportamiento de F-30 con un recibo trimestral](./2026-11-10_U-15_prueba-f30-trimestrales.md) |

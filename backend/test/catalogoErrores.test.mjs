@@ -8,6 +8,7 @@ import {
     campoDemasiadoLargo,
     campoDuplicado,
     codigoDeError,
+    esErrorDeReferencia,
     mensajeDeCausa,
     mensajeTecnico,
     nombreDeIndiceDuplicado
@@ -26,6 +27,15 @@ describe('código del error', () => {
         assert.equal(codigoDeError({ cause: { code: 'ENOTFOUND' } }), 'ENOTFOUND');
         assert.equal(codigoDeError(new Error('sin código')), '');
         assert.equal(codigoDeError(null), '');
+    });
+});
+
+describe('referencias de clave foránea (F-10)', () => {
+    test('reconoce los códigos de referencia y no otros', () => {
+        assert.equal(esErrorDeReferencia(errorCon('ER_ROW_IS_REFERENCED_2')), true);
+        assert.equal(esErrorDeReferencia(errorCon('ER_ROW_IS_REFERENCED')), true);
+        assert.equal(esErrorDeReferencia(errorCon('ER_NO_REFERENCED_ROW_2')), false);
+        assert.equal(esErrorDeReferencia(null), false);
     });
 });
 

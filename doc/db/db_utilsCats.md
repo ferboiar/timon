@@ -59,6 +59,10 @@ La función `deleteCategorias()` convierte la entrada a array y aplica `Number` 
 - Las operaciones de eliminación en lote utilizan una sola consulta SQL para mejorar la eficiencia
 - Se implementa liberación inmediata de conexiones para maximizar la disponibilidad del pool
 
+## Índice único y descripción (F-22, F-41)
+
+La migración 0006 añade el índice único uq_categorias_nombre. pushCategoria valida que la descripción no supere 255 caracteres (el mismo límite de la columna y del control) y traduce ER_DUP_ENTRY a un 400 de negocio si dos peticiones concurren.
+
 ## Referencias
 
 - [API de Categorías](../routes/categorias.md) - Rutas que utilizan estas funciones

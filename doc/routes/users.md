@@ -31,7 +31,7 @@ Este módulo implementa las rutas de la API REST para la gestión de usuarios en
 - Las rutas de gestión de usuarios (listado, alta, edición, contraseña y borrado) exigen administrador (`verifyAdmin`); las de preferencias de estilo solo exigen sesión (`verifyToken`), porque son del propio usuario
 - Las contraseñas se almacenan encriptadas, nunca en texto plano
 - Se utilizan medidas contra inyección SQL mediante consultas parametrizadas
-- Comprobación de presencia de campos; no hay validación exhaustiva de formato, longitud, fortaleza de contraseña ni catálogo de rol/perm_* antes de llegar a la base de datos (F-42)
+- Validación en servidor antes de hashear: nombre de usuario, correo, contraseña, rol y permisos (F-42, DC-51). En la edición la contraseña es opcional; si llega, se valida igual
 - No se devuelven contraseñas en las respuestas API
 
 ## Detalles de Implementación
@@ -82,6 +82,18 @@ Las preferencias de estilo son específicas para cada usuario y se almacenan en 
 - Apariencia general (`colorScheme`: `system`, `light` o `dark`)
 - Colores primarios y de superficie
 
+## Validación (F-42, DC-51)
+
+Antes de hashear la contraseña, la ruta valida:
+
+- Nombre de usuario: 1–50 caracteres, sin caracteres de control; se recortan los espacios de los extremos.
+- Correo: 1–100 caracteres y formato local@dominio.tld; se recortan los espacios.
+- Contraseña: 8–72 caracteres, máximo 72 bytes UTF-8 (límite de bcrypt), al menos una letra y un número.
+- Rol: admin, user, limited_user o reader.
+- Permisos perm_*: no, lectura o escritura si se envían.
+
+En la edición, la contraseña es opcional; si llega vacía se ignora y si llega con valor se valida igual. El cambio de contraseña tiene su propia ruta y exige la política completa. Los errores son 400 con el mensaje en message.
+
 ## Manejo de errores (F-48)
 
 Las rutas de gestión exigen administrador; las de preferencias de estilo, solo sesión. El texto de cada error lo decide esa **audiencia**: las de gestión pueden hablar de configuración y del servicio de la base de datos; las de preferencias se redactan para cualquier usuario. Se usa la utilidad compartida [`responderError`](../utils/errorDeNegocio.md) con la clave `message`, que es la que envía este módulo, y el [catálogo de causas](../utils/catalogoErrores.md) traduce el error del motor. El detalle completo, saneado, va al log con el formato «módulo - acción: datos» (DC-09).
@@ -89,6 +101,7 @@ Las rutas de gestión exigen administrador; las de preferencias de estilo, solo 
 | Situación | Estado | Código |
 |---|---|---|
 | Falta un dato obligatorio | 400 | — |
+| Dato inválido según F-42/DC-51 | 400 | — |
 | Nombre de usuario ya usado | **409** (antes 500) | `USUARIO_DUPLICADO` |
 | Correo ya registrado | **409** (antes 500) | `CORREO_DUPLICADO` |
 | Usuario inexistente | **404** (antes 500) | `USUARIO_NO_ENCONTRADO` |

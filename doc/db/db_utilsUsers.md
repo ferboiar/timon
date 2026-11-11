@@ -106,6 +106,10 @@ Lanza `ErrorDeNegocio` (ver [la utilidad de errores](../utils/errorDeNegocio.md)
 
 El duplicado se resuelve con `campoDuplicado(error)`, que lee el **nombre del índice** que informa el motor. Las funciones ya no envuelven el error del motor en un texto genérico: lo relanzan para que el catálogo identifique la causa. Para el borrado bloqueado, el nombre del usuario se lee antes de borrar y solo se usa en el mensaje.
 
+## Validación y datos (F-42, DC-51)
+
+createUser y updateUser reciben los datos ya validados por la ruta. La validación vive en backend/src/utils/validacionUsuarios.mjs y se comparte con la pantalla. La columna users.password es VARCHAR(100) (el hash bcrypt ocupa 60 caracteres) y los permisos usan no, lectura y escritura; la documentación anterior que citaba VARCHAR(255) o ninguno queda corregida.
+
 ## Referencias
 
 - [API de Usuarios](../routes/users.md) - Endpoints que utilizan estas funciones

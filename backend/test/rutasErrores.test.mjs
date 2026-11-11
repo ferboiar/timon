@@ -116,6 +116,23 @@ describe('rutas incluidas en F-47 y F-48', () => {
     });
 });
 
+describe('F-42, F-43: validación antes de la base', () => {
+    test('cuentas y ahorros validan la lista de borrado', () => {
+        for (const [ruta, nombre] of [['cuentas', 'accounts'], ['ahorros', 'savings']]) {
+            const texto = leerRuta(ruta);
+            assert.equal(texto.includes('leerListaEnterosPositivos'), true, ruta);
+            assert.equal(texto.includes(nombre), true, ruta);
+        }
+    });
+
+    test('usuarios valida alta, edición y contraseña en un módulo compartido', () => {
+        const texto = leerRuta('users');
+        assert.equal(texto.includes('validarAltaUsuario'), true);
+        assert.equal(texto.includes('validarEdicionUsuario'), true);
+        assert.equal(texto.includes('validarCambioPassword'), true);
+    });
+});
+
 describe('mensajes visibles (F-48)', () => {
     const ficheros = [...RUTAS.map((nombre) => 'backend/src/routes/' + nombre + '.mjs'), ...MODULOS];
 

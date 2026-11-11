@@ -13,6 +13,7 @@ import { deleteAccounts, getAccounts, getTipos, pushAccount } from '#backend/db/
 import { Router } from 'express';
 import { autorizar } from '#backend/middleware/auth.mjs';
 import { responderError } from '../utils/errorDeNegocio.mjs';
+import { leerListaEnterosPositivos } from '../utils/parametros.mjs';
 
 const router = Router();
 
@@ -41,7 +42,8 @@ router.post('/', autorizar('cuentas', 'escritura'), async (req, res) => {
 router.delete('/', autorizar('cuentas', 'borrado'), async (req, res) => {
     const { accounts } = req.body;
     try {
-        await deleteAccounts(accounts);
+        const ids = leerListaEnterosPositivos(accounts, 'accounts');
+        await deleteAccounts(ids);
         res.status(200).json({ message: 'Cuenta(s) eliminada(s) correctamente' });
     } catch (error) {
         responderError(res, error, 'No se pudieron eliminar las cuentas.', { contexto: 'cuentas - DELETE' });

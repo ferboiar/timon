@@ -2,6 +2,8 @@
 
 > Estado de implementación al 2026-10-23: Diseño, no implementación de autorización en endpoints: desde el 2026-11-10 el servidor aplica la matriz DC-48, comprueba la propiedad y filtra por visibilidad; cuentas y categorías son compartidas y, desde DC-49, su lectura no depende de `perm_*` (escritura y borrado sí). La UI de `es_privado` queda en F-49 y la trazabilidad en F-50. Las consultas propuestas aquí no son las consultas actuales de los módulos db_utils.
 
+> F-50/DC-50: la migración 0006 añade modificado_por (FK a users con ON DELETE SET NULL), created_at y updated_at en recibos y modificado_por en ahorros, anticipos y presupuestos. No forma parte de la matriz de permisos; es trazabilidad de autor. La decisión está en el registro (DC-50).
+
 ## Tabla de Contenidos
 1. [Introducción](#introducción)
 2. [Estructura de Base de Datos](#estructura-de-base-de-datos)

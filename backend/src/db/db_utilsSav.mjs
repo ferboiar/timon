@@ -11,6 +11,7 @@
 
 import { getConnection } from './db_connection.mjs';
 import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
+import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
 
 async function getSavings() {
     let connection;
@@ -26,11 +27,18 @@ async function getSavings() {
     }
 }
 
-async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_objetivo = null, periodicidad = null, importe_periodico, activo = 1, propietario_id, es_privado = null) {
+async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_objetivo = null, periodicidad = null, importe_periodico, activo = 1, propietario_id, es_privado = null, usuarioId = null) {
     let connection;
     let enTransaccion = false;
     // S-01/DC-48: null conserva la privacidad en la edición; 0 pública; 1 solo propietario y admin
     const valorPrivado = es_privado === undefined || es_privado === null || es_privado === '' ? null : Number(es_privado) === 1 ? 1 : 0;
+
+    // F-52: mysql2 no acepta undefined; los campos opcionales se guardan como NULL.
+    descripcion = descripcion ?? null;
+    fecha_objetivo = fecha_objetivo ?? null;
+    periodicidad = periodicidad ?? null;
+    importe_periodico = importe_periodico ?? null;
+    usuarioId = usuarioId ?? null;
     try {
         connection = await getConnection();
 
@@ -68,7 +76,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
             }
 
             const ahorradoFinal = numMovimientos > 0 ? ahorradoActual : ahorrado;
-            const [updateResult] = await connection.execute('UPDATE ahorros SET concepto = ?, descripcion = COALESCE(?, descripcion), ahorrado = ?, fecha_objetivo = ?, periodicidad = ?, importe_periodico = ?, activo = ?, es_privado = COALESCE(?, es_privado) WHERE id = ?', [
+            const [updateResult] = await connection.execute('UPDATE ahorros SET concepto = ?, descripcion = COALESCE(?, descripcion), ahorrado = ?, fecha_objetivo = ?, periodicidad = ?, importe_periodico = ?, activo = ?, es_privado = COALESCE(?, es_privado), modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [
                 concepto,
                 descripcion,
                 ahorradoFinal,
@@ -77,6 +85,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
                 importe_periodico,
                 activo,
                 valorPrivado,
+                usuarioId,
                 id
             ]);
             console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateResult.affectedRows}`);
@@ -88,7 +97,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
             // Insertar nuevo ahorro
             if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear el ahorro');
             console.log(`pushSaving - Nuevo ahorro: ${concepto}, valor inicial de ahorrado ${ahorrado}`);
-            const [insertResult] = await connection.execute('INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id, es_privado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0))', [
+            const [insertResult] = await connection.execute('INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id, es_privado, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0), ?)', [
                 concepto,
                 descripcion,
                 ahorrado,
@@ -97,7 +106,8 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
                 importe_periodico,
                 activo,
                 propietario_id,
-                valorPrivado
+                valorPrivado,
+                usuarioId
             ]);
             console.log(`Insert realizado correctamente en tabla ahorros. Filas afectadas: ${insertResult.affectedRows}`);
         }
@@ -130,7 +140,7 @@ async function deleteSavings(savings) {
         console.log(`Delete realizado correctamente en tabla ahorros. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('Error al eliminar los ahorros:', error);
-        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        if (esErrorDeReferencia(error)) {
             console.log('deleteSavings - Rechazado: el ahorro tiene registros asociados: ' + String(savings));
             throw new ErrorDeNegocio('No se puede eliminar el ahorro porque tiene registros asociados', 409);
         }
@@ -170,9 +180,10 @@ async function getMovimientos(ahorroId) {
     }
 }
 
-async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion = null) {
+async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion = null, usuarioId = null) {
     let connection;
     let enTransaccion = false;
+    usuarioId = usuarioId ?? null;
     try {
         connection = await getConnection();
 
@@ -210,7 +221,7 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
         }
 
         // Actualizar ahorrado solo con la diferencia que aporta este movimiento
-        const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) + ? WHERE id = ?', [diferencia, ahorroId]);
+        const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) + ?, modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [diferencia, usuarioId, ahorroId]);
         if (updateAhorroResult.affectedRows === 0) {
             throw new ErrorDeNegocio(`Ahorro con ID ${ahorroId} no encontrado`, 404);
         }
@@ -235,9 +246,10 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
     }
 }
 
-async function deleteMovimiento(id) {
+async function deleteMovimiento(id, usuarioId = null) {
     let connection;
     let enTransaccion = false;
+    usuarioId = usuarioId ?? null;
     try {
         connection = await getConnection();
         await connection.beginTransaction();
@@ -257,7 +269,7 @@ async function deleteMovimiento(id) {
         console.log(`Delete realizado correctamente en tabla ahorros_movimientos. Filas afectadas: ${deleteResult.affectedRows}`);
 
         // Actualizar el valor de ahorrado en la tabla ahorros
-        const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) - ? WHERE id = ?', [importe, ahorro_id]);
+        const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) - ?, modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [importe, usuarioId, ahorro_id]);
         const variacion = -Number(importe);
         console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateAhorroResult.affectedRows} (ahorrado ${variacion >= 0 ? '+' : ''}${variacion.toFixed(2)})`);
 

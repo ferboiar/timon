@@ -18,6 +18,8 @@ import * as dbUsers from '#backend/db/db_utilsUsers.mjs';
 import { verifyAdmin, verifyToken } from '#backend/middleware/auth.mjs';
 import { AUDIENCIA_ADMIN, AUDIENCIA_GENERAL } from '#backend/utils/catalogoErrores.mjs';
 import { responderError } from '#backend/utils/errorDeNegocio.mjs';
+import { leerEnteroPositivo, leerListaEnterosPositivos } from '#backend/utils/parametros.mjs';
+import { validarAltaUsuario, validarCambioPassword, validarEdicionUsuario } from '#backend/utils/validacionUsuarios.mjs';
 import bcrypt from 'bcrypt';
 import express from 'express';
 
@@ -48,33 +50,12 @@ router.get('/', verifyAdmin, async (req, res) => {
  */
 router.post('/', verifyAdmin, async (req, res) => {
     try {
-        const { username, email, password, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = req.body;
+        const datos = validarAltaUsuario(req.body);
+        const { permisos, ...resto } = datos;
+        const hashedPassword = await bcrypt.hash(datos.password, 10);
+        const result = await dbUsers.createUser({ ...resto, ...permisos, password: hashedPassword });
 
-        // Validar que se proporcionan todos los campos requeridos
-        if (!username || !email || !password || !rol) {
-            return res.status(400).json({ message: 'Faltan datos obligatorios: nombre de usuario, correo, contraseña y rol.' });
-        }
-
-        // Generar hash de la contraseña
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-        // Crear el nuevo usuario
-        const result = await dbUsers.createUser({
-            username,
-            email,
-            password: hashedPassword,
-            rol,
-            perm_recibos,
-            perm_presupuestos,
-            perm_ahorros,
-            perm_anticipos,
-            perm_transacciones,
-            perm_categorias,
-            perm_cuentas
-        });
-
-        console.log(`usuarios - alta: usuario ${result.id} con rol ${rol}`);
+        console.log(`usuarios - alta: usuario ${result.id} con rol ${datos.rol}`);
         res.status(201).json(result);
     } catch (error) {
         responderError(res, error, 'No se ha podido crear el usuario.', {
@@ -92,26 +73,12 @@ router.post('/', verifyAdmin, async (req, res) => {
  */
 router.put('/', verifyAdmin, async (req, res) => {
     try {
-        const { id, username, email, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = req.body;
+        const datos = validarEdicionUsuario(req.body);
+        const { id, username, email, rol, permisos } = datos;
+        leerEnteroPositivo(id, 'id');
 
-        // Validar que se proporcionan todos los campos requeridos
-        if (!id || !username || !email || !rol) {
-            return res.status(400).json({ message: 'Faltan datos obligatorios: usuario, correo y rol.' });
-        }
-
-        // Actualizar el usuario
-        const result = await dbUsers.updateUser(id, {
-            username,
-            email,
-            rol,
-            perm_recibos,
-            perm_presupuestos,
-            perm_ahorros,
-            perm_anticipos,
-            perm_transacciones,
-            perm_categorias,
-            perm_cuentas
-        });
+        // Actualizar el usuario. La contraseña, si llega, se valida en validarEdicionUsuario; no se cambia por esta ruta.
+        const result = await dbUsers.updateUser(id, { username, email, rol, ...permisos });
 
         console.log(`usuarios - edición: usuario ${id}`);
         res.json(result);
@@ -131,18 +98,10 @@ router.put('/', verifyAdmin, async (req, res) => {
  */
 router.put('/password', verifyAdmin, async (req, res) => {
     try {
-        const { id, password } = req.body;
+        const datos = validarCambioPassword(req.body);
+        const id = leerEnteroPositivo(datos.id, 'id');
+        const hashedPassword = await bcrypt.hash(datos.password, 10);
 
-        // Validar que se proporcionan todos los campos requeridos
-        if (!id || !password) {
-            return res.status(400).json({ message: 'Faltan el usuario y la contraseña nueva.' });
-        }
-
-        // Generar hash de la nueva contraseña
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-        // Cambiar la contraseña
         await dbUsers.changePassword(id, hashedPassword);
 
         console.log(`usuarios - cambio de contraseña: usuario ${id}`);
@@ -164,16 +123,11 @@ router.put('/password', verifyAdmin, async (req, res) => {
 router.delete('/', verifyAdmin, async (req, res) => {
     try {
         const { userIds } = req.body;
+        const ids = leerListaEnterosPositivos(userIds, 'userIds');
 
-        // Validar que se proporciona al menos un ID
-        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-            return res.status(400).json({ message: 'Selecciona al menos un usuario para eliminar.' });
-        }
+        await dbUsers.deleteUsers(ids);
 
-        // Eliminar usuarios
-        await dbUsers.deleteUsers(userIds);
-
-        console.log(`usuarios - borrado: ${userIds.length} usuario(s)`);
+        console.log(`usuarios - borrado: ${ids.length} usuario(s)`);
         res.json({ message: 'Usuarios eliminados correctamente' });
     } catch (error) {
         responderError(res, error, 'No se han podido eliminar los usuarios.', {

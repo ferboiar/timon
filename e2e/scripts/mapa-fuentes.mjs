@@ -53,6 +53,34 @@ export const MAPA_FUENTES = {
         'backend/src/utils/errorDeNegocio.mjs',
         'backend/src/db/migrations/0001_baseline.sql'
     ],
+    'tests/recibosTrazabilidad.spec.mjs': [
+        'src/views/pages/ListBills.vue',
+        'src/service/BillService.js',
+        'backend/src/routes/recibos.mjs',
+        'backend/src/db/db_utils.mjs',
+        'backend/src/db/migrations/0006_trazabilidad_y_categoria_unica.sql'
+    ],
+    'tests/usuariosValidacion.spec.mjs': [
+        'src/views/pages/ProfileSettings.vue',
+        'src/utils/validacionUsuarios.js',
+        'src/service/UsersService.js',
+        'backend/src/routes/users.mjs',
+        'backend/src/utils/validacionUsuarios.mjs',
+        'backend/src/db/db_utilsUsers.mjs'
+    ],
+    'tests/borradosEnUso.spec.mjs': [
+        'src/views/pages/Categories.vue',
+        'src/views/pages/Accounts.vue',
+        'src/service/CatsService.js',
+        'src/service/AccService.js',
+        'backend/src/routes/categorias.mjs',
+        'backend/src/routes/cuentas.mjs',
+        'backend/src/routes/ahorros.mjs',
+        'backend/src/db/db_utilsCats.mjs',
+        'backend/src/db/db_utilsAcc.mjs',
+        'backend/src/db/db_utilsSav.mjs',
+        'backend/src/utils/catalogoErrores.mjs'
+    ],
     'tests/recibosBorrado.spec.mjs': [
         'src/views/pages/ListBills.vue',
         'src/service/BillService.js',

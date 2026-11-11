@@ -11,6 +11,7 @@
 
 import { getConnection } from './db_connection.mjs';
 import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
+import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
 
 async function getAccounts() {
     let connection;
@@ -102,6 +103,9 @@ async function deleteAccounts(accounts) {
         console.log(`Delete realizado correctamente en tabla cuentas. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('Error al eliminar las cuentas:', error);
+        if (esErrorDeReferencia(error)) {
+            throw new ErrorDeNegocio('No se puede eliminar la cuenta porque está en uso (recibos, anticipos o presupuestos).', 409, 'EN_USO');
+        }
         throw error;
     } finally {
         if (connection) connection.release();
