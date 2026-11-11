@@ -6,13 +6,13 @@ Documento de relevo: léelo primero si retomas el proyecto o abres una conversac
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-11, `main` en c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). Antes, ecf83bb (PR #80: corrección post-#79). La migración 0006 está aplicada en `conta_hogar` (verificado en solo lectura el 2026-11-11): `uq_categorias_nombre` y `modificado_por` con FK `ON DELETE SET NULL`. F-14 cerrado por DC-42.
+Corte operativo: 2026-11-11, `main` en 2744e5a (PR #82: incorporación de D-36). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51) y ecf83bb (PR #80: corrección post-#79). La migración 0006 está aplicada en `conta_hogar` (verificado en solo lectura el 2026-11-11): `uq_categorias_nombre` y `modificado_por` con FK `ON DELETE SET NULL`. F-14 cerrado por DC-42.
 
 **Siguiente trabajo:** no hay trabajo de código preparado. Toca seguridad: S-02/S-03 (con DC-06), S-04 desglosado, S-05, S-11 (10 PR de Snyk abiertos) y S-21. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las 9 ramas locales y de la rama remota del PR #81 queda pendiente, con confirmación expresa y separada por rama.
 
 **D-36 incorporado con el PR #82:** auditoría y sincronización documental; TODO y registro actualizados.
 
-SHA de fusión de D-36: pendiente de registrar (DC-52). No asumir que F-49, F-53 o F-54 estén implementadas.
+SHA de fusión de D-36: 2744e5a (DC-52). No asumir que F-49, F-53 o F-54 estén implementadas.
 
 **SET USER temporal (2026-11-11):** permiso global temporal concedido a `timon_admin` para restaurar volcados con `DEFINER=root`; `SHOW GRANTS` confirma `SET USER ON *.*` y `ALL` sobre `conta_hogar` y el patrón `conta\_hogar%`. No se revoca en esta iteración; S-22 lo registra sin fecha. Comando previsto:
 
