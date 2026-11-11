@@ -123,7 +123,7 @@ npm run dev
 
 ## Documentation and tests
 
-Start with doc/mantenimiento/estado-del-proyecto.md (the entry of a handover document split into three parts, estado-del-proyecto_1de3.md to estado-del-proyecto_3de3.md, to be read in order); the current plan is in TODO and doc/mantenimiento/registro-hallazgos.md. The full backend suite needs a separate MariaDB test environment; standalone date, pool configuration and annual-generation unit tests do not. See backend/test/README.md. Never point destructive tests at the application database.
+Start with doc/mantenimiento/estado-del-proyecto.md (the entry of a handover document split into three parts, estado-del-proyecto_1de3.md to estado-del-proyecto_3de3.md, to be read in order); the current plan is in TODO and doc/mantenimiento/registro-hallazgos.md. The full backend suite needs a separate MariaDB test environment; standalone date, pool configuration and annual-generation unit tests do not. See backend/test/README.md. Since DC-46, with `backend/test/.env.test` available, use `npm run test:backend:local`. Never point destructive tests at the application database.
 
 ## Development environment with GitHub Codespaces and git-crypt
 
