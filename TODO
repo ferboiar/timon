@@ -2,7 +2,7 @@
 
 ## Punto de reanudación (D-36, 2026-11-11)
 
-Corte: `main` = ef5e57d (2026-11-11): PR #82 (merge 2744e5a, 2026-11-11T20:22:07Z) más dos commits de seguimiento directos a main (342b87c y ef5e57d). Los cambios de D-41 se incorporan con el PR #83 (SHA de fusión pendiente de registrar, DC-52). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
+Corte: `main` = ef5e57d (2026-11-11): PR #82 (merge 2744e5a, 2026-11-11T20:22:07Z) más dos commits de seguimiento directos a main (342b87c y ef5e57d). Los cambios de D-41 se incorporaron con el PR #83 (merge 83472a6, 2026-11-11T23:06:13Z). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
 
 No hay trabajo de código preparado. Único cambio local ajeno: `backend/src/db/.db_connection`.
 

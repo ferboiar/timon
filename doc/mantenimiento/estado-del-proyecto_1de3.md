@@ -2,7 +2,7 @@
 
 Parte 1 de 3 del [relevo](./estado-del-proyecto.md): secciones 0 a 3 (punto exacto de reanudación; qué es y cómo está montado; cómo se trabaja; cómo funciona hoy). Se lee completa y en orden con las demás: [parte 1 de 3](./estado-del-proyecto_1de3.md) · [parte 2 de 3](./estado-del-proyecto_2de3.md) · [parte 3 de 3](./estado-del-proyecto_3de3.md).
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-11, base ef5e57d (PR #69 a #82 y dos commits de seguimiento: 342b87c y ef5e57d). Sin trabajo en curso: todo lo anterior al #82 está fusionado (el #82 con merge 2744e5a). Los cambios de D-41 se incorporan con el PR #83 (SHA de fusión pendiente de registrar, DC-52). Siguiente trabajo, en este orden: 1) seguridad (S-02/S-03, S-04 desglosado, S-05, S-11, S-21), 2) limpieza de ramas con confirmación separada y 3) el backlog del TODO. El punto del scope del token de gh queda retirado por decisión del usuario.
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-11, base ef5e57d (PR #69 a #82 y dos commits de seguimiento: 342b87c y ef5e57d). Sin trabajo en curso: todo lo anterior al #82 está fusionado (el #82 con merge 2744e5a). Los cambios de D-41 se incorporaron con el PR #83 (2026-11-11T23:06:13Z). Siguiente trabajo, en este orden: 1) seguridad (S-02/S-03, S-04 desglosado, S-05, S-11, S-21), 2) limpieza de ramas con confirmación separada y 3) el backlog del TODO. El punto del scope del token de gh queda retirado por decisión del usuario.
 
 ## 0. Punto exacto de reanudación
 
@@ -12,7 +12,7 @@ Corte operativo: 2026-11-11, `main` en ef5e57d (PR #82, merge 2744e5a, más los 
 
 **D-36 incorporado con el PR #82:** auditoría y sincronización documental; TODO y registro actualizados.
 
-SHA de fusión de D-36: 2744e5a (DC-52). No asumir que F-49, F-53 o F-54 estén implementadas.
+SHA de fusión de D-36: 2744e5a (DC-52). SHA de fusión de D-41: 83472a6 (DC-52). No asumir que F-49, F-53 o F-54 estén implementadas.
 
 **SET USER temporal (2026-11-11):** permiso global temporal concedido a `timon_admin` para restaurar volcados con `DEFINER=root`; `SHOW GRANTS` confirma `SET USER ON *.*` y `ALL` sobre `conta_hogar` y el patrón `conta\_hogar%`. No se revoca en esta iteración; S-22 lo registra sin fecha. Comando previsto:
 
