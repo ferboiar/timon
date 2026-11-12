@@ -43,7 +43,7 @@ Estado operativo: 2026-11-11, base ef5e57d (PR #82 y dos commits de seguimiento)
 - [x] 5. Corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49). PR #80, 2026-11-10.
 - [x] 6. Fase A: trazabilidad, índice único y validaciones (F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). PR #81, 2026-11-11.
 - [ ] 7. Limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto): solo con confirmación expresa y separada, rama por rama. No es un PR.
-- [~] 8. U-24/DC-56/D-42: arreglar los diagramas nomnoml del visor de documentación (nomnoml desde npm, renderer de `marked` registrado una vez, tema claro/oscuro por re-render) y documentar la pantalla. PR #84, 2026-11-12. No altera el orden de seguridad (P0).
+- [x] 8. U-24/DC-56/D-42: arreglar los diagramas nomnoml del visor de documentación (nomnoml desde npm, renderer de `marked` registrado una vez, tema claro/oscuro por re-render) y documentar la pantalla. PR #84 fusionado (merge 926f544, 2026-11-12T12:28:25Z). No altera el orden de seguridad (P0).
 
 Ya hecho: la edición de la descripción del PR #70.
 

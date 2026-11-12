@@ -80,7 +80,7 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 ## 5. Siguiente paso operativo
 
-Estado 2026-11-12: `main` en 1c1c3de (PR #83, merge 83472a6). En curso, sin fusionar: PR #84 (U-24, DC-56 y D-42), que arregla los diagramas nomnoml del visor de documentación. Siguiente bloque: seguridad (S-02/S-03 con DC-06, S-04 desglosado, S-05, S-11 con 10 PR de Snyk y S-21); después F-49, F-53, F-54, F-55 y el backlog del TODO. D-36 incorporado con el PR #82; D-41 se incorpora con el PR #83.
+Estado 2026-11-12: `main` en 926f544 (PR #84 fusionado, merge 926f544, 2026-11-12T12:28:25Z); antes, #83 con merge 83472a6. Siguiente bloque: seguridad (S-02/S-03 con DC-06, S-04 desglosado, S-05, S-11 con 10 PR de Snyk y S-21); después F-49, F-53, F-54, F-55 y el backlog del TODO. D-36 incorporado con el PR #82; D-41 se incorpora con el PR #83.
 
 Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; S-22 (`SET USER`); despliegue de la 0006. F-14 está cerrado (pasos a, b y d en los PR #53, #54 y #55; el resto del paso c no aplicable por DC-42). El detalle histórico de los PR #14 a #82 está en la sección 4.
 
