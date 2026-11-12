@@ -2,7 +2,7 @@
 
 ## Punto de reanudación (D-36, 2026-11-11)
 
-Corte: `main` = ef5e57d (2026-11-11): PR #82 (merge 2744e5a, 2026-11-11T20:22:07Z) más dos commits de seguimiento directos a main (342b87c y ef5e57d). Los cambios de D-41 se incorporaron con el PR #83 (merge 83472a6, 2026-11-11T23:06:13Z). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
+Corte: `main` = 4bdcd09 (2026-11-12): micro-commit de seguimiento de DC-52 (relevo y TODO) tras el PR #84 (U-24, DC-56 y D-42, merge 926f544, 2026-11-12T12:28:25Z). Antes, el PR #83 (merge 83472a6) y el PR #82 (merge 2744e5a); antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
 
 No hay trabajo de código preparado. Único cambio local ajeno: `backend/src/db/.db_connection`.
 
@@ -32,7 +32,7 @@ Ordena el backlog por riesgo y dependencias. P0 es la prioridad mayor y no la su
 
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
-Estado operativo: 2026-11-11, base ef5e57d (PR #82 y dos commits de seguimiento). F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar. D-36 cerrado con el PR #82; D-41 se incorpora con el PR #83. Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-12, base 4bdcd09 (PR #84 fusionado con merge 926f544 y el micro-commit de DC-52). F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar. D-36 cerrado con el PR #82; D-41 se incorpora con el PR #83. Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Trabajo acordado (un PR por punto)
 
