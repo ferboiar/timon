@@ -329,6 +329,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 ## Otras pantallas
 
 - [Calendario](./components/Calendar.md) - Vista anual de los cargos y totales por mes
+- [Visor de documentación](./components/Tech-documentation.md) - Visor de `doc/**/*.md` con navegación por `docNavigation` y diagramas nomnoml
 - [Páginas vacías de la plantilla](./components/PaginasVacias.md) - Presupuestos, Transacciones, Automatización y Préstamos
 
 ## Mantenimiento del proyecto

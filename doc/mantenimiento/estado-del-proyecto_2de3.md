@@ -72,6 +72,7 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #80 | S-18, S-19, F-51, U-18, U-19, D-34, DC-49 | Corrección post-#79: subrecursos, propiedad, permisos mixtos y seguimiento (merge ecf83bb) |
 | #81 | F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50, DC-51 | Trazabilidad de autor, índice único de categorías (0006) y validaciones en servidor (merge c07aed8) |
 | #82 | D-36, DC-52, DC-53 | Auditoría y sincronización documental tras el PR #81 (merge 2744e5a) |
+| #84 | U-24, DC-56, D-42 | Arreglo de los diagramas nomnoml del visor de documentación (npm, renderer único, tema por re-render) y documentación de la pantalla |
 
 Tras el #82 se publicaron dos commits de seguimiento directos a main: `342b87c` (SHA de fusión de D-36) y `ef5e57d` (base y recuento de S-11).
 
@@ -79,7 +80,7 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 ## 5. Siguiente paso operativo
 
-Estado 2026-11-11: `main` en ef5e57d (PR #82, merge 2744e5a, y dos commits de seguimiento). No hay trabajo de código preparado. Siguiente bloque: seguridad (S-02/S-03 con DC-06, S-04 desglosado, S-05, S-11 con 10 PR de Snyk y S-21); después F-49, F-53, F-54, F-55 y el backlog del TODO. D-36 incorporado con el PR #82; D-41 se incorpora con el PR #83.
+Estado 2026-11-12: `main` en 1c1c3de (PR #83, merge 83472a6). En curso, sin fusionar: PR #84 (U-24, DC-56 y D-42), que arregla los diagramas nomnoml del visor de documentación. Siguiente bloque: seguridad (S-02/S-03 con DC-06, S-04 desglosado, S-05, S-11 con 10 PR de Snyk y S-21); después F-49, F-53, F-54, F-55 y el backlog del TODO. D-36 incorporado con el PR #82; D-41 se incorpora con el PR #83.
 
 Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; S-22 (`SET USER`); despliegue de la 0006. F-14 está cerrado (pasos a, b y d en los PR #53, #54 y #55; el resto del paso c no aplicable por DC-42). El detalle histórico de los PR #14 a #82 está en la sección 4.
 

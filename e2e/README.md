@@ -77,7 +77,7 @@ El lanzador (`lanzador.mjs`):
 | `tests/recibosTrimestrales.spec.mjs` | Recibos: selección propia de trimestrales frente a bimestrales (F-30) y concepto en el diálogo (F-31); crea y borra sus recibos `e2e_…` |
 | `tests/autorizacion.spec.mjs` | Autorización: matriz de roles, propiedad, privacidad y rutas de documentación (S-01, S-06, S-12); crea y borra usuarios, cuentas y recibos `e2e_` |
 | `tests/autorizacionSubrecursos.spec.mjs` | Subrecursos: un `limited_user` no edita pagos ni movimientos ajenos usando su propio padre (S-18); permisos mixtos: catálogos legibles y recibo creado (U-18, DC-49); crea y borra datos `e2e_sub_*` |
-| `tests/documentacionReglas.spec.mjs` | Documentación: los centinelas de las reglas no se ven en el visor y los bloques se pintan (DC-47), sin datos |
+| `tests/documentacionReglas.spec.mjs` | Documentación: los centinelas de las reglas no se ven en el visor, los bloques se pintan (DC-47) y el diagrama nomnoml se dibuja y se repinta al cambiar de tema (U-24, DC-56), sin datos |
 | `tests/sesionCaducada.spec.mjs` | Sesión caducada: redirección al login con aviso y limpieza de almacenes (S-17, U-16), incluido el interceptor de `apiClient` (S-07) y el consumo único del aviso (U-19), sin datos |
 
 ## Specs de la Fase A (F-50, F-42, F-10, F-43)

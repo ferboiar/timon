@@ -21,7 +21,7 @@ Ordena el backlog por riesgo y dependencias. P0 es la prioridad mayor y no la su
 | P0 | S-02/S-03/S-04/S-05/S-11/S-21/S-22: seguridad y permisos | Contraseñas, sesión, CORS, dependencias y `SET USER` |
 | P1 | DC-01/F-15/F-49/F-53/F-54/F-55/S-20/D-38 | Cierra deuda funcional y de seguimiento con evidencia |
 | P2 | F-37/F-39/F-40, U-02/U-20, U-09/U-11 y pruebas de invariantes de Anticipos | Alcance medio en Ahorros, Anticipos, manual y homogeneidad |
-| P3 | U-01, U-03 a U-08, U-21, U-22, U-23, O-01, O-03, O-05, S-08, D-37, D-39, D-40 | Plantilla, pruebas de interfaz, operación y documentación |
+| P3 | U-01, U-03 a U-08, U-21, U-22, U-23, U-24, O-01, O-03, O-05, S-08, D-37, D-39, D-40, D-42 | Plantilla, pruebas de interfaz, operación y documentación |
 | P2 | R-02/R-03 y R-11: movimientos y presupuestos por periodo | Primero un modelo común, sin fuentes de saldo paralelas |
 | P2 | R-01/R-12: recepción de recibos y diferencias | Depende de presupuestos, respeta DC-14 y no duplica estados de pago |
 | P2 | R-09: reglas de aportación automática de Ahorros | Idempotencia, pausa, historial y política de fallos; distinto de uso manual/F-37 |
@@ -43,6 +43,7 @@ Estado operativo: 2026-11-11, base ef5e57d (PR #82 y dos commits de seguimiento)
 - [x] 5. Corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49). PR #80, 2026-11-10.
 - [x] 6. Fase A: trazabilidad, índice único y validaciones (F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). PR #81, 2026-11-11.
 - [ ] 7. Limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto): solo con confirmación expresa y separada, rama por rama. No es un PR.
+- [~] 8. U-24/DC-56/D-42: arreglar los diagramas nomnoml del visor de documentación (nomnoml desde npm, renderer de `marked` registrado una vez, tema claro/oscuro por re-render) y documentar la pantalla. PR #84, 2026-11-12. No altera el orden de seguridad (P0).
 
 Ya hecho: la edición de la descripción del PR #70.
 
