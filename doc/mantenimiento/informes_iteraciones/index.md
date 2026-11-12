@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-12 | U-24, DC-56, D-42 | [Arreglo de los diagramas nomnoml del visor de documentación](./2026-11-12_U-24-D-42-DC-56_arreglo-nomnoml-visor.md) |
 | 2026-11-11 | D-41 | [Auditoría posterior al PR #82](./2026-11-11_D-41_auditoria-posterior-pr82.md) |
 | 2026-11-11 | D-36 | [Auditoría y sincronización documental](./2026-11-11_D-36_auditoria-sincronizacion.md) |
 | 2026-11-11 | F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50, DC-51 | [Trazabilidad de autor, índice único de categorías y validaciones](./2026-11-11_F50-F22-F52-F43-F42-F41-F10-D35-DC-50-DC-51_trazabilidad-y-validaciones.md) |

@@ -1,28 +1,45 @@
-<script setup>
+<script>
+// Registro ÚNICO del renderer de marked, a nivel de módulo (U-24): antes se creaba en cada
+// carga de documento y la segunda llamada a marked.setOptions lo sustituía por `undefined`,
+// de modo que el visor nunca llegaba a dibujar los diagramas.
 import { marked } from 'marked';
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+
+// El componente registra aquí, una sola vez, cómo crear el contenedor de cada diagrama.
+let crearContenedorDiagrama = () => '';
+
+function registrarContenedorDiagrama(crear) {
+    crearContenedorDiagrama = crear;
+}
+
+const codeOriginal = marked.Renderer.prototype.code;
+const renderer = new marked.Renderer();
+
+renderer.code = function (code, infostring, escaped) {
+    const lenguaje = String(infostring || '')
+        .trim()
+        .split(/\s+/)[0];
+
+    if (lenguaje === 'nomnoml') {
+        return crearContenedorDiagrama(code);
+    }
+
+    // Resto de bloques: se delega en el renderer original de marked, así el HTML es el mismo
+    // que sin personalización (escapado de &, sin language-undefined ni line-numbers).
+    return codeOriginal.call(this, code, infostring, escaped);
+};
+
+marked.setOptions({ renderer });
+</script>
+
+<script setup>
+import nomnoml from 'nomnoml';
+import { nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-// Referencias a los scripts cargados para poder eliminarlos cuando se desmonte el componente
-const loadedScripts = ref([]);
+import { useLayout } from '@/layout/composables/layout';
 
-// Función para cargar dinámicamente un script
-const loadScript = (src) => {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = () => {
-            loadedScripts.value.push(script);
-            resolve(script);
-            console.log(`Script cargado: ${src}`);
-        };
-        script.onerror = (error) => {
-            console.error(`Error al cargar script ${src}:`, error);
-            reject(error);
-        };
-        document.head.appendChild(script);
-    });
-};
+// Apariencia general: al cambiar el tema se vuelve a pintar el diagrama (DC-56)
+const { isDarkTheme } = useLayout();
 
 // Estado para los documentos y la navegación
 const documentContent = ref('');
@@ -149,6 +166,7 @@ const docNavigation = [
                 title: 'Otras pantallas y proyecto',
                 children: [
                     { title: 'Calendario', path: 'components/Calendar' },
+                    { title: 'Visor de documentación', path: 'components/Tech-documentation' },
                     { title: 'Páginas vacías de la plantilla', path: 'components/PaginasVacias' },
                     { title: 'Suite E2E (Playwright)', path: 'pruebas/e2e' },
                     { title: 'Entorno de pruebas del backend', path: 'pruebas/entorno-pruebas' },
@@ -173,189 +191,71 @@ const docNavigation = [
     }
 ];
 
-// Variable para los diagramas pendientes
+// Diagramas nomnoml pendientes de pintar. Se conservan las fuentes para poder volver a
+// dibujarlos cuando cambia el tema (DC-56); la lista solo se vacía al cargar otro documento.
 const diagrams = ref([]);
 
-// Función para renderizar diagramas pendientes - adaptada para usar nomnoml como variable global
-const renderPendingDiagrams = async () => {
-    console.log(`Renderizando ${diagrams.value.length} diagramas pendientes...`);
+// nomnoml no tiene tema propio: en oscuro se antepone al bloque una cabecera con #fill y
+// #stroke (el .md no se modifica) y se vuelve a pintar; en claro se usan sus colores por defecto.
+const cabeceraTema = () => (isDarkTheme.value ? '#fill: #4a5568\n#stroke: #e5e7eb' : null);
+const claveTema = () => (isDarkTheme.value ? 'oscuro' : 'claro');
 
-    // Esperamos un momento para asegurar que el DOM se ha actualizado
+const escaparHtml = (texto) => String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// nomnoml informa «Parse error at line N column M» contando desde el inicio del bloque. La
+// cabecera de tema añade líneas al principio, así que se descuenta el desfase para que el
+// número mostrado sea el mismo en los dos temas.
+const mensajeDeError = (error, desfase) => {
+    const mensaje = String(error?.message ?? error);
+    if (!desfase) return mensaje;
+    return mensaje.replace(/line (\d+)/, (coincidencia, numero) => `line ${Math.max(1, Number(numero) - desfase)}`);
+};
+
+// Pinta los diagramas que aún no lo están con el tema actual
+const renderPendingDiagrams = async () => {
     await nextTick();
 
-    // Verificamos que nomnoml esté disponible globalmente
-    if (typeof window.nomnoml === 'undefined') {
-        console.error('La biblioteca nomnoml no está disponible globalmente');
+    if (typeof nomnoml?.renderSvg !== 'function') {
+        console.error('documentacion - diagramas: nomnoml no expone renderSvg');
         return;
     }
 
-    console.log('Nomnoml detectado como variable global:', window.nomnoml);
+    const tema = claveTema();
+    const pendientes = diagrams.value.filter((diagrama) => diagrama.pintadoCon !== tema);
+    if (!pendientes.length) return;
 
-    // Filtramos los diagramas para solo intentar renderizar los que tienen contenedores existentes
-    const diagramsToRender = diagrams.value.filter((diagram) => {
-        const container = document.getElementById(diagram.id);
-        return container !== null;
+    const cabecera = cabeceraTema();
+    const desfase = cabecera ? cabecera.split('\n').length : 0;
+
+    pendientes.forEach((diagrama) => {
+        const container = document.getElementById(diagrama.id);
+        if (!container) return; // todavía sin DOM: no se marca y lo reintenta el watch de isLoading
+
+        try {
+            const fuente = cabecera ? `${cabecera}\n${diagrama.source}` : diagrama.source;
+            container.innerHTML = nomnoml.renderSvg(fuente);
+            diagrama.pintadoCon = tema;
+        } catch (error) {
+            const mensaje = mensajeDeError(error, desfase);
+            container.innerHTML = `<div class="diagram-error">No se ha podido dibujar el diagrama nomnoml: ${escaparHtml(mensaje)}</div>`;
+            console.error('documentacion - renderizar diagrama: ', diagrama.id, mensaje);
+            diagrama.pintadoCon = tema; // evita reintentos en bucle con la misma fuente
+        }
     });
-
-    console.log(`Encontrados ${diagramsToRender.length} contenedores de diagramas válidos`);
-
-    if (typeof window.nomnoml.renderSvg === 'function') {
-        console.log('Usando nomnoml.renderSvg para renderizar diagramas');
-
-        diagramsToRender.forEach((diagram) => {
-            try {
-                const container = document.getElementById(diagram.id);
-                console.log(`Renderizando diagrama ${diagram.id}`);
-
-                // Generamos el SVG directamente
-                const svgString = window.nomnoml.renderSvg(diagram.source);
-                container.innerHTML = svgString;
-
-                // NUEVO: Identificar y marcar las etiquetas de relaciones basándonos en la estructura del SVG
-                const svg = container.querySelector('svg');
-                if (svg) {
-                    console.log(`SVG encontrado en el contenedor ${diagram.id}`);
-
-                    // Identificar primero qué textos son nombres de entidades
-                    const entityNames = [];
-                    const entityTexts = Array.from(diagram.source.matchAll(/\[(.*?)\]/g));
-                    entityTexts.forEach((match) => {
-                        if (match[1] && !match[1].startsWith('<')) {
-                            entityNames.push(match[1].trim());
-                        }
-                    });
-
-                    console.log('Nombres de entidades detectados:', entityNames);
-
-                    // Buscar todos los textos SVG
-                    const texts = svg.querySelectorAll('text');
-                    console.log(`Elementos text encontrados en el SVG: ${texts.length}`);
-
-                    texts.forEach((text, index) => {
-                        const content = text.textContent.trim();
-
-                        // Verificar si es un nombre de entidad
-                        const isEntityName = entityNames.includes(content);
-
-                        console.log(`Texto ${index}: "${content}" - Es nombre de entidad: ${isEntityName}`);
-
-                        if (!isEntityName) {
-                            // Si no es un nombre de entidad, verificamos si está asociado a una relación
-                            // Para esto, comprobamos si está cerca de una línea o path o marker
-                            const parent = text.parentNode;
-
-                            if (parent && parent.tagName === 'g') {
-                                // Buscar elementos hermanos que sean líneas, paths o markers
-                                const siblings = Array.from(parent.childNodes);
-                                const hasPathOrLine = siblings.some(
-                                    (node) =>
-                                        node.nodeType === 1 && // Es un elemento
-                                        (node.tagName === 'path' || node.tagName === 'line')
-                                );
-
-                                // También verificamos si el grupo padre tiene algún atributo transform
-                                // Esto es común en textos de etiquetas de relación que están posicionados
-                                const hasTransform = parent.hasAttribute('transform');
-
-                                if (hasPathOrLine || hasTransform) {
-                                    // Es texto asociado a una línea/path o está transformado, probablemente una etiqueta
-                                    text.setAttribute('data-relation-label', 'true');
-                                    console.log(`  ✅ MARCADO como etiqueta de relación: "${content}"`);
-                                }
-                            }
-                        }
-                    });
-
-                    // Verificar después de aplicar los atributos
-                    const markedElements = svg.querySelectorAll('[data-relation-label="true"]');
-                    console.log(`Elementos marcados como etiquetas de relación: ${markedElements.length}`);
-                } else {
-                    console.error(`No se encontró el elemento SVG en el contenedor ${diagram.id}`);
-                }
-
-                console.log(`Diagrama ${diagram.id} renderizado correctamente`);
-            } catch (error) {
-                console.error(`Error al renderizar diagrama ${diagram.id}:`, error);
-            }
-        });
-
-        // Limpiamos la lista de diagramas ya renderizados
-        diagrams.value = diagrams.value.filter((d) => !diagramsToRender.some((dr) => dr.id === d.id));
-    } else if (typeof window.nomnoml.draw === 'function') {
-        console.log('Usando nomnoml.draw para renderizar diagramas');
-
-        diagramsToRender.forEach((diagram) => {
-            try {
-                const container = document.getElementById(diagram.id);
-                console.log(`Renderizando diagrama ${diagram.id}`);
-
-                // Para la función draw necesitamos un canvas
-                const canvas = document.createElement('canvas');
-                canvas.width = container.clientWidth || 800;
-                canvas.height = 500;
-                canvas.style.width = '100%';
-                canvas.style.height = 'auto';
-
-                container.innerHTML = '';
-                container.appendChild(canvas);
-
-                // Utilizamos la función draw desde la variable global
-                window.nomnoml.draw(canvas, diagram.source);
-
-                console.log(`Diagrama ${diagram.id} renderizado correctamente`);
-            } catch (error) {
-                console.error(`Error al renderizar diagrama ${diagram.id}:`, error);
-            }
-        });
-
-        // Limpiamos la lista de diagramas ya renderizados
-        diagrams.value = diagrams.value.filter((d) => !diagramsToRender.some((dr) => dr.id === d.id));
-    } else {
-        console.error('No se encontró ninguna función de renderizado en nomnoml');
-    }
 };
 
-// Configuración de marked para procesar bloques de código
-const setupMarkedRenderer = () => {
-    console.log('Configurando renderer de marked para nomnoml y resaltado de código');
-    const renderer = new marked.Renderer();
+// El renderer de marked (registrado una sola vez en el módulo) pide aquí el contenedor
+registrarContenedorDiagrama((code) => {
+    const diagramId = `diagram-${Math.random().toString(36).substring(2)}`;
+    diagrams.value.push({ id: diagramId, source: code, pintadoCon: null });
+    console.log('documentacion - diagrama registrado: ', diagramId);
 
-    renderer.code = (code, language) => {
-        console.log('Procesando bloque de código:', { language, codeStart: code.substring(0, 50) });
-
-        // Detectar si es un diagrama nomnoml por el lenguaje especificado
-        if (language === 'nomnoml') {
-            console.log('Detectado diagrama nomnoml');
-
-            // Crear ID único para este diagrama
-            const diagramId = `diagram-${Math.random().toString(36).substring(2)}`;
-            console.log('ID generado para el diagrama:', diagramId);
-
-            // Registrar el diagrama para renderizarlo después
-            diagrams.value.push({
-                id: diagramId,
-                source: code
-            });
-
-            // Solo devolver el contenedor, la renderización se hará después
-            return `<div class="er-diagram-container">
+    return `<div class="er-diagram-container">
                 <div id="${diagramId}" class="nomnoml-diagram">
                   <div class="diagram-loader">Cargando diagrama...</div>
                 </div>
               </div>`;
-        }
-
-        // Para cualquier otro lenguaje, usamos las clases que Prism.js reconocerá
-        const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return `<pre class="line-numbers"><code class="language-${language}">${escapedCode}</code></pre>`;
-    };
-
-    // Aplicar el renderizador personalizado
-    marked.setOptions({ renderer });
-};
-
-// Configurar el renderizador de Markdown al inicio
-setupMarkedRenderer();
+});
 
 // Función para cargar un documento Markdown
 const loadDocument = async (path) => {
@@ -374,11 +274,7 @@ const loadDocument = async (path) => {
             const content = await markdownFiles[filePath]();
             console.log('Contenido cargado, longitud:', content.length);
 
-            // Configurar marked con nuestro renderizador personalizado
-            const renderer = setupMarkedRenderer();
-            marked.setOptions({ renderer });
-
-            // Convertir Markdown a HTML
+            // Convertir Markdown a HTML con el renderer registrado al cargar el módulo
             documentContent.value = marked(content);
             console.log('HTML generado, longitud:', documentContent.value.length);
 
@@ -393,13 +289,6 @@ const loadDocument = async (path) => {
             console.log('Título establecido:', documentTitle.value);
 
             currentPath.value = path;
-            await nextTick();
-
-            // Renderizar diagramas después de que el DOM se haya actualizado
-            if (diagrams.value.length > 0) {
-                console.log(`Se encontraron ${diagrams.value.length} diagramas para renderizar`);
-                setTimeout(renderPendingDiagrams, 200);
-            }
         } else {
             console.error(`Documento no encontrado: ${path}, ruta completa: ${filePath}`);
             documentContent.value = `<div class="text-red-500">Error: Documento no encontrado: ${path}</div>`;
@@ -431,6 +320,20 @@ watch(
     },
     { immediate: true }
 );
+
+// El contenido está oculto con v-if="!isLoading": los diagramas se pintan al terminar la carga
+watch(
+    isLoading,
+    async (cargando) => {
+        if (cargando) return;
+        await nextTick();
+        await renderPendingDiagrams();
+    },
+    { flush: 'post' }
+);
+
+// Cambio de tema claro/oscuro: se vuelve a dibujar el diagrama (no se aplica CSS sobre el SVG)
+watch(isDarkTheme, () => renderPendingDiagrams());
 
 // Resolver una ruta relativa desde una ruta base
 const resolvePath = (base, relative) => {
@@ -465,51 +368,10 @@ const handleContentClick = (event) => {
 
 onMounted(async () => {
     console.log('Componente Tech-documentation montado');
-    isLoading.value = true;
-
-    try {
-        // Cargar primero graphre (dependencia de nomnoml)
-        await loadScript('https://unpkg.com/graphre/dist/graphre.js');
-        // Luego cargar nomnoml
-        await loadScript('https://unpkg.com/nomnoml/dist/nomnoml.js');
-
-        console.log('Bibliotecas para renderizar diagramas cargadas correctamente');
-
-        // Verificamos que se han cargado correctamente
-        if (window.nomnoml) {
-            console.log('Nomnoml disponible:', Object.keys(window.nomnoml));
-        } else {
-            console.error('Nomnoml no se ha cargado correctamente');
-        }
-
-        // Cargar el documento inicial
-        const docPath = route.query.doc || 'index';
-        await loadDocument(docPath);
-
-        // Configurar evento para intentar renderizar cuando la ventana cambie de tamaño
-        window.addEventListener('resize', () => {
-            if (diagrams.value.length > 0) {
-                console.log('Reintentando renderizar diagramas por cambio de tamaño');
-                setTimeout(renderPendingDiagrams, 200);
-            }
-        });
-    } catch (error) {
-        console.error('Error al cargar las bibliotecas:', error);
-        documentContent.value = `<div class="text-red-500">Error al cargar las bibliotecas necesarias para la documentación: ${error.message}</div>`;
-    } finally {
-        isLoading.value = false;
-    }
-});
-
-// Eliminar los scripts cuando se desmonte el componente para evitar conflictos
-onBeforeUnmount(() => {
-    console.log('Limpiando scripts al desmontar Tech-documentation');
-    // Eliminar los scripts cargados
-    loadedScripts.value.forEach((script) => {
-        if (script && script.parentNode) {
-            script.parentNode.removeChild(script);
-        }
-    });
+    // El watch de route.query.doc (immediate) ya carga el documento; aquí solo se completa el
+    // pintado cuando el documento se resolvió antes de montar el componente.
+    await nextTick();
+    await renderPendingDiagrams();
 });
 </script>
 
@@ -685,7 +547,7 @@ onBeforeUnmount(() => {
     text-decoration: underline;
 }
 
-/* Estilos para el contenedor del diagrama ER */
+/* Estilos para el contenedor del diagrama nomnoml */
 .er-diagram-container {
     margin: 1.5rem 0;
     text-align: center;
@@ -702,6 +564,12 @@ onBeforeUnmount(() => {
     position: relative;
 }
 
+/* El SVG trae width/height fijos y viewBox: se adapta al ancho sin volver a pintarlo */
+.nomnoml-diagram svg {
+    max-width: 100%;
+    height: auto;
+}
+
 .diagram-loader {
     position: absolute;
     top: 50%;
@@ -711,7 +579,14 @@ onBeforeUnmount(() => {
     color: #666;
 }
 
-/* Ajuste para tema oscuro */
+/* Aviso legible cuando el bloque nomnoml no compila */
+.diagram-error {
+    color: #b91c1c;
+    font-style: italic;
+    text-align: left;
+}
+
+/* Tema oscuro: el color del diagrama lo fija la cabecera #fill/#stroke del render */
 :root.app-dark .er-diagram-container,
 .app-dark .er-diagram-container {
     background-color: #2d3748;
@@ -722,18 +597,8 @@ onBeforeUnmount(() => {
     color: #ddd;
 }
 
-/* Nuevo: Mantener color de flechas consistente en modo oscuro */
-:root.app-dark .nomnoml-diagram svg line,
-:root.app-dark .nomnoml-diagram svg path,
-.app-dark .nomnoml-diagram svg line,
-.app-dark .nomnoml-diagram svg path {
-    stroke: #a8a8a8 !important;
-}
-
-/* Nuevo: Hacer que SOLO el texto de las etiquetas de relaciones sea de color específico en modo oscuro */
-:root.app-dark .nomnoml-diagram svg text[data-relation-label='true'],
-.app-dark .nomnoml-diagram svg text[data-relation-label='true'] {
-    fill: #fde9e9 !important; /* Color turquesa para las etiquetas */
-    stroke: none !important;
+:root.app-dark .diagram-error,
+.app-dark .diagram-error {
+    color: #fca5a5;
 }
 </style>

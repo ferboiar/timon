@@ -11,7 +11,8 @@ import Inspector from 'vite-plugin-vue-inspector';
 // https://vitejs.dev/config/
 export default defineConfig({
     optimizeDeps: {
-        noDiscovery: true
+        noDiscovery: true,
+        include: ['nomnoml']
     },
     plugins: [
         vue(),

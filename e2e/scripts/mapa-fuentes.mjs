@@ -130,6 +130,7 @@ export const MAPA_FUENTES = {
         'src/router/index.js',
         'doc/mantenimiento/instruccion-persistente_2de4.md',
         'doc/mantenimiento/instruccion-persistente_3de4.md',
+        'doc/db/schema/presupuestos.md',
         '.cline/rules/00-timon-obligatorio.md'
     ],
     'tests/smoke.spec.mjs': ['src/main.js', 'src/App.vue', 'src/router/index.js', 'vite.config.mjs']
