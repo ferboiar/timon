@@ -81,7 +81,7 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 ## 5. Siguiente paso operativo
 
-Estado 2026-11-13: `main` en 31badf8 más el PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; SHA pendiente de registrar, DC-52); antes, #84 con merge 926f544 y #83 con merge 83472a6. Siguiente bloque de código: O-06 y, después, O-07, S-04, S-05 y S-11. Decisiones registradas en este corte: DC-58 (viabilidad de los hallazgos, instrucción 7.2) y DC-59 (base de datos de las pruebas E2E: réplica de `conta_hogar` en `conta_hogar_test` con `E2E_CLONAR=1`; `configuracionBd` solo sobre la réplica con `DB_CONFIG_PATH`; la suite del backend sigue solo sobre una base `*_test`).
+Estado 2026-11-13: `main` en 31badf8 más el PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; merge `704b2e4`, 2026-11-13); antes, #84 con merge 926f544 y #83 con merge 83472a6. Siguiente bloque de código: O-06 y, después, O-07, S-04, S-05 y S-11. Decisiones registradas en este corte: DC-58 (viabilidad de los hallazgos, instrucción 7.2) y DC-59 (base de datos de las pruebas E2E: réplica de `conta_hogar` en `conta_hogar_test` con `E2E_CLONAR=1`; `configuracionBd` solo sobre la réplica con `DB_CONFIG_PATH`; la suite del backend sigue solo sobre una base `*_test`).
 
 
 Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; S-22 (`SET USER`); despliegue de la 0006. F-14 está cerrado (pasos a, b y d en los PR #53, #54 y #55; el resto del paso c no aplicable por DC-42). El detalle histórico de los PR #14 a #82 está en la sección 4.
