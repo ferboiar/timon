@@ -2,13 +2,13 @@
 
 Parte 1 de 3 del [relevo](./estado-del-proyecto.md): secciones 0 a 3 (punto exacto de reanudación; qué es y cómo está montado; cómo se trabaja; cómo funciona hoy). Se lee completa y en orden con las demás: [parte 1 de 3](./estado-del-proyecto_1de3.md) · [parte 2 de 3](./estado-del-proyecto_2de3.md) · [parte 3 de 3](./estado-del-proyecto_3de3.md).
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-12, base 926f544 (PR #84 fusionado, merge 926f544, 2026-11-12T12:28:25Z; antes, #83 con merge 83472a6, #82 con merge 2744e5a y los commits de seguimiento 342b87c y ef5e57d). Sin trabajo en curso: todo lo anterior al #82 está fusionado (el #82 con merge 2744e5a). Los cambios de D-41 se incorporaron con el PR #83 (2026-11-11T23:06:13Z). PR #84 fusionado (merge 926f544, 2026-11-12T12:28:25Z): U-24, DC-56 y D-42, arreglo de los diagramas nomnoml del visor de documentación. Siguiente trabajo, en este orden: 1) seguridad (S-02/S-03, S-04 desglosado, S-05, S-11, S-21), 2) limpieza de ramas con confirmación separada y 3) el backlog del TODO. El punto del scope del token de gh queda retirado por decisión del usuario.
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-13, base 31badf8 más el PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; SHA de fusión pendiente de registrar, DC-52); antes, #84 (merge 926f544), #83 (merge 83472a6) y #82 (merge 2744e5a).
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-12, `main` en 926f544 (PR #84 fusionado, merge 926f544; antes, #83 con merge 83472a6, #82 con merge 2744e5a y los commits de seguimiento 342b87c y ef5e57d). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51) y ecf83bb (PR #80: corrección post-#79). La migración 0006 está aplicada en `conta_hogar` (verificado en solo lectura el 2026-11-11): `uq_categorias_nombre` y `modificado_por` con FK `ON DELETE SET NULL`. F-14 cerrado por DC-42.
+Corte operativo: 2026-11-13, `main` en 31badf8 más el PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; SHA de fusión pendiente de registrar, DC-52). Antes, #84 (U-24, DC-56 y D-42, merge 926f544) y #83 (D-41, merge 83472a6). La migración 0006 está aplicada en `conta_hogar`.
 
-**Siguiente trabajo:** no hay trabajo de código preparado. Toca seguridad: S-02/S-03 (con DC-06), S-04 desglosado, S-05, S-11 (10 PR de Snyk abiertos) y S-21. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las 9 ramas locales y de la rama remota del PR #81 queda pendiente, con confirmación expresa y separada por rama.
+**Siguiente trabajo:** O-06 (contenido de los volcados: rutinas y eventos), inmediatamente después del PR #85; después O-07 (objetos de esquema no reproducibles desde migraciones), S-04 desglosado, S-05 y S-11. Secuencia: O-06 → O-07 → S-04 → S-05 → S-11. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las ramas locales y de las remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`) sigue pendiente, con confirmación expresa y separada.
 
 **D-36 incorporado con el PR #82:** auditoría y sincronización documental; TODO y registro actualizados.
 
@@ -42,7 +42,7 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 
 - Una rama por cambio, un PR por rama, fusionado en `main`. El nombre de la rama lleva la fase (o `mantenimiento`) y todos los IDs desglosados, por ejemplo `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias` o `mantenimiento/D-17-dividir-instruccion-persistente`.
 - Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y el relevo (la parte que contiene la sección afectada, DC-27 y DC-37). Un documento nuevo se añade también a `docNavigation`. Cada informe de iteración nuevo se añade al índice `mantenimiento/informes_iteraciones/index.md`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres (comprobar siempre en el registro antes de asignarlos): O-06, U-25, D-43, S-24 y DC-57.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres (comprobar siempre en el registro antes de asignarlos): S-24 y DC-60. Usados en este corte: O-06, U-25, D-43, D-44, DC-57, DC-58 y DC-59.
 - Mensajes de commit: `tipo(IDs): resumen`, con cada ID desglosado (por ejemplo `fix(F-07, F-08): resumen`), y cuerpo en español. El título del PR sigue el mismo formato. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend se ejecutan con `npm run test:backend:local` (con `backend/test/.env.test`, DC-46) o, si ese fichero no existe, con `npm run test:backend`; ver `backend/test/README.md`.

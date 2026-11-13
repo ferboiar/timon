@@ -23,19 +23,6 @@ export class DbConfigService {
     }
 
     /**
-     * Obtiene solo la contraseña de la base de datos.
-     * @returns {Promise<Object>}
-     */
-    static async getDbPassword() {
-        try {
-            const { data } = await apiClient.get(`${API_URL}/password`);
-            return data;
-        } catch (error) {
-            throw errorDe(error, 'Error al obtener la contraseña');
-        }
-    }
-
-    /**
      * Prueba una nueva configuración de conexión a la base de datos.
      * @param {Object} config - Datos de conexión a probar.
      * @returns {Promise<Object>}

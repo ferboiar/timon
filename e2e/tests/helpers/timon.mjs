@@ -76,7 +76,10 @@ export async function haySesion(page) {
  */
 export async function iniciarSesion(page, { usuario, password } = credenciales()) {
     await page.goto(urlDe('/auth/login'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(page.getByLabel('Usuario')).toBeVisible();
+    // 20 s, como el resto del fichero: los 5 s por defecto son demasiado justos para el
+    // primer pintado del formulario en un contexto nuevo bajo carga (fallo visto en
+    // sesionCaducada: «element(s) not found», Timeout 5000ms).
+    await expect(page.getByLabel('Usuario')).toBeVisible({ timeout: 20_000 });
 
     await page.getByLabel('Usuario').fill(usuario);
     await page.getByPlaceholder('Contraseña').fill(password);

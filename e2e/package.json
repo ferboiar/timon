@@ -24,6 +24,7 @@
         "e2e:trazabilidad": "node lanzador.mjs tests/recibosTrazabilidad.spec.mjs",
         "e2e:validacionUsuarios": "node lanzador.mjs tests/usuariosValidacion.spec.mjs",
         "e2e:borrados": "node lanzador.mjs tests/borradosEnUso.spec.mjs",
+        "e2e:configuracionBd": "node lanzador.mjs tests/configuracionBd.spec.mjs",
         "e2e:lista": "playwright test --list"
     },
     "keywords": [

@@ -74,6 +74,10 @@ Los valores por defecto corresponden a la opción B. En la opción A hay que ind
 
 La suite de integración no aplica migraciones a mano: fase0.test.mjs elimina y recrea la base TEST_DB_NAME y aplica por orden todos los ficheros de backend/src/db/migrations, incluida la 0006. La migración es repetible y su guarda SIGNAL se prueba en la propia suite. Las pruebas unitarias nuevas son validacionUsuarios.test.mjs, validacionCategorias.test.mjs y paridadValidacionUsuarios.test.mjs (esta última importa también src/utils/validacionUsuarios.js).
 
+## Pruebas de conexión y mantenimiento de la base de datos (PR #85)
+
+Las cinco pruebas nuevas son unitarias y no necesitan MariaDB: `mantenimientoCredenciales.test.mjs` (S-02: argumentos sin contraseña, fichero de opciones en 600 y borrado también al fallar, con `mysqldump` y `mysql` simulados en el PATH), `configuracionConexion.test.mjs` (claves, ida y vuelta, TLS, precedencia, pool y aislamiento), `configuracionBd.test.mjs` (reglas 1 a 6 y utilidades de pantalla), `rutasConexionBd.test.mjs` (404 de `/password`, los 400 de validación y contraseña efectiva) y `preparaBasePruebas.test.mjs` (el script de preparación de las E2E se niega a tocar una base sin `_test`).
+
 ## Pruebas de simulación anual (U-13)
 
 `node --test backend/test/generacionAnual.test.mjs` prueba sin MariaDB el cálculo de diciembre, la prohibición de escritura futura y la separación de avisos. La suite de integración existente de `fase0.test.mjs` requiere la base *_test. Los cuatro tests nuevos son unitarios: no prueban por HTTP la ruta ni reproducen el bloqueo concurrente de MariaDB. La simulación de diciembre se comprobó además manualmente en la aplicación.

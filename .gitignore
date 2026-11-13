@@ -12,3 +12,4 @@ dist
 api-generator/typedoc.json
 **/.DS_Store
 backend/src/db/.db_connection*
+backup.sql

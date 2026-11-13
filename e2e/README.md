@@ -123,8 +123,50 @@ Comandos: npm run e2e:trazabilidad, npm run e2e:validacionUsuarios y npm run e2e
   `backend/src/db/.db_connection` (`E2E_BASES_PERMITIDAS=conta_hogar` por defecto) y se
   arranca `npm run nas` en la raíz, en un grupo de procesos propio, con log en
   `<runtime>/logs`.
+- Los specs de la pestaña **Base de Datos** necesitan una base `*_test` y un arranque manual
+  con `DB_CONFIG_PATH` (ver «Base de datos de las pruebas»). En ese caso la suite encuentra
+  5173 y 3000 ya levantados, los reutiliza y **no** comprueba `E2E_BASES_PERMITIDAS`.
 - Al terminar se para **solo** lo que arrancó la suite (`SIGTERM` y, si hace falta,
   `SIGKILL` al grupo) y se verifica que 5173 y 3000 ya no escuchan.
+
+## Base de datos de las pruebas (pestaña Base de Datos)
+
+Los specs de la pestaña **Base de Datos** guardan la configuración y restauran un volcado, así
+que **no pueden ejecutarse contra la base de desarrollo**. El procedimiento es:
+
+1. `node e2e/scripts/prepara-base-pruebas.mjs [ruta]` recrea `conta_hogar_test` **de cero**
+   (tolera restos de ejecuciones fallidas), crea el usuario de las E2E como administrador y
+   escribe el fichero de configuración. Sin `E2E_CLONAR`, aplica las migraciones y siembra una
+   cuenta y una categoría. Con `E2E_CLONAR=1` replica `conta_hogar` en `conta_hogar_test`:
+
+   ```bash
+   E2E_CLONAR=1 node e2e/scripts/prepara-base-pruebas.mjs /tmp/timon-e2e-db-connection
+   ```
+
+   El volcado del origen es de solo lectura (`mariadb-dump --single-transaction`, sin
+   `--routines` ni `--events`, para que el evento horario no actúe en la base de pruebas), la
+   carga va por la entrada estándar del cliente `mariadb` con un fichero de opciones 600, la
+   contraseña nunca viaja en los argumentos y nunca se escribe en `conta_hogar`. El script
+   comprueba que la base destino termina en `_test`.
+
+2. Arranca la aplicación apuntando a ese fichero, nunca al real:
+   `DB_CONFIG_PATH=<ruta> npm run nas`.
+3. Ejecuta la suite con `E2E_DB_CONFIG=<ruta>` (para el caso que siembra y borra una CA) y, si
+   se quieren cubrir las reglas de mantenimiento, `E2E_MANT_USER` y `E2E_MANT_PASSWORD`.
+4. La suite del backend (`npm run test:backend:local`) **borra `conta_hogar_test`** al
+   terminar: vuelve a ejecutar el paso 1 antes de la siguiente tanda.
+
+   **No lances la suite del backend con un servidor e2e vivo ni con un clon a medio cargar**:
+   los fallos de esquema que aparecen así no son defectos del código. Para el servidor y
+   vuelve a empezar por el paso 1.
+
+Con DC-59, el resto de la suite puede ejecutarse sobre `conta_hogar`, siempre que todo lo que
+cree lleve prefijo `e2e_` o sufijo `_test`; la réplica es el modo recomendado y el único
+válido para los specs de la pestaña Base de Datos.
+
+`DB_CONFIG_PATH` es una variable de entorno del backend (`db_utilsConn` y `db_connection`): si
+está definida, la aplicación lee y escribe ahí su configuración. Así las E2E no tocan
+`backend/src/db/.db_connection`.
 
 ## Triage de fallos
 

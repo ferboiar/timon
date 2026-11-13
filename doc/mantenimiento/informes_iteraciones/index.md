@@ -4,6 +4,8 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-12 | S-02, S-03, DC-06, DC-57 | [Seguridad de la conexión y del mantenimiento de la base de datos](./2026-11-12_S02_S03_DC06_seguridad-bd.md) |
+| 2026-11-12 | S-02, S-03, DC-06, DC-57 | [Seguridad de la conexión y del mantenimiento de la base de datos](./2026-11-12_S02_S03_DC06_seguridad-bd.md) |
 | 2026-11-12 | U-24, DC-56, D-42 | [Arreglo de los diagramas nomnoml del visor de documentación](./2026-11-12_U-24-D-42-DC-56_arreglo-nomnoml-visor.md) |
 | 2026-11-11 | D-41 | [Auditoría posterior al PR #82](./2026-11-11_D-41_auditoria-posterior-pr82.md) |
 | 2026-11-11 | D-36 | [Auditoría y sincronización documental](./2026-11-11_D-36_auditoria-sincronizacion.md) |

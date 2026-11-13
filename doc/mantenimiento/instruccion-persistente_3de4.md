@@ -161,6 +161,10 @@ Si un PR deja algo en «Pendiente» y no lo registra en el mismo PR en registro,
 
 La instrucción persistente, el relevo, el registro y el TODO son la fuente de verdad absoluta para el seguimiento del proyecto y su continuidad entre chats. Ningún otro documento (informe de iteración, descripción del PR, conversación del chat) sustituye a estos cuatro como fuente de verdad.
 
+7.2. Viabilidad de los hallazgos (DC-58)
+
+Todo hallazgo que surja durante un PR se incluye en ese mismo PR si es viable: mismo ámbito, riesgo y revisión proporcionados, verificable con sus pruebas y sin depender de una decisión de producto ni de otro PR. Si no es viable, se registra con un ID nuevo en el registro, el TODO y el relevo. Si un PR acumula más de tres tareas nuevas, se divide.
+
 8. AUDITORÍAS
 
 Una auditoría exhaustiva necesita inventario por archivo y versión.

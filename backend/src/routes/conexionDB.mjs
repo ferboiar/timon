@@ -10,10 +10,11 @@
  *
  * @module routes/conexionDB
  */
+import { recrearPool } from '#backend/db/db_connection.mjs';
 import * as dbConnUtils from '#backend/db/db_utilsConn.mjs';
 import { verifyAdmin } from '#backend/middleware/auth.mjs';
 import { AUDIENCIA_ADMIN } from '#backend/utils/catalogoErrores.mjs';
-import { responderError } from '#backend/utils/errorDeNegocio.mjs';
+import { detalleParaLog, ErrorDeNegocio, responderError } from '#backend/utils/errorDeNegocio.mjs';
 import express from 'express';
 
 const router = express.Router();
@@ -37,22 +38,26 @@ router.get('/', verifyAdmin, async (req, res) => {
 });
 
 /**
- * Obtener solo la contraseña de la base de datos.
- * @route GET /api/db-config/password
- * @access Privado - Administrador
+ * S-02/DC-06: datos para probar la conexión de la aplicación.
+ *
+ * Comprueba los campos obligatorios y usa la contraseña guardada cuando el campo llega
+ * vacío.
+ *
+ * @param {Object} body Datos recibidos.
+ * @returns {Promise<Object>} Configuración para la prueba.
  */
-router.get('/password', verifyAdmin, async (req, res) => {
-    try {
-        const password = await dbConnUtils.getDbPassword();
-        res.json({ password });
-    } catch (error) {
-        responderError(res, error, 'No se ha podido leer la contraseña guardada en la configuración.', {
-            clave: 'message',
-            contexto: 'conexionDB - lectura de la contraseña',
-            audiencia: AUDIENCIA_ADMIN
-        });
-    }
-});
+async function configuracionParaProbar(body) {
+    // S-03: se valida antes de probar la conexión, para no dar un error de red cuando el
+    // problema es una clave desconocida o un campo obligatorio vacío
+    dbConnUtils.validarClaves(body);
+    dbConnUtils.validarCamposObligatorios(body);
+
+    const configuracion = { ...(body || {}) };
+
+    if (!configuracion.DB_PASSWORD) configuracion.DB_PASSWORD = await dbConnUtils.getDbPassword();
+
+    return configuracion;
+}
 
 /**
  * Probar una nueva configuración de conexión a la base de datos.
@@ -61,7 +66,9 @@ router.get('/password', verifyAdmin, async (req, res) => {
  */
 router.post('/test', verifyAdmin, async (req, res) => {
     try {
-        await dbConnUtils.testDbConnection(req.body);
+        const configuracion = await configuracionParaProbar(req.body);
+
+        await dbConnUtils.testDbConnection(configuracion);
         console.log('conexionDB - prueba de conexión: correcta');
         res.json({ message: 'La prueba de conexión fue exitosa.' });
     } catch (error) {
@@ -80,14 +87,47 @@ router.post('/test', verifyAdmin, async (req, res) => {
  */
 router.put('/', verifyAdmin, async (req, res) => {
     try {
-        // Primero, probar la conexión antes de guardar
-        await dbConnUtils.testDbConnection(req.body);
-        // Si la prueba es exitosa, guardar la configuración
+        const configuracion = await configuracionParaProbar(req.body);
+        const final = await dbConnUtils.calcularConfiguracionFinal(req.body);
+
+        // Primero la prueba de conexión, con la contraseña que se va a guardar de verdad
+        await dbConnUtils.testDbConnection(configuracion);
+
+        // S-02: si se están definiendo las credenciales de mantenimiento, se prueban también
+        const cuerpo = req.body || {};
+        const enviaMantenimiento =
+            Object.prototype.hasOwnProperty.call(cuerpo, 'DB_MAINT_USER') || Object.prototype.hasOwnProperty.call(cuerpo, 'DB_MAINT_PASSWORD');
+
+        if (enviaMantenimiento && final.DB_MAINT_USER && final.DB_MAINT_PASSWORD) {
+            try {
+                await dbConnUtils.testDbConnection({
+                    ...final,
+                    DB_USER: final.DB_MAINT_USER,
+                    DB_PASSWORD: final.DB_MAINT_PASSWORD
+                });
+            } catch (error) {
+                console.error('conexionDB - credenciales de mantenimiento: ' + detalleParaLog(error));
+                throw new ErrorDeNegocio(
+                    'Las credenciales de mantenimiento no permiten conectar con la base de datos. Revisa el usuario y la contraseña de mantenimiento.',
+                    400,
+                    'MANTENIMIENTO_NO_CONECTA'
+                );
+            }
+        }
+
         await dbConnUtils.saveDbConfig(req.body);
 
-        // DC-09: traza sin contraseña ni usuario
-        const { DB_HOST, DB_PORT, DB_DATABASE } = req.body || {};
-        console.log(`conexionDB - configuración guardada: ${DB_DATABASE} en ${DB_HOST}:${DB_PORT}`);
+        // DC-09: sin contraseña ni usuario
+        const { DB_HOST, DB_PORT, DB_DATABASE } = final;
+        console.log('conexionDB - configuración guardada: ' + DB_DATABASE + ' en ' + DB_HOST + ':' + DB_PORT);
+
+        try {
+            const resultado = await recrearPool();
+            console.log('conexionDB - pool: ' + (resultado.recreado ? 'recreado con la configuración guardada' : 'sin cambios (' + resultado.motivo + ')'));
+        } catch (error) {
+            console.error('conexionDB - pool: no se ha podido recrear la conexión; ' + detalleParaLog(error));
+        }
+
         res.json({ message: 'Configuración de la base de datos guardada correctamente.' });
     } catch (error) {
         responderError(res, error, 'No se ha podido guardar la configuración de la base de datos.', {
