@@ -10,8 +10,8 @@
 
 ## Base
 
-- Rama `correccion/fase-3-S02-S03-DC06-seguridad-bd`, sobre `main` en `00ca422`.
-- PR #84 fusionado previamente (merge 926f544). PR de esta iteración: **#85**, SHA pendiente de registrar (DC-52).
+- Rama `correccion/fase-3-S02-S03-DC06-seguridad-bd`, sobre `main` en `31badf8`.
+- PR #84 fusionado previamente (merge 926f544). PR de esta iteración: **#85**, merge `704b2e4` (2026-11-13).
 - Único cambio local ajeno: `backend/src/db/.db_connection`, que **no se ha tocado**: su sha256 sigue siendo `cffe3241e7bdbd08`.
 
 ## Cambios
@@ -35,9 +35,9 @@
 | `doc/components/ProfileSettings.md` | Sí | Sí | Pestaña Base de Datos: disposición, validación y campos |
 | `doc/services/DbConfigService.md` | Sí | Sí | Sin `getDbPassword` |
 | `doc/mantenimiento/registro-hallazgos_1de3.md` | Sí | Sí | DC-57 |
-| `doc/mantenimiento/registro-hallazgos_3de3.md` | Sí | Sí | S-02, S-03, O-06 y O-07 |
+| `doc/mantenimiento/registro-hallazgos_3de3.md` | Sí | Sí | S-02, S-03, O-06, O-07, D-43 y D-44 |
 | `doc/mantenimiento/instruccion-persistente_3de4.md` | Sí | Sí | §7.2 (DC-58) |
-| `TODO` | Sí | Sí | S-02/S-03 cerrados, O-06/O-07/D-43 y secuencia |
+| `TODO` | Sí | Sí | S-02/S-03 cerrados, O-06/O-07/D-43/D-44 y secuencia |
 | `doc/mantenimiento/estado-del-proyecto_1de3.md` y `_2de3.md` | Sí | Sí | Corte, siguiente trabajo e historial |
 | `e2e/README.md` | Sí | Sí | Procedimiento con `DB_CONFIG_PATH` y reconciliación |
 | `doc/index.md`, `docNavigation`, `README.md` y `README_en.md` | Sí | No | No hay documentos nuevos ni cambios de producto |
@@ -62,7 +62,7 @@
 
 ## Estado al preparar el informe
 
-- Rama `correccion/fase-3-S02-S03-DC06-seguridad-bd`, base `31badf8`; 39 entradas en `git status --short`: 30 modificados (uno es `.db_connection`, que no se prepara) y 9 nuevos.
+- Rama `correccion/fase-3-S02-S03-DC06-seguridad-bd`, base `31badf8`; 40 entradas en `git status --short`: 31 modificados (uno es `.db_connection`, que no se prepara) y 9 nuevos.
 - `.db_connection` intacto (hash idéntico). Aplicación y base de pruebas paradas.
 - Sin commit, push, PR ni merge: cada operación requiere confirmación separada.
 

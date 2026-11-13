@@ -6,11 +6,11 @@ Parte 1 de 3 del [registro de hallazgos](./registro-hallazgos.md): secciones 0 a
 
 Fecha: 2026-11-11. `main` en ef5e57d (PR #82, merge 2744e5a, más los commits de seguimiento 342b87c y ef5e57d). Antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar` (verificado en solo lectura el 2026-11-11): índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL`.
 
-No hay trabajo de código preparado. Único cambio local ajeno: `backend/src/db/.db_connection`. Siguiente trabajo: seguridad (S-02/S-03 con DC-06, S-04 desglosado, S-05, S-11 y S-21); después F-49, F-53, F-54, F-55 y el resto del backlog del TODO.
+No hay trabajo de código preparado. Único cambio local ajeno: `backend/src/db/.db_connection`. Siguiente trabajo: O-06 (rutinas y eventos en el volcado) y, después, O-07, S-04 desglosado, S-05 y S-11; después F-49, F-53, F-54, F-55 y el resto del backlog del TODO.
 
 Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; retirada de `SET USER` (S-22); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
 
-D-36 incorporado con el PR #82; D-41 se incorpora con el PR #83 (SHA de fusión pendiente de registrar, DC-52). Las pruebas requieren una base `*_test` y no deben tocar `conta_hogar`. La sección 8 del relevo (parte 3 de 3, `estado-del-proyecto_3de3.md`) contiene el relevo completo, aceptación, entorno y reglas del usuario. No marcar una prueba o corrección como verificada por el mero hecho de generar o aplicar un parche.
+D-36 incorporado con el PR #82 (merge `2744e5a`) y D-41 con el PR #83 (merge `83472a6`). Las pruebas requieren una base `*_test` y no deben tocar `conta_hogar`. La sección 8 del relevo (parte 3 de 3, `estado-del-proyecto_3de3.md`) contiene el relevo completo, aceptación, entorno y reglas del usuario. No marcar una prueba o corrección como verificada por el mero hecho de generar o aplicar un parche.
 
 La división de este registro en partes (DC-28, D-16) se incorporó el 2026-10-28 (PR #38). Se lee la entrada y las 3 partes en orden.
 
