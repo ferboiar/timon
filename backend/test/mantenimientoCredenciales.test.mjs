@@ -27,7 +27,7 @@ let contrasena = '';
 let hayConfiguracion = false;
 
 /** Ejecutable de prueba que anota argumentos, fichero de opciones y su modo. */
-function crearStub(nombre, codigo) {
+function crearStub(nombre, codigo, mensajeDeError = '') {
     const ruta = path.join(dirStub, nombre);
 
     fs.writeFileSync(
@@ -40,6 +40,12 @@ function crearStub(nombre, codigo) {
             '    datos.modo = (fs.statSync(datos.fichero).mode & 0o777).toString(8);' + NL +
             '    datos.contenido = fs.readFileSync(datos.fichero, "utf8");' + NL +
             '}' + NL +
+            'if (' +
+            JSON.stringify(mensajeDeError) +
+            ') console.error(' +
+            JSON.stringify(mensajeDeError) +
+            ');' +
+            NL +
             'fs.writeFileSync(process.env.STIMON_ANOTACION, JSON.stringify(datos));' + NL +
             'process.exit(' + codigo + ');' + NL
     );
@@ -91,6 +97,8 @@ describe('S-02: credenciales del mantenimiento', () => {
         const datos = leerAnotacion();
 
         assert.equal(datos.args.some((argumento) => argumento.startsWith('--password')), false, 'no debe usarse --password');
+        assert.ok(datos.args.includes('--routines'), 'el volcado debe pedir las rutinas (O-06)');
+        assert.ok(datos.args.includes('--events'), 'el volcado debe pedir los eventos (O-06)');
         assert.equal(datos.args.some((argumento) => argumento.includes(contrasena)), false, 'la contraseña no puede estar en los argumentos');
         assert.ok(datos.fichero, 'debe usarse --defaults-extra-file');
         assert.equal(datos.modo, '600', 'el fichero de opciones debe ser privado');
@@ -139,5 +147,33 @@ describe('S-02: credenciales del mantenimiento', () => {
             [],
             'la copia previa debe borrarse tras una restauración correcta'
         );
+    });
+
+    test('un ERROR 1227 al restaurar se explica como falta de SET USER', async (contexto) => {
+        if (!hayConfiguracion) {
+            contexto.skip('no hay configuración de base de datos');
+            return;
+        }
+
+        crearStub('mysqldump', 0);
+        crearStub('mysql', 1, 'ERROR 1227 (42000) at line 1: Access denied; you need (at least one of) the SUPER, SET USER privilege(s) for this operation');
+
+        const dump = path.join(dirStub, 'volcado-definer.sql');
+
+        fs.writeFileSync(dump, VOLCADO);
+
+        const error = await restoreDb(dump)
+            .then(() => null)
+            .catch((capturado) => capturado);
+
+        // La copia previa se conserva a propósito cuando la restauración falla
+        for (const fichero of fs.readdirSync(os.tmpdir()).filter((nombre) => nombre.startsWith('timon-pre-restore-'))) {
+            fs.rmSync(path.join(os.tmpdir(), fichero), { force: true });
+        }
+
+        assert.ok(error, 'debe rechazar la restauración');
+        assert.equal(error.status, 409);
+        assert.equal(error.codigo, 'RESTAURACION_SIN_SET_USER');
+        assert.match(error.message, /SET USER/);
     });
 });

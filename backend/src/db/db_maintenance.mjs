@@ -8,8 +8,9 @@
  * aparece ni en `ps` ni en el log. Los comandos se ejecutan sin shell y con los
  * argumentos en un array.
  *
- * O-06 (PR posterior): este módulo NO pasa --routines ni --events; el cliente los
- * desactiva por defecto y el volcado omite rutinas y eventos.
+ * O-06: el volcado incluye rutinas y eventos (--routines --events). El estado del evento
+ * viaja en su definición y el DEFINER se conserva: restaurar una copia con un DEFINER de
+ * otro usuario exige el privilegio SET USER.
  *
  * @module db/db_maintenance
  */
@@ -144,9 +145,9 @@ function errorDeHerramienta(herramienta, codigo, detalle) {
     return error;
 }
 
-/** Argumentos del volcado. O-06: aquí NO se añaden --routines ni --events. */
+/** Argumentos del volcado. O-06: incluye rutinas y eventos; MariaDB 11.8 no tiene --skip-definer. */
 function argumentosDeVolcado(config, credenciales) {
-    return [...credenciales.argumentos, '--single-transaction', config.DB_DATABASE];
+    return [...credenciales.argumentos, '--single-transaction', '--routines', '--events', config.DB_DATABASE];
 }
 
 /** Argumentos de la restauración. */
@@ -206,7 +207,18 @@ async function restaurarVolcado(config, credenciales, fichero) {
 
     const codigo = await cerrado;
 
-    if (codigo !== 0) throw errorDeHerramienta('mysql', codigo, errores);
+    if (codigo !== 0) {
+        // O-06: el SQL incluye DEFINER. Sin SET USER, MariaDB responde 1227 y la carga se corta.
+        if (/\bERROR 1227\b/.test(errores)) {
+            throw new ErrorDeNegocio(
+                'La copia contiene rutinas o eventos con un DEFINER de otro usuario y la cuenta que ejecuta la restauración no tiene el privilegio SET USER. Restaura con un usuario que lo tenga o normaliza el DEFINER (O-08).',
+                409,
+                'RESTAURACION_SIN_SET_USER'
+            );
+        }
+
+        throw errorDeHerramienta('mysql', codigo, errores);
+    }
 }
 
 /** Comprueba que el directorio temporal tiene espacio para la copia previa (S-02). */

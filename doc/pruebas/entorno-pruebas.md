@@ -27,6 +27,8 @@ TEST_DB_NAME=conta_hogar_test
 
 `TEST_DB_NAME` debe acabar en `_test`: la suite **borra y recrea** esa base.
 
+La prueba de volcado con rutinas y eventos (O-06) usa dos bases dedicadas, `conta_hogar_o06_origen_test` y `conta_hogar_o06_destino_test`. Con la opción C, `timon_test` necesita `ALL PRIVILEGES` sobre ambas; sin esos permisos la prueba se omite (no es evidencia). El detalle está en `backend/test/README.md`.
+
 ## Cómo se crea
 
 ```bash

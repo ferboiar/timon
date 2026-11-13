@@ -78,6 +78,21 @@ La suite de integración no aplica migraciones a mano: fase0.test.mjs elimina y 
 
 Las cinco pruebas nuevas son unitarias y no necesitan MariaDB: `mantenimientoCredenciales.test.mjs` (S-02: argumentos sin contraseña, fichero de opciones en 600 y borrado también al fallar, con `mysqldump` y `mysql` simulados en el PATH), `configuracionConexion.test.mjs` (claves, ida y vuelta, TLS, precedencia, pool y aislamiento), `configuracionBd.test.mjs` (reglas 1 a 6 y utilidades de pantalla), `rutasConexionBd.test.mjs` (404 de `/password`, los 400 de validación y contraseña efectiva) y `preparaBasePruebas.test.mjs` (el script de preparación de las E2E se niega a tocar una base sin `_test`).
 
+## Volcado con rutinas y eventos (O-06)
+
+`mantenimientoVolcado.test.mjs` vuelca y restaura entre dos bases dedicadas, `conta_hogar_o06_origen_test` y `conta_hogar_o06_destino_test`, con `backupDb` y `restoreDb`; comprueba que el procedimiento y el evento existen tras la restauración, que el estado `DISABLE` se conserva y que una segunda restauración no falla ni duplica. No usa `conta_hogar_test` para no chocar con `fase0.test.mjs`.
+
+Para ejecutarlo con la opción C, el usuario de pruebas necesita:
+
+```sql
+GRANT ALL PRIVILEGES ON `conta_hogar_o06_origen_test`.*  TO 'timon_test'@'172.20.0.%';
+GRANT ALL PRIVILEGES ON `conta_hogar_o06_destino_test`.* TO 'timon_test'@'172.20.0.%';
+```
+
+Sin esos permisos la prueba se **omite** con un mensaje que remite aquí; una omisión no es evidencia.
+
+La prueba fija `process.env.DB_*` y `DB_CONFIG_PATH` sobre un fichero temporal: `getDbConfig` lee el fichero, no el entorno. Antes de cada `backupDb`/`restoreDb` comprueba que la base efectiva es la esperada y termina en `_test`.
+
 ## Pruebas de simulación anual (U-13)
 
 `node --test backend/test/generacionAnual.test.mjs` prueba sin MariaDB el cálculo de diciembre, la prohibición de escritura futura y la separación de avisos. La suite de integración existente de `fase0.test.mjs` requiere la base *_test. Los cuatro tests nuevos son unitarios: no prueban por HTTP la ruta ni reproducen el bloqueo concurrente de MariaDB. La simulación de diciembre se comprobó además manualmente en la aplicación.

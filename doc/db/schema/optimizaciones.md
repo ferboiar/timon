@@ -1,6 +1,6 @@
 # Optimizaciones de Base de Datos en Timon
 
-> **Documento histórico (2026-10-23).** Describe la configuración de la base de datos gestionada de Aiven y un evento de optimización de MySQL. Desde DC-07 la aplicación usa MariaDB 11.8 local (DC-04, DC-05); la rutina de mantenimiento y su migración están pendientes (fase 3 del registro). No lo uses como referencia del entorno actual.
+> **Documento histórico (2026-10-23).** Describe la configuración de la base de datos gestionada de Aiven y un evento de optimización de MySQL. Desde DC-07 la aplicación usa MariaDB 11.8 local (DC-04, DC-05). El procedimiento `realizar_mantenimiento_indices` y el evento `indice_mantenimiento_mensual` **existen** en `conta_hogar` con `DEFINER=root@%`, pero **no** se crean desde `backend/src/db/migrations` (O-07). Desde O-06, el volcado de la aplicación los incluye con `--routines --events`; su restauración conserva el `DEFINER` y exige `SET USER` mientras S-22 siga abierta (O-08 normalizará el `DEFINER`). No lo uses como referencia del entorno actual.
 
 Este documento describe las optimizaciones implementadas en la base de datos de Timon, incluyendo configuración de zona horaria e índices para mejorar el rendimiento.
 

@@ -2,19 +2,19 @@
 
 Parte 1 de 3 del [relevo](./estado-del-proyecto.md): secciones 0 a 3 (punto exacto de reanudación; qué es y cómo está montado; cómo se trabaja; cómo funciona hoy). Se lee completa y en orden con las demás: [parte 1 de 3](./estado-del-proyecto_1de3.md) · [parte 2 de 3](./estado-del-proyecto_2de3.md) · [parte 3 de 3](./estado-del-proyecto_3de3.md).
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-13, base 31badf8 más el PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; merge `704b2e4`, 2026-11-13); antes, #84 (merge 926f544), #83 (merge 83472a6) y #82 (merge 2744e5a).
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-13, base d291233 (PR #85: S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; merge `704b2e4`, 2026-11-13) más el PR de O-06; antes, #84 (merge 926f544), #83 (merge 83472a6) y #82 (merge 2744e5a).
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-13, `main` en 31badf8 más el PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; merge `704b2e4`, 2026-11-13). Antes, #84 (U-24, DC-56 y D-42, merge 926f544) y #83 (D-41, merge 83472a6). La migración 0006 está aplicada en `conta_hogar`.
+Corte operativo: 2026-11-13, `main` en d291233: PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, merge `704b2e4`, 2026-11-13) y O-06 en el PR de esta iteración. Antes, #84 (U-24, DC-56 y D-42, merge 926f544) y #83 (D-41, merge 83472a6). La migración 0006 está aplicada en `conta_hogar`.
 
-**Siguiente trabajo:** O-06 (contenido de los volcados: rutinas y eventos), inmediatamente después del PR #85; después O-07 (objetos de esquema no reproducibles desde migraciones), S-04 desglosado, S-05 y S-11. Secuencia: O-06 → O-07 → S-04 → S-05 → S-11. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las ramas locales y de las remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`) sigue pendiente, con confirmación expresa y separada.
+**Siguiente trabajo:** O-07 y O-08 se planifican juntos (la migración 0007 fijará el `DEFINER` de los mismos objetos); después S-04 desglosado, S-05 y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 → S-04 → S-05 → S-11. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las ramas locales y de las remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`) sigue pendiente, con confirmación expresa y separada.
 
 **D-36 incorporado con el PR #82:** auditoría y sincronización documental; TODO y registro actualizados.
 
 SHA de fusión de D-36: 2744e5a (DC-52). SHA de fusión de D-41: 83472a6 (DC-52). No asumir que F-49, F-53 o F-54 estén implementadas.
 
-**SET USER temporal (2026-11-11):** permiso global temporal concedido a `timon_admin` para restaurar volcados con `DEFINER=root`; `SHOW GRANTS` confirma `SET USER ON *.*` y `ALL` sobre `conta_hogar` y el patrón `conta\_hogar%`. No se revoca en esta iteración; S-22 lo registra sin fecha. Comando previsto:
+**SET USER temporal (2026-11-11):** permiso global temporal concedido a `timon_admin` para restaurar volcados con `DEFINER=root`; `SHOW GRANTS` confirma `SET USER ON *.*` y `ALL` sobre `conta_hogar` y el patrón `conta\_hogar%`. No se revoca en esta iteración; S-22 lo registra sin fecha y queda bloqueada por O-08: O-06 hace que las copias lleven `DEFINER=root@%` y, sin `SET USER`, la restauración falla con 1227. Comando previsto:
 
 ```sql
 REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%';

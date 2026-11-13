@@ -74,6 +74,7 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #82 | D-36, DC-52, DC-53 | Auditoría y sincronización documental tras el PR #81 (merge 2744e5a) |
 | #84 | U-24, DC-56, D-42 | Arreglo de los diagramas nomnoml del visor de documentación |
 | #85 | S-02, S-03, DC-06, DC-57, D-43, DC-58, DC-59 | Contraseñas de mantenimiento fuera de `ps`, validación y serialización de la configuración, pool recreado, TLS con `DB_SSL_CA`, `GET /password` retirada y pestaña Base de Datos en dos columnas; E2E completas |
+| (pendiente) | O-06 | Volcados con `--routines --events`, prueba entre bases `*_test`, `DEFINER` y S-22 |
 
 Tras el #82 se publicaron dos commits de seguimiento directos a main: `342b87c` (SHA de fusión de D-36) y `ef5e57d` (base y recuento de S-11).
 
@@ -81,10 +82,10 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 ## 5. Siguiente paso operativo
 
-Estado 2026-11-13: `main` en 31badf8 más el PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; merge `704b2e4`, 2026-11-13); antes, #84 con merge 926f544 y #83 con merge 83472a6. Siguiente bloque de código: O-06 y, después, O-07, S-04, S-05 y S-11. Decisiones registradas en este corte: DC-58 (viabilidad de los hallazgos, instrucción 7.2) y DC-59 (base de datos de las pruebas E2E: réplica de `conta_hogar` en `conta_hogar_test` con `E2E_CLONAR=1`; `configuracionBd` solo sobre la réplica con `DB_CONFIG_PATH`; la suite del backend sigue solo sobre una base `*_test`).
+Estado 2026-11-13: `main` en d291233 (PR #85: S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta; merge `704b2e4`, 2026-11-13); antes, #84 con merge 926f544 y #83 con merge 83472a6. Siguiente bloque de código: O-07 y O-08 juntos, después S-04, S-05 y S-11. Decisiones registradas en este corte: DC-58 (viabilidad de los hallazgos, instrucción 7.2) y DC-59 (base de datos de las pruebas E2E: réplica de `conta_hogar` en `conta_hogar_test` con `E2E_CLONAR=1`; `configuracionBd` solo sobre la réplica con `DB_CONFIG_PATH`; la suite del backend sigue solo sobre una base `*_test`).
 
 
-Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; S-22 (`SET USER`); despliegue de la 0006. F-14 está cerrado (pasos a, b y d en los PR #53, #54 y #55; el resto del paso c no aplicable por DC-42). El detalle histórico de los PR #14 a #82 está en la sección 4.
+Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; S-22 (`SET USER`, bloqueada por O-08); despliegue de la 0006. F-14 está cerrado (pasos a, b y d en los PR #53, #54 y #55; el resto del paso c no aplicable por DC-42). El detalle histórico de los PR #14 a #85 está en la sección 4.
 
 Histórico (hecho el 2026-10-27/28); sigue vigente la regla de conservar generarFechasFuturas y la generación anual:
 
