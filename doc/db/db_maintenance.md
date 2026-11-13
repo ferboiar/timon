@@ -33,9 +33,14 @@ Orden estricto: **validar → comprobar tamaño → copia previa → restaurar**
 | Retención | Se **borra tras una restauración correcta**; si falla, se **conserva** y su ruta queda en el log (sin contraseña) |
 | Trazas | `db_maintenance - copia previa: <ruta>`, `db_maintenance - restore: base <X> desde <fichero>` y `db_maintenance - restore: completada` |
 
-## Pendiente: rutinas y eventos (O-06)
+## Rutinas y eventos (O-06)
 
-Este módulo **no** pasa `--routines` ni `--events`: el cliente los desactiva por defecto (`events FALSE`, `routines FALSE`) y el volcado omite los procedimientos y eventos. Está registrado como **O-06** para el PR siguiente.
+- El volcado usa `--routines` y `--events`; el cliente los desactiva por defecto (`events FALSE`, `routines FALSE`). La copia previa usa los mismos argumentos.
+- Medido el 2026-11-13 sobre `conta_hogar` con MariaDB 11.8.6: sin flags, 0 `CREATE PROCEDURE` y 0 `CREATE EVENT`; con flags, 2 y 2. El SQL conserva el `DEFINER` (`root@%`) y el estado del evento (`ENABLE`/`DISABLE`) dentro del `CREATE`.
+- Privilegios: `--routines` exige `SHOW CREATE ROUTINE` (desde MariaDB 11.3) o `SELECT` sobre `mysql.proc`; `--events`, el privilegio `EVENT` del esquema. `ALL PRIVILEGES ON <base>.*` cubre ambos. En 11.8.6 el volcado funciona sin `SELECT` sobre `mysql.proc` ni `mysql.event`, aunque la documentación de `mariadb-dump` siga citando `mysql.proc`.
+- `--skip-definer` no existe en MariaDB 11.8 (`unknown option`). Las copias y la copia previa llevan `DEFINER=root@%`: restaurarlas exige `SET USER`, que hoy tiene `timon_admin` (S-22) y no `timon_test`. La normalización del `DEFINER` es O-08; hasta entonces, S-22 no puede aplicarse sin romper la restauración.
+- Un `ERROR 1227` al restaurar (DEFINER sin `SET USER`) devuelve 409 `RESTAURACION_SIN_SET_USER` con un mensaje que explica la causa.
+- Prueba: `backend/test/mantenimientoVolcado.test.mjs` vuelca y restaura entre dos bases `*_test`, dos veces, y comprueba que el procedimiento y el evento existen y que el estado se conserva.
 
 ## Errores (F-48)
 

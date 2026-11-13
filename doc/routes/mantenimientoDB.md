@@ -4,7 +4,7 @@ Rutas montadas en `/api/db` (`backend/src/routes/mantenimientoDB.mjs`). Exigen a
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `GET` | `/api/db/backup` | Genera un volcado con `mysqldump` en el directorio temporal (`timon-backup-<uuid>.sql`), lo envía como `backup.sql` y lo borra después. 500 si falla |
+| `GET` | `/api/db/backup` | Genera un volcado con `mysqldump` (con `--routines --events`) en el directorio temporal (`timon-backup-<uuid>.sql`), lo envía como `backup.sql` y lo borra después. 500 si falla |
 | `POST` | `/api/db/restore` | Recibe un fichero `.sql` (campo `backupFile`, `multipart/form-data`), lo valida y restaura la base sobrescribiendo los datos actuales. 400 si no hay fichero o no parece un volcado; **413 si supera 100 MB**; 500 si falla |
 
 ## Límite de tamaño (S-02)
@@ -31,6 +31,7 @@ Rutas de administrador. La validación del volcado lanza errores de negocio con 
 | El fichero supera los 100 MB | `message` | **413** | `VOLCADO_DEMASIADO_GRANDE` |
 | Configuración de la base de datos incompleta (indica qué dato falta) | `message` | 409 | `CONFIGURACION_INCOMPLETA` |
 | La restauración falla | `message` | 500 | — |
+| La copia contiene un `DEFINER` de otro usuario y falta `SET USER` | `message` | 409 | `RESTAURACION_SIN_SET_USER` |
 | La copia no se puede generar o no se puede enviar | `error` | 500 | — |
 
 ## Referencias

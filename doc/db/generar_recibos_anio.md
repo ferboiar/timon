@@ -34,6 +34,10 @@ Con `simular = 1` devuelve una fila por recibo y año a crear: `origen_id`, `con
 
 La clave `crear_recibos_automaticamente` de `ajustes_sistema` (1 por defecto) activa o desactiva el evento. Desactivado, el evento no hace nada hasta que se vuelva a activar; la ejecución manual sigue funcionando.
 
+## Copias de seguridad
+
+Desde O-06, `mysqldump` se ejecuta con `--routines --events`: la copia incluye `generar_recibos_anio` y `generar_recibos_anio_evento`, con su estado y su `DEFINER` (`root@%`). Restaurarla exige `SET USER` mientras S-22 siga abierta; O-08 normalizará el `DEFINER`.
+
 ## Referencias
 
 - [Utilidades de Base de Datos para Recibos](db_utilsBill.md)
