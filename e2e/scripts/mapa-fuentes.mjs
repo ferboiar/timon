@@ -133,6 +133,19 @@ export const MAPA_FUENTES = {
         'doc/db/schema/presupuestos.md',
         '.cline/rules/00-timon-obligatorio.md'
     ],
+    'tests/configuracionBd.spec.mjs': [
+        'src/views/pages/ProfileSettings.vue',
+        'src/service/DbConfigService.js',
+        'src/service/MaintenanceDBService.js',
+        'src/utils/configuracionBd.js',
+        'src/utils/apiError.js',
+        'src/router/index.js',
+        'backend/src/routes/conexionDB.mjs',
+        'backend/src/routes/mantenimientoDB.mjs',
+        'backend/src/db/db_utilsConn.mjs',
+        'backend/src/db/db_connection.mjs',
+        'backend/src/db/db_maintenance.mjs'
+    ],
     'tests/smoke.spec.mjs': ['src/main.js', 'src/App.vue', 'src/router/index.js', 'vite.config.mjs']
 };
 

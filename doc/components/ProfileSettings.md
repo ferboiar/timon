@@ -97,7 +97,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 | `pedirCambioCreacionAutomatica(valor)` / `confirmarCambioCreacionAutomatica()` | Abren el diálogo con la explicación y los riesgos y, al confirmar, guardan el interruptor |
 | `consultarVistaPrevia(proximoDiciembre = false)` | Pide al servidor la vista previa de los recibos que se crearían (`generarRecibosAnio(true)`), o simula diciembre si se solicita; invalida previamente la consulta anterior |
 | `generarAhora()` | Comprueba `puedeGenerarAhora`, ejecuta con el reloj real tras confirmar y vuelve a calcular los candidatos. Cuenta solo recibos; si no hay altas muestra un aviso y su motivo. Invalida la vista previa también si falla |
-| `fetchDbConfig()`, `fetchAndShowPassword()`, `testDbConnection()`, `confirmSaveDbConfig()`, `saveDbConfig()`, `confirmRestoreDbConfig()`, `restoreDbConfig()` | Pestaña Base de Datos: leer, probar, guardar y restaurar la configuración de conexión ([DbConfigService](../services/DbConfigService.md)) |
+| `fetchDbConfig()`, `testDbConnection()`, `confirmSaveDbConfig()`, `saveDbConfig()`, `confirmRestoreDbConfig()`, `restoreDbConfig()` | Pestaña Base de Datos: leer, probar, guardar y restaurar la configuración de conexión ([DbConfigService](../services/DbConfigService.md)) |
 | `backupDatabase()`, `onSelectFileToRestore()`, `restoreDatabase()` | Pestaña Base de Datos: descargar una copia de seguridad y restaurar desde un volcado ([MaintenanceDBService](../services/MaintenanceDBService.md)) |
 
 ### Gestión de Usuarios
@@ -145,6 +145,15 @@ Las pestañas **Usuarios**, **Base de Datos**, **Mantenimiento** y **Ajustes** u
 Antes de U-14 (corregido el 2026-11-09) esas llamadas pasaban `{ message: '<texto por defecto>', response: error?.response }`, así que con los servicios `fetch` la pantalla mostraba siempre el texto por defecto y el mensaje del servidor se perdía. Lo detectó `e2e/tests/erroresConexion.spec.mjs`.
 
 La pestaña **Base de Datos** muestra además `invalidFileTypeMessage` en español al elegir un archivo que no es `.sql`: «El archivo «{0}» no es una copia de seguridad. Selecciona un archivo con extensión .sql.». Es un aviso en línea del `FileUpload` (modo `basic`), no un *toast*.
+
+## Pestaña Base de Datos (S-02, S-03, DC-06)
+
+- **Disposición**: un contenedor `grid-cols-1` (una sola columna en pantallas pequeñas) y dos columnas a partir de `md`, hechas con **Tailwind** (el proyecto no usa PrimeFlex). Dentro de cada bloque, una rejilla de `10rem` (etiqueta) + `20rem` (caja): las etiquetas van alineadas a la derecha y pegadas a su caja, y ninguna caja pasa de 20rem. Izquierda: Host, Puerto, Usuario, Contraseña y Base de Datos. Derecha: CA TLS (`Textarea` con `autoResize` y altura máxima), Usuario de mantenimiento y Contraseña de mantenimiento.
+- **Tooltip**: junto a la palabra «mantenimiento» hay un interrogante con el texto «Usuario opcional con permisos para copias de seguridad y restauración. Si lo dejas vacío, se usa el usuario de la aplicación.», con el mismo patrón que `Advances.vue`.
+- **Contraseñas**: se muestran siempre vacías (el servidor no las devuelve) y, si se dejan así, se conserva la actual. El botón «Mostrar contraseña actual» se retiró junto con `GET /api/db-config/password`.
+- **Validación**: Host, Puerto, Usuario y Base de Datos son obligatorios (sin contar espacios) y el puerto debe estar entre 1 y 65535. Mientras falte algo, «Guardar» y «Probar» están deshabilitados y se muestran los campos que faltan.
+- **Lógica compartida**: `src/utils/configuracionBd.js` (`hayCambiosBd`, `configuracionParaEnviar`, `camposObligatoriosVacios`, `errorPuertoBd`), para poder probarla sin montar la pantalla.
+- La cubre `e2e/tests/configuracionBd.spec.mjs` (carga, guardado sin contraseña, respaldo, 413, restauración, CA, mantenimiento, obligatorios, tooltip y disposición).
 
 ## Validación de usuarios (F-42, DC-51)
 

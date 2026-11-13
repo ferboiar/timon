@@ -51,3 +51,7 @@ No releas íntegramente el relevo, el registro, `TODO` ni todos los informes en 
 - Preparar el índice con `git add` y su manifiesto, y comprobar el conjunto de archivos, no publica nada.
 - Antes de escribir en el remoto se comprueba el estado real: rama, `HEAD` y PR abiertos o fusionados. Una fusión no se declara sin verificarla.
 <!-- /regla:publicacion-fusiones -->
+
+7.2. Viabilidad de los hallazgos (DC-58)
+
+Todo hallazgo que surja durante un PR se incluye en ese mismo PR si es viable: mismo ámbito, riesgo y revisión proporcionados, verificable con sus pruebas y sin depender de una decisión de producto ni de otro PR. Si no es viable, se registra con un ID nuevo en el registro, el TODO y el relevo. Si un PR acumula más de tres tareas nuevas, se divide.

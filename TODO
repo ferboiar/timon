@@ -2,13 +2,13 @@
 
 ## Punto de reanudación (D-36, 2026-11-11)
 
-Corte: `main` = 4bdcd09 (2026-11-12): micro-commit de seguimiento de DC-52 (relevo y TODO) tras el PR #84 (U-24, DC-56 y D-42, merge 926f544, 2026-11-12T12:28:25Z). Antes, el PR #83 (merge 83472a6) y el PR #82 (merge 2744e5a); antes, c07aed8 (PR #81: F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). La migración 0006 está aplicada en `conta_hogar`: índice único `uq_categorias_nombre` y `modificado_por` en recibos, ahorros, anticipos y presupuestos, con FK `ON DELETE SET NULL` (verificado en solo lectura el 2026-11-11).
+Corte: `main` = 31badf8 más el PR #85 (S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59; prepara DC-06, que sigue abierta porque los `GRANT` los aplica el usuario; SHA de fusión pendiente de registrar, DC-52). Antes, el #84 (U-24, DC-56 y D-42, merge 926f544) y el #83 (D-41, merge 83472a6). La migración 0006 está aplicada en `conta_hogar`.
 
 No hay trabajo de código preparado. Único cambio local ajeno: `backend/src/db/.db_connection`.
 
-Siguiente trabajo acordado: seguridad, con S-02/S-03 (y DC-06), S-04 desglosado, S-05 (CORS y trazas), S-11 (10 PR de Snyk abiertos) y S-21. Después, F-49/F-53/F-54/F-55 y el resto del backlog por prioridad.
+Siguiente trabajo acordado: O-06 (contenido de los volcados: rutinas y eventos), inmediatamente después del PR #85 y antes de S-04; después O-07 (objetos de esquema no reproducibles desde migraciones), S-04 desglosado, S-05 (CORS y trazas) y S-11. Secuencia: O-06 → O-07 → S-04 → S-05 → S-11. Después, F-49/F-53/F-54/F-55 y el resto del backlog por prioridad.
 
-Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; retirada del `SET USER` de `timon_admin` (S-22); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
+Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`), cada una con confirmación expresa y separada; retirada del `SET USER` de `timon_admin` (S-22); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
 
 D-36 se incorpora con el PR #82: la auditoría y sincronización documental se completó en siete lotes. No asumir que la UI de privacidad exista (F-49), que la trazabilidad por fila exista (F-53) ni que `useAuth` sea único por aplicación (F-54).
 
@@ -19,7 +19,7 @@ Ordena el backlog por riesgo y dependencias. P0 es la prioridad mayor y no la su
 | Prioridad | Trabajo | Dependencias/criterio |
 |---|---|---|
 | P0 | S-02/S-03/S-04/S-05/S-11/S-21/S-22: seguridad y permisos | Contraseñas, sesión, CORS, dependencias y `SET USER` |
-| P1 | DC-01/F-15/F-49/F-53/F-54/F-55/S-20/D-38 | Cierra deuda funcional y de seguimiento con evidencia |
+| P1 | O-06, O-07, D-43, DC-01/F-15/F-49/F-53/F-54/F-55/S-20/D-38 | Integridad de las copias y objetos de esquema; cierra deuda funcional y de seguimiento con evidencia |
 | P2 | F-37/F-39/F-40, U-02/U-20, U-09/U-11 y pruebas de invariantes de Anticipos | Alcance medio en Ahorros, Anticipos, manual y homogeneidad |
 | P3 | U-01, U-03 a U-08, U-21, U-22, U-23, U-24, O-01, O-03, O-05, S-08, D-37, D-39, D-40, D-42 | Plantilla, pruebas de interfaz, operación y documentación |
 | P2 | R-02/R-03 y R-11: movimientos y presupuestos por periodo | Primero un modelo común, sin fuentes de saldo paralelas |
@@ -38,12 +38,14 @@ Estado operativo: 2026-11-12, base 4bdcd09 (PR #84 fusionado con merge 926f544 y
 
 - [x] 1. DC-47: reglas de edición de ficheros y de publicación y fusiones. PR #76, 2026-11-10.
 - [x] 2. S-17: prueba E2E de sesión caducada. PR #77, 2026-11-10.
-- [x] 3. U-15: prueba de comportamiento de F-30 con un recibo `e2e_trimestral_…`. PR #78, 2026-11-10.
+- [x] 3. U-15: prueba de comportamiento de F-30 con un recibo `e2e_trimestral_…`. PR #78, 2026-11-10; causa raíz del fallo intermitente en la suite completa y cierre en el PR #85: la siembra mínima de la base de pruebas (una cuenta y una categoría), no el spec; verificado sobre una réplica de `conta_hogar` (DC-59).
+
 - [x] 4. S-01/S-06/S-12 (autorización), S-07 (`apiClient`), U-16 y U-17. PR #79, 2026-11-10.
 - [x] 5. Corrección posterior al #79 (S-18, S-19, F-51, U-18, U-19, D-34 y DC-49). PR #80, 2026-11-10.
 - [x] 6. Fase A: trazabilidad, índice único y validaciones (F-50, F-22, F-52, F-43, F-42, F-41, F-10, D-35, DC-50 y DC-51). PR #81, 2026-11-11.
-- [ ] 7. Limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto): solo con confirmación expresa y separada, rama por rama. No es un PR.
+- [ ] 7. Limpieza de las 10 ramas locales fusionadas y de las ramas remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`), cada una con confirmación expresa y separada.
 - [x] 8. U-24/DC-56/D-42: arreglar los diagramas nomnoml del visor de documentación (nomnoml desde npm, renderer de `marked` registrado una vez, tema claro/oscuro por re-render) y documentar la pantalla. PR #84 fusionado (merge 926f544, 2026-11-12T12:28:25Z). No altera el orden de seguridad (P0).
+- [x] 9. DC-58 y DC-59: viabilidad de los hallazgos (instrucción 7.2) y base de datos de las pruebas E2E (réplica de `conta_hogar` en `conta_hogar_test` con `E2E_CLONAR=1`, carga por `stdin` del cliente `mariadb`; `configuracionBd` solo sobre la réplica con `DB_CONFIG_PATH`; la suite del backend solo sobre una base `*_test`).
 
 Ya hecho: la edición de la descripción del PR #70.
 
@@ -51,11 +53,15 @@ Ya hecho: la edición de la descripción del PR #70.
 
 ### P0 — Seguridad
 
-- [ ] S-02 (con DC-06): `db_maintenance.mjs` interpola comandos; la contraseña aparece en `ps` y en el log. DC-06 declara que la app usa `timon_admin` hasta separar el mantenimiento. Incluye revisar el `GRANT ALL` sobre el patrón `conta\_hogar%`.
-- [ ] S-03: `saveDbConfig` sin validación, pool no recreado, `initPool` sin memoizar, TLS fijo con `rejectUnauthorized:false` y `GET /api/db-config/password` devuelve la contraseña.
+- [x] S-02 (prepara DC-06; los `GRANT` los aplica el usuario): `db_maintenance.mjs` interpolaba comandos y la contraseña aparecía en `ps`. Corregido en el PR #85: `spawn` con array y `--defaults-extra-file` (modo 600, borrado siempre; `MYSQL_PWD` solo si la contraseña termina en espacio), copia previa con retención, límite de 100 MB y validación robusta. Evidencia automática en `backend/test/mantenimientoCredenciales.test.mjs`.
+- [x] S-03: claves validadas, serialización con ida y vuelta, pool recreado tras guardar, `initPool` memoizado, TLS configurable con `DB_SSL_CA` y `GET /api/db-config/password` retirada. Corregido en el PR #85; `DB_CONFIG_PATH` permite aislar el fichero en pruebas y E2E.
 - [ ] S-04, desglosado: (a) revocación de JWT de 24 h con rol embebido; (b) rate limiting en `/login`; (c) guarda de último administrador en `DELETE /api/users` y al degradar un admin.
 - [~] S-05: `error.stack` corregido; quedan CORS abierto (`app.use(cors())` en `backend/src/server.mjs`, línea 36) y 218 `console.log`.
-- [ ] S-11: revisar los 10 PR de Snyk abiertos (#4 a #13), revisar también la rama `snyk-fix-acaa3422a5a0a99d0814f1e5071aca2d`, sin PR abierto, y reducir las 124 vulnerabilidades de Dependabot (3 críticas, 64 altas, 48 moderadas, 9 bajas; aviso de GitHub del 2026-11-11).
+- [ ] S-11: revisar los 6 PR de Snyk abiertos (#4 a #9). Los #10 a #13 están cerrados (no fusionados). Ramas remotas de Snyk: 2 `snyk-fix-*` y 4 `snyk-upgrade-*`.
+- [ ] O-06: los volcados omiten rutinas y eventos (sin `--routines` ni `--events`). Verificado el 2026-11-12: 0 objetos en el volcado actual. Cierre: volcar y restaurar entre bases `*_test` comprobando que el procedimiento y el evento existen; documentar `DEFINER` y S-22. Depende del PR #85.
+- [ ] O-07: todo objeto de esquema (procedimientos, funciones, eventos, vistas y triggers) debe ser reproducible desde las migraciones y quedar en el volcado. Hoy faltan `realizar_mantenimiento_indices` e `indice_mantenimiento_mensual`, que solo están en `doc/db/schema/optimizaciones.md`. Cierre: migración 0007 y prueba de volcado/restauración entre bases `*_test`. Depende de O-06 y S-22.
+- [ ] D-43: que `dev/utils/ayudas.mjs --apply` valide la sintaxis del destino tras aplicar y revierta si falla. Evidencia: tres incidentes de la misma clase en el PR #85. Cierre: `--apply` detecta un error de sintaxis y revierte.
+- [ ] D-44: 10 errores de ESLint preexistentes en `backend/src/db/db_utilsUsers.mjs` (8), `backend/test/errorDeNegocio.test.mjs` (1) y `scripts/comprobar-entorno-pruebas.mjs` (1), idénticos en `origin/main` (delta 0). Quedan fuera del PR #85; se corrigen en un PR propio. Decisión del usuario: no se corrigen en este PR para no alargar la sesión.
 - [ ] S-21: autorización de presupuestos cuando existan rutas de escritura; hoy no hay ruta ni pantalla. `modificado_por` ya está en la tabla.
 - [ ] S-22: retirar el `SET USER` temporal de `timon_admin`, sin fecha pero visible. `REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%'; FLUSH PRIVILEGES;`
 
@@ -69,6 +75,8 @@ Ya hecho: la edición de la descripción del PR #70.
 - [ ] F-55: nombre de categoría de más de 30 caracteres responde 500; debe ser 400 de negocio (`validacionCategorias.mjs`, `categorias.nombre varchar(30)`).
 - [ ] S-20: prueba de que `POST /api/recibos` ignora `permitirFueraDeAnio` sin rol admin; hoy solo existe la prueba positiva de `pushRecibo`.
 - [ ] D-38: unificar el umbral de reparto (30 000 / 20 000), decidir si el registro se divide otra vez y documentar el truncado del conector.
+
+- [ ] U-25: por qué el primer pintado del formulario de login puede tardar más de 5 s en un contexto de navegador nuevo (hipótesis a verificar: compilación en frío de Vite; no demostrada). La espera de `iniciarSesion` ya es de 20 s desde el PR #85.
 
 ### P2 — Alcance medio
 

@@ -12,26 +12,65 @@
  * @module routes/mantenimientoDB
  */
 
-import { backupDb, restoreDb } from '#backend/db/db_maintenance.mjs';
+import { backupDb, MAX_BYTES_VOLCADO, MENSAJE_VOLCADO_DEMASIADO_GRANDE, restoreDb } from '#backend/db/db_maintenance.mjs';
 import { verifyAdmin } from '#backend/middleware/auth.mjs';
 import { AUDIENCIA_ADMIN } from '#backend/utils/catalogoErrores.mjs';
-import { detalleParaLog, responderError } from '#backend/utils/errorDeNegocio.mjs';
+import { detalleParaLog, ErrorDeNegocio, responderError } from '#backend/utils/errorDeNegocio.mjs';
+import crypto from 'crypto';
 import { Router } from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import os from 'os';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 const router = Router();
 
-// Configuración de Multer para guardar el fichero subido en un directorio temporal
-const upload = multer({ dest: os.tmpdir() });
+// Ficheros de trabajo en el directorio temporal del sistema. El límite de tamaño es el
+// mismo que comprueba db_maintenance al validar el volcado: una sola constante (S-02).
+const upload = multer({ dest: os.tmpdir(), limits: { fileSize: MAX_BYTES_VOLCADO } });
 
-// Obtener el directorio raíz del proyecto
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '../../../'); // Ajusta según la estructura de tu proyecto
+/** Nombre de fichero saneado para el log (DC-09): sin caracteres de control y acotado. */
+function nombreParaLog(nombre) {
+    let limpio = '';
+
+    for (const caracter of String(nombre || 'sin nombre')) {
+        limpio += caracter.charCodeAt(0) < 32 ? ' ' : caracter;
+    }
+
+    return limpio.slice(0, 120);
+}
+
+/**
+ * S-02: recibe el volcado y convierte el exceso de tamaño en un 413 JSON.
+ *
+ * Sin este envoltorio, Express no tiene manejador de errores y respondería su página de
+ * error en HTML. Cuando se supera el límite, multer descarta el fichero parcial: probado
+ * con 4 KB y un límite de 1 KB (req.file queda indefinido y el destino, vacío).
+ */
+function subirVolcado(req, res, next) {
+    upload.single('backupFile')(req, res, (error) => {
+        if (!error) return next();
+
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            if (req.file && req.file.path) fs.unlink(req.file.path, () => {});
+
+            return responderError(
+                res,
+                new ErrorDeNegocio(MENSAJE_VOLCADO_DEMASIADO_GRANDE, 413, 'VOLCADO_DEMASIADO_GRANDE'),
+                'La restauración ha fallado.',
+                { clave: 'message', contexto: 'mantenimientoDB - subida del volcado', audiencia: AUDIENCIA_ADMIN }
+            );
+        }
+
+        console.error('mantenimientoDB - subida del volcado: ' + detalleParaLog(error));
+
+        return responderError(res, error, 'No se ha podido recibir el archivo de copia de seguridad.', {
+            clave: 'message',
+            contexto: 'mantenimientoDB - subida del volcado',
+            audiencia: AUDIENCIA_ADMIN
+        });
+    });
+}
 
 /**
  * @swagger
@@ -54,7 +93,8 @@ const projectRoot = path.resolve(__dirname, '../../../'); // Ajusta según la es
  *         description: Error al generar la copia de seguridad.
  */
 router.get('/backup', verifyAdmin, async (req, res) => {
-    const backupFilePath = path.join(projectRoot, 'backup.sql');
+    // S-02: nombre único en el directorio temporal (dos administradores no se pisan)
+    const backupFilePath = path.join(os.tmpdir(), 'timon-backup-' + crypto.randomUUID() + '.sql');
     try {
         await backupDb(backupFilePath);
         console.log('mantenimientoDB - copia de seguridad: volcado generado');
@@ -110,7 +150,7 @@ router.get('/backup', verifyAdmin, async (req, res) => {
  *       500:
  *         description: Error durante el proceso de restauración.
  */
-router.post('/restore', verifyAdmin, upload.single('backupFile'), async (req, res) => {
+router.post('/restore', verifyAdmin, subirVolcado, async (req, res) => {
     const dumpFile = req.file;
 
     if (!dumpFile) {
@@ -120,10 +160,16 @@ router.post('/restore', verifyAdmin, upload.single('backupFile'), async (req, re
     const dumpFilePath = dumpFile.path;
 
     try {
+        // DC-09: nombre saneado y tamaño; nunca el contenido del fichero
+        console.log('mantenimientoDB - restore: fichero ' + nombreParaLog(dumpFile.originalname) + ' (' + dumpFile.size + ' bytes)');
+
         await restoreDb(dumpFilePath);
-        console.log('mantenimientoDB - restauración: completada');
+
+        console.log('mantenimientoDB - restore: completada');
         res.status(200).json({ message: 'Base de datos restaurada con éxito.' });
     } catch (error) {
+        console.error('mantenimientoDB - restore: fallida');
+
         // Los errores de validación del volcado son de negocio (400) y conservan su mensaje;
         // los fallos de mysql o del sistema se componen con el catálogo de causas.
         responderError(res, error, 'La restauración ha fallado.', {

@@ -331,7 +331,17 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
 
         // F-30: la columna de selección se activa desde el menú de la tarjeta
         await activarMultiseleccion(page, 'Trimestrales');
-        await expect(filaTrimestral.locator('td').first()).toBeVisible();
+
+        // U-15: espera por condición en vez de los 5 s por defecto. Primero se confirma por API
+        // que el recibo está en el listado; después, que la fila se ha pintado.
+        await expect
+            .poll(
+                async () => (await idsDelConcepto(page, { ...estado, concepto: estado.trimestral, periodicidad: 'trimestral' })).length,
+                { timeout: 20_000, message: 'el recibo trimestral no aparece en /api/recibos' }
+            )
+            .toBeGreaterThan(0);
+
+        await expect(filaTrimestral.locator('td').first()).toBeVisible({ timeout: 20_000 });
 
         await filaTrimestral.locator('td').first().click();
         await expect(filaTrimestral).toHaveAttribute('data-p-selected', 'true');

@@ -9,6 +9,7 @@ import { UsersService } from '@/service/UsersService';
 import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { cargarZonaHoraria, establecerZonaHoraria } from '@/composables/useZonaHoraria';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { camposObligatoriosVacios, configuracionParaEnviar, errorPuertoBd, hayCambiosBd } from '@/utils/configuracionBd';
 import { errorEmail as errorEmailUsuario, errorNombreUsuario, errorPassword as errorPasswordUsuario, errorRol as errorRolUsuario } from '@/utils/validacionUsuarios';
 
 /**
@@ -126,15 +127,13 @@ const isSaveDisabled = computed(() => Boolean(errorUsuarioNombre.value || errorU
 
 const isPasswordChangeDisabled = computed(() => Boolean(errorPasswordCambio.value || passwordData.value.password !== passwordData.value.confirmPassword));
 
-const isDbConfigChanged = computed(() => {
-    return (
-        dbConfig.value.DB_HOST !== dbConfigOriginal.value.DB_HOST ||
-        dbConfig.value.DB_PORT !== dbConfigOriginal.value.DB_PORT ||
-        dbConfig.value.DB_USER !== dbConfigOriginal.value.DB_USER ||
-        dbConfig.value.DB_DATABASE !== dbConfigOriginal.value.DB_DATABASE ||
-        !!dbConfig.value.DB_PASSWORD // Si se ha introducido una nueva contraseña
-    );
-});
+const isDbConfigChanged = computed(() => hayCambiosBd(dbConfig.value, dbConfigOriginal.value));
+
+/** Regla 1: sin host, puerto, usuario o base de datos no se puede probar ni guardar. */
+const faltanCamposBd = computed(() => camposObligatoriosVacios(dbConfig.value));
+const errorPuerto = computed(() => errorPuertoBd(dbConfig.value));
+const configuracionBdValida = computed(() => faltanCamposBd.value.length === 0 && !errorPuerto.value);
+const mensajeValidacionBd = computed(() => (faltanCamposBd.value.length > 0 ? 'Completa los campos obligatorios: ' + faltanCamposBd.value.join(', ') + '.' : errorPuerto.value));
 
 // Guarda las preferencias de estilo actuales en el servidor
 async function saveStylePreferences() {
@@ -221,27 +220,19 @@ const dbConfig = ref({
     DB_PORT: '',
     DB_USER: '',
     DB_DATABASE: '',
-    DB_PASSWORD: '' // Solo para el formulario, no se recibe del servidor
+    DB_SSL_CA: '',
+    DB_MAINT_USER: '',
+    DB_PASSWORD: '', // Solo para el formulario, no se recibe del servidor
+    DB_MAINT_PASSWORD: '' // Solo para el formulario, no se recibe del servidor
 });
 const backupExists = ref(false);
 const dbConfigOriginal = ref({});
-
-// Función para mostrar la contraseña actual
-const fetchAndShowPassword = async () => {
-    try {
-        const { password } = await DbConfigService.getDbPassword();
-        dbConfig.value.DB_PASSWORD = password;
-        toast.add({ severity: 'info', summary: 'Contraseña mostrada', detail: 'Se ha cargado la contraseña actual.', life: 3000 });
-    } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: mensajeDeErrorApi(error, 'No se pudo obtener la contraseña.'), life: 5000 });
-    }
-};
 
 // DB Config Functions
 const fetchDbConfig = async () => {
     try {
         const { config, backupExists: hasBackup } = await DbConfigService.getDbConfig();
-        dbConfig.value = { ...config, DB_PASSWORD: '' };
+        dbConfig.value = { ...dbConfig.value, ...config, DB_PASSWORD: '', DB_MAINT_PASSWORD: '' };
         dbConfigOriginal.value = { ...config };
         backupExists.value = hasBackup;
     } catch (error) {
@@ -252,7 +243,7 @@ const fetchDbConfig = async () => {
 
 const testDbConnection = async () => {
     try {
-        await DbConfigService.testDbConnection(dbConfig.value);
+        await DbConfigService.testDbConnection(configuracionParaEnviar(dbConfig.value));
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'La prueba de conexión fue bien.', life: 3000 });
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error en la conexión', detail: mensajeDeErrorApi(error, 'No se pudo conectar a la base de datos.'), life: 5000 });
@@ -269,7 +260,7 @@ const confirmRestoreDbConfig = () => {
 
 const saveDbConfig = async () => {
     try {
-        await DbConfigService.saveDbConfig(dbConfig.value);
+        await DbConfigService.saveDbConfig(configuracionParaEnviar(dbConfig.value));
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Configuración de la conexión con base de datos guardada.', life: 3000 });
         await fetchDbConfig(); // Recargar la configuración
     } catch (error) {
@@ -721,28 +712,46 @@ onMounted(() => {
                                     Modifica los parámetros para conectar con la base de datos.<br />
                                     <b>¡Atención!</b> Una configuración incorrecta puede dejar la aplicación inoperativa.
                                 </p>
-                                <div class="mt-4" style="display: grid; grid-template-columns: 10rem 20rem; align-items: center; row-gap: 0.75rem">
-                                    <label for="db-host" style="justify-self: end; padding-right: 0.75rem">Host</label>
-                                    <InputText id="db-host" v-model="dbConfig.DB_HOST" class="w-full" />
+                                <div class="grid grid-cols-1 md:grid-cols-[max-content_max-content] justify-start gap-x-4 gap-y-4 mt-4">
+                                    <div>
+                                        <div style="display: grid; grid-template-columns: 10rem 20rem; align-items: center; row-gap: 0.75rem">
+                                            <label for="db-host" style="justify-self: end; text-align: right; padding-right: 0.75rem">Host</label>
+                                            <InputText id="db-host" v-model="dbConfig.DB_HOST" class="w-full" />
 
-                                    <label for="db-port" style="justify-self: end; padding-right: 0.75rem">Puerto</label>
-                                    <InputText id="db-port" v-model="dbConfig.DB_PORT" class="w-full" />
+                                            <label for="db-port" style="justify-self: end; text-align: right; padding-right: 0.75rem">Puerto</label>
+                                            <InputText id="db-port" v-model="dbConfig.DB_PORT" class="w-full" />
 
-                                    <label for="db-user" style="justify-self: end; padding-right: 0.75rem">Usuario</label>
-                                    <InputText id="db-user" v-model="dbConfig.DB_USER" class="w-full" />
+                                            <label for="db-user" style="justify-self: end; text-align: right; padding-right: 0.75rem">Usuario</label>
+                                            <InputText id="db-user" v-model="dbConfig.DB_USER" class="w-full" />
 
-                                    <label for="db-password" style="justify-self: end; padding-right: 0.75rem">Contraseña</label>
-                                    <div class="p-inputgroup">
-                                        <Password id="db-password" v-model="dbConfig.DB_PASSWORD" :feedback="false" toggleMask placeholder="En blanco para no cambiarla" inputClass="w-full" />
-                                        <Button icon="pi pi-refresh" severity="secondary" @click="fetchAndShowPassword" v-tooltip.bottom="'Mostrar contraseña actual'" />
+                                            <label for="db-password" style="justify-self: end; text-align: right; padding-right: 0.75rem">Contraseña</label>
+                                            <Password id="db-password" v-model="dbConfig.DB_PASSWORD" :feedback="false" toggleMask placeholder="En blanco para no cambiarla" inputClass="w-full" />
+
+                                            <label for="db-database" style="justify-self: end; text-align: right; padding-right: 0.75rem">Base de Datos</label>
+                                            <InputText id="db-database" v-model="dbConfig.DB_DATABASE" class="w-full" />
+                                        </div>
                                     </div>
 
-                                    <label for="db-database" style="justify-self: end; padding-right: 0.75rem">Base de Datos</label>
-                                    <InputText id="db-database" v-model="dbConfig.DB_DATABASE" class="w-full" />
+                                    <div class="flex">
+                                        <div style="display: grid; grid-template-columns: 10rem 20rem; grid-template-rows: 1fr auto auto; align-items: center; row-gap: 0.75rem">
+                                            <label for="db-ca" style="justify-self: end; align-self: start; text-align: right; padding-right: 0.75rem; padding-block: 0.5rem">CA TLS</label>
+                                            <Textarea id="db-ca" v-model="dbConfig.DB_SSL_CA" class="w-full" style="align-self: stretch; min-height: 6rem; resize: none" placeholder="Certificado de la CA (opcional)" />
+
+                                            <label for="db-maint-user" style="justify-self: end; text-align: right; padding-right: 0.75rem; line-height: 1.2"
+                                                >Usuario de mantenimiento
+                                                <i class="pi pi-question-circle" v-tooltip.top="'Usuario opcional con permisos para copias de seguridad y restauración. Si lo dejas vacío, se usa el usuario de la aplicación.'"></i
+                                            ></label>
+                                            <InputText id="db-maint-user" v-model="dbConfig.DB_MAINT_USER" class="w-full" placeholder="Opcional" />
+
+                                            <label for="db-maint-password" style="justify-self: end; text-align: right; padding-right: 0.75rem; line-height: 1.2">Contraseña de mantenimiento</label>
+                                            <Password id="db-maint-password" v-model="dbConfig.DB_MAINT_PASSWORD" :feedback="false" toggleMask placeholder="En blanco para no cambiarla" inputClass="w-full" />
+                                        </div>
+                                    </div>
                                 </div>
+                                <div v-if="!configuracionBdValida" class="text-red-500 mt-3">{{ mensajeValidacionBd }}</div>
                                 <div class="flex flex-wrap gap-2 mt-4 justify-content-end">
-                                    <Button @click="testDbConnection" label="Probar" icon="pi pi-bolt" severity="secondary" v-tooltip="'Prueba la conexión con los valores introducidos'" />
-                                    <Button @click="confirmSaveDbConfig" label="Guardar" icon="pi pi-save" v-tooltip="'Guarda los cambios'" :disabled="!isDbConfigChanged" />
+                                    <Button @click="testDbConnection" label="Probar" icon="pi pi-bolt" severity="secondary" v-tooltip="'Prueba la conexión con los valores introducidos'" :disabled="!configuracionBdValida" />
+                                    <Button @click="confirmSaveDbConfig" label="Guardar" icon="pi pi-save" v-tooltip="'Guarda los cambios'" :disabled="!isDbConfigChanged || !configuracionBdValida" />
                                     <Button @click="confirmRestoreDbConfig" label="Restaurar" icon="pi pi-history" severity="danger" v-tooltip="'Restablece los valores anteriores'" :disabled="!backupExists" />
                                 </div>
                             </div>
