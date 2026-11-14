@@ -9,8 +9,10 @@
  * argumentos en un array.
  *
  * O-06: el volcado incluye rutinas y eventos (--routines --events). El estado del evento
- * viaja en su definición y el DEFINER se conserva: restaurar una copia con un DEFINER de
- * otro usuario exige el privilegio SET USER.
+ * viaja en su definición y el DEFINER se conserva: la copia y la restauración son fieles y
+ * no se transforma el SQL. Si el DEFINER no coincide con la cuenta que restaura, MariaDB
+ * exige el privilegio SET USER. O-08: la migración 0007 normaliza los objetos vivos para
+ * que las copias nuevas se restauren con la misma cuenta sin SET USER.
  *
  * @module db/db_maintenance
  */
@@ -30,8 +32,7 @@ import { detalleParaLog, ErrorDeNegocio, esErrorDeNegocio } from '../utils/error
 export const MAX_BYTES_VOLCADO = 100 * 1024 * 1024;
 
 /** Texto del 413, compartido con la ruta de restauración (S-02). */
-export const MENSAJE_VOLCADO_DEMASIADO_GRANDE =
-    'El fichero supera el límite de 100 MB. Reduce el tamaño o divide el volcado.';
+export const MENSAJE_VOLCADO_DEMASIADO_GRANDE = 'El fichero supera el límite de 100 MB. Reduce el tamaño o divide el volcado.';
 
 /** Líneas que se revisan al validar un volcado: cabecera, DROP y CREATE aparecen antes. */
 const MAX_LINEAS_VALIDACION = 10000;
@@ -59,11 +60,7 @@ function exigirConfiguracionCompleta(config, credenciales = {}) {
     if (!config.DB_DATABASE) faltan.push('base de datos');
 
     if (faltan.length > 0) {
-        throw new ErrorDeNegocio(
-            'La configuración de la base de datos está incompleta: falta «' + faltan.join('», «') + '». Revísala en la pestaña Base de Datos.',
-            409,
-            'CONFIGURACION_INCOMPLETA'
-        );
+        throw new ErrorDeNegocio('La configuración de la base de datos está incompleta: falta «' + faltan.join('», «') + '». Revísala en la pestaña Base de Datos.', 409, 'CONFIGURACION_INCOMPLETA');
     }
 }
 
@@ -115,14 +112,7 @@ async function prepararCredenciales(config, credenciales) {
     }
 
     const ruta = path.join(os.tmpdir(), 'timon-mysql-' + crypto.randomUUID() + '.cnf');
-    const contenido = [
-        '[client]',
-        'host=' + valorDeOpcion(config.DB_HOST),
-        'port=' + valorDeOpcion(config.DB_PORT),
-        'user=' + valorDeOpcion(credenciales.usuario),
-        'password=' + valorDeOpcion(credenciales.contrasena),
-        ''
-    ].join('\n');
+    const contenido = ['[client]', 'host=' + valorDeOpcion(config.DB_HOST), 'port=' + valorDeOpcion(config.DB_PORT), 'user=' + valorDeOpcion(credenciales.usuario), 'password=' + valorDeOpcion(credenciales.contrasena), ''].join('\n');
 
     await fsp.writeFile(ruta, contenido, { mode: 0o600 });
 
@@ -211,7 +201,7 @@ async function restaurarVolcado(config, credenciales, fichero) {
         // O-06: el SQL incluye DEFINER. Sin SET USER, MariaDB responde 1227 y la carga se corta.
         if (/\bERROR 1227\b/.test(errores)) {
             throw new ErrorDeNegocio(
-                'La copia contiene rutinas o eventos con un DEFINER de otro usuario y la cuenta que ejecuta la restauración no tiene el privilegio SET USER. Restaura con un usuario que lo tenga o normaliza el DEFINER (O-08).',
+                'La copia contiene rutinas o eventos con un DEFINER de otra cuenta. La restauración reproduce el DEFINER tal cual y la cuenta actual no tiene SET USER. Restaura con la cuenta que creó los objetos o con una que tenga SET USER; las copias antiguas con DEFINER=root@% seguirán necesitándolo.',
                 409,
                 'RESTAURACION_SIN_SET_USER'
             );
@@ -228,11 +218,7 @@ async function comprobarEspacioTemporal() {
         const libre = Number(datos.bavail) * Number(datos.bsize);
 
         if (libre < ESPACIO_MINIMO_TEMPORAL) {
-            throw new ErrorDeNegocio(
-                'No hay espacio suficiente en el directorio temporal del servidor para guardar la copia previa. Libera espacio e inténtalo de nuevo.',
-                507,
-                'SIN_ESPACIO_TEMPORAL'
-            );
+            throw new ErrorDeNegocio('No hay espacio suficiente en el directorio temporal del servidor para guardar la copia previa. Libera espacio e inténtalo de nuevo.', 507, 'SIN_ESPACIO_TEMPORAL');
         }
     } catch (error) {
         if (esErrorDeNegocio(error)) throw error;

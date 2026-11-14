@@ -36,7 +36,7 @@ La clave `crear_recibos_automaticamente` de `ajustes_sistema` (1 por defecto) ac
 
 ## Copias de seguridad
 
-Desde O-06, `mysqldump` se ejecuta con `--routines --events`: la copia incluye `generar_recibos_anio` y `generar_recibos_anio_evento`, con su estado y su `DEFINER` (`root@%`). Restaurarla exige `SET USER` mientras S-22 siga abierta; O-08 normalizará el `DEFINER`.
+Desde O-06, `mysqldump` se ejecuta con `--routines --events`: la copia incluye `generar_recibos_anio` y `generar_recibos_anio_evento`, con su estado y su `DEFINER`. La restauración reproduce el `DEFINER` tal cual. La migración 0007 recrea ambos sin cláusula `DEFINER`, así que las copias nuevas quedan a nombre de `timon_admin` y se restauran con esa cuenta sin `SET USER`; las copias anteriores con `DEFINER=root@%` siguen necesitando `SET USER`.
 
 ## Referencias
 

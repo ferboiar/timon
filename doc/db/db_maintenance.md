@@ -36,11 +36,18 @@ Orden estricto: **validar → comprobar tamaño → copia previa → restaurar**
 ## Rutinas y eventos (O-06)
 
 - El volcado usa `--routines` y `--events`; el cliente los desactiva por defecto (`events FALSE`, `routines FALSE`). La copia previa usa los mismos argumentos.
-- Medido el 2026-11-13 sobre `conta_hogar` con MariaDB 11.8.6: sin flags, 0 `CREATE PROCEDURE` y 0 `CREATE EVENT`; con flags, 2 y 2. El SQL conserva el `DEFINER` (`root@%`) y el estado del evento (`ENABLE`/`DISABLE`) dentro del `CREATE`.
+- Medido el 2026-11-13 sobre `conta_hogar` con MariaDB 11.8.6: sin flags, 0 `CREATE PROCEDURE` y 0 `CREATE EVENT`; con flags, 2 y 2. El SQL conserva el `DEFINER` (en las copias anteriores a la 0007, `root@%`) y el estado del evento (`ENABLE`/`DISABLE`) dentro del `CREATE`.
 - Privilegios: `--routines` exige `SHOW CREATE ROUTINE` (desde MariaDB 11.3) o `SELECT` sobre `mysql.proc`; `--events`, el privilegio `EVENT` del esquema. `ALL PRIVILEGES ON <base>.*` cubre ambos. En 11.8.6 el volcado funciona sin `SELECT` sobre `mysql.proc` ni `mysql.event`, aunque la documentación de `mariadb-dump` siga citando `mysql.proc`.
-- `--skip-definer` no existe en MariaDB 11.8 (`unknown option`). Las copias y la copia previa llevan `DEFINER=root@%`: restaurarlas exige `SET USER`, que hoy tiene `timon_admin` (S-22) y no `timon_test`. La normalización del `DEFINER` es O-08; hasta entonces, S-22 no puede aplicarse sin romper la restauración.
-- Un `ERROR 1227` al restaurar (DEFINER sin `SET USER`) devuelve 409 `RESTAURACION_SIN_SET_USER` con un mensaje que explica la causa.
-- Prueba: `backend/test/mantenimientoVolcado.test.mjs` vuelca y restaura entre dos bases `*_test`, dos veces, y comprueba que el procedimiento y el evento existen y que el estado se conserva.
+- `--skip-definer` no existe en MariaDB 11.8 (`unknown option`). No se neutraliza el `DEFINER` en ningún punto.
+
+## Fidelidad de la copia y de la restauración (O-08)
+
+- La copia incluye tablas, rutinas, eventos, su `DEFINER` y el estado y el horario de los eventos. `--single-transaction` da consistencia a las tablas InnoDB; rutinas y eventos se leen fuera de esa transacción.
+- La restauración es fiel: el fichero se entrega tal cual a `mysql` por `stdin`, sin `--force`, sin `--skip-definer` y sin ninguna sustitución. `validateSqlDump` solo lee.
+- El servidor ejecuta el SQL y reproduce el `DEFINER` exacto, con usuario y host. Si la cuenta que restaura no es la del `DEFINER`, MariaDB exige `SET USER`; si no lo tiene, responde 1227 y la carga se detiene en ese punto. La base queda parcialmente restaurada (las tablas ya cargadas se conservan) y `restoreDb` conserva la copia previa.
+- La migración 0007 recrea los cuatro objetos vivos sin cláusula `DEFINER`, de modo que quedan a nombre de la cuenta que ejecuta las migraciones (`timon_admin`). Las copias nuevas se restauran con esa misma cuenta sin `SET USER`. Las copias anteriores con `DEFINER=root@%` siguen necesitando `SET USER` (o `root`): es inherente a la fidelidad.
+- Un `ERROR 1227` al restaurar devuelve 409 `RESTAURACION_SIN_SET_USER` con un mensaje que explica la causa.
+- Pruebas: `backend/test/mantenimientoVolcado.test.mjs` (O-06) y `backend/test/mantenimientoEsquema.test.mjs` (O-08: migraciones desde cero, volcado y restauración con la misma cuenta sin `SET USER`, y copia con `DEFINER=root@%` que falla con 1227).
 
 ## Errores (F-48)
 
