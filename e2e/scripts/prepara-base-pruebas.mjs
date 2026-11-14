@@ -120,19 +120,10 @@ async function clonarBase(conexionDestino) {
 
     await new Promise((resolver, rechazar) => {
         const salida = fs.openSync(volcado, 'w');
-        const proceso = spawn(
-            'mariadb-dump',
-            [
-                '--host=' + config.DB_HOST,
-                '--port=' + config.DB_PORT,
-                '--user=' + config.DB_USER,
-                '--single-transaction',
-                '--skip-lock-tables',
-                '--no-tablespaces',
-                config.DB_DATABASE
-            ],
-            { env: { ...process.env, MYSQL_PWD: config.DB_PASSWORD }, stdio: ['ignore', salida, 'inherit'] }
-        );
+        const proceso = spawn('mariadb-dump', ['--host=' + config.DB_HOST, '--port=' + config.DB_PORT, '--user=' + config.DB_USER, '--single-transaction', '--skip-lock-tables', '--no-tablespaces', config.DB_DATABASE], {
+            env: { ...process.env, MYSQL_PWD: config.DB_PASSWORD },
+            stdio: ['ignore', salida, 'inherit']
+        });
 
         proceso.on('close', (codigo) => (codigo === 0 ? resolver() : rechazar(new Error('mariadb-dump terminó con ' + codigo))));
         proceso.on('error', rechazar);
@@ -142,14 +133,14 @@ async function clonarBase(conexionDestino) {
     // sin contraseña en los argumentos (fichero de opciones 600) y sin --force.
     const BARRA = String.fromCharCode(92);
     const COMILLA = String.fromCharCode(34);
-    const clave = String(conexionDestino.password).split(BARRA).join(BARRA + BARRA).split(COMILLA).join(BARRA + COMILLA);
+    const clave = String(conexionDestino.password)
+        .split(BARRA)
+        .join(BARRA + BARRA)
+        .split(COMILLA)
+        .join(BARRA + COMILLA);
     const cnf = path.join(os.tmpdir(), 'timon-clon-' + Date.now() + '.cnf');
 
-    fs.writeFileSync(
-        cnf,
-        ['[client]', 'host="' + conexionDestino.host + '"', 'port=' + conexionDestino.port, 'user="' + conexionDestino.user + '"', 'password="' + clave + '"', ''].join(String.fromCharCode(10)),
-        { mode: 0o600 }
-    );
+    fs.writeFileSync(cnf, ['[client]', 'host="' + conexionDestino.host + '"', 'port=' + conexionDestino.port, 'user="' + conexionDestino.user + '"', 'password="' + clave + '"', ''].join(String.fromCharCode(10)), { mode: 0o600 });
 
     try {
         await new Promise((resolver, rechazar) => {
@@ -185,7 +176,10 @@ const db = await mysql.createConnection({ ...conexion, database: BASE, multipleS
 let migraciones = [];
 
 if (!clonar) {
-    migraciones = fs.readdirSync(path.join(RAIZ, 'backend/src/db/migrations')).filter((f) => f.endsWith('.sql')).sort();
+    migraciones = fs
+        .readdirSync(path.join(RAIZ, 'backend/src/db/migrations'))
+        .filter((f) => f.endsWith('.sql'))
+        .sort();
 
     for (const fichero of migraciones) {
         await ejecutarMigracion(db, fs.readFileSync(path.join(RAIZ, 'backend/src/db/migrations', fichero), 'utf8'));
@@ -210,14 +204,7 @@ if (categorias === 0) {
 await db.end();
 
 // Fichero de configuración de la aplicación, fuera del repositorio y del fichero real
-const lineas = [
-    'DB_HOST=' + pruebas.TEST_DB_HOST,
-    'DB_PORT=' + pruebas.TEST_DB_PORT,
-    'DB_USER=' + pruebas.TEST_DB_USER,
-    'DB_PASSWORD=' + pruebas.TEST_DB_PASSWORD,
-    'DB_DATABASE=' + BASE,
-    ''
-];
+const lineas = ['DB_HOST=' + pruebas.TEST_DB_HOST, 'DB_PORT=' + pruebas.TEST_DB_PORT, 'DB_USER=' + pruebas.TEST_DB_USER, 'DB_PASSWORD=' + pruebas.TEST_DB_PASSWORD, 'DB_DATABASE=' + BASE, ''];
 
 fs.writeFileSync(RUTA_CONFIG, lineas.join('\n'), { mode: 0o600 });
 
