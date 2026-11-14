@@ -2,13 +2,13 @@
 
 ## Punto de reanudación (D-36, 2026-11-13)
 
-Corte: `main` = 39036d6 (seguimiento documental de O-06, 2026-11-13). O-07 y O-08 están preparados en el PR pendiente de fusión: migración 0007, `DEFINER` normalizado y prueba `mantenimientoEsquema.test.mjs`. La migración 0006 está aplicada en `conta_hogar`; la 0007 queda pendiente de despliegue.
+Corte: `main` = 0be3216 (PR #87 de O-07/O-08, merge `0be3216`, 2026-11-14). La 0007 está desplegada en `conta_hogar`: 4 objetos con `DEFINER=timon_admin@172.20.0.%`, eventos `ENABLED` y volcado nuevo sin `root@%`. La migración 0006 está aplicada.
 
-O-07 y O-08 están preparados en el PR pendiente de fusión (migración 0007 y prueba de esquema). Único cambio local ajeno: `backend/src/db/.db_connection`.
+O-07 y O-08 están incorporados y desplegados; S-22 pendiente de evaluación. Único cambio local ajeno: `backend/src/db/.db_connection`.
 
-Siguiente trabajo acordado: tras fusionar O-07 y O-08, desplegar la migración 0007 en `conta_hogar` con confirmación expresa y separada; después S-04 desglosado, S-05 (CORS y trazas) y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 (PR pendiente de fusión) → S-04 → S-05 → S-11. Después, F-49/F-53/F-54/F-55 y el resto del backlog por prioridad.
+Siguiente trabajo acordado: evaluar y decidir S-22; después S-04 desglosado, S-05 (CORS y trazas) y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 (fusionado y desplegado) → S-22 (evaluación) → S-04 → S-05 → S-11. Después, F-49/F-53/F-54/F-55 y el resto del backlog por prioridad.
 
-Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`), cada una con confirmación expresa y separada; despliegue de la migración 0007 en `conta_hogar` y comprobación del volcado real; S-22 sigue bloqueada hasta ese despliegue y la verificación (las copias antiguas con `DEFINER=root@%` seguirán necesitando `SET USER`); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
+Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`), cada una con confirmación expresa y separada; evaluación y decisión de S-22 (la 0007 está desplegada; la copia previa con `DEFINER=root@%` se conserva en `/tmp/o0708-pre-0007-20261114T102342Z.sql`); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
 
 D-36 se incorpora con el PR #82: la auditoría y sincronización documental se completó en siete lotes. No asumir que la UI de privacidad exista (F-49), que la trazabilidad por fila exista (F-53) ni que `useAuth` sea único por aplicación (F-54).
 
@@ -32,7 +32,7 @@ Ordena el backlog por riesgo y dependencias. P0 es la prioridad mayor y no la su
 
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
-Estado operativo: 2026-11-13, main en 39036d6; O-07 y O-08 preparados en el PR pendiente de fusión. F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar; la 0007 queda pendiente de despliegue. D-36 cerrado con el PR #82; D-41 se incorpora con el PR #83. Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-14, main en 0be3216; O-07 y O-08 fusionados y desplegados; S-22 pendiente de evaluación. F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar; la 0007 también, con los 4 objetos a nombre de timon_admin. D-36 cerrado con el PR #82; D-41 se incorpora con el PR #83. Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Trabajo acordado (un PR por punto)
 
@@ -59,12 +59,12 @@ Ya hecho: la edición de la descripción del PR #70.
 - [~] S-05: `error.stack` corregido; quedan CORS abierto (`app.use(cors())` en `backend/src/server.mjs`, línea 36) y 218 `console.log`.
 - [ ] S-11: revisar los 6 PR de Snyk abiertos (#4 a #9). Los #10 a #13 están cerrados (no fusionados). Ramas remotas de Snyk: 2 `snyk-fix-*` y 4 `snyk-upgrade-*`.
 - [x] O-06: los volcados incluían solo tablas. Corregido en el PR #86 (merge `f6e36c2`): `argumentosDeVolcado` pasa `--routines --events`; prueba `mantenimientoVolcado.test.mjs` (dos bases `*_test`, doble restauración, procedimiento y evento presentes) y restauración del volcado real en una base `*_test` efímera; documentados `DEFINER` y S-22. Evidencia: 2 procedimientos y 2 eventos en el volcado real y restaurados; 1227 real con `timon_test` (409 `RESTAURACION_SIN_SET_USER`). Incorporado con el PR #86 (merge `f6e36c2`, 2026-11-13).
-- [x] O-07: todo objeto de esquema debe ser reproducible desde las migraciones y quedar en el volcado. Corregido en el PR de O-07+O-08 (pendiente de fusión): la migración 0007 incorpora `realizar_mantenimiento_indices` e `indice_mantenimiento_mensual` sin `DEFINER`; el volcado con `--routines --events` los recoge; `backend/test/mantenimientoEsquema.test.mjs` prueba migraciones desde cero, volcado y restauración entre bases `*_test`. Pendiente: desplegar la 0007 en `conta_hogar`.
-- [x] O-08: restaurar sin `SET USER`. Corregido en el PR de O-07+O-08 (pendiente de fusión): la 0007 recrea los cuatro objetos sin `DEFINER` (quedan a nombre de la cuenta que ejecuta la migración); la copia y la restauración siguen siendo fieles y reproducen el `DEFINER`; una copia nueva se restaura con la misma cuenta sin `SET USER` (prueba con `timon_test`, que no tiene `SET USER`). El clon E2E sigue sin rutinas ni eventos. Pendiente: desplegar la 0007 y comprobar el volcado real.
+- [x] O-07: todo objeto de esquema debe ser reproducible desde las migraciones y quedar en el volcado. Corregido y desplegado en el PR #87 (merge `0be3216`, 2026-11-14): la migración 0007 incorpora `realizar_mantenimiento_indices` e `indice_mantenimiento_mensual` sin `DEFINER`; el volcado nuevo recoge los 4 objetos sin `root@%`; `backend/test/mantenimientoEsquema.test.mjs` prueba migraciones desde cero, volcado y restauración entre bases `*_test`.
+- [x] O-08: restaurar sin `SET USER`. Corregido y desplegado en el PR #87 (merge `0be3216`, 2026-11-14): la 0007 recrea los cuatro objetos sin `DEFINER` (quedan a nombre de `timon_admin`); la copia y la restauración siguen siendo fieles y reproducen el `DEFINER`; una copia nueva se restaura con la misma cuenta sin `SET USER` (prueba con `timon_test`). El clon E2E sigue sin rutinas ni eventos. El volcado real se ha comprobado: 4 definers `timon_admin`, 0 `root@%`.
 - [ ] D-43: que `dev/utils/ayudas.mjs --apply` valide la sintaxis del destino tras aplicar y revierta si falla. Evidencia: tres incidentes de la misma clase en el PR #85. Cierre: `--apply` detecta un error de sintaxis y revierte.
 - [ ] D-44: 10 errores de ESLint preexistentes en `backend/src/db/db_utilsUsers.mjs` (8), `backend/test/errorDeNegocio.test.mjs` (1) y `scripts/comprobar-entorno-pruebas.mjs` (1), idénticos en `origin/main` (delta 0). Quedan fuera del PR #85; se corrigen en un PR propio. Decisión del usuario: no se corrigen en este PR para no alargar la sesión.
 - [ ] S-21: autorización de presupuestos cuando existan rutas de escritura; hoy no hay ruta ni pantalla. `modificado_por` ya está en la tabla.
-- [ ] S-22: retirar el `SET USER` temporal de `timon_admin`, sin fecha pero visible. `REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%'; FLUSH PRIVILEGES;` Bloqueada hasta desplegar la 0007 y verificar que las copias nuevas (`DEFINER=timon_admin`) se restauran con `timon_admin` sin `SET USER`; las copias antiguas con `DEFINER=root@%` seguirán necesitando `SET USER` (o `root`), y retirar el permiso las hace irrestaurables con `timon_admin`. No se ejecuta en este PR.
+- [ ] S-22: retirar el `SET USER` temporal de `timon_admin`, sin fecha pero visible. `REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%'; FLUSH PRIVILEGES;` La 0007 está desplegada y verificada (merge `0be3216`); la copia previa con `DEFINER=root@%` se conserva en `/tmp/o0708-pre-0007-20261114T102342Z.sql`. Pendiente la evaluación y decisión: mantener `SET USER`, revocarlo tras descartar la copia previa o revocarlo exigiendo `root` para ella. No se ejecuta.
 
 ### P1 — Función y datos
 
@@ -125,7 +125,7 @@ R-05 a R-13 se detallan en las secciones posteriores de este TODO; su prioridad 
 
 ### Despliegue vigente
 
-- La migración 0006 debe aplicarse a cualquier base antes de arrancar el código del PR #81 contra ella. La migración 0007 (O-07, O-08) queda pendiente de despliegue en `conta_hogar`; tras aplicarla, las copias nuevas llevarán `DEFINER=timon_admin` y se restaurarán con esa cuenta sin `SET USER`. No es una tarea hecha: es una nota de despliegue.
+- La migración 0006 debe aplicarse a cualquier base antes de arrancar el código del PR #81 contra ella. La migración 0007 está desplegada en `conta_hogar` (merge `0be3216`); las copias nuevas llevan `DEFINER=timon_admin` y se restauran con esa cuenta sin `SET USER`. La copia previa con `root@%` se conserva para la decisión de S-22.
 
 ## Preguntas abiertas para el usuario
 
