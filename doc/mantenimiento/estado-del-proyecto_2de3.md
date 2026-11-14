@@ -82,10 +82,10 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 ## 5. Siguiente paso operativo
 
-Estado 2026-11-13: `main` en f6e36c2 (PR #86 de O-06, merge `f6e36c2`; antes, PR #85: S-02, S-03, DC-57, D-43, D-44, DC-58 y DC-59, prepara DC-06, merge `704b2e4`, 2026-11-13; #84 con 926f544 y #83 con 83472a6). Siguiente bloque de código: O-07 y O-08 juntos, después S-04, S-05 y S-11. Decisiones registradas en este corte: DC-58 (viabilidad de los hallazgos, instrucción 7.2) y DC-59 (base de datos de las pruebas E2E: réplica de `conta_hogar` en `conta_hogar_test` con `E2E_CLONAR=1`; `configuracionBd` solo sobre la réplica con `DB_CONFIG_PATH`; la suite del backend sigue solo sobre una base `*_test`).
+Estado 2026-11-13: `main` en 39036d6; O-07 y O-08 preparados en el PR pendiente de fusión (migración 0007, `DEFINER` normalizado y prueba de esquema). Tras la fusión, desplegar la 0007 y después S-04, S-05 y S-11. Decisiones registradas en este corte: DC-60 (copia y restauración fieles; los objetos vivos se normalizan en migraciones; las copias antiguas con otro `DEFINER` exigen `SET USER`).
 
 
-Pendiente operativo: limpieza de las 10 ramas locales fusionadas y de las ramas remotas (backup, la del PR #81 y 11 `snyk-*`; la de `snyk-fix-acaa3422…` sin PR abierto), cada una con confirmación expresa y separada; S-22 (`SET USER`, bloqueada por O-08); despliegue de la 0006. F-14 está cerrado (pasos a, b y d en los PR #53, #54 y #55; el resto del paso c no aplicable por DC-42). El detalle histórico de los PR #14 a #86 está en la sección 4.
+Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas, cada una con confirmación expresa y separada; despliegue de la 0007 en `conta_hogar` y comprobación del volcado real; S-22 (`SET USER`) sigue bloqueada hasta ese despliegue y la verificación, y las copias antiguas con `root@%` seguirán necesitando `SET USER`; despliegue de la 0006. F-14 está cerrado (PR #53, #54 y #55). El detalle histórico de los PR #14 a #86 está en la sección 4.
 
 Histórico (hecho el 2026-10-27/28); sigue vigente la regla de conservar generarFechasFuturas y la generación anual:
 

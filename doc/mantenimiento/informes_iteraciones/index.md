@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-13 | O-07, O-08, DC-60 | [Objetos de esquema reproducibles y DEFINER normalizado](./2026-11-13_O-07-O-08_objetos-esquema-definer.md) |
 | 2026-11-13 | O-06 | [Volcados con rutinas y eventos, DEFINER y S-22](./2026-11-13_O-06_volcados-rutinas-eventos.md) |
 | 2026-11-12 | S-02, S-03, DC-06, DC-57 | [Seguridad de la conexión y del mantenimiento de la base de datos](./2026-11-12_S02_S03_DC06_seguridad-bd.md) |
 | 2026-11-12 | U-24, DC-56, D-42 | [Arreglo de los diagramas nomnoml del visor de documentación](./2026-11-12_U-24-D-42-DC-56_arreglo-nomnoml-visor.md) |

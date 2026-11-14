@@ -29,6 +29,8 @@ TEST_DB_NAME=conta_hogar_test
 
 La prueba de volcado con rutinas y eventos (O-06) usa dos bases dedicadas, `conta_hogar_o06_origen_test` y `conta_hogar_o06_destino_test`. Con la opción C, `timon_test` necesita `ALL PRIVILEGES` sobre ambas; sin esos permisos la prueba se omite (no es evidencia). El detalle está en `backend/test/README.md`.
 
+La prueba de objetos de esquema y DEFINER (O-08) usa `conta_hogar_o08_origen_test` y `conta_hogar_o08_destino_test`; el patrón `GRANT ALL PRIVILEGES ON `conta\_hogar\_%\_test`.*` ya las cubre. Sin esos permisos la prueba se omite y no se presenta como evidencia.
+
 ## Cómo se crea
 
 ```bash

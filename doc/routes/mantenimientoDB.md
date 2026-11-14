@@ -31,7 +31,7 @@ Rutas de administrador. La validación del volcado lanza errores de negocio con 
 | El fichero supera los 100 MB | `message` | **413** | `VOLCADO_DEMASIADO_GRANDE` |
 | Configuración de la base de datos incompleta (indica qué dato falta) | `message` | 409 | `CONFIGURACION_INCOMPLETA` |
 | La restauración falla | `message` | 500 | — |
-| La copia contiene un `DEFINER` de otro usuario y falta `SET USER` | `message` | 409 | `RESTAURACION_SIN_SET_USER` |
+| La copia contiene rutinas o eventos con el `DEFINER` de otra cuenta y falta `SET USER` | `message` | 409 | `RESTAURACION_SIN_SET_USER` |
 | La copia no se puede generar o no se puede enviar | `error` | 500 | — |
 
 ## Referencias

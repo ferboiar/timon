@@ -10,6 +10,7 @@ Esta sección documenta la estructura de la base de datos de Timón, organizada 
 - **Collation**: utf8mb4_spanish_ci
 - **Motor de almacenamiento**: InnoDB
 - **Fuente del esquema**: las migraciones de `backend/src/db/migrations` (DC-13); los documentos de esta carpeta son de diseño y pueden ir por detrás
+- **Objetos de esquema**: procedimientos, funciones, eventos, vistas y triggers se crean solo desde `backend/src/db/migrations` (DC-13, DC-60), sin cláusula `DEFINER` explícita: quedan a nombre de la cuenta que ejecuta la migración.
 
 ## Configuración del Servidor
 
@@ -94,6 +95,12 @@ SET time_zone = "+00:00";
                      |es_privado    |
                      +--------------+
 ```
+
+## Objetos de Esquema
+
+- Todo procedimiento, función, evento, vista y trigger nace en una migración de `backend/src/db/migrations` (DC-13, DC-60). No se crean a mano ni se mantienen solo en la base o en `doc/db/schema`.
+- Se declaran sin cláusula `DEFINER`: la cuenta que ejecuta la migración es la propietaria. Es lo que permite que una copia nueva se restaure con la misma cuenta sin `SET USER`.
+- La copia y la restauración son fieles: conservan y reproducen el `DEFINER`, el estado y el horario de los eventos. Las copias antiguas con otro `DEFINER` siguen necesitando `SET USER`.
 
 ## Convenciones del Esquema
 

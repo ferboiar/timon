@@ -105,10 +105,10 @@ if (!e2e.E2E_USER || !e2e.E2E_PASSWORD) throw new Error('Faltan E2E_USER y E2E_P
  * Copia conta_hogar en conta_hogar_test (solo lectura del origen).
  *
  * Se usa `mariadb-dump` con `--single-transaction` y **sin** `--routines` ni `--events`: así
- * el evento horario no se recrea en la base de pruebas y no actúa sobre ella. Además, los
- * objetos de `conta_hogar` tienen `DEFINER=root@%` y la carga la hace `timon_test`, sin
- * `SET USER`, así que un volcado con rutinas fallaría con el error 1227. El origen nunca se
- * modifica.
+ * el evento horario no se recrea en la base de pruebas y no actúa sobre ella. Además, desde
+ * la migración 0007 los objetos de `conta_hogar` quedarán a nombre de `timon_admin` y la
+ * carga la hace `timon_test`, sin `SET USER`, así que un volcado con rutinas fallaría con el
+ * error 1227 (la restauración es fiel y reproduce el `DEFINER`). El origen nunca se modifica.
  */
 async function clonarBase(conexionDestino) {
     const config = dotenv.parse(fs.readFileSync(path.join(RAIZ, 'backend/src/db/.db_connection'), 'utf8'));

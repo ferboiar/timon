@@ -144,9 +144,9 @@ que **no pueden ejecutarse contra la base de desarrollo**. El procedimiento es:
    ```
 
    El volcado del origen es de solo lectura (`mariadb-dump --single-transaction`, sin
-   `--routines` ni `--events`: el evento horario no debe actuar en la base de pruebas y los
-   objetos de `conta_hogar` tienen `DEFINER=root@%`, que `timon_test` no puede recrear sin
-   `SET USER`), la
+   `--routines` ni `--events`: el evento horario no debe actuar en la base de pruebas y,
+   desde la migración 0007, los objetos de `conta_hogar` quedan a nombre de `timon_admin`,
+   que `timon_test` no puede recrear sin `SET USER`), la
    carga va por la entrada estándar del cliente `mariadb` con un fichero de opciones 600, la
    contraseña nunca viaja en los argumentos y nunca se escribe en `conta_hogar`. El script
    comprueba que la base destino termina en `_test`.

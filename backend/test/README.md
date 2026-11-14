@@ -96,3 +96,7 @@ La prueba fija `process.env.DB_*` y `DB_CONFIG_PATH` sobre un fichero temporal: 
 ## Pruebas de simulación anual (U-13)
 
 `node --test backend/test/generacionAnual.test.mjs` prueba sin MariaDB el cálculo de diciembre, la prohibición de escritura futura y la separación de avisos. La suite de integración existente de `fase0.test.mjs` requiere la base *_test. Los cuatro tests nuevos son unitarios: no prueban por HTTP la ruta ni reproducen el bloqueo concurrente de MariaDB. La simulación de diciembre se comprobó además manualmente en la aplicación.
+
+## Objetos de esquema y DEFINER (O-07, O-08)
+
+`mantenimientoEsquema.test.mjs` aplica todas las migraciones (0001 a 0007) en `conta_hogar_o08_origen_test`, comprueba que los cuatro objetos de esquema tienen el `DEFINER` del ejecutor y que la 0007 es repetible, vuelca y restaura en `conta_hogar_o08_destino_test` con la misma cuenta (sin `SET USER`), y comprueba que una copia con `DEFINER='root'@'%'` falla con 409 `RESTAURACION_SIN_SET_USER`. Usa el patrón de permisos `GRANT ALL PRIVILEGES ON `conta\_hogar\_%\_test`.*`; sin él la prueba se omite (no es evidencia). El detalle está en `doc/pruebas/entorno-pruebas.md`.
