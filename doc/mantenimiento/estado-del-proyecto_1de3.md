@@ -2,26 +2,21 @@
 
 Parte 1 de 3 del [relevo](./estado-del-proyecto.md): secciones 0 a 3 (punto exacto de reanudación; qué es y cómo está montado; cómo se trabaja; cómo funciona hoy). Se lee completa y en orden con las demás: [parte 1 de 3](./estado-del-proyecto_1de3.md) · [parte 2 de 3](./estado-del-proyecto_2de3.md) · [parte 3 de 3](./estado-del-proyecto_3de3.md).
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-14, base 0be3216 (PR #87 de O-07/O-08, merge `0be3216`; antes, PR #86 de O-06, merge `f6e36c2`). La 0007 está desplegada en `conta_hogar`; S-22 pendiente de evaluación.
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-14, base a430632 (PR #87 de O-07/O-08 y PR #88 de documentación; antes, PR #86 de O-06, merge `f6e36c2`). La 0007 está desplegada y S-22 cerrada.
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-14, `main` en 0be3216 (PR #87 de O-07/O-08). La 0007 está desplegada en `conta_hogar`: 4 objetos con `DEFINER=timon_admin@172.20.0.%`, eventos `ENABLED` y volcado nuevo sin `root@%`. La migración 0006 está aplicada.
+Corte operativo: 2026-11-14, `main` en a430632 (PR #87, PR #88 y cierre de S-22). La 0007 está desplegada en `conta_hogar`: 4 objetos con `DEFINER=timon_admin@172.20.0.%`, eventos `ENABLED` y volcado nuevo sin `root@%`. S-22 cerrada: `SET USER` revocado. La migración 0006 está aplicada.
 
-**Siguiente trabajo:** evaluar y decidir S-22; después S-04 desglosado, S-05 y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 (fusionado y desplegado) → S-22 (evaluación) → S-04 → S-05 → S-11. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las ramas locales y de las remotas sigue pendiente, con confirmación expresa y separada.
+**Siguiente trabajo:** S-04 desglosado, S-05 y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 (fusionado y desplegado) → S-22 (cerrada) → S-04 → S-05 → S-11. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las ramas locales y de las remotas sigue pendiente, con confirmación expresa y separada.
 
 **D-36 incorporado con el PR #82:** auditoría y sincronización documental; TODO y registro actualizados.
 
-SHA de fusión de D-36: 2744e5a (DC-52). SHA de fusión de D-41: 83472a6 (DC-52). SHA de fusión de O-06: f6e36c2 (PR #86, DC-52). SHA de fusión de O-07/O-08: 0be3216 (PR #87, DC-52). No asumir que F-49, F-53 o F-54 estén implementadas.
+SHA de fusión de D-36: 2744e5a (DC-52). SHA de fusión de D-41: 83472a6 (DC-52). SHA de fusión de O-06: f6e36c2 (PR #86, DC-52). SHA de fusión de O-07/O-08: 0be3216 (PR #87, DC-52). SHA de fusión de la documentación: a430632 (PR #88, DC-52). No asumir que F-49, F-53 o F-54 estén implementadas.
 
-**SET USER temporal (2026-11-11):** permiso global temporal concedido a `timon_admin` para restaurar volcados con `DEFINER=root`; `SHOW GRANTS` confirma `SET USER ON *.*` y `ALL` sobre `conta_hogar` y el patrón `conta\_hogar%`. La 0007 está desplegada y verificada en `conta_hogar` (merge `0be3216`): los 4 objetos tienen `DEFINER=timon_admin@172.20.0.%`, el volcado nuevo no contiene `root@%` y la restauración con `timon_admin` es correcta. S-22 queda pendiente de evaluación y decisión; la copia previa con `DEFINER=root@%` se conserva en `/tmp/o0708-pre-0007-20261114T102342Z.sql`. No se revoca en esta iteración. Comando previsto:
+**SET USER (2026-11-11 a 2026-11-14):** permiso global temporal concedido a `timon_admin` para restaurar volcados con `DEFINER=root`. El administrador lo revocó el 2026-11-14; `SHOW GRANTS` confirma que ya no figura y que `timon_admin` conserva `ALL` sobre `conta_hogar` y el patrón `conta\_hogar%`, sin `GRANT OPTION`. La restauración del volcado nuevo (`DEFINER=timon_admin`) con `timon_admin` es correcta sin `SET USER`; una copia con `root@%` falla con 409. La copia antigua se descartó; la nueva está en `/tmp/o0708-new-final-20261114T172129Z.sql`. No se repone.
 
-```sql
-REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%';
-FLUSH PRIVILEGES;
-```
-
-**Despliegue:** la 0006 debe aplicarse a cualquier base antes de arrancar este código contra ella. La 0007 está desplegada en `conta_hogar` (merge `0be3216`); las copias nuevas llevan `DEFINER=timon_admin` y se restauran con esa cuenta sin `SET USER`. La copia previa con `root@%` se conserva para la decisión de S-22.
+**Despliegue:** la 0006 debe aplicarse a cualquier base antes de arrancar este código contra ella. La 0007 está desplegada en `conta_hogar` (merge `0be3216`); las copias nuevas llevan `DEFINER=timon_admin` y se restauran con esa cuenta sin `SET USER`.
 
 **Historial:** el detalle por PR está en la sección 4 (parte 2 de 3) y en el TODO. Conservar Generar nuevas fechas y la generación anual. No borrar `generarFechasFuturas`, usada por `pushRecibo` (F-12 corregido: secuencia anclada). Leer la sección 5 y el relevo de la sección 8 antes de preparar código.
 

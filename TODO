@@ -2,13 +2,13 @@
 
 ## Punto de reanudación (D-36, 2026-11-13)
 
-Corte: `main` = 0be3216 (PR #87 de O-07/O-08, merge `0be3216`, 2026-11-14). La 0007 está desplegada en `conta_hogar`: 4 objetos con `DEFINER=timon_admin@172.20.0.%`, eventos `ENABLED` y volcado nuevo sin `root@%`. La migración 0006 está aplicada.
+Corte: `main` = a430632 (PR #87 de O-07/O-08 y PR #88 de documentación; 2026-11-14). La 0007 está desplegada en `conta_hogar`: 4 objetos con `DEFINER=timon_admin@172.20.0.%`, eventos `ENABLED` y volcado nuevo sin `root@%`. S-22 cerrada: `SET USER` revocado. La migración 0006 está aplicada.
 
-O-07 y O-08 están incorporados y desplegados; S-22 pendiente de evaluación. Único cambio local ajeno: `backend/src/db/.db_connection`.
+O-07, O-08 y S-22 están cerradas. Único cambio local ajeno: `backend/src/db/.db_connection`.
 
-Siguiente trabajo acordado: evaluar y decidir S-22; después S-04 desglosado, S-05 (CORS y trazas) y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 (fusionado y desplegado) → S-22 (evaluación) → S-04 → S-05 → S-11. Después, F-49/F-53/F-54/F-55 y el resto del backlog por prioridad.
+Siguiente trabajo acordado: S-04 desglosado, S-05 (CORS y trazas) y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 (fusionado y desplegado) → S-22 (cerrada) → S-04 → S-05 → S-11. Después, F-49/F-53/F-54/F-55 y el resto del backlog por prioridad.
 
-Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`), cada una con confirmación expresa y separada; evaluación y decisión de S-22 (la 0007 está desplegada; la copia previa con `DEFINER=root@%` se conserva en `/tmp/o0708-pre-0007-20261114T102342Z.sql`); despliegue de la 0006 en cualquier otra base antes de arrancar este código.
+Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas (`main`, 2 `snyk-fix-*` y 4 `snyk-upgrade-*`), cada una con confirmación expresa y separada; despliegue de la 0006 en cualquier otra base antes de arrancar este código. S-22 cerrada; copia nueva en `/tmp/o0708-new-final-20261114T172129Z.sql` y copia antigua descartada.
 
 D-36 se incorpora con el PR #82: la auditoría y sincronización documental se completó en siete lotes. No asumir que la UI de privacidad exista (F-49), que la trazabilidad por fila exista (F-53) ni que `useAuth` sea único por aplicación (F-54).
 
@@ -32,7 +32,7 @@ Ordena el backlog por riesgo y dependencias. P0 es la prioridad mayor y no la su
 
 R-09 a R-13 se recuperan de especificaciones históricas. Quedan como tareas para revalidar y diseñar, no como funcionalidades aprobadas, implantadas o corregidas. categorías.txt no justifica por sí solo implementar jerarquías.
 
-Estado operativo: 2026-11-14, main en 0be3216; O-07 y O-08 fusionados y desplegados; S-22 pendiente de evaluación. F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar; la 0007 también, con los 4 objetos a nombre de timon_admin. D-36 cerrado con el PR #82; D-41 se incorpora con el PR #83. Los cierres documentales no acreditan una auditoría funcional integral.
+Estado operativo: 2026-11-14, main en a430632; O-07, O-08 y S-22 cerradas. F-14 cerrado por DC-42. La suite del backend se ejecuta con npm run test:backend:local (DC-46). La migración 0006 está aplicada en conta_hogar; la 0007 también, con los 4 objetos a nombre de timon_admin. D-36 cerrado con el PR #82; D-41 se incorpora con el PR #83. Los cierres documentales no acreditan una auditoría funcional integral.
 
 ## Trabajo acordado (un PR por punto)
 
@@ -64,7 +64,7 @@ Ya hecho: la edición de la descripción del PR #70.
 - [ ] D-43: que `dev/utils/ayudas.mjs --apply` valide la sintaxis del destino tras aplicar y revierta si falla. Evidencia: tres incidentes de la misma clase en el PR #85. Cierre: `--apply` detecta un error de sintaxis y revierte.
 - [ ] D-44: 10 errores de ESLint preexistentes en `backend/src/db/db_utilsUsers.mjs` (8), `backend/test/errorDeNegocio.test.mjs` (1) y `scripts/comprobar-entorno-pruebas.mjs` (1), idénticos en `origin/main` (delta 0). Quedan fuera del PR #85; se corrigen en un PR propio. Decisión del usuario: no se corrigen en este PR para no alargar la sesión.
 - [ ] S-21: autorización de presupuestos cuando existan rutas de escritura; hoy no hay ruta ni pantalla. `modificado_por` ya está en la tabla.
-- [ ] S-22: retirar el `SET USER` temporal de `timon_admin`, sin fecha pero visible. `REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%'; FLUSH PRIVILEGES;` La 0007 está desplegada y verificada (merge `0be3216`); la copia previa con `DEFINER=root@%` se conserva en `/tmp/o0708-pre-0007-20261114T102342Z.sql`. Pendiente la evaluación y decisión: mantener `SET USER`, revocarlo tras descartar la copia previa o revocarlo exigiendo `root` para ella. No se ejecuta.
+- [x] S-22: retirar el `SET USER` temporal de `timon_admin`. Revocado por el administrador el 2026-11-14 (`REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%'; FLUSH PRIVILEGES;`). `SHOW GRANTS` confirma que ya no figura y que conserva `ALL` en `conta_hogar` y `conta\_hogar%`, sin `GRANT OPTION`. Restauración literal del volcado nuevo con `timon_admin` correcta; copia con `root@%` 409; migraciones 0001-0007 correctas. Copia nueva `/tmp/o0708-new-final-20261114T172129Z.sql`; copia antigua descartada.
 
 ### P1 — Función y datos
 
@@ -125,7 +125,7 @@ R-05 a R-13 se detallan en las secciones posteriores de este TODO; su prioridad 
 
 ### Despliegue vigente
 
-- La migración 0006 debe aplicarse a cualquier base antes de arrancar el código del PR #81 contra ella. La migración 0007 está desplegada en `conta_hogar` (merge `0be3216`); las copias nuevas llevan `DEFINER=timon_admin` y se restauran con esa cuenta sin `SET USER`. La copia previa con `root@%` se conserva para la decisión de S-22.
+- La migración 0006 debe aplicarse a cualquier base antes de arrancar el código del PR #81 contra ella. La migración 0007 está desplegada en `conta_hogar` (merge `0be3216`); las copias nuevas llevan `DEFINER=timon_admin` y se restauran con esa cuenta sin `SET USER`. S-22 cerrada: la copia antigua con `root@%` se descartó; la copia nueva está en `/tmp/o0708-new-final-20261114T172129Z.sql`.
 
 ## Preguntas abiertas para el usuario
 
