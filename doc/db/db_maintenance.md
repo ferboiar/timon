@@ -45,9 +45,13 @@ Orden estricto: **validar → comprobar tamaño → copia previa → restaurar**
 - La copia incluye tablas, rutinas, eventos, su `DEFINER` y el estado y el horario de los eventos. `--single-transaction` da consistencia a las tablas InnoDB; rutinas y eventos se leen fuera de esa transacción.
 - La restauración es fiel: el fichero se entrega tal cual a `mysql` por `stdin`, sin `--force`, sin `--skip-definer` y sin ninguna sustitución. `validateSqlDump` solo lee.
 - El servidor ejecuta el SQL y reproduce el `DEFINER` exacto, con usuario y host. Si la cuenta que restaura no es la del `DEFINER`, MariaDB exige `SET USER`; si no lo tiene, responde 1227 y la carga se detiene en ese punto. La base queda parcialmente restaurada (las tablas ya cargadas se conservan) y `restoreDb` conserva la copia previa.
-- La migración 0007 recrea los cuatro objetos vivos sin cláusula `DEFINER`, de modo que quedan a nombre de la cuenta que ejecuta las migraciones (`timon_admin`). Las copias nuevas se restauran con esa misma cuenta sin `SET USER`. Las copias anteriores con `DEFINER=root@%` siguen necesitando `SET USER` (o `root`): es inherente a la fidelidad.
+- La migración 0007 recrea los cuatro objetos vivos sin cláusula `DEFINER`, de modo que quedan a nombre de la cuenta que ejecuta las migraciones (`timon_admin`). Las copias nuevas se restauran con esa misma cuenta sin `SET USER`. Las copias anteriores con `DEFINER=root@%` siguen necesitando `SET USER` (o `root`): es inherente a la fidelidad. En este entorno no quedan copias con `root@%`: la antigua se descartó al cerrar S-22.
 - Un `ERROR 1227` al restaurar devuelve 409 `RESTAURACION_SIN_SET_USER` con un mensaje que explica la causa.
 - Pruebas: `backend/test/mantenimientoVolcado.test.mjs` (O-06) y `backend/test/mantenimientoEsquema.test.mjs` (O-08: migraciones desde cero, volcado y restauración con la misma cuenta sin `SET USER`, y copia con `DEFINER=root@%` que falla con 1227).
+
+## Limpieza de copias previas
+
+- Tras una restauración manual, borrar siempre los ficheros `timon-pre-restore-*` de `/tmp`: son copias previas y contienen la tabla `users`. La prueba `mantenimientoCredenciales` falla si quedan restos.
 
 ## Errores (F-48)
 

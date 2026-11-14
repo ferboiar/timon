@@ -76,6 +76,7 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #85 | S-02, S-03, DC-06, DC-57, D-43, DC-58, DC-59 | Contraseñas de mantenimiento fuera de `ps`, validación y serialización de la configuración, pool recreado, TLS con `DB_SSL_CA`, `GET /password` retirada y pestaña Base de Datos en dos columnas; E2E completas |
 | #86 | O-06 | Volcados con `--routines --events`, prueba entre bases `*_test`, `DEFINER` y S-22 (merge `f6e36c2`) |
 | #87 | O-07, O-08, DC-60 | Migración 0007: objetos de esquema reproducibles, `DEFINER` normalizado y copia/restauración fieles (merge `0be3216`) |
+| #88 | O-07, O-08, DC-52 | Documentación del despliegue de la 0007 y evaluación de S-22 (merge `a430632`) |
 
 Tras el #82 se publicaron dos commits de seguimiento directos a main: `342b87c` (SHA de fusión de D-36) y `ef5e57d` (base y recuento de S-11).
 
@@ -83,10 +84,10 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 ## 5. Siguiente paso operativo
 
-Estado 2026-11-14: `main` en `0be3216` (PR #87 fusionado, merge `0be3216`); la 0007 está desplegada y verificada en `conta_hogar` (4 objetos con `DEFINER=timon_admin@172.20.0.%`, eventos `ENABLED`, volcado nuevo sin `root@%`). Siguiente: evaluación de S-22 y después S-04, S-05 y S-11. Decisión registrada en este corte: DC-60.
+Estado 2026-11-14: `main` en `a430632` (PR #87 y #88 fusionados); la 0007 está desplegada y verificada en `conta_hogar`; S-22 cerrada (`SET USER` revocado). Siguiente: S-04, S-05 y S-11. Decisión registrada en este corte: DC-60.
 
 
-Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas, cada una con confirmación expresa y separada; evaluación y decisión de S-22 (la 0007 está desplegada; la copia previa con `root@%` se conserva en `/tmp/o0708-pre-0007-20261114T102342Z.sql`); despliegue de la 0006. F-14 está cerrado (PR #53, #54 y #55). El detalle histórico de los PR #14 a #87 está en la sección 4.
+Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas, cada una con confirmación expresa y separada; despliegue de la 0006. S-22 cerrada; copia nueva en `/tmp/o0708-new-final-20261114T172129Z.sql` y copia antigua descartada. F-14 está cerrado (PR #53, #54 y #55). El detalle histórico de los PR #14 a #88 está en la sección 4.
 
 Histórico (hecho el 2026-10-27/28); sigue vigente la regla de conservar generarFechasFuturas y la generación anual:
 

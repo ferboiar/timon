@@ -4,6 +4,7 @@
 
 | Fecha | IDs | Informe |
 |---|---|---|
+| 2026-11-14 | S-22 | [Cierre de la retirada de SET USER](./2026-11-14_S-22_cierre-set-user.md) |
 | 2026-11-13 | O-07, O-08, DC-60 | [Objetos de esquema reproducibles y DEFINER normalizado](./2026-11-13_O-07-O-08_objetos-esquema-definer.md) |
 | 2026-11-13 | O-06 | [Volcados con rutinas y eventos, DEFINER y S-22](./2026-11-13_O-06_volcados-rutinas-eventos.md) |
 | 2026-11-12 | S-02, S-03, DC-06, DC-57 | [Seguridad de la conexión y del mantenimiento de la base de datos](./2026-11-12_S02_S03_DC06_seguridad-bd.md) |

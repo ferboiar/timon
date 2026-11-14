@@ -21,7 +21,7 @@
 - **`backend/src/db/db_maintenance.mjs`**: JSDoc de fidelidad y O-08; el mensaje del 1227 ya no sugiere normalizar la copia, sino restaurar con la cuenta que creó los objetos o con una que tenga `SET USER`.
 - **Formato**: se corrigen los avisos de prettier de `db_maintenance.mjs` y de la prueba nueva; solo formato, sin cambios de comportamiento.
 - **Documentación**: `db_maintenance.md` (fidelidad), `generar_recibos_anio.md`, `optimizaciones.md`, `schema/index.md` (regla de objetos de esquema), `routes/mantenimientoDB.md`, `entorno-pruebas.md`, `backend/test/README.md`, `e2e/README.md` y el comentario de `prepara-base-pruebas.mjs`.
-- **Seguimiento**: O-07 y O-08 cerrados y desplegados; DC-60 registrada; S-22 pendiente de evaluación (no se ejecuta).
+- **Seguimiento**: O-07, O-08 y S-22 cerradas; DC-60 registrada.
 
 ## Documentación revisada
 
@@ -53,7 +53,7 @@
 | ESLint | `npx eslint backend/src/db/db_maintenance.mjs backend/test/mantenimientoEsquema.test.mjs` | **0 errores y 0 avisos**. `e2e/**` está excluido por O-05. |
 | Formato E2E | `npx eslint --no-ignore e2e/scripts/prepara-base-pruebas.mjs` | Antes: 7 avisos de prettier. Después: **0 avisos, 0 errores**; `node --check` `EXIT 0`; solo espacios y saltos (commit `fe830f6`). |
 | Prueba nueva (aislada) | `node --env-file=backend/test/.env.test --test backend/test/mantenimientoEsquema.test.mjs` | **3 tests, 3 pasan, 0 fallan, 0 canceladas, 0 omitidas**, 200,8 s; `ok 1` y `# fail 0`. |
-| Suite del backend | `npm run test:backend:local` (sin servidor E2E vivo) | **359 tests, 72 suites, 359 pasan, 0 fallan, 0 canceladas, 0 omitidas, 0 todo**, `EXIT 0`, 457,8 s. |
+| Suite del backend | `npm run test:backend:local` (sin servidor E2E vivo) | **359 tests, 72 suites, 359 pasan, 0 fallan, 0 canceladas, 0 omitidas, 0 todo**, `EXIT 0`, 476,5 s. |
 | Reglas | `node scripts/comprobar-reglas.mjs` | `EXIT 0`; bloques con centinelas idénticos. |
 | Diff | `git diff --check` | `EXIT 0` |
 | `.db_connection` | `sha256sum backend/src/db/.db_connection` | `cffe3241e7bdbd082ac15bfea36885c94ea7153613bfe01aa7f7b38081bf15ac`, sin cambios. |
@@ -72,32 +72,16 @@
 - Restauración b) con `timon_test` (sin `SET USER`) en `conta_hogar_o08_restore_test`: 409 `RESTAURACION_SIN_SET_USER` (1227 real); la copia previa se conserva. Es el comportamiento esperado.
 - Copia previa del despliegue: `/tmp/o0708-pre-0007-20261114T102342Z.sql` (57 846 bytes, `DEFINER=root@%`), conservada para decisión del usuario.
 
-## S-22: evaluación (sin ejecutar)
+## S-22: cierre (2026-11-14)
 
-- Condiciones: 0007 desplegada (`0be3216`), volcado nuevo sin `root@%` y restauración con `timon_admin` correcta. La prueba literal sin `SET USER` no se ha ejecutado; se propone abajo.
-- Copias antiguas con `DEFINER=root@%`: solo `/tmp/o0708-pre-0007-20261114T102342Z.sql` (57 846 bytes, 2026-11-14 10:23). El resto de `.sql` en `/tmp` no contiene definers `root@%`.
-- Opciones:
-  1. Mantener `SET USER` indefinidamente: conserva la restauración de la copia previa con `timon_admin`; mantiene un privilegio global.
-  2. Revocar tras descartar o convertir la copia previa: elimina el privilegio; se pierde la copia de reversión con `root@%` o hay que reconvertirla.
-  3. Revocar y exigir `root` para la copia previa: conserva la copia; las copias nuevas se restauran con `timon_admin`; la copia antigua se restaura con `root` o con una reposición temporal de `SET USER`.
-- Recomendación: **opción 3** si se mantiene la copia previa y hay acceso a `root`; **opción 1** si no se quiere tocar privilegios todavía; **opción 2** solo si se acepta descartar la copia previa.
-- Procedimiento propuesto para la opción 3 (no ejecutado):
-
-```sql
-SHOW GRANTS FOR 'timon_admin'@'172.20.0.%';
-REVOKE SET USER ON *.* FROM 'timon_admin'@'172.20.0.%';
-FLUSH PRIVILEGES;
-```
-
-Después, restaurar el volcado nuevo en `conta_hogar_o08_admin_test` con `timon_admin` (sin `SET USER`). Si falla, reponer de inmediato:
-
-```sql
-GRANT SET USER ON *.* TO 'timon_admin'@'172.20.0.%';
-FLUSH PRIVILEGES;
-SHOW GRANTS FOR 'timon_admin'@'172.20.0.%';
-```
-
-La copia previa con `root@%` se restauraría con `root` (o con una reposición temporal de `SET USER`).
+- Revocación ejecutada por el administrador (`root`) porque `timon_admin` no tiene `GRANT OPTION` y no hay acceso root desde el contenedor. `SHOW GRANTS` después: sin `SET USER`; conserva `ALL` en `conta_hogar` y `conta\_hogar%`.
+- Restauración literal del volcado nuevo con `timon_admin` en `conta_hogar_o08_admin_test`: `EXIT 0`; 2 procedimientos, 2 eventos, definers `timon_admin@172.20.0.%`, eventos `ENABLED`, 14 tablas.
+- Prueba negativa con `DEFINER='root'@'%'`: 409 `RESTAURACION_SIN_SET_USER` (1227 real).
+- Migraciones 0001-0007 como `timon_admin` en `conta_hogar_o08_mig_test`: `EXIT 0`; 4 objetos `timon_admin`, eventos `ENABLED`, 0 `root@%`.
+- Copia nueva: `/tmp/o0708-new-final-20261114T172129Z.sql` (58 000 bytes, 2026-11-14 17:21, `DEFINER=timon_admin`, 0 `root@%`).
+- Copia antigua `/tmp/o0708-pre-0007-20261114T102342Z.sql` descartada con `shred -u` tras las pruebas 3 y 4.
+- Suite final: 359/359, 0 fallan, 0 canceladas, 0 omitidas, `EXIT 0`, 476,5 s.
+- Detalle en `2026-11-14_S-22_cierre-set-user.md`.
 
 ## Incidencia de verificación (no de código)
 
@@ -106,18 +90,18 @@ Durante la primera tanda quedaron vivas dos suites antiguas del backend (proceso
 ## No verificado
 
 - La 0007 se ha desplegado y verificado en `conta_hogar` el 2026-11-14 (merge `0be3216`).
-- No se revoca `SET USER`: S-22 queda pendiente de evaluación y decisión. La restauración del volcado nuevo se ha hecho con `timon_admin` con `SET USER` vigente; la restauración con `timon_test` (sin el permiso) falla con 409 como se espera.
+- S-22 cerrada: `SET USER` revocado por el administrador y restauración literal del volcado nuevo con `timon_admin` correcta; la copia antigua con `root@%` se descartó.
 - No se ejecuta la suite E2E: no hay cambios de interfaz.
 - Las copias antiguas con `DEFINER=root@%` siguen necesitando `SET USER` o `root`; es inherente a la fidelidad y no se prueba a restaurarlas con `timon_admin` sin `SET USER` en este PR.
 
 ## Estado al preparar el informe
 
 - PR #87 fusionado con merge `0be3216` (2026-11-14); 0007 desplegada y verificada en `conta_hogar`.
-- Documentación de despliegue preparada en la rama `mantenimiento/O-07-O-08-despliegue-0007`; pendiente de commit y PR.
+- PR #88 fusionado con merge `a430632` (2026-11-14); S-22 cerrada en el PR de cierre.
 - El único cambio local ajeno sigue siendo `backend/src/db/.db_connection`.
 
 ## Continuidad
 
-- Siguiente trabajo: evaluar y decidir S-22; después S-04, S-05 y S-11.
+- Siguiente trabajo: S-04, S-05 y S-11.
 - Leer el registro (S-22 y DC-60), el TODO y la sección 0 del relevo.
-- No asumir que S-22 puede retirarse sin la prueba literal y la decisión sobre la copia previa con `root@%`.
+- No asumir que quedan copias antiguas con `root@%`; si aparece una, requiere `SET USER` o `root`.
