@@ -25,7 +25,7 @@ Al iniciar un chat nuevo, lee:
 1. doc/mantenimiento/instruccion-persistente.md y todas sus partes obligatorias.
 2. doc/mantenimiento/estado-del-proyecto.md y sus partes.
 3. doc/mantenimiento/registro-hallazgos.md (entrada) y todas las partes que liste (registro-hallazgos_1deN.md, _2deN.md, etc.), leídas completas y en orden.
-4. TODO.
+4. Los issues abiertos del Project (backlog).
 5. El último informe de iteración pertinente.
 6. doc/index.md.
 7. Documentación, código, configuración, migraciones y tests afectados.
@@ -103,7 +103,7 @@ Comprueba truncamiento y completa la lectura antes de afirmar revisión completa
 
 Una búsqueda, un enlace válido o un hash coincidente no acreditan corrección funcional de la documentación.
 
-Los documentos de la lista de lectura inicial —instrucción persistente, relevo, registro, TODO, informes y doc/index.md— deben poder leerse íntegros desde el repositorio, sin exigir al usuario que vuelva a dividirlos para cada conversación.
+Los documentos de la lista de lectura inicial —instrucción persistente, relevo, registro, issues del Project, informes y doc/index.md— deben poder leerse íntegros desde el repositorio, sin exigir al usuario que vuelva a dividirlos para cada conversación.
 
 Si uno llega truncado, completa la lectura en esa misma respuesta, por tramos o por otra vía verificable.
 Declara bloqueo solo tras agotar esas vías y pide al usuario únicamente lo que el conector no pueda obtener.

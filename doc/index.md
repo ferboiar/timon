@@ -338,6 +338,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 - [Registro de hallazgos y decisiones](./mantenimiento/registro-hallazgos.md) - Entrada y mapa del registro (decisiones DC, hallazgos y plan por fases), dividido en 3 partes que se leen en orden: [1 de 3](./mantenimiento/registro-hallazgos_1de3.md), [2 de 3](./mantenimiento/registro-hallazgos_2de3.md), [3 de 3](./mantenimiento/registro-hallazgos_3de3.md)
 - [Instrucción persistente](./mantenimiento/instruccion-persistente.md) - Reglas de trabajo del asistente en el proyecto (entrada y 4 partes que se leen en orden): [1 de 4](./mantenimiento/instruccion-persistente_1de4.md), [2 de 4](./mantenimiento/instruccion-persistente_2de4.md), [3 de 4](./mantenimiento/instruccion-persistente_3de4.md), [4 de 4](./mantenimiento/instruccion-persistente_4de4.md)
 - [Informes de iteración](./mantenimiento/informes_iteraciones/index.md) - Un informe de cierre por PR, con su índice
+- [Archivo histórico: TODO (congelado)](./mantenimiento/archivo/TODO-2026-11-14.md) - Antiguo fichero `TODO`, archivado al migrar el backlog a los issues del Project (DC-61, D-45). No se actualiza.
 
 ## Pruebas
 
@@ -348,7 +349,7 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 
 La migración 0006 (F-50, F-22, DC-50) añade trazabilidad de autor y el índice único de categorías. F-41, F-42, F-43 y F-52 se preparan en la rama de corrección con validación en servidor y pantalla; no se declaran incorporados hasta la fusión del PR.
 
-El informe de [auditoría documental](./mantenimiento/auditoria-documentacion.md) diferencia diseño, implementación y fallos conocidos. La autorización se aplica en servidor con la matriz DC-48 (S-01 y S-12); saldos manuales no equivalen a conciliación automática; aportaciones con periodicidad no equivalen a generación automática de movimientos. La sección 10 del registro y TODO incluyen las correcciones pendientes con sus IDs.
+El informe de [auditoría documental](./mantenimiento/auditoria-documentacion.md) diferencia diseño, implementación y fallos conocidos. La autorización se aplica en servidor con la matriz DC-48 (S-01 y S-12); saldos manuales no equivalen a conciliación automática; aportaciones con periodicidad no equivalen a generación automática de movimientos. La sección 10 del registro y los issues del Project incluyen las correcciones pendientes con sus IDs.
 
 ## Documentación de raíz y vigencia
 

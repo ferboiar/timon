@@ -22,7 +22,7 @@ Lee adicionalmente solo lo necesario:
 - Para modificar Categorías: secciones pertinentes del relevo, registro, `doc/components/Categories.md`, `doc/services/CatsService.md`, `doc/routes/categorias.md` y `doc/db/db_utilsCats.md`.
 - Para modificar usuarios, ajustes, seguridad, pruebas o despliegue: lee las secciones y ficheros específicamente afectados.
 
-No releas íntegramente el relevo, el registro, `TODO` ni todos los informes en cada mensaje. Conserva la base ya revisada y actualiza el contraste solo cuando cambien la versión, el estado local, el alcance o la evidencia.
+No releas íntegramente el relevo, el registro ni todos los informes en cada mensaje. Consulta los issues del Project solo cuando necesites el backlog. Conserva la base ya revisada y actualiza el contraste solo cuando cambien la versión, el estado local, el alcance o la evidencia.
 
 ## Antes de un cambio sustantivo
 
@@ -54,4 +54,4 @@ No releas íntegramente el relevo, el registro, `TODO` ni todos los informes en 
 
 7.2. Viabilidad de los hallazgos (DC-58)
 
-Todo hallazgo que surja durante un PR se incluye en ese mismo PR si es viable: mismo ámbito, riesgo y revisión proporcionados, verificable con sus pruebas y sin depender de una decisión de producto ni de otro PR. Si no es viable, se registra con un ID nuevo en el registro, el TODO y el relevo. Si un PR acumula más de tres tareas nuevas, se divide.
+Todo hallazgo que surja durante un PR se incluye en ese mismo PR si es viable: mismo ámbito, riesgo y revisión proporcionados, verificable con sus pruebas y sin depender de una decisión de producto ni de otro PR. Si no es viable, se registra con un ID nuevo en el registro, el relevo y un issue del Project. Si un PR acumula más de tres tareas nuevas, se divide.

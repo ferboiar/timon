@@ -123,7 +123,7 @@ Revisa y actualiza cuando estén afectados:
 - Instrucción persistente y partes.
 - Estado del proyecto y partes.
 - Registro y partes.
-- TODO.
+- Issues abiertos del Project (estado, prioridad y orden).
 - doc/index.md y documentos específicos.
 - README.md y README_en.md.
 - backend/test/README.md.
@@ -150,20 +150,20 @@ Al dividir o mover archivos, revisa enlaces y herramientas dependientes.
 Todo lo que quede registrado en el apartado «Pendiente» de un PR —tareas derivadas, límites, verificaciones ausentes, riesgos, decisiones pendientes o trabajo futuro— debe reflejarse, en el mismo PR, en:
 
 - El registro de hallazgos (fila nueva o actualización de la fila existente).
-- El TODO (línea nueva o actualización de la línea existente).
+- El issue correspondiente del Project (cuerpo nuevo o actualización del existente).
 - El relevo (sección 0 y/o 5, según corresponda).
 
-Si un elemento del «Pendiente» no cabe en ninguna de estas tres categorías, debe registrarse igualmente en el documento que corresponda (por ejemplo, una decisión nueva en DC, una propuesta en R, una verificación pendiente en la lista de verificaciones del TODO).
+Si un elemento del «Pendiente» no cabe en ninguna de estas tres categorías, debe registrarse igualmente en el documento que corresponda (por ejemplo, una decisión nueva en DC, una propuesta en R, una verificación pendiente en el issue que la contiene).
 
-Ningún elemento del «Pendiente» de un PR puede quedar sin reflejo en el repositorio. El apartado «Pendiente» del PR es una promesa de trabajo futuro; el registro, el TODO y el relevo son la fuente de verdad que hace esa promesa trazable y verificable.
+Ningún elemento del «Pendiente» de un PR puede quedar sin reflejo en el repositorio. El apartado «Pendiente» del PR es una promesa de trabajo futuro; el registro, los issues del Project y el relevo son la fuente de verdad que hace esa promesa trazable y verificable.
 
-Si un PR deja algo en «Pendiente» y no lo registra en el mismo PR en registro, TODO y relevo, se considera un defecto de proceso (DC-55) y debe corregirse en el siguiente PR de seguimiento, antes de continuar con trabajo nuevo.
+Si un PR deja algo en «Pendiente» y no lo registra en el mismo PR en registro, issue del Project y relevo, se considera un defecto de proceso (DC-55) y debe corregirse en el siguiente PR de seguimiento, antes de continuar con trabajo nuevo.
 
-La instrucción persistente, el relevo, el registro y el TODO son la fuente de verdad absoluta para el seguimiento del proyecto y su continuidad entre chats. Ningún otro documento (informe de iteración, descripción del PR, conversación del chat) sustituye a estos cuatro como fuente de verdad.
+La instrucción persistente, el relevo, el registro y los issues del Project son la fuente de verdad absoluta para el seguimiento del proyecto y su continuidad entre chats. Ningún otro documento (informe de iteración, descripción del PR, conversación del chat) sustituye a estos cuatro como fuente de verdad.
 
 7.2. Viabilidad de los hallazgos (DC-58)
 
-Todo hallazgo que surja durante un PR se incluye en ese mismo PR si es viable: mismo ámbito, riesgo y revisión proporcionados, verificable con sus pruebas y sin depender de una decisión de producto ni de otro PR. Si no es viable, se registra con un ID nuevo en el registro, el TODO y el relevo. Si un PR acumula más de tres tareas nuevas, se divide.
+Todo hallazgo que surja durante un PR se incluye en ese mismo PR si es viable: mismo ámbito, riesgo y revisión proporcionados, verificable con sus pruebas y sin depender de una decisión de producto ni de otro PR. Si no es viable, se registra con un ID nuevo en el registro, el relevo y un issue del Project. Si un PR acumula más de tres tareas nuevas, se divide.
 
 8. AUDITORÍAS
 

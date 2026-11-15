@@ -2,13 +2,15 @@
 
 Parte 1 de 3 del [relevo](./estado-del-proyecto.md): secciones 0 a 3 (punto exacto de reanudación; qué es y cómo está montado; cómo se trabaja; cómo funciona hoy). Se lee completa y en orden con las demás: [parte 1 de 3](./estado-del-proyecto_1de3.md) · [parte 2 de 3](./estado-del-proyecto_2de3.md) · [parte 3 de 3](./estado-del-proyecto_3de3.md).
 
-Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-14, base a430632 (PR #87 de O-07/O-08 y PR #88 de documentación; antes, PR #86 de O-06, merge `f6e36c2`). La 0007 está desplegada y S-22 cerrada.
+Documento de relevo: léelo primero si retomas el proyecto o abres una conversación nueva. Se actualiza en cada PR (DC-27). Última actualización: 2026-11-14, base c84c821 (PR #89 de S-22; antes, PR #88 de documentación y PR #87 de O-07/O-08). La 0007 está desplegada, S-22 cerrada y el `TODO` archivado en `doc/mantenimiento/archivo/TODO-2026-11-14.md`.
 
 ## 0. Punto exacto de reanudación
 
-Corte operativo: 2026-11-14, `main` en a430632 (PR #87, PR #88 y cierre de S-22). La 0007 está desplegada en `conta_hogar`: 4 objetos con `DEFINER=timon_admin@172.20.0.%`, eventos `ENABLED` y volcado nuevo sin `root@%`. S-22 cerrada: `SET USER` revocado. La migración 0006 está aplicada.
+Corte operativo: 2026-11-14, `main` en c84c821 (PR #89 y cierre de S-22). La 0007 está desplegada en `conta_hogar`: 4 objetos con `DEFINER=timon_admin@172.20.0.%`, eventos `ENABLED` y volcado nuevo sin `root@%`. S-22 cerrada: `SET USER` revocado. La migración 0006 está aplicada.
 
-**Siguiente trabajo:** S-04 desglosado, S-05 y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 (fusionado y desplegado) → S-22 (cerrada) → S-04 → S-05 → S-11. Después, F-49, F-53, F-54, F-55 y el backlog del TODO. La limpieza de las ramas locales y de las remotas sigue pendiente, con confirmación expresa y separada.
+**Siguiente trabajo:** S-04 desglosado, S-05 y S-11. Secuencia: O-06 (hecho) → O-07 + O-08 (fusionado y desplegado) → S-22 (cerrada) → S-04 → S-05 → S-11. Después, F-49, F-53, F-54, F-55 y el backlog de issues del Project. La limpieza de las ramas locales y de las remotas sigue pendiente, con confirmación expresa y separada.
+
+**Backlog (DC-61):** el `TODO` ya no se mantiene. Los 48 issues abiertos (#90–#137), agrupados en el Project «Timón - mantenimiento» con `Estado`, `Prioridad` y `Orden`, son la lista de trabajo. El fichero histórico está congelado en `doc/mantenimiento/archivo/TODO-2026-11-14.md`.
 
 **D-36 incorporado con el PR #82:** auditoría y sincronización documental; TODO y registro actualizados.
 
@@ -18,7 +20,7 @@ SHA de fusión de D-36: 2744e5a (DC-52). SHA de fusión de D-41: 83472a6 (DC-52)
 
 **Despliegue:** la 0006 debe aplicarse a cualquier base antes de arrancar este código contra ella. La 0007 está desplegada en `conta_hogar` (merge `0be3216`); las copias nuevas llevan `DEFINER=timon_admin` y se restauran con esa cuenta sin `SET USER`.
 
-**Historial:** el detalle por PR está en la sección 4 (parte 2 de 3) y en el TODO. Conservar Generar nuevas fechas y la generación anual. No borrar `generarFechasFuturas`, usada por `pushRecibo` (F-12 corregido: secuencia anclada). Leer la sección 5 y el relevo de la sección 8 antes de preparar código.
+**Historial:** el detalle por PR está en la sección 4 (parte 2 de 3) y en el historial de PR de GitHub. Conservar Generar nuevas fechas y la generación anual. No borrar `generarFechasFuturas`, usada por `pushRecibo` (F-12 corregido: secuencia anclada). Leer la sección 5 y el relevo de la sección 8 antes de preparar código.
 
 La rama local, los archivos sin confirmar y la ejecución de pruebas no se pueden deducir del estado remoto: comprobarlos al retomar.
 
@@ -29,15 +31,15 @@ Timón es una aplicación de finanzas domésticas: recibos periódicos, anticipo
 - Frontend: Vue 3 con Vite y PrimeVue 4 (plantilla Sakai) en `src/`: pantallas en `src/views/pages`, servicios de API en `src/service`, composables en `src/composables` y `src/layout/composables`.
 - Backend: Node con Express (módulos `.mjs`) en `backend/src`: rutas en `routes`, acceso a datos en `db`, middleware en `middleware`, utilidades en `utils`. Autenticación con JWT y contraseñas con `bcrypt`.
 - Base de datos: MariaDB 11.8, base `conta_hogar` en el host `mariadb01` (DC-04, DC-07). El esquema se define solo en `backend/src/db/migrations` (DC-13): 0001 línea base, 0002 esquema de recibo por año, 0003 partición de recibos por año y retirada de `recibos_historico`, 0004 tabla `ajustes_sistema`, procedimiento `generar_recibos_anio` y evento horario, 0005 principal guardado e importe pendiente derivado de anticipos (DC-38), 0006 trazabilidad de autor e índice único de categorías (F-50, F-22, DC-50, DC-51) y 0007 objetos de esquema reproducibles y `DEFINER` normalizado (O-07, O-08, DC-60).
-- Documentación: `doc/`, con índice en `doc/index.md`. Hallazgos, decisiones (DC) y plan: `doc/mantenimiento/registro-hallazgos.md` (entrada y mapa; el contenido está en `registro-hallazgos_1de3.md`, `_2de3.md` y `_3de3.md`, DC-28). Reglas de trabajo: `doc/mantenimiento/instruccion-persistente.md` (entrada y cuatro partes, DC-33). Relevo: `doc/mantenimiento/estado-del-proyecto.md` (entrada y tres partes `estado-del-proyecto_1de3.md`, `_2de3.md` y `_3de3.md`, DC-37). Lista corta de tareas: `TODO`.
+- Documentación: `doc/`, con índice en `doc/index.md`. Hallazgos, decisiones (DC) y plan: `doc/mantenimiento/registro-hallazgos.md` (entrada y mapa; el contenido está en `registro-hallazgos_1de3.md`, `_2de3.md` y `_3de3.md`, DC-28). Reglas de trabajo: `doc/mantenimiento/instruccion-persistente.md` (entrada y cuatro partes, DC-33). Relevo: `doc/mantenimiento/estado-del-proyecto.md` (entrada y tres partes `estado-del-proyecto_1de3.md`, `_2de3.md` y `_3de3.md`, DC-37). Backlog: issues y Project de GitHub.
 - Visor de la documentación: la pantalla `Tech-documentation.vue` carga `doc/**/*.md` y su navegación se mantiene a mano (`docNavigation`).
 - Desarrollo: contenedor en `/workspaces/timon`; repositorio `ferboiar/timon`. Node 20.9 o superior de la serie 20.
 
 ## 2. Cómo se trabaja
 
 - Una rama por cambio, un PR por rama, fusionado en `main`. El nombre de la rama lleva la fase (o `mantenimiento`) y todos los IDs desglosados, por ejemplo `correccion/fase-1-F07-F08-F09-F22-F10-ahorros-categorias` o `mantenimiento/D-17-dividir-instruccion-persistente`.
-- Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, `TODO`, el plan de la sección 10 del registro y el relevo (la parte que contiene la sección afectada, DC-27 y DC-37). Un documento nuevo se añade también a `docNavigation`. Cada informe de iteración nuevo se añade al índice `mantenimiento/informes_iteraciones/index.md`.
-- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres (comprobar siempre en el registro antes de asignarlos): S-24 y DC-61. Usados en este corte: O-07, O-08, DC-60.
+- Cada commit y cada PR citan sus IDs (F-xx, S-xx, DC-xx). En el mismo PR se actualizan `doc/`, el plan de la sección 10 del registro, el relevo (la parte que contiene la sección afectada, DC-27 y DC-37) y el issue correspondiente del Project. Un documento nuevo se añade también a `docNavigation`. Cada informe de iteración nuevo se añade al índice `mantenimiento/informes_iteraciones/index.md`.
+- Una decisión nueva es una fila DC-nn en el registro. Siguientes identificadores libres (comprobar siempre en el registro antes de asignarlos): S-24 y DC-62. Usados en este corte: O-07, O-08, DC-60, DC-61 y D-45.
 - Mensajes de commit: `tipo(IDs): resumen`, con cada ID desglosado (por ejemplo `fix(F-07, F-08): resumen`), y cuerpo en español. El título del PR sigue el mismo formato. Descripción del PR con «Qué hace», «Verificado» y «Pendiente».
 - Toda operación nueva o modificada deja trazas en el log con el formato «módulo - acción: datos» (DC-09).
 - Antes del commit: `npx eslint --fix <ficheros>`, `node --check` en los módulos del backend y prueba en pantalla. Las pruebas del backend se ejecutan con `npm run test:backend:local` (con `backend/test/.env.test`, DC-46) o, si ese fichero no existe, con `npm run test:backend`; ver `backend/test/README.md`.

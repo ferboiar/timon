@@ -108,16 +108,18 @@ El relevo operativo de la sección 8 (parte 3 de 3) fija archivos, exclusiones, 
 
 ## 7. Retomar en una conversación nueva
 
-No hace falta reconstruir la memoria del chat. Leer la instrucción persistente (entrada y todas sus partes), el relevo (`estado-del-proyecto.md` y sus tres partes, en orden; en especial las secciones 0, 5 y 8), TODO y el registro (entrada y todas sus partes), no solo un resultado truncado. Adjuntar la salida actual de git status --short, git branch --show-current y git log --oneline -5. Si hay cambios locales posteriores, revisarlos antes de cambiar de rama. Los archivos /tmp y _adjuntos de otro equipo no son accesibles automáticamente desde un chat nuevo.
+No hace falta reconstruir la memoria del chat. Leer la instrucción persistente (entrada y todas sus partes), el relevo (`estado-del-proyecto.md` y sus tres partes, en orden; en especial las secciones 0, 5 y 8), los issues abiertos del Project y el registro (entrada y todas sus partes), no solo un resultado truncado. Adjuntar la salida actual de git status --short, git branch --show-current y git log --oneline -5. Si hay cambios locales posteriores, revisarlos antes de cambiar de rama. Los archivos /tmp y _adjuntos de otro equipo no son accesibles automáticamente desde un chat nuevo.
+
+El antiguo `TODO` está archivado y congelado en [TODO-2026-11-14.md](./archivo/TODO-2026-11-14.md); no se actualiza. El backlog vigente son los issues abiertos del Project.
 
 Texto recomendado para el primer mensaje:
 
 ```text
 Estamos retomando el mantenimiento de ferboiar/timon, no empezando un proyecto nuevo.
 
-Lee primero doc/mantenimiento/instruccion-persistente.md (entrada) con todas sus partes instruccion-persistente_1de4.md a instruccion-persistente_4de4.md, en orden, y después doc/mantenimiento/estado-del-proyecto.md (entrada) con todas sus partes estado-del-proyecto_1de3.md a estado-del-proyecto_3de3.md, en orden, incluido el relevo operativo, TODO y doc/mantenimiento/registro-hallazgos.md (entrada) con todas sus partes registro-hallazgos_1de3.md a registro-hallazgos_3de3.md, en orden. Si una herramienta trunca un fichero, completa su lectura antes de afirmar que lo has revisado. Comprueba el estado real de la rama y los últimos commits; no borres cambios locales.
+Lee primero doc/mantenimiento/instruccion-persistente.md (entrada) con todas sus partes instruccion-persistente_1de4.md a instruccion-persistente_4de4.md, en orden, y después doc/mantenimiento/estado-del-proyecto.md (entrada) con todas sus partes estado-del-proyecto_1de3.md a estado-del-proyecto_3de3.md, en orden, incluido el relevo operativo, los issues abiertos del Project y doc/mantenimiento/registro-hallazgos.md (entrada) con todas sus partes registro-hallazgos_1de3.md a registro-hallazgos_3de3.md, en orden. Si una herramienta trunca un fichero, completa su lectura antes de afirmar que lo has revisado. Comprueba el estado real de la rama y los últimos commits; no borres cambios locales.
 
-El siguiente trabajo acordado figura en la sección 0 del relevo y en TODO; no lo deduzcas de este texto. No borres generarFechasFuturas: la usa pushRecibo (F-12 corregido el 2026-11-01).
+El siguiente trabajo acordado figura en la sección 0 del relevo y en el issue de seguimiento del Project; no lo deduzcas de este texto. No borres generarFechasFuturas: la usa pushRecibo (F-12 corregido el 2026-11-01).
 
 Sigue los criterios de aceptación y las reglas de trabajo del relevo. No deduzcas requisitos de datos de prueba, no toques .db_connection ni su copia, y no presentes una auditoría parcial como completa ni pruebas no ejecutadas como verificadas. Entrega un único conjunto de comandos, lista exacta de git add y título/descripción completos del PR.
 
