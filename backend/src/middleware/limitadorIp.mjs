@@ -1,24 +1,21 @@
 /**
- * Tope de intentos por IP para `/api/auth/login` (S-04b, DC-63).
+ * Opciones del tope de intentos por IP para `/api/auth/login` (S-04b, DC-63).
+ *
+ * Este módulo no importa `express-rate-limit`: la ruta crea el middleware con
+ * `rateLimit(opcionesLimitadorIp(config.login))`. La instanciación en el propio módulo
+ * de la ruta es la que CodeQL reconoce; la fábrica anterior en otro fichero no lo era.
  *
  * Complementa al limitador propio por IP+usuario: este último no cubre la rotación
- * de nombres de usuario ni un ataque que reparta intentos entre muchas cuentas. El
- * tope por IP se aplica como middleware antes del manejador; el limitador propio
- * mantiene su política dentro del manejador.
- *
- * CodeQL no reconoce el limitador propio y exige un control de tasa reconocible en la
- * ruta; por eso se usa `express-rate-limit` como segunda capa, sin sustituir la primera.
+ * de nombres de usuario ni un ataque que reparta intentos entre muchas cuentas.
  *
  * @module middleware/limitadorIp
  */
-import { rateLimit } from 'express-rate-limit';
 
 export const MENSAJE_LIMITE_IP = 'Demasiados intentos de inicio de sesión. Espera unos minutos e inténtalo de nuevo.';
 
 /**
- * Crea el middleware de tope por IP.
+ * Opciones puras para `rateLimit(...)`.
  *
- * Opciones deliberadas:
  * - `skipSuccessfulRequests: true`: solo cuentan las respuestas no exitosas; un login
  *   correcto no consume cupo y descuenta el que hubiera.
  * - `ipv6Subnet: 56`: la librería agrupa las IPv6 por subred /56 en su generador de
@@ -27,17 +24,16 @@ export const MENSAJE_LIMITE_IP = 'Demasiados intentos de inicio de sesión. Espe
  *   `RateLimit-*` del borrador 7, sin las antiguas `X-RateLimit-*`.
  * - El 429 usa el mismo cuerpo y `Retry-After` que el limitador propio.
  *
- * @param {{ maxIntentos?: number, ventanaMs?: number, mensaje?: string }} opciones
- * @returns {Function} Middleware de Express
+ * @param {{ ipMaxIntentos?: number, ventanaMs?: number }} config
+ * @returns {Object} Opciones de `express-rate-limit`
  */
-export function crearLimitadorIp({ maxIntentos = 30, ventanaMs = 15 * 60 * 1000, mensaje = MENSAJE_LIMITE_IP } = {}) {
-    if (!Number.isInteger(maxIntentos) || maxIntentos < 1) throw new TypeError('maxIntentos debe ser un entero positivo');
+export function opcionesLimitadorIp({ ipMaxIntentos = 30, ventanaMs = 15 * 60 * 1000 } = {}) {
+    if (!Number.isInteger(ipMaxIntentos) || ipMaxIntentos < 1) throw new TypeError('ipMaxIntentos debe ser un entero positivo');
     if (!Number.isInteger(ventanaMs) || ventanaMs < 1) throw new TypeError('ventanaMs debe ser un entero positivo');
-    if (typeof mensaje !== 'string' || mensaje.trim() === '') throw new TypeError('mensaje debe ser texto no vacío');
 
-    return rateLimit({
+    return {
         windowMs: ventanaMs,
-        limit: maxIntentos,
+        limit: ipMaxIntentos,
         standardHeaders: 'draft-7',
         legacyHeaders: false,
         skipSuccessfulRequests: true,
@@ -47,7 +43,7 @@ export function crearLimitadorIp({ maxIntentos = 30, ventanaMs = 15 * 60 * 1000,
             const segundos = reinicio instanceof Date ? Math.max(1, Math.ceil((reinicio.getTime() - Date.now()) / 1000)) : Math.max(1, Math.ceil(ventanaMs / 1000));
 
             res.set('Retry-After', String(segundos));
-            return res.status(429).json({ success: false, message: mensaje });
+            return res.status(429).json({ success: false, message: MENSAJE_LIMITE_IP });
         }
-    });
+    };
 }

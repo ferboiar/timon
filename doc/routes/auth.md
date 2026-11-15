@@ -64,7 +64,7 @@ La API utiliza las siguientes variables de configuración desde el módulo `env.
 - Expiración configurable de tokens para limitar la ventana de ataque
 - Registro de intentos de acceso para monitoreo de seguridad
 - Revocación por versión de token: logout y cambio de contraseña invalidan los JWT anteriores (S-04a)
-- Dos capas de límite (S-04b, DC-63): limitador propio por IP+usuario (5 fallos/15 min, solo fallos, reinicio con login correcto) y tope por IP con `express-rate-limit` (30 fallos/15 min, `skipSuccessfulRequests`, IPv6 por subred /56, cabeceras `RateLimit-*` draft-7 y `Retry-After`); ambos responden 429 con el mismo cuerpo. El tope por IP cubre la rotación de usuarios y la alerta de CodeQL, que no reconoce el limitador propio.
+- Dos capas de límite (S-04b, DC-63): limitador propio por IP+usuario (5 fallos/15 min, solo fallos, reinicio con login correcto) y tope por IP instanciado en `routes/auth.mjs` con `rateLimit(opcionesLimitadorIp(config.login))`; `middleware/limitadorIp.mjs` solo expone las opciones puras. El tope usa 30 fallos/15 min, `skipSuccessfulRequests`, IPv6 por subred /56, cabeceras `RateLimit-*` draft-7 y `Retry-After`; ambos responden 429 con el mismo cuerpo. El tope por IP cubre la rotación de usuarios y la alerta de CodeQL, que no reconoce el limitador a través de una fábrica de otro fichero.
 - `req.ip` es la dirección del socket: no hay `trust proxy` en `server.mjs` ni proxy en Vite. Si se coloca un proxy inverso delante, todas las peticiones compartirán su IP hasta configurar `trust proxy`, y tanto el tope por IP como el límite por IP+usuario se resentirán.
 - Manejo de errores que no revela información sensible
 

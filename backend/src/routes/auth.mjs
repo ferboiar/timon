@@ -9,24 +9,21 @@
  */
 
 import { config } from '#backend/config/env.mjs';
+import rateLimit from 'express-rate-limit';
 import { revocarSesiones, verifyCredentials } from '#backend/db/db_utilsUsers.mjs';
 import { responderError, sanearParaLog } from '#backend/utils/errorDeNegocio.mjs';
-import { crearLimitadorIp } from '#backend/middleware/limitadorIp.mjs';
+import { MENSAJE_LIMITE_IP, opcionesLimitadorIp } from '#backend/middleware/limitadorIp.mjs';
 import { claveDeIntento, crearLimitador } from '#backend/utils/limitadorIntentos.mjs';
 import { autenticarSesion, ErrorDeSesion, firmarToken } from '#backend/utils/sesion.mjs';
 import { Router } from 'express';
 
 const router = Router();
-const MENSAJE_LIMITE = 'Demasiados intentos de inicio de sesión. Espera unos minutos e inténtalo de nuevo.';
+const MENSAJE_LIMITE = MENSAJE_LIMITE_IP;
 const limitadorLogin = crearLimitador({
     maxIntentos: config.login.maxIntentos,
     ventanaMs: config.login.ventanaMs
 });
-const limitadorIp = crearLimitadorIp({
-    maxIntentos: config.login.ipMaxIntentos,
-    ventanaMs: config.login.ventanaMs,
-    mensaje: MENSAJE_LIMITE
-});
+const limitadorIp = rateLimit(opcionesLimitadorIp(config.login));
 
 /** Identidad pública del usuario, sin contraseña ni versión de token. */
 function identidad(usuario) {

@@ -3,17 +3,18 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 
-import { crearLimitadorIp } from '#backend/middleware/limitadorIp.mjs';
+import { MENSAJE_LIMITE_IP, opcionesLimitadorIp } from '#backend/middleware/limitadorIp.mjs';
 import { claveDeIntento, crearLimitador } from '#backend/utils/limitadorIntentos.mjs';
 
-const MENSAJE = 'Límite de prueba';
+const MENSAJE = MENSAJE_LIMITE_IP;
 
 /** Arranca una app mínima con el tope por IP y un manejador de login simulado. */
 async function arrancarApp({ maxIntentos = 30 } = {}) {
     const app = express();
     app.use(express.json());
-    app.post('/login', crearLimitadorIp({ maxIntentos, ventanaMs: 60_000, mensaje: MENSAJE }), (req, res) => {
+    app.post('/login', rateLimit(opcionesLimitadorIp({ ipMaxIntentos: maxIntentos, ventanaMs: 60_000 })), (req, res) => {
         if (req.body?.username === 'ok') return res.json({ ok: true });
         return res.status(401).json({ ok: false });
     });

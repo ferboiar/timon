@@ -16,7 +16,7 @@
 
 - **Esquema:** `0008_sesion_revocable.sql` añade `users.token_version` de forma repetible (`ADD COLUMN IF NOT EXISTS`). No se aplica a `conta_hogar`.
 - **Sesión:** `utils/sesion.mjs` firma con `ver` y valida la versión contra el usuario vigente; `middleware/auth.mjs` es asíncrono y entrega los errores técnicos con `next(err)`; `middleware/errores.mjs` responde en JSON; `routes/auth.mjs` añade `/logout`, `/verify` y las dos capas de límite; `routes/users.mjs` devuelve un token nuevo al cambiar la propia contraseña; `db_utilsUsers.mjs` añade `token_version`, `revocarSesiones` y guardas con `enTransaccion`/`FOR UPDATE`; `server.mjs` monta el manejador central.
-- **Tope por IP:** `middleware/limitadorIp.mjs` usa `express-rate-limit@8.7.4` (MIT, Node >=16) con 30 fallos/15 min, `skipSuccessfulRequests`, IPv6 por subred /56, cabeceras `RateLimit-*` draft-7 y el mismo cuerpo/`Retry-After` que el limitador propio. Se configura con `LOGIN_IP_MAX_INTENTOS` y reutiliza `LOGIN_VENTANA_MS`. El limitador propio por IP+usuario (5/15) sigue dentro del manejador.
+- **Tope por IP:** `routes/auth.mjs` instancia `rateLimit(opcionesLimitadorIp(config.login))`; `middleware/limitadorIp.mjs` solo expone las opciones puras (sin importar `express-rate-limit`). Usa la versión 8.7.4 (MIT, Node >=16), 30 fallos/15 min, `skipSuccessfulRequests`, IPv6 por subred /56, cabeceras `RateLimit-*` draft-7 y el mismo cuerpo/`Retry-After` que el limitador propio. Se configura con `LOGIN_IP_MAX_INTENTOS` y reutiliza `LOGIN_VENTANA_MS`. El limitador propio por IP+usuario (5/15) sigue dentro del manejador. La instanciación en el módulo de la ruta busca que CodeQL reconozca el control.
 - **Frontend:** `useAuth.js` avisa al servidor en logout y expone `replaceToken`; `UsersService.js` documenta el token devuelto; `ProfileSettings.vue` guarda el token nuevo en el cambio propio.
 - **Dependencia:** `package.json` y `package-lock.json` con `express-rate-limit@^8.7.4`; npm también normalizó la indentación de `test:backend:local` en `package.json`.
 - **Pruebas:** `limitadorIntentos.test.mjs` (6), `limitadorIp.test.mjs` (3), `sesionRevocada.test.mjs` (5), `usuariosUltimoAdmin.test.mjs` (5), `middlewareAuth.test.mjs` (10) y `rutasConexionBd.test.mjs` (5); se amplía `e2e/tests/auth.spec.mjs` con la revocación tras el logout y se mantiene `e2e/tests/loginLimite.spec.mjs`.
@@ -56,8 +56,8 @@
 | Revocación | `sesionRevocada.test.mjs` | **5 tests, 5 pass**, `EXIT=0` |
 | Último admin | `usuariosUltimoAdmin.test.mjs` | **5 tests, 5 pass**, `EXIT=0` |
 | Rutas de conexión | `rutasConexionBd.test.mjs` | **5 tests, 5 pass**, `EXIT=0` |
-| Suite completa | `npm run test:backend:local`, una instancia, sin servidor E2E | **382 tests, 382 pass, 0 fail, 0 cancelled, 0 skipped**, `EXIT=0`, 908 073 ms |
-| E2E | `auth.spec.mjs` + `loginLimite.spec.mjs`, Chromium local por CDP y réplica `conta_hogar_test` | **4 passed**, `EXIT=0`, 44,2 s; suite de backend parada |
+| Suite completa | `npm run test:backend:local`, una instancia, sin servidor E2E | **382 tests, 382 pass, 0 fail, 0 cancelled, 0 skipped**, `EXIT=0`, 653 612 ms |
+| E2E | `auth.spec.mjs` + `loginLimite.spec.mjs`, Chromium local por CDP y réplica `conta_hogar_test` | **4 passed**, `EXIT=0`, 52,6 s; suite de backend parada |
 | Reglas | `node scripts/comprobar-reglas.mjs` y `backend/test/reglas.test.mjs` | Coherentes, `EXIT=0`; 10 tests, 10 pass |
 | Ayudante | `node --test dev/utils/ayudas.test.mjs` | **43 tests, 43 pass**, `EXIT=0` |
 | ESLint | Ficheros tocados | 0 errores; solo 2 avisos de specs E2E ignorados por la configuración |
