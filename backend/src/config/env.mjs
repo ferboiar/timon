@@ -17,6 +17,7 @@ const defaults = {
     JWT_EXPIRATION: '24h',
     PORT_BACKEND: 3000,
     LOGIN_MAX_INTENTOS: 5,
+    LOGIN_IP_MAX_INTENTOS: 30,
     LOGIN_VENTANA_MS: 15 * 60 * 1000
 };
 
@@ -46,6 +47,7 @@ export const config = {
     },
     login: {
         maxIntentos: enteroPositivo(process.env.LOGIN_MAX_INTENTOS, defaults.LOGIN_MAX_INTENTOS),
+        ipMaxIntentos: enteroPositivo(process.env.LOGIN_IP_MAX_INTENTOS, defaults.LOGIN_IP_MAX_INTENTOS),
         ventanaMs: enteroPositivo(process.env.LOGIN_VENTANA_MS, defaults.LOGIN_VENTANA_MS)
     },
     db: {

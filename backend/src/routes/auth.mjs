@@ -11,6 +11,7 @@
 import { config } from '#backend/config/env.mjs';
 import { revocarSesiones, verifyCredentials } from '#backend/db/db_utilsUsers.mjs';
 import { responderError, sanearParaLog } from '#backend/utils/errorDeNegocio.mjs';
+import { crearLimitadorIp } from '#backend/middleware/limitadorIp.mjs';
 import { claveDeIntento, crearLimitador } from '#backend/utils/limitadorIntentos.mjs';
 import { autenticarSesion, ErrorDeSesion, firmarToken } from '#backend/utils/sesion.mjs';
 import { Router } from 'express';
@@ -20,6 +21,11 @@ const MENSAJE_LIMITE = 'Demasiados intentos de inicio de sesión. Espera unos mi
 const limitadorLogin = crearLimitador({
     maxIntentos: config.login.maxIntentos,
     ventanaMs: config.login.ventanaMs
+});
+const limitadorIp = crearLimitadorIp({
+    maxIntentos: config.login.ipMaxIntentos,
+    ventanaMs: config.login.ventanaMs,
+    mensaje: MENSAJE_LIMITE
 });
 
 /** Identidad pública del usuario, sin contraseña ni versión de token. */
@@ -33,7 +39,7 @@ function identidad(usuario) {
 }
 
 // Endpoint para iniciar sesión
-router.post('/login', async (req, res) => {
+router.post('/login', limitadorIp, async (req, res) => {
     try {
         const { username, password } = req.body ?? {};
 

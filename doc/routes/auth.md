@@ -54,6 +54,7 @@ La API utiliza las siguientes variables de configuración desde el módulo `env.
 - `JWT_SECRET`: Clave secreta para firmar tokens
 - `JWT_EXPIRATION`: Tiempo de validez del token (ej: '24h')
 - `LOGIN_MAX_INTENTOS`: Fallos de `/login` permitidos por ventana (5 por defecto)
+- `LOGIN_IP_MAX_INTENTOS`: Fallos por IP permitidos por ventana (30 por defecto)
 - `LOGIN_VENTANA_MS`: Ventana del límite, en milisegundos (900000 por defecto)
 
 ## Seguridad
@@ -63,8 +64,8 @@ La API utiliza las siguientes variables de configuración desde el módulo `env.
 - Expiración configurable de tokens para limitar la ventana de ataque
 - Registro de intentos de acceso para monitoreo de seguridad
 - Revocación por versión de token: logout y cambio de contraseña invalidan los JWT anteriores (S-04a)
-- Límite de intentos fallidos por IP y usuario con respuesta 429 (S-04b)
-- `req.ip` es la dirección del socket: no hay `trust proxy` en `server.mjs` ni proxy en Vite. Si se coloca un proxy inverso delante, todas las peticiones compartirán su IP hasta configurar `trust proxy`, y el límite por IP+usuario se resentirá.
+- Dos capas de límite (S-04b, DC-63): limitador propio por IP+usuario (5 fallos/15 min, solo fallos, reinicio con login correcto) y tope por IP con `express-rate-limit` (30 fallos/15 min, `skipSuccessfulRequests`, IPv6 por subred /56, cabeceras `RateLimit-*` draft-7 y `Retry-After`); ambos responden 429 con el mismo cuerpo. El tope por IP cubre la rotación de usuarios y la alerta de CodeQL, que no reconoce el limitador propio.
+- `req.ip` es la dirección del socket: no hay `trust proxy` en `server.mjs` ni proxy en Vite. Si se coloca un proxy inverso delante, todas las peticiones compartirán su IP hasta configurar `trust proxy`, y tanto el tope por IP como el límite por IP+usuario se resentirán.
 - Manejo de errores que no revela información sensible
 
 ## Integración con Middleware
@@ -83,6 +84,6 @@ Esta API se integra con los siguientes middlewares para proteger rutas:
 
 ## Códigos y validación reales
 
-POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 429 tras superar el umbral de fallos, con `Retry-After`; 500 por fallo del servidor. POST /logout: 200 y revoca todas las sesiones del usuario; 401 sin token o con token ya revocado. GET /verify: 200 con la identidad vigente o 401 sin token/inválido/caducado/revocado. Verify y verifyToken comparten la comprobación de versión; el 401 por token inválido o caducado se mantiene desde S-16.
+POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 429 al superar el umbral por IP+usuario o el tope por IP, con `Retry-After`; 500 por fallo del servidor. POST /logout: 200 y revoca todas las sesiones del usuario; 401 sin token o con token ya revocado. GET /verify: 200 con la identidad vigente o 401 sin token/inválido/caducado/revocado. Verify y verifyToken comparten la comprobación de versión; el 401 por token inválido o caducado se mantiene desde S-16.
 
 La validación comprueba firma, caducidad y `ver` contra `users.token_version`, y carga el usuario vigente; por tanto sí consulta revocación, rol actualizado y existencia actual del usuario en la base de datos (S-04a).

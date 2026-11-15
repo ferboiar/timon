@@ -8,6 +8,7 @@ Archivo: `backend/src/config/env.mjs`. Carga `backend/.env` (cifrado con git-cry
 | `JWT_EXPIRATION` | Caducidad del token | `24h` |
 | `PORT_BACKEND` | Puerto del servidor | `3000` |
 | `LOGIN_MAX_INTENTOS` | Fallos de `/login` permitidos por ventana | `5` |
+| `LOGIN_IP_MAX_INTENTOS` | Fallos por IP permitidos en `/login` por ventana | `30` |
 | `LOGIN_VENTANA_MS` | Ventana del límite de intentos, en milisegundos | `900000` (15 min) |
 
 ## Exportaciones
