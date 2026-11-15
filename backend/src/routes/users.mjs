@@ -16,6 +16,7 @@
 
 import * as dbUsers from '#backend/db/db_utilsUsers.mjs';
 import { verifyAdmin, verifyToken } from '#backend/middleware/auth.mjs';
+import { firmarToken } from '#backend/utils/sesion.mjs';
 import { AUDIENCIA_ADMIN, AUDIENCIA_GENERAL } from '#backend/utils/catalogoErrores.mjs';
 import { responderError } from '#backend/utils/errorDeNegocio.mjs';
 import { leerEnteroPositivo, leerListaEnterosPositivos } from '#backend/utils/parametros.mjs';
@@ -102,10 +103,17 @@ router.put('/password', verifyAdmin, async (req, res) => {
         const id = leerEnteroPositivo(datos.id, 'id');
         const hashedPassword = await bcrypt.hash(datos.password, 10);
 
-        await dbUsers.changePassword(id, hashedPassword);
+        const version = await dbUsers.changePassword(id, hashedPassword);
+        const esPropia = Number(id) === Number(req.user.id);
+        const respuesta = { message: 'Contraseña actualizada correctamente' };
 
-        console.log(`usuarios - cambio de contraseña: usuario ${id}`);
-        res.json({ message: 'Contraseña actualizada correctamente' });
+        if (esPropia) {
+            // S-04a: el token anterior queda revocado; se devuelve uno nuevo para no cerrar la sesión.
+            respuesta.token = firmarToken({ ...req.user, token_version: version });
+        }
+
+        console.log(`usuarios - cambio de contraseña: usuario ${id}, versión ${version}`);
+        res.json(respuesta);
     } catch (error) {
         responderError(res, error, 'No se ha podido cambiar la contraseña.', {
             clave: 'message',

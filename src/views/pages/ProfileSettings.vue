@@ -25,7 +25,7 @@ import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref, watch } from 'vue';
 
 const { layoutConfig, applyColorScheme } = useLayout();
-const { isAdmin, ROLES, currentUser, updateStylePreferences } = useAuth();
+const { isAdmin, ROLES, currentUser, replaceToken, updateStylePreferences } = useAuth();
 const { primaryColors, surfaces, presetOptions, menuModeOptions, colorSchemeOptions, defaultConfig, applyFullTheme } = useTheme();
 const toast = useToast();
 const pestanaActiva = ref('Estilo'); // Los administradores abren Ajustes en General; el resto, en Aspecto
@@ -418,10 +418,17 @@ async function changePassword() {
             return;
         }
 
-        await UsersService.changePassword({
+        const respuesta = await UsersService.changePassword({
             id: passwordData.value.id,
             password: passwordData.value.password
         });
+
+        // S-04a: si el administrador cambia su propia contraseña, el token anterior
+        // queda revocado y el servidor devuelve uno nuevo para no cerrar la sesión.
+        if (respuesta?.token && Number(passwordData.value.id) === Number(currentUser.value?.id)) {
+            replaceToken(respuesta.token);
+        }
+
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Contraseña actualizada correctamente', life: 3000 });
         hideDialog();
     } catch (error) {

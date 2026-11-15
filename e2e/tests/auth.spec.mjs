@@ -101,8 +101,21 @@ test.describe('Autenticación', () => {
         await expect(disparadorPerfil).toBeVisible();
         await disparadorPerfil.click();
 
+        const tokenAnterior = await page.evaluate(() => sessionStorage.getItem('token') || localStorage.getItem('token'));
+        expect(tokenAnterior).toBeTruthy();
+
         // `AppTopbar.vue`: ítem «Salir» del menú de perfil.
-        await page.getByText('Salir', { exact: true }).click();
+        const [respuestaLogout] = await Promise.all([
+            page.waitForResponse((r) => r.url().includes('/api/auth/logout') && r.request().method() === 'POST', { timeout: 30_000 }),
+            page.getByText('Salir', { exact: true }).click()
+        ]);
+
+        // S-04a: el servidor revoca la versión y el token anterior deja de valer.
+        expect(respuestaLogout.status()).toBe(200);
+        const baseApi = new URL(process.env.E2E_BASE_URL || 'http://localhost:5173');
+        const api = `${baseApi.protocol}//${baseApi.hostname}:3000`;
+        const revocada = await fetch(`${api}/api/users`, { headers: { Authorization: `Bearer ${tokenAnterior}` } });
+        expect(revocada.status).toBe(401);
 
         // `useAuth.js`: logout limpia la sesión y hace `router.push('/auth/login')`.
         await expect(page).toHaveURL(/\/auth\/login$/);

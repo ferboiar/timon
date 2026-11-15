@@ -15,8 +15,16 @@ dotenv.config({ path: envPath });
 // Valores predeterminados para configuraciones críticas, utilizados si no se declaran en .env
 const defaults = {
     JWT_EXPIRATION: '24h',
-    PORT_BACKEND: 3000
+    PORT_BACKEND: 3000,
+    LOGIN_MAX_INTENTOS: 5,
+    LOGIN_VENTANA_MS: 15 * 60 * 1000
 };
+
+/** Entero positivo del entorno, o el valor por defecto si falta o no es válido. */
+function enteroPositivo(valor, porDefecto) {
+    const numero = Number.parseInt(valor, 10);
+    return Number.isInteger(numero) && numero > 0 ? numero : porDefecto;
+}
 
 if (!process.env.JWT_SECRET) {
     console.warn(`ADVERTENCIA: JWT_SECRET no está definido en ${envPath}.`);
@@ -35,6 +43,10 @@ export const config = {
     },
     server: {
         port: process.env.PORT_BACKEND || defaults.PORT_BACKEND
+    },
+    login: {
+        maxIntentos: enteroPositivo(process.env.LOGIN_MAX_INTENTOS, defaults.LOGIN_MAX_INTENTOS),
+        ventanaMs: enteroPositivo(process.env.LOGIN_VENTANA_MS, defaults.LOGIN_VENTANA_MS)
     },
     db: {
         // Aquí podrías agregar configuraciones relacionadas con la base de datos

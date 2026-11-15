@@ -11,7 +11,7 @@ Este módulo implementa las rutas de la API REST para la gestión de usuarios en
 | `GET` | `/api/users` | Obtiene todos los usuarios registrados |
 | `POST` | `/api/users` | Crea un nuevo usuario |
 | `PUT` | `/api/users` | Actualiza un usuario existente |
-| `PUT` | `/api/users/password` | Cambia la contraseña de un usuario |
+| `PUT` | `/api/users/password` | Cambia la contraseña de un usuario; si es la propia cuenta, devuelve un token nuevo |
 | `DELETE` | `/api/users` | Elimina uno o más usuarios |
 | `PUT` | `/api/users/style-preferences` | Guarda las preferencias de estilo del propio usuario (cualquier usuario autenticado); valida `colorScheme` (`system`, `light` o `dark`) |
 | `GET` | `/api/users/style-preferences` | Obtiene las preferencias de estilo del propio usuario (cualquier usuario autenticado) |
@@ -33,6 +33,8 @@ Este módulo implementa las rutas de la API REST para la gestión de usuarios en
 - Se utilizan medidas contra inyección SQL mediante consultas parametrizadas
 - Validación en servidor antes de hashear: nombre de usuario, correo, contraseña, rol y permisos (F-42, DC-51). En la edición la contraseña es opcional; si llega, se valida igual
 - No se devuelven contraseñas en las respuestas API
+- El cambio de contraseña incrementa `users.token_version` y revoca las sesiones de ese usuario; si el cambio es de la propia cuenta, la respuesta incluye un token nuevo (S-04a)
+- Borrar o degradar administradores comprueba, dentro de la misma transacción, que queda al menos uno (S-04c)
 
 ## Detalles de Implementación
 
@@ -106,9 +108,10 @@ Las rutas de gestión exigen administrador; las de preferencias de estilo, solo 
 | Correo ya registrado | **409** (antes 500) | `CORREO_DUPLICADO` |
 | Usuario inexistente | **404** (antes 500) | `USUARIO_NO_ENCONTRADO` |
 | Borrado bloqueado por datos asociados | **409** (antes 500) | `USUARIO_CON_DATOS` |
+| Intento de dejar el sistema sin administradores | **409** | `ULTIMO_ADMIN` |
 | Fallo técnico | 500 | — |
 
-Los duplicados se reconocen por el **nombre del índice único** (`username_UNIQUE`, `email`), no por el texto del mensaje. Textos: «No se ha podido crear el usuario porque ya existe uno con el nombre «X».», «No se ha podido guardar el usuario porque el correo «X» ya está asociado a otra cuenta.», «No se puede eliminar al usuario «X» porque tiene datos asociados.» y «No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.».
+Los duplicados se reconocen por el **nombre del índice único** (`username_UNIQUE`, `email`), no por el texto del mensaje. Textos: «No se ha podido crear el usuario porque ya existe uno con el nombre «X».», «No se ha podido guardar el usuario porque el correo «X» ya está asociado a otra cuenta.», «No se puede eliminar al usuario «X» porque tiene datos asociados.» y «No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.». La guarda de último administrador añade «No se puede eliminar el último administrador.» y «No se puede cambiar el rol del último administrador.» (409 `ULTIMO_ADMIN`).
 
 ## Referencias
 

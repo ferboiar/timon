@@ -68,7 +68,8 @@ El lanzador (`lanzador.mjs`):
 | `tests/fixtures.mjs` | Conexión CDP, contexto aislado de auth y contexto de sesión compartida |
 | `tests/helpers/timon.mjs` | `asegurarSesion`, login, navegación y CRUD de categorías |
 | `tests/helpers/diagnostico.mjs` | Adjuntos de fallo (`testInfo.attach`) sin secretos |
-| `tests/auth.spec.mjs` | Login incorrecto, login correcto y cierre de sesión |
+| `tests/auth.spec.mjs` | Login incorrecto, login correcto, cierre de sesión y revocación del token anterior (S-04a) |
+| `tests/loginLimite.spec.mjs` | Límite de intentos: cinco fallos con un usuario inexistente y 429 visible; un usuario legítimo sigue entrando (S-04b, DC-63) |
 | `tests/categorias.spec.mjs` | Flujo serial sobre una sola sesión |
 | `tests/smoke.spec.mjs` | Timón carga en el Edge del portátil |
 | `tests/erroresConexion.spec.mjs` | Base de Datos: mensaje de usuario ante una conexión inalcanzable, sin guardar nada |

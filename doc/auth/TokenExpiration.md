@@ -15,9 +15,9 @@ apiClient tiene un interceptor para 401/403 con mensajes Token inválido o expir
 
 ## Limpieza y límites
 
-Logout elimina token/user de los dos almacenes, cancela su intervalo, vacía el usuario de esa instancia y reinicia ajustes de sesión; conserva rememberedUser y redirige al login. El guard y el interceptor redirigen a `/auth/login?motivo=caducada` y el login muestra «Tu sesión ha caducado. Vuelve a iniciar sesión.» (U-16).
+Logout elimina token/user de los dos almacenes, cancela su intervalo, vacía el usuario de esa instancia, reinicia ajustes de sesión y redirige al login; conserva rememberedUser. Además avisa al servidor con `POST /api/auth/logout` usando el token capturado, aunque la llamada falle: el cierre local no depende de la red (S-04a). El guard y el interceptor redirigen a `/auth/login?motivo=caducada` y el login muestra «Tu sesión ha caducado. Vuelve a iniciar sesión.» (U-16).
 
-Recordarme cambia el almacenamiento, no prolonga el JWT. Su expiración sale de la configuración al emitirlo, por defecto 24h. No hay renovación automática ni revocación ni actualización del rol de tokens emitidos (S-04).
+Recordarme cambia el almacenamiento, no prolonga el JWT. Su expiración sale de la configuración al emitirlo, por defecto 24h. No hay renovación automática. Desde S-04a (DC-62) sí hay revocación: el JWT lleva `ver`, el logout y el cambio de contraseña incrementan `users.token_version`, el rol se lee de la base en cada petición y los tokens sin `ver` se rechazan (un único re-login al desplegar).
 
 ## Referencias
 

@@ -8,7 +8,8 @@ del despliegue.
 
 | Spec | Qué valida |
 |---|---|
-| `tests/auth.spec.mjs` | Login incorrecto (401 y mensaje del servidor), login correcto (200, `/dashboard`, pie con el usuario y token de sesión) y cierre de sesión desde el menú de perfil |
+| `tests/auth.spec.mjs` | Login incorrecto (401 y mensaje del servidor), login correcto (200, `/dashboard`, pie con el usuario y token de sesión) y cierre de sesión desde el menú de perfil; tras el logout, el token anterior responde 401 (S-04a) |
+| `tests/loginLimite.spec.mjs` | Límite de intentos (S-04b, DC-63): cinco fallos con un usuario inexistente y respuesta 429 con el mensaje en pantalla; el usuario legítimo de la suite sigue pudiendo entrar. No crea datos |
 | `tests/categorias.spec.mjs` | Listado y detección de categorías E2E de ejecuciones anteriores, alta, presencia en la tabla tras recargar, rechazo de duplicado, edición de la descripción y borrado |
 | `tests/smoke.spec.mjs` | Que Timón carga en el navegador real y que el layout autenticado se pinta |
 | `tests/erroresConexion.spec.mjs` | Pestaña Base de Datos: una prueba de conexión con una dirección inalcanzable (`127.0.0.1` y un puerto sin escuchar) muestra el mensaje de usuario completo, sin código del sistema, y no guarda nada |

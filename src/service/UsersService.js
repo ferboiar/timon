@@ -50,8 +50,12 @@ export const UsersService = {
 
     /**
      * Cambiar contraseña de un usuario
+     *
+     * S-04a: si el cambio es de la propia cuenta, la respuesta incluye `token`
+     * porque el token anterior queda revocado.
+     *
      * @param {Object} params - Parámetros con ID de usuario y nueva contraseña
-     * @returns {Promise<Object>} Resultado de la operación
+     * @returns {Promise<Object>} Resultado de la operación, con `token` si es la propia cuenta
      */
     async changePassword(params) {
         try {

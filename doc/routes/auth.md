@@ -10,6 +10,7 @@ Este módulo implementa las rutas de la API REST para gestionar la autenticació
 |-------------|------|-------------|
 | `POST` | `/api/auth/login` | Autentica un usuario mediante credenciales |
 | `GET` | `/api/auth/verify` | Verifica la validez de un token JWT |
+| `POST` | `/api/auth/logout` | Revoca todos los tokens del usuario (S-04a) |
 
 ## Características Principales
 
@@ -38,6 +39,7 @@ El token JWT generado contiene la siguiente información en su payload:
 - `username`: Nombre de usuario
 - `email`: Correo electrónico del usuario
 - `rol`: Rol del usuario (admin, user, limited_user, reader)
+- `ver`: Versión de token del usuario; si no coincide con `users.token_version`, la sesión está revocada
 
 ### Verificación de Token
 
@@ -51,6 +53,8 @@ El endpoint de verificación simplemente valida que el token proporcionado:
 La API utiliza las siguientes variables de configuración desde el módulo `env.mjs`:
 - `JWT_SECRET`: Clave secreta para firmar tokens
 - `JWT_EXPIRATION`: Tiempo de validez del token (ej: '24h')
+- `LOGIN_MAX_INTENTOS`: Fallos de `/login` permitidos por ventana (5 por defecto)
+- `LOGIN_VENTANA_MS`: Ventana del límite, en milisegundos (900000 por defecto)
 
 ## Seguridad
 
@@ -58,6 +62,9 @@ La API utiliza las siguientes variables de configuración desde el módulo `env.
 - Tokens JWT firmados para garantizar integridad y autenticidad
 - Expiración configurable de tokens para limitar la ventana de ataque
 - Registro de intentos de acceso para monitoreo de seguridad
+- Revocación por versión de token: logout y cambio de contraseña invalidan los JWT anteriores (S-04a)
+- Límite de intentos fallidos por IP y usuario con respuesta 429 (S-04b)
+- `req.ip` es la dirección del socket: no hay `trust proxy` en `server.mjs` ni proxy en Vite. Si se coloca un proxy inverso delante, todas las peticiones compartirán su IP hasta configurar `trust proxy`, y el límite por IP+usuario se resentirá.
 - Manejo de errores que no revela información sensible
 
 ## Integración con Middleware
@@ -76,6 +83,6 @@ Esta API se integra con los siguientes middlewares para proteger rutas:
 
 ## Códigos y validación reales
 
-POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 500 por fallo del servidor. GET /verify: 200 con identidad del token o 401 sin token/inválido/caducado. Verify valida directamente con jwt.verify, no utiliza verifyToken; este último devuelve 401 por token inválido o caducado (S-16).
+POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 429 tras superar el umbral de fallos, con `Retry-After`; 500 por fallo del servidor. POST /logout: 200 y revoca todas las sesiones del usuario; 401 sin token o con token ya revocado. GET /verify: 200 con la identidad vigente o 401 sin token/inválido/caducado/revocado. Verify y verifyToken comparten la comprobación de versión; el 401 por token inválido o caducado se mantiene desde S-16.
 
-La validación criptográfica comprueba firma y caducidad; no consulta revocación, rol actualizado ni existencia actual del usuario en la base de datos.
+La validación comprueba firma, caducidad y `ver` contra `users.token_version`, y carga el usuario vigente; por tanto sí consulta revocación, rol actualizado y existencia actual del usuario en la base de datos (S-04a).

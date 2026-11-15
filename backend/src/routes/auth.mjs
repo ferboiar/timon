@@ -1,77 +1,83 @@
 /**
  * API para la autenticación de usuarios
  *
- * Este módulo proporciona endpoints para gestionar la autenticación de usuarios.
- * Incluye funcionalidad para iniciar sesión mediante credenciales (username/password)
- * y verificar la validez de tokens JWT. Al autenticarse exitosamente, devuelve un
- * token JWT con información del usuario y sus permisos asociados.
+ * S-04a (DC-62): el JWT lleva la versión de token del usuario. El cierre de sesión y
+ * el cambio de contraseña incrementan esa versión y revocan los tokens anteriores.
+ * S-04b (DC-63): /login limita los intentos fallidos por IP y usuario.
  *
  * @module routes/auth
  */
 
 import { config } from '#backend/config/env.mjs';
-import { verifyCredentials } from '#backend/db/db_utilsUsers.mjs';
+import { revocarSesiones, verifyCredentials } from '#backend/db/db_utilsUsers.mjs';
+import { responderError, sanearParaLog } from '#backend/utils/errorDeNegocio.mjs';
+import { claveDeIntento, crearLimitador } from '#backend/utils/limitadorIntentos.mjs';
+import { autenticarSesion, ErrorDeSesion, firmarToken } from '#backend/utils/sesion.mjs';
 import { Router } from 'express';
-import jwt from 'jsonwebtoken';
 
 const router = Router();
+const MENSAJE_LIMITE = 'Demasiados intentos de inicio de sesión. Espera unos minutos e inténtalo de nuevo.';
+const limitadorLogin = crearLimitador({
+    maxIntentos: config.login.maxIntentos,
+    ventanaMs: config.login.ventanaMs
+});
+
+/** Identidad pública del usuario, sin contraseña ni versión de token. */
+function identidad(usuario) {
+    return {
+        id: usuario.id,
+        username: usuario.username,
+        email: usuario.email,
+        rol: usuario.rol
+    };
+}
 
 // Endpoint para iniciar sesión
 router.post('/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password } = req.body ?? {};
 
-        // Verificar que se proporcionaron username y password
-        if (!username || !password) {
+        if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password) {
             return res.status(400).json({
                 success: false,
                 message: 'Se requiere nombre de usuario y contraseña'
             });
         }
 
-        console.log(`Intento de inicio de sesión para el usuario: ${username}`);
+        const nombre = username.trim();
+        const clave = claveDeIntento(req.ip, nombre);
+        const estado = limitadorLogin.comprobar(clave);
 
-        // Verificar credenciales en la base de datos
-        const user = await verifyCredentials(username, password);
+        if (estado.bloqueado) {
+            console.log(`auth - login limitado: usuario ${sanearParaLog(nombre).slice(0, 50)} desde ${req.ip}`);
+            res.set('Retry-After', String(estado.segundosRestantes));
+            return res.status(429).json({ success: false, message: MENSAJE_LIMITE });
+        }
+
+        const user = await verifyCredentials(nombre, password);
 
         if (!user) {
-            console.log(`Credenciales incorrectas para usuario: ${username}`);
+            limitadorLogin.registrarFallo(clave);
+            console.log(`auth - login fallido: usuario ${sanearParaLog(nombre).slice(0, 50)} desde ${req.ip}`);
             return res.status(401).json({
                 success: false,
                 message: 'Credenciales incorrectas'
             });
         }
 
-        console.log(`Usuario autenticado correctamente: ${username}`);
+        limitadorLogin.registrarExito(clave);
+        const token = firmarToken(user);
 
-        // Generar token JWT utilizando la configuración centralizada
-        const token = jwt.sign(
-            {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                rol: user.rol
-            },
-            config.jwt.secret,
-            { expiresIn: config.jwt.expiration }
-        );
+        console.log(`auth - login correcto: usuario ${user.id}`);
 
-        console.log(`Token JWT generado para: ${username}`);
-
-        // Enviar respuesta con token y datos de usuario
         res.json({
             success: true,
             message: 'Inicio de sesión exitoso',
             token,
-            user: {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                rol: user.rol
-            }
+            user: identidad(user)
         });
     } catch (error) {
-        console.error('Error en autenticación:', error);
+        console.error(`auth - login: error técnico - ${sanearParaLog(error?.message ?? 'error desconocido')}`);
         res.status(500).json({
             success: false,
             message: 'Error en el servidor durante autenticación'
@@ -79,32 +85,39 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Endpoint para verificar el estado de autenticación
-router.get('/verify', (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
+// Cerrar la sesión: invalida todos los tokens del usuario (S-04a)
+router.post('/logout', async (req, res) => {
+    try {
+        const usuario = await autenticarSesion(req);
+        const version = await revocarSesiones(usuario.id);
 
-    if (!token) {
-        return res.status(401).json({
-            success: false,
-            message: 'No se proporcionó token de autenticación'
+        console.log(`auth - cierre de sesión: usuario ${usuario.id}, versión ${version}`);
+        res.json({ success: true, message: 'Sesión cerrada correctamente' });
+    } catch (error) {
+        if (error instanceof ErrorDeSesion) {
+            return res.status(401).json({ success: false, message: error.message });
+        }
+
+        responderError(res, error, 'No se ha podido cerrar la sesión.', {
+            clave: 'message',
+            contexto: 'auth - cierre de sesión'
         });
     }
+});
 
+// Endpoint para verificar el estado de autenticación (incluye revocación y rol vigente)
+router.get('/verify', async (req, res) => {
     try {
-        const decoded = jwt.verify(token, config.jwt.secret);
-        res.json({
-            success: true,
-            user: {
-                id: decoded.id,
-                username: decoded.username,
-                email: decoded.email,
-                rol: decoded.rol
-            }
-        });
+        const usuario = await autenticarSesion(req);
+        res.json({ success: true, user: identidad(usuario) });
     } catch (error) {
-        res.status(401).json({
-            success: false,
-            message: 'Token inválido o expirado'
+        if (error instanceof ErrorDeSesion) {
+            return res.status(401).json({ success: false, message: error.message });
+        }
+
+        responderError(res, error, 'No se ha podido verificar la sesión.', {
+            clave: 'message',
+            contexto: 'auth - verificación de sesión'
         });
     }
 });

@@ -77,6 +77,8 @@ Parte 2 de 3 del [relevo](./estado-del-proyecto.md): secciones 4 a 7 (historial 
 | #86 | O-06 | Volcados con `--routines --events`, prueba entre bases `*_test`, `DEFINER` y S-22 (merge `f6e36c2`) |
 | #87 | O-07, O-08, DC-60 | Migración 0007: objetos de esquema reproducibles, `DEFINER` normalizado y copia/restauración fieles (merge `0be3216`) |
 | #88 | O-07, O-08, DC-52 | Documentación del despliegue de la 0007 y evaluación de S-22 (merge `a430632`) |
+| #89 | S-22 | Cierre de la retirada de `SET USER` y sincronización del seguimiento (merge `c84c821`) |
+| #138 | DC-61, D-45 | Migración del TODO a issues de GitHub y actualización del seguimiento (merge `a74fe68`) |
 
 Tras el #82 se publicaron dos commits de seguimiento directos a main: `342b87c` (SHA de fusión de D-36) y `ef5e57d` (base y recuento de S-11).
 
@@ -84,10 +86,10 @@ Los PR #1 a #13 son una copia de seguridad y propuestas automáticas de actualiz
 
 ## 5. Siguiente paso operativo
 
-Estado 2026-11-14: `main` en `a430632` (PR #87 y #88 fusionados); la 0007 está desplegada y verificada en `conta_hogar`; S-22 cerrada (`SET USER` revocado). Siguiente: S-04, S-05 y S-11. Decisión registrada en este corte: DC-60.
+Estado 2026-11-15: `main` en `25a94e8` (a74fe68 es el merge del PR #138, con un commit de documentación encima); la 0007 está desplegada y verificada en `conta_hogar`; S-22 cerrada. S-04 en curso en la rama `correccion/fase-2-S04-S04a-S04b-S04c-revocacion-rate-limit-ultimo-admin`; issues #91-#94. Decisiones de este corte: DC-62 y DC-63. La 0008 no está desplegada en `conta_hogar`: se aplicará aparte, con copia previa y antes de reiniciar el backend; los tokens sin `ver` dejan de valer y exigen un re-login único.
 
 
-Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas, cada una con confirmación expresa y separada; despliegue de la 0006. S-22 cerrada; copia nueva en `/tmp/o0708-new-final-20261114T172129Z.sql` y copia antigua descartada. F-14 está cerrado (PR #53, #54 y #55). El detalle histórico de los PR #14 a #88 está en la sección 4.
+Pendiente operativo: limpieza de las ramas locales fusionadas y de las remotas, cada una con confirmación expresa y separada; despliegue de la 0006. S-22 cerrada; copia nueva en `/tmp/o0708-new-final-20261114T172129Z.sql` y copia antigua descartada. F-14 está cerrado (PR #53, #54 y #55). El detalle histórico de los PR #14 a #138 está en la sección 4.
 
 Histórico (hecho el 2026-10-27/28); sigue vigente la regla de conservar generarFechasFuturas y la generación anual:
 

@@ -1,23 +1,69 @@
 // S-03: rutas de la configuración de la conexión (regresión de S-02/S-03).
-// No necesita base de datos, salvo la comprobación de la contraseña guardada, que se salta
-// si no hay fichero de configuración.
+// S-04a: el token lleva `ver` y verifyAdmin carga el usuario vigente; la prueba usa
+// una base *_test y un fichero de configuración temporal (DB_CONFIG_PATH).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { after, before, describe, test } from 'node:test';
+
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../src/config/env.mjs';
-import { getDbConfig } from '../src/db/db_utilsConn.mjs';
+import mysql from 'mysql2/promise';
 
-const { default: router } = await import('../src/routes/conexionDB.mjs');
+const base = (process.env.TEST_DB_NAME ?? 'conta_hogar_test').replace(/_test$/, '');
+const dbName = base + '_s04_rutas_test';
+if (!/_test$/.test(dbName)) throw new Error(`La base de pruebas debe terminar en _test: ${dbName}`);
+
+const conexion = {
+    host: process.env.TEST_DB_HOST ?? 'mariadb-test',
+    port: Number(process.env.TEST_DB_PORT ?? 3306),
+    user: process.env.TEST_DB_USER ?? 'root',
+    password: process.env.TEST_DB_PASSWORD ?? 'test_root_pw',
+    multipleStatements: true
+};
+
+const configPath = '/tmp/timon-s04-rutas-' + process.pid + '.env';
 
 let servidor;
 let origen;
 let token;
+let db;
+let cerrarPool;
+let config;
+let getDbConfig;
+let router;
 
 before(async () => {
-    const app = express();
+    const admin = await mysql.createConnection(conexion);
+    await admin.query(`DROP DATABASE IF EXISTS ${mysql.escapeId(dbName)}`);
+    await admin.query(`CREATE DATABASE ${mysql.escapeId(dbName)} CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci`);
+    await admin.end();
 
+    db = await mysql.createConnection({ ...conexion, database: dbName });
+    for (const fichero of ['0001_baseline.sql', '0008_sesion_revocable.sql']) {
+        await db.query(await readFile(new URL(`../src/db/migrations/${fichero}`, import.meta.url), 'utf8'));
+    }
+    await db.query(`INSERT INTO users (id, username, email, password, rol) VALUES (1, 'prueba', 'prueba@example.test', 'x', 'admin')`);
+
+    fs.writeFileSync(configPath, `DB_HOST=${conexion.host}\nDB_PORT=${conexion.port}\nDB_USER=${conexion.user}\nDB_PASSWORD=${conexion.password}\nDB_DATABASE=${dbName}\n`, { mode: 0o600 });
+
+    Object.assign(process.env, {
+        DB_HOST: conexion.host,
+        DB_PORT: String(conexion.port),
+        DB_USER: conexion.user,
+        DB_PASSWORD: conexion.password,
+        DB_DATABASE: dbName,
+        DB_CONFIG_PATH: configPath,
+        JWT_SECRET: process.env.JWT_SECRET || 'secreto-s04-rutas',
+        JWT_EXPIRATION: process.env.JWT_EXPIRATION || '1h'
+    });
+
+    ({ default: router } = await import('../src/routes/conexionDB.mjs'));
+    ({ config } = await import('../src/config/env.mjs'));
+    ({ getDbConfig } = await import('../src/db/db_utilsConn.mjs'));
+    ({ closePool: cerrarPool } = await import('../src/db/db_connection.mjs'));
+
+    const app = express();
     app.use(express.json());
     app.use('/api/db-config', router);
 
@@ -26,10 +72,24 @@ before(async () => {
     });
 
     origen = 'http://127.0.0.1:' + servidor.address().port;
-    token = jwt.sign({ id: 1, username: 'prueba', rol: 'admin' }, config.jwt.secret);
+    token = jwt.sign({ id: 1, username: 'prueba', rol: 'admin', ver: 0 }, config.jwt.secret, { expiresIn: '1h' });
 });
 
-after(() => servidor.close());
+after(async () => {
+    if (servidor) servidor.close();
+    if (cerrarPool) await cerrarPool();
+    if (db) await db.end();
+
+    const admin = await mysql.createConnection(conexion);
+    await admin.query(`DROP DATABASE IF EXISTS ${mysql.escapeId(dbName)}`);
+    await admin.end();
+
+    try {
+        fs.unlinkSync(configPath);
+    } catch {
+        // El temporal puede no existir si el before falló antes de crearlo.
+    }
+});
 
 /** Petición con el token de administrador. */
 async function peticion(ruta, metodo, cuerpo) {
@@ -83,13 +143,6 @@ describe('S-03: rutas de configuración de la conexión', () => {
 
 describe('S-02: la prueba de conexión usa la contraseña guardada', () => {
     test('POST /api/db-config/test con la contraseña vacía conecta con la guardada', async (contexto) => {
-        const ruta = new URL('../src/db/.db_connection', import.meta.url);
-
-        if (!fs.existsSync(ruta)) {
-            contexto.skip('no hay fichero de configuración');
-            return;
-        }
-
         const { config: guardada } = await getDbConfig();
 
         if (!guardada.DB_HOST) {

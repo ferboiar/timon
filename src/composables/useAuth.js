@@ -305,8 +305,11 @@ export function useAuth() {
     // Verificar si el usuario tiene permisos de lectura como mínimo
     const canRead = computed(() => hasAnyRole([ROLES.ADMIN, ROLES.USER, ROLES.LIMITED_USER, ROLES.READER]));
 
-    // Función para cerrar sesión
-    const logout = () => {
+    // Función para cerrar sesión. Avisa al servidor con el token capturado, aunque el
+    // almacenamiento se limpia primero para que el cierre local no dependa de la red.
+    const logout = async () => {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
         try {
             // Detener la verificación periódica del token
             if (tokenVerificationInterval) {
@@ -315,7 +318,6 @@ export function useAuth() {
             }
 
             reiniciarAjustesSesion(); // Los ajustes de sesión (DC-21) no sobreviven al cierre de sesión
-            // Eliminar tokens y datos de usuario
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             sessionStorage.removeItem('token');
@@ -331,12 +333,29 @@ export function useAuth() {
             }
 
             console.log('Sesión cerrada correctamente');
-
-            // Redireccionar a la página de login
             router.push('/auth/login');
+
+            if (token) {
+                try {
+                    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                } catch (error) {
+                    console.warn('No se pudo avisar al servidor del cierre de sesión:', error);
+                }
+            }
         } catch (error) {
             console.error('Error al cerrar la sesión:', error);
         }
+    };
+
+    // Reemplaza el token guardado tras un cambio de contraseña propio (S-04a).
+    const replaceToken = (token) => {
+        if (!token) return;
+
+        if (localStorage.getItem('token')) localStorage.setItem('token', token);
+        else if (sessionStorage.getItem('token')) sessionStorage.setItem('token', token);
     };
 
     // Cargar el usuario al montar el componente
@@ -367,6 +386,7 @@ export function useAuth() {
         hasRole,
         hasAnyRole,
         logout,
+        replaceToken,
         refreshUser,
         updateStylePreferences,
         applyUserPreferences,

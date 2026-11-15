@@ -85,6 +85,8 @@ Las migraciones crean todas las tablas y relaciones (usuarios, cuentas, recibos,
 JWT_SECRET=tu_secreto_jwt_seguro
 JWT_EXPIRATION=24h
 PORT_BACKEND=3000
+LOGIN_MAX_INTENTOS=5
+LOGIN_VENTANA_MS=900000
 ```
 
    Crear el archivo `backend/src/db/.db_connection` con la configuración de la base de datos:

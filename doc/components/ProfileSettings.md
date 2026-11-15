@@ -32,7 +32,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 - Listado de todos los usuarios del sistema, sin paginador (mejora propuesta R-08)
 - Creación de nuevos usuarios con asignación de roles
 - Edición de usuarios existentes (nombre, correo, rol)
-- Cambio de contraseñas de usuario
+- Cambio de contraseñas de usuario; si es la propia, el token anterior se revoca y se guarda el nuevo sin cerrar la sesión
 - Eliminación de usuarios individuales o en lote
 - Validación de campos para garantizar datos correctos
 - Notificaciones de éxito/error mediante sistema de mensajes
@@ -110,7 +110,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 | `editUser(userData)` | Prepara la edición de un usuario existente |
 | `editUserPassword(userData)` | Prepara el cambio de contraseña |
 | `saveUser()` | Guarda un nuevo usuario o actualiza uno existente |
-| `changePassword()` | Actualiza la contraseña de un usuario |
+| `changePassword()` | Actualiza la contraseña de un usuario y, si es la propia cuenta, guarda el token nuevo con `replaceToken` |
 | `deleteUser()` | Elimina un usuario seleccionado |
 | `deleteSelectedUsers()` | Elimina múltiples usuarios seleccionados |
 
@@ -122,6 +122,8 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 - Control de acceso basado en roles mediante `isAdmin`
 - Manejo de errores con mensajes descriptivos
 - Confirmación de operaciones críticas (eliminación)
+- El cambio de la propia contraseña revoca el token anterior; la respuesta incluye uno nuevo y la pantalla lo guarda sin recargar la sesión (S-04a)
+- La guarda de último administrador la aplica el servidor: la pantalla muestra el mensaje 409 del catálogo y no cambia el rol ni borra al usuario (S-04c)
 
 ## Integración con Servicios
 

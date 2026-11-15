@@ -10,9 +10,23 @@
  */
 
 import bcrypt from 'bcrypt';
-import { getConnection } from './db_connection.mjs';
+import { enTransaccion, getConnection } from './db_connection.mjs';
 import { campoDuplicado, codigoDeError } from '../utils/catalogoErrores.mjs';
 import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
+
+/** Columnas de usuario que necesita la sesión y la edición. */
+const CAMPOS_USUARIO = `id, username, email, rol, token_version, created_at, updated_at,
+                   perm_recibos, perm_presupuestos, perm_ahorros,
+                   perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas`;
+
+/** Lee un usuario por ID con la conexión indicada; 404 si no existe. */
+async function leerUsuario(connection, userId) {
+    const [rows] = await connection.query(`SELECT ${CAMPOS_USUARIO} FROM users WHERE id = ?`, [userId]);
+    if (rows.length === 0) {
+        throw new ErrorDeNegocio('No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.', 404, 'USUARIO_NO_ENCONTRADO');
+    }
+    return rows[0];
+}
 
 /**
  * Obtener todos los usuarios
@@ -29,9 +43,6 @@ export const getUsers = async () => {
             FROM users
         `);
         return rows;
-    } catch (error) {
-        // F-48: la ruta compone el mensaje con el catálogo de causas
-        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -46,22 +57,7 @@ export const getUserById = async (userId) => {
     let connection;
     try {
         connection = await getConnection();
-        const [rows] = await connection.query(
-            `
-            SELECT id, username, email, rol, created_at, updated_at,
-                   perm_recibos, perm_presupuestos, perm_ahorros, 
-                   perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas
-            FROM users 
-            WHERE id = ?
-        `,
-            [userId]
-        );
-        if (rows.length === 0) {
-            throw new ErrorDeNegocio('No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.', 404, 'USUARIO_NO_ENCONTRADO');
-        }
-        return rows[0];
-    } catch (error) {
-        throw error;
+        return await leerUsuario(connection, userId);
     } finally {
         if (connection) connection.release();
     }
@@ -134,52 +130,66 @@ export const createUser = async (userData) => {
  * @returns {Promise<Object>} - Resultado de la operación
  */
 export const updateUser = async (userId, userData) => {
-    let connection;
     try {
-        connection = await getConnection();
-        const { username, email, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = userData;
+        return await enTransaccion(null, async (connection) => {
+            const [filas] = await connection.query('SELECT id, rol FROM users WHERE id = ? FOR UPDATE', [userId]);
+            if (filas.length === 0) {
+                throw new ErrorDeNegocio('No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.', 404, 'USUARIO_NO_ENCONTRADO');
+            }
 
-        let query = 'UPDATE users SET username = ?, email = ?, rol = ?';
-        let params = [username, email, rol];
+            const anterior = filas[0];
+            if (anterior.rol === 'admin' && userData.rol !== 'admin') {
+                const [admins] = await connection.query("SELECT id FROM users WHERE rol = 'admin' FOR UPDATE");
+                const otros = admins.filter((admin) => Number(admin.id) !== Number(userId));
+                if (otros.length === 0) {
+                    throw new ErrorDeNegocio('No se puede cambiar el rol del último administrador.', 409, 'ULTIMO_ADMIN');
+                }
+            }
 
-        // Añadir los permisos al query solo si están definidos
-        if (perm_recibos !== undefined) {
-            query += ', perm_recibos = ?';
-            params.push(perm_recibos);
-        }
-        if (perm_presupuestos !== undefined) {
-            query += ', perm_presupuestos = ?';
-            params.push(perm_presupuestos);
-        }
-        if (perm_ahorros !== undefined) {
-            query += ', perm_ahorros = ?';
-            params.push(perm_ahorros);
-        }
-        if (perm_anticipos !== undefined) {
-            query += ', perm_anticipos = ?';
-            params.push(perm_anticipos);
-        }
-        if (perm_transacciones !== undefined) {
-            query += ', perm_transacciones = ?';
-            params.push(perm_transacciones);
-        }
-        if (perm_categorias !== undefined) {
-            query += ', perm_categorias = ?';
-            params.push(perm_categorias);
-        }
-        if (perm_cuentas !== undefined) {
-            query += ', perm_cuentas = ?';
-            params.push(perm_cuentas);
-        }
+            const { username, email, rol, perm_recibos, perm_presupuestos, perm_ahorros, perm_anticipos, perm_transacciones, perm_categorias, perm_cuentas } = userData;
 
-        query += ', updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-        params.push(userId);
+            let query = 'UPDATE users SET username = ?, email = ?, rol = ?';
+            let params = [username, email, rol];
 
-        await connection.query(query, params);
+            // Añadir los permisos al query solo si están definidos
+            if (perm_recibos !== undefined) {
+                query += ', perm_recibos = ?';
+                params.push(perm_recibos);
+            }
+            if (perm_presupuestos !== undefined) {
+                query += ', perm_presupuestos = ?';
+                params.push(perm_presupuestos);
+            }
+            if (perm_ahorros !== undefined) {
+                query += ', perm_ahorros = ?';
+                params.push(perm_ahorros);
+            }
+            if (perm_anticipos !== undefined) {
+                query += ', perm_anticipos = ?';
+                params.push(perm_anticipos);
+            }
+            if (perm_transacciones !== undefined) {
+                query += ', perm_transacciones = ?';
+                params.push(perm_transacciones);
+            }
+            if (perm_categorias !== undefined) {
+                query += ', perm_categorias = ?';
+                params.push(perm_categorias);
+            }
+            if (perm_cuentas !== undefined) {
+                query += ', perm_cuentas = ?';
+                params.push(perm_cuentas);
+            }
 
-        // Obtener los datos actualizados para devolverlos
-        const updatedUser = await getUserById(userId);
-        return updatedUser;
+            query += ', updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+            params.push(userId);
+
+            await connection.query(query, params);
+
+            const actualizado = await leerUsuario(connection, userId);
+            delete actualizado.token_version;
+            return actualizado;
+        });
     } catch (error) {
         const campo = campoDuplicado(error);
         if (campo === 'nombre de usuario') {
@@ -189,8 +199,6 @@ export const updateUser = async (userId, userData) => {
             throw new ErrorDeNegocio('No se ha podido guardar el usuario porque el correo «' + String(userData?.email ?? '') + '» ya está asociado a otra cuenta.', 409, 'CORREO_DUPLICADO');
         }
         throw error;
-    } finally {
-        if (connection) connection.release();
     }
 };
 
@@ -198,19 +206,37 @@ export const updateUser = async (userId, userData) => {
  * Cambiar la contraseña de un usuario
  * @param {number} userId - ID del usuario
  * @param {string} password - Nueva contraseña (ya hash)
- * @returns {Promise<boolean>} - Resultado de la operación
+ * @returns {Promise<number>} - Nueva versión de token
  */
 export const changePassword = async (userId, password) => {
-    let connection;
-    try {
-        connection = await getConnection();
-        await connection.query('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [password, userId]);
-        return true;
-    } catch (error) {
-        throw error;
-    } finally {
-        if (connection) connection.release();
-    }
+    return await enTransaccion(null, async (connection) => {
+        const [resultado] = await connection.query('UPDATE users SET password = ?, token_version = token_version + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [password, userId]);
+
+        if (resultado.affectedRows === 0) {
+            throw new ErrorDeNegocio('No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.', 404, 'USUARIO_NO_ENCONTRADO');
+        }
+
+        const [filas] = await connection.query('SELECT token_version FROM users WHERE id = ?', [userId]);
+        return filas[0].token_version;
+    });
+};
+
+/**
+ * Revocar todas las sesiones de un usuario (S-04a, DC-62).
+ * @param {number} userId - ID del usuario
+ * @returns {Promise<number>} - Nueva versión de token
+ */
+export const revocarSesiones = async (userId) => {
+    return await enTransaccion(null, async (connection) => {
+        const [resultado] = await connection.query('UPDATE users SET token_version = token_version + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [userId]);
+
+        if (resultado.affectedRows === 0) {
+            throw new ErrorDeNegocio('No se ha encontrado el usuario. Puede que otro administrador ya lo haya eliminado.', 404, 'USUARIO_NO_ENCONTRADO');
+        }
+
+        const [filas] = await connection.query('SELECT token_version FROM users WHERE id = ?', [userId]);
+        return filas[0].token_version;
+    });
 };
 
 /**
@@ -219,29 +245,29 @@ export const changePassword = async (userId, password) => {
  * @returns {Promise<boolean>} - Resultado de la operación
  */
 export const deleteUsers = async (userIds) => {
-    let connection;
+    let nombre = null;
     try {
-        connection = await getConnection();
-        // F-48: el nombre solo se usa para el mensaje del borrado bloqueado por datos asociados
-        const [filas] = await connection.query('SELECT username FROM users WHERE id IN (?)', [userIds]);
-        const nombre = filas.length === 1 ? filas[0].username : null;
+        return await enTransaccion(null, async (connection) => {
+            // F-48: el nombre solo se usa para el mensaje del borrado bloqueado por datos asociados
+            const [filas] = await connection.query('SELECT id, username FROM users WHERE id IN (?) FOR UPDATE', [userIds]);
+            nombre = filas.length === 1 ? filas[0].username : null;
 
-        await connection.query('DELETE FROM users WHERE id IN (?)', [userIds]);
-        return true;
+            const [admins] = await connection.query("SELECT id FROM users WHERE rol = 'admin' FOR UPDATE");
+            const ids = new Set(userIds.map(Number));
+            const restantes = admins.filter((admin) => !ids.has(Number(admin.id)));
+            if (admins.length > 0 && restantes.length === 0) {
+                throw new ErrorDeNegocio('No se puede eliminar el último administrador.', 409, 'ULTIMO_ADMIN');
+            }
+
+            await connection.query('DELETE FROM users WHERE id IN (?)', [userIds]);
+            return true;
+        });
     } catch (error) {
         const codigo = codigoDeError(error);
         if (codigo === 'ER_ROW_IS_REFERENCED_2' || codigo === 'ER_ROW_IS_REFERENCED') {
-            throw new ErrorDeNegocio(
-                nombre
-                    ? 'No se puede eliminar al usuario «' + nombre + '» porque tiene datos asociados.'
-                    : 'No se puede eliminar el usuario porque tiene datos asociados.',
-                409,
-                'USUARIO_CON_DATOS'
-            );
+            throw new ErrorDeNegocio(nombre ? 'No se puede eliminar al usuario «' + nombre + '» porque tiene datos asociados.' : 'No se puede eliminar el usuario porque tiene datos asociados.', 409, 'USUARIO_CON_DATOS');
         }
         throw error;
-    } finally {
-        if (connection) connection.release();
     }
 };
 
@@ -270,8 +296,6 @@ export const saveStylePreferences = async (userId, stylePrefs) => {
         }
 
         return true;
-    } catch (error) {
-        throw error;
     } finally {
         if (connection) connection.release();
     }
@@ -311,8 +335,6 @@ export const getStylePreferences = async (userId) => {
         }
 
         return null;
-    } catch (error) {
-        throw error;
     } finally {
         if (connection) connection.release();
     }

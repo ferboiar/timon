@@ -26,6 +26,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `email` | VARCHAR(100) | Correo electrónico único |
 | `password` | VARCHAR(100) | Contraseña encriptada (hash bcrypt de 60 caracteres) |
 | `rol` | ENUM | Rol del usuario ('admin', 'user', 'limited_user', 'reader') |
+| `token_version` | INT | Versión de token; se incrementa al cerrar sesión o cambiar la contraseña (S-04a) |
 | `perm_recibos` | ENUM | Nivel de permiso para recibos ('no', 'lectura', 'escritura') |
 | `perm_presupuestos` | ENUM | Nivel de permiso para presupuestos ('no', 'lectura', 'escritura') |
 | `perm_ahorros` | ENUM | Nivel de permiso para ahorros ('no', 'lectura', 'escritura') |
@@ -57,10 +58,17 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `getUserByUsername(username)` | Obtiene un usuario por su nombre de usuario |
 | `getUserByEmail(email)` | Obtiene un usuario por su correo electrónico |
 | `createUser(userData)` | Crea un nuevo usuario con permisos específicos para cada módulo |
-| `updateUser(userId, userData)` | Actualiza los datos de un usuario existente, incluyendo sus permisos granulares |
-| `changePassword(userId, password)` | Cambia la contraseña de un usuario |
-| `deleteUsers(userIds)` | Elimina uno o más usuarios por sus IDs |
+| `updateUser(userId, userData)` | Actualiza los datos de un usuario existente, incluyendo sus permisos granulares; rechaza con 409 `ULTIMO_ADMIN` si degrada al último administrador |
+| `changePassword(userId, password)` | Cambia la contraseña, incrementa `token_version` y devuelve la versión nueva |
+| `deleteUsers(userIds)` | Elimina uno o más usuarios por sus IDs; rechaza con 409 `ULTIMO_ADMIN` si dejaría cero administradores |
+| `revocarSesiones(userId)` | Incrementa `token_version` y devuelve la versión nueva (logout) |
 | `verifyCredentials(username, password)` | Verifica las credenciales de un usuario para autenticación |
+
+### Sesión revocable y último administrador (S-04)
+
+- `getUserById` devuelve `token_version` para que la sesión compare el `ver` del JWT con la base; `getUsers` no expone esa columna.
+- `changePassword` y `revocarSesiones` usan una transacción y devuelven la versión nueva.
+- `updateUser` y `deleteUsers` usan `enTransaccion` y `SELECT … FOR UPDATE` (DC-39): bloquean las filas afectadas y las de los administradores antes de escribir. La comprobación cubre PUT, DELETE, borrado en lote y autodegradación; si quedaría cero administradores, lanzan `ErrorDeNegocio` 409 `ULTIMO_ADMIN` y la transacción se revierte.
 
 ### Gestión de Preferencias de Estilo
 
