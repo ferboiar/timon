@@ -1,6 +1,6 @@
 # Registro de hallazgos y plan de mantenimiento
 
-Línea base de la fase 0 (2026-10-17). Documento vivo: se actualiza en cada iteración, y cada corrección cita su ID en el commit y actualiza `doc/`, `TODO`, el plan de la sección 10 y el relevo ([estado-del-proyecto.md](./estado-del-proyecto.md) y sus partes) en el mismo PR.
+Línea base de la fase 0 (2026-10-17). Documento vivo: se actualiza en cada iteración, y cada corrección cita su ID en el commit y actualiza `doc/`, el plan de la sección 10, el relevo ([estado-del-proyecto.md](./estado-del-proyecto.md) y sus partes) y los issues del Project en el mismo PR.
 
 ## Propósito y orden de lectura
 
@@ -35,7 +35,7 @@ Familias de identificadores: DC en la parte 1; F en la parte 2; S, O, U, D y R e
 ## Reglas de mantenimiento
 
 - Cada contenido vive en una sola parte; esta entrada no duplica filas ni decisiones y no se edita como fuente de datos. No existe una copia monolítica.
-- Los cambios del registro (decisiones, hallazgos, plan) se hacen en la parte que contiene la sección, en el mismo PR que el código, junto con `doc/`, `TODO` y `estado-del-proyecto.md`.
+- Los cambios del registro (decisiones, hallazgos, plan) se hacen en la parte que contiene la sección, en el mismo PR que el código, junto con `doc/`, `estado-del-proyecto.md` y los issues del Project.
 - Las partes se dividen por secciones completas, sin cortar filas, decisiones ni bloques de código. Los tamaños son orientativos: en las lecturas del conector se ha observado truncamiento hacia los 40 000 caracteres. Si una parte se acerca a los 30 000, se propone un nuevo reparto como tarea aparte y aprobada.
 - Un cambio de reparto (partes nuevas o movidas) exige actualizar esta tabla, las referencias, `doc/index.md`, `docNavigation` en `Tech-documentation.vue`, el relevo y la instrucción persistente.
 - Las referencias a secciones numeradas se mantienen válidas gracias a la tabla de arriba.

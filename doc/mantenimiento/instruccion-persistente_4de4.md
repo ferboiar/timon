@@ -98,7 +98,7 @@ Estos quedan en Git/GitHub y se entregan en B.
 
 No crees bucles de commits para registrar metadatos.
 Consolida estados posteriores en la siguiente actualización sustantiva.
-Excepción (DC-54): un micro-commit de seguimiento directo a main está permitido si toca solo TODO, registro o relevo, es una corrección trivial y el usuario lo autoriza expresamente.
+Excepción (DC-54): un micro-commit de seguimiento directo a main está permitido si toca solo registro, relevo o metadatos de un issue, es una corrección trivial y el usuario lo autoriza expresamente.
 
 Los informes deben ser localizables desde mantenimiento y el relevo, con navegación razonable.
 
@@ -207,7 +207,7 @@ No quedan como órdenes permanentes de reorganización automática.
 
 MENSAJE DE ARRANQUE
 
-“Retomamos ferboiar/timon. Lee instruccion-persistente.md y todas sus partes, el relevo, TODO, el registro (entrada y todas sus partes, en orden), el informe pertinente y `backend/test/README.md`. Comprueba primero el acceso. Si no puedes leer el contexto crítico completo, dímelo y no modifiques el proyecto: aportaré lo que falte. Mientras tanto: nada es verificado sin evidencia; sin secretos en el chat; no preparar .db_connection ni su copia; no git add -A, reset --hard ni push forzado; no escribas en el repositorio por conectores salvo que te lo pida expresamente. Reconstruye la fase actual y continúa con el siguiente paso acordado.”
+“Retomamos ferboiar/timon. Lee instruccion-persistente.md y todas sus partes, el relevo, los issues abiertos del Project, el registro (entrada y todas sus partes, en orden), el informe pertinente y `backend/test/README.md`. Comprueba primero el acceso. Si no puedes leer el contexto crítico completo, dímelo y no modifiques el proyecto: aportaré lo que falte. Mientras tanto: nada es verificado sin evidencia; sin secretos en el chat; no preparar .db_connection ni su copia; no git add -A, reset --hard ni push forzado; no escribas en el repositorio por conectores salvo que te lo pida expresamente. Reconstruye la fase actual y continúa con el siguiente paso acordado.”
 
 13. RESPUESTAS Y ETIQUETAS
 
