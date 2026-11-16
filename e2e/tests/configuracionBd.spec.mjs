@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
-import { abrirAjustes } from './helpers/timon.mjs';
+import { abrirAjustes, haySesion } from './helpers/timon.mjs';
 
 const MENSAJE_413 = 'El fichero supera el límite de 100 MB. Reduce el tamaño o divide el volcado.';
 const TOOLTIP_MANTENIMIENTO =
@@ -277,6 +277,8 @@ test.describe('Base de Datos: guardado, copias y restauración', () => {
     });
 
     test('e) restaurar un volcado válido usa copia previa y no deja temporales', async ({ paginaSesion: page }) => {
+        // La alerta espera hasta 180 s; el timeout global de 60 s la cortaría antes.
+        test.setTimeout(240_000);
         test.skip(!rutaVolcado, 'no se ha descargado un volcado en el caso anterior');
 
         await abrirAjustes(page, 'Base de Datos');
@@ -286,6 +288,10 @@ test.describe('Base de Datos: guardado, copias y restauración', () => {
 
         await expect(page.getByRole('alert').filter({ hasText: 'Base de datos restaurada correctamente' })).toBeVisible({ timeout: 180_000 });
         expect(temporalesDeBase()).toEqual([]);
+
+        // Restaurar no debe cerrar la sesión ni llevar al login.
+        await expect(page).not.toHaveURL(/\/auth\/login/);
+        expect(await haySesion(page)).toBe(true);
     });
 });
 

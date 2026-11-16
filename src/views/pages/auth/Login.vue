@@ -4,12 +4,12 @@ import { API_BASE_URL } from '@/config/api';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { consumirAvisoSesion } from '@/utils/sesion';
+import { consumirAvisoSesion, consumirErrorVerificacion, limpiarSesion, MENSAJE_ERROR_VERIFICACION } from '@/utils/sesion';
 
 const username = ref('');
 const password = ref('');
 const checked = ref(false);
-const errorMessage = ref('');
+const errorMessage = ref(consumirErrorVerificacion() || '');
 const isLoading = ref(false);
 const router = useRouter();
 const route = useRoute();
@@ -112,23 +112,23 @@ const verifySession = async () => {
                 }
             });
 
-            if (response.ok) {
-                // Si el token es válido, redirigir al dashboard
-                router.push('/dashboard');
-            } else {
-                // Si el token no es válido, limpiar ambos storages
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                sessionStorage.removeItem('token');
-                sessionStorage.removeItem('user');
-                // No eliminamos rememberedUser para mantener el autocompletado
+            if (response.status === 401) {
+                // Solo un 401 revoca la sesión; se conserva rememberedUser para el autocompletado.
+                limpiarSesion();
+                return;
             }
+
+            if (!response.ok) {
+                errorMessage.value = MENSAJE_ERROR_VERIFICACION;
+                return;
+            }
+
+            // Si el token es válido, redirigir al dashboard
+            router.push('/dashboard');
         } catch (error) {
             console.error('Error al verificar sesión:', error);
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('user');
+            // Un error de red o un timeout no demuestra que el token haya caducado.
+            errorMessage.value = MENSAJE_ERROR_VERIFICACION;
         }
     }
 };

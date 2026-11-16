@@ -43,10 +43,11 @@ El token JWT generado contiene la siguiente información en su payload:
 
 ### Verificación de Token
 
-El endpoint de verificación simplemente valida que el token proporcionado:
+El endpoint de verificación valida que el token proporcionado:
 1. Tenga una firma válida (no haya sido alterado)
 2. No haya expirado
-3. Contenga la información necesaria del usuario
+3. Lleve la versión `ver` y coincida con `users.token_version`
+4. Corresponda a un usuario vigente, cuyo rol se usa en la respuesta
 
 ## Configuración
 
@@ -84,6 +85,6 @@ Esta API se integra con los siguientes middlewares para proteger rutas:
 
 ## Códigos y validación reales
 
-POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 429 al superar el umbral por IP+usuario o el tope por IP, con `Retry-After`; 500 por fallo del servidor. POST /logout: 200 y revoca todas las sesiones del usuario; 401 sin token o con token ya revocado. GET /verify: 200 con la identidad vigente o 401 sin token/inválido/caducado/revocado. Verify y verifyToken comparten la comprobación de versión; el 401 por token inválido o caducado se mantiene desde S-16.
+POST /login: 200 con token y user; 400 por usuario/contraseña ausentes; 401 por credenciales incorrectas; 429 al superar el umbral por IP+usuario o el tope por IP, con `Retry-After`; 500 por fallo del servidor. POST /logout: 200 y revoca todas las sesiones del usuario; 401 sin token o con token ya revocado. GET /verify: 200 con la identidad vigente o 401 sin token/inválido/caducado/revocado. Verify y verifyToken comparten la comprobación de versión; el 401 por token inválido o caducado se mantiene desde S-16. Si la comprobación falla por una causa técnica, el manejador central responde 500; el frontend no cierra la sesión ante 5xx (F-56).
 
 La validación comprueba firma, caducidad y `ver` contra `users.token_version`, y carga el usuario vigente; por tanto sí consulta revocación, rol actualizado y existencia actual del usuario en la base de datos (S-04a).

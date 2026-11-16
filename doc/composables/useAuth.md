@@ -96,7 +96,7 @@ Este composable trabaja en conjunto con la directiva `vRole` para control de acc
 
 hasRole compara igualdad; hasAnyRole busca pertenencia a una lista. isUser acepta admin o user, y canRead acepta los cuatro roles, pero ninguno de esos dos atajos se utiliza para limitar las pantallas actuales. El menú utiliza hasRole y Ajustes utiliza isAdmin.
 
-verifySessionValidity llama con fetch a /api/auth/verify, cierra sesión ante rechazo y la mantiene ante error de red. La llaman la verificación periódica y AppLayout al montarse. refreshUser vuelve a leer el almacenamiento, no consulta un usuario actualizado al servidor.
+verifySessionValidity llama con fetch a /api/auth/verify. Solo un 401 revoca la sesión; un 5xx, un 403 no esperado, un error de red o un timeout conservan el token y muestran un aviso (F-56). La llaman la verificación periódica y AppLayout al montarse. refreshUser vuelve a leer el almacenamiento, no consulta un usuario actualizado al servidor.
 
 Desde S-04a, el logout avisa al servidor y el token anterior queda revocado. `replaceToken` se usa cuando el administrador cambia su propia contraseña: el servidor devuelve un token nuevo y la sesión no se interrumpe. La validación de `ver` y la revocación las aplica el servidor; el composable no decide la autorización.
 

@@ -42,6 +42,16 @@ export const MAPA_FUENTES = {
         'backend/src/utils/catalogoErrores.mjs',
         'backend/src/utils/errorDeNegocio.mjs'
     ],
+    'tests/cambioPasswordPropia.spec.mjs': [
+        'src/views/pages/ProfileSettings.vue',
+        'src/composables/useAuth.js',
+        'src/service/UsersService.js',
+        'src/router/index.js',
+        'backend/src/routes/users.mjs',
+        'backend/src/db/db_utilsUsers.mjs',
+        'backend/src/middleware/auth.mjs',
+        'backend/src/utils/sesion.mjs'
+    ],
     'tests/usuarios.spec.mjs': [
         'src/views/pages/ProfileSettings.vue',
         'src/service/UsersService.js',
@@ -121,6 +131,9 @@ export const MAPA_FUENTES = {
     'tests/sesionCaducada.spec.mjs': [
         'src/router/index.js',
         'src/config/api.js',
+        'src/composables/useAuth.js',
+        'src/layout/AppLayout.vue',
+        'src/utils/sesion.js',
         'src/views/pages/auth/Login.vue',
         'backend/src/routes/auth.mjs',
         'backend/src/middleware/auth.mjs'

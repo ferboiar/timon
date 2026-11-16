@@ -4,9 +4,10 @@
  *
  * Deducciones:
  * - `src/router/index.js` (guard `beforeEach`, hacia la línea 235): lee el token de
- *   `localStorage` o `sessionStorage`; si la ruta no es pública y `/api/auth/verify` no
- *   responde `ok`, limpia `token` y `user` de los dos almacenes y lleva a
- *   `/auth/login?motivo=caducada` (`rutaLoginPorCaducidad`).
+ *   `localStorage` o `sessionStorage`; si la ruta no es pública y `/api/auth/verify`
+ *   responde 401, limpia `token` y `user` de los dos almacenes y lleva a
+ *   `/auth/login?motivo=caducada` (`rutaLoginPorCaducidad`). Un 5xx, un 403 no esperado,
+ *   un error de red o un timeout conservan la sesión y muestran un aviso (F-56).
  * - `backend/src/routes/auth.mjs`: `GET /api/auth/verify` responde 401 con
  *   `{ message: 'Token inválido o expirado' }` cuando `jwt.verify` falla (S-16).
  * - `src/config/api.js`: su interceptor de respuesta cierra la sesión ante un 401 con ese
@@ -21,7 +22,7 @@
  */
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
-import { iniciarSesion, urlDe } from './helpers/timon.mjs';
+import { iniciarSesion, tokenDePagina, urlDe } from './helpers/timon.mjs';
 
 const RUTA_PROTEGIDA = '/pages/bills';
 
@@ -171,5 +172,33 @@ test.describe('Autenticación: sesión caducada (S-17)', () => {
         await page.goto(urlDe('/auth/login'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
         await expect(page.getByRole('button', { name: 'Iniciar Sesión' })).toBeVisible();
         await expect(aviso).toBeHidden();
+    });
+
+    test('un 500 de /api/auth/verify mantiene la sesión y muestra el error', async ({ paginaAuth: page }) => {
+        await iniciarSesion(page);
+
+        const tokenAntes = await tokenDePagina(page);
+        expect(tokenAntes).toBeTruthy();
+
+        // Un 500 de verificación no es una revocación: no debe limpiar el token ni navegar al login.
+        await page.route('**/api/auth/verify', (ruta) =>
+            ruta.fulfill({
+                status: 500,
+                contentType: 'application/json',
+                headers: { 'access-control-allow-origin': '*' },
+                body: JSON.stringify({ error: 'No se ha podido verificar la sesión.' })
+            })
+        );
+
+        try {
+            await page.goto(urlDe(RUTA_PROTEGIDA), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+
+            await expect(page).toHaveURL(/\/pages\/bills/, { timeout: 30_000 });
+            await expect(page.getByRole('button', { name: 'Actualizar' })).toBeVisible({ timeout: 20_000 });
+            await expect(page.getByText(/No se ha podido verificar la sesión/).first()).toBeVisible({ timeout: 20_000 });
+            expect(await tokenDePagina(page)).toBe(tokenAntes);
+        } finally {
+            await page.unroute('**/api/auth/verify');
+        }
     });
 });

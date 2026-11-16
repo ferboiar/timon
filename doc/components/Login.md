@@ -43,7 +43,7 @@ Al cargar el componente:
 1. Busca un token JWT en localStorage o sessionStorage
 2. Si existe un token, realiza una petición a `/api/auth/verify` para validarlo
 3. Si el token es válido, redirige al dashboard
-4. Si el token no es válido, lo elimina del almacenamiento y muestra el formulario
+4. Si el token no es válido (401), lo elimina del almacenamiento y muestra el formulario; si la verificación falla por 5xx, red o timeout, conserva el token y muestra un error sin redirigir (F-56)
 
 ### 2. Inicio de Sesión Manual
 
@@ -78,7 +78,7 @@ Además, mantiene `rememberedUser` en localStorage incluso cuando no se marca "R
 
 - No almacena la contraseña en ningún medio de almacenamiento
 - Usa fetch contra VITE_API_URL; HTTPS depende del despliegue, no está impuesto por el componente
-- Elimina tokens inválidos automáticamente
+- Elimina tokens solo cuando el servidor confirma un 401; los fallos técnicos no borran la sesión
 - Separa los tokens de sesión y permanentes en diferentes almacenamientos
 - Validación en servidor antes de aceptar el token
 
@@ -100,17 +100,20 @@ const verifySession = async () => {
                 }
             });
             
-            if (response.ok) {
-                router.push('/dashboard');
-            } else {
-                // Limpiar tokens inválidos
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                sessionStorage.removeItem('token');
-                sessionStorage.removeItem('user');
+            if (response.status === 401) {
+                limpiarSesion();
+                return;
             }
+
+            if (!response.ok) {
+                errorMessage.value = MENSAJE_ERROR_VERIFICACION;
+                return;
+            }
+
+            router.push('/dashboard');
         } catch (error) {
             console.error('Error al verificar sesión:', error);
+            errorMessage.value = MENSAJE_ERROR_VERIFICACION;
         }
     }
 };

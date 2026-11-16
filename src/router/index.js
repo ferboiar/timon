@@ -22,7 +22,7 @@
  */
 
 import { API_BASE_URL } from '@/config/api';
-import { cerrarSesionPorCaducidad, rutaLoginPorCaducidad } from '@/utils/sesion';
+import { cerrarSesionPorCaducidad, marcarErrorVerificacion, rutaLoginPorCaducidad } from '@/utils/sesion';
 import AppLayout from '@/layout/AppLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -254,15 +254,22 @@ router.beforeEach(async (to, from, next) => {
                 }
             });
 
-            if (!response.ok) {
+            if (response.status === 401) {
                 // Token inválido o expirado: limpiar y avisar en el login (U-16)
                 cerrarSesionPorCaducidad();
                 return next(rutaLoginPorCaducidad());
             }
 
+            if (!response.ok) {
+                // Un fallo técnico no demuestra que el token haya caducado.
+                marcarErrorVerificacion();
+                return next();
+            }
+
             return next('/dashboard');
         } catch (error) {
             console.error('Error verificando token en guard de navegación:', error);
+            marcarErrorVerificacion();
             return next();
         }
     }
@@ -276,16 +283,22 @@ router.beforeEach(async (to, from, next) => {
                 }
             });
 
-            if (!response.ok) {
+            if (response.status === 401) {
                 // Token inválido o expirado: limpiar, dejar el aviso y redirigir (U-16)
                 cerrarSesionPorCaducidad();
 
                 console.warn('Sesión expirada detectada en navegación. Redirigiendo a login...');
                 return next(rutaLoginPorCaducidad());
             }
+
+            if (!response.ok) {
+                // Un fallo técnico no demuestra que el token haya caducado.
+                marcarErrorVerificacion();
+            }
         } catch (error) {
             console.error('Error verificando token en guard de navegación:', error);
             // En caso de error de red, permitir continuar para no bloquear la navegación
+            marcarErrorVerificacion();
         }
     }
 

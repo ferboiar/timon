@@ -65,6 +65,7 @@
 import { useTheme } from '@/composables/useTheme';
 import { API_BASE_URL } from '@/config/api';
 import { reiniciarAjustesSesion } from '@/composables/useAjustesSesion';
+import { marcarErrorVerificacion } from '@/utils/sesion';
 import { useLayout } from '@/layout/composables/layout';
 import { UsersService } from '@/service/UsersService';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
@@ -204,14 +205,21 @@ export function useAuth() {
                 return true;
             }
 
-            // Si la respuesta no es exitosa, el token ha expirado o es inválido
-            console.warn('Token expirado o inválido detectado durante verificación periódica');
-            logout();
+            // Solo un 401 revoca la sesión. Un 5xx o un 403 no esperado no la invalidan.
+            if (response.status === 401) {
+                console.warn('Token expirado o inválido detectado durante verificación periódica');
+                logout();
+                return false;
+            }
+
+            console.warn('No se pudo verificar la sesión (HTTP ' + response.status + '); se mantiene la sesión');
+            marcarErrorVerificacion();
             return false;
         } catch (error) {
             console.error('Error al verificar la validez del token:', error);
-            // En caso de error de red, mantenemos la sesión activa para evitar interrupciones
-            return true;
+            // Un error de red o un timeout no demuestran que el token haya caducado.
+            marcarErrorVerificacion();
+            return false;
         }
     };
 
