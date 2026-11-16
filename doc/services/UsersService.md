@@ -13,7 +13,7 @@ El servicio `UsersService` actúa como intermediario entre la interfaz de usuari
 | `getUsers()` | Obtiene todos los usuarios registrados | `GET /api/users` |
 | `saveUser(userData)` | Crea o actualiza un usuario | `POST /api/users` o `PUT /api/users` |
 | `deleteUsers(params)` | Elimina uno o más usuarios por ID | `DELETE /api/users` |
-| `changePassword(params)` | Actualiza la contraseña de un usuario | `PUT /api/users/password` |
+| `changePassword(params)` | Actualiza la contraseña de un usuario; si es la propia cuenta, la respuesta incluye `token` | `PUT /api/users/password` |
 
 ### Gestión de Preferencias de Estilo
 
@@ -91,4 +91,4 @@ Usa `apiClient` y el ayudante `getApiErrorMessage` (F-28, S-07): ante una respue
 
 ## Argumentos y autorización
 
-saveUser elige PUT si userData.id es verdadero; en otro caso POST. deleteUsers transmite el objeto de parámetros: la ruta espera `{ userIds: [...] }`; changePassword espera `{ id, password }`. La gestión de usuarios exige administrador. Las preferencias solo exigen sesión y se aplican al usuario del token. saveStylePreferences sustituye todo el JSON, no fusiona campos. El servicio no amplía la vigencia del token ni valida los datos completos de usuario.
+saveUser elige PUT si userData.id es verdadero; en otro caso POST. deleteUsers transmite el objeto de parámetros: la ruta espera `{ userIds: [...] }`; changePassword espera `{ id, password }`. La gestión de usuarios exige administrador. Las preferencias solo exigen sesión y se aplican al usuario del token. saveStylePreferences sustituye todo el JSON, no fusiona campos. changePassword devuelve el cuerpo del servidor tal cual: si el cambio es de la propia cuenta incluye `token`, porque el anterior queda revocado (S-04a); el componente decide si debe guardarlo. El servicio no amplía la vigencia del token ni valida los datos completos de usuario.

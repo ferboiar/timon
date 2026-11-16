@@ -8,7 +8,9 @@ del despliegue.
 
 | Spec | Qué valida |
 |---|---|
-| `tests/auth.spec.mjs` | Login incorrecto (401 y mensaje del servidor), login correcto (200, `/dashboard`, pie con el usuario y token de sesión) y cierre de sesión desde el menú de perfil |
+| `tests/auth.spec.mjs` | Login incorrecto (401 y mensaje del servidor), login correcto (200, `/dashboard`, pie con el usuario y token de sesión) y cierre de sesión desde el menú de perfil; tras el logout, el token anterior responde 401 (S-04a) |
+| `tests/cambioPasswordPropia.spec.mjs` | Cambio de la propia contraseña (S-04a): crea un administrador desechable por API, inicia sesión en un contexto aislado, cambia la contraseña desde Ajustes › Usuarios, comprueba que el token guardado cambia, que `/api/auth/verify` con el token nuevo responde 200, que el token anterior responde 401 contra `/api/users` y que la sesión sigue activa; borra el usuario en `afterAll` |
+| `tests/loginLimite.spec.mjs` | Límite de intentos (S-04b, DC-63): cinco fallos con un usuario inexistente y respuesta 429 con el mensaje en pantalla; el usuario legítimo de la suite sigue pudiendo entrar. No crea datos |
 | `tests/categorias.spec.mjs` | Listado y detección de categorías E2E de ejecuciones anteriores, alta, presencia en la tabla tras recargar, rechazo de duplicado, edición de la descripción y borrado |
 | `tests/smoke.spec.mjs` | Que Timón carga en el navegador real y que el layout autenticado se pinta |
 | `tests/erroresConexion.spec.mjs` | Pestaña Base de Datos: una prueba de conexión con una dirección inalcanzable (`127.0.0.1` y un puerto sin escuchar) muestra el mensaje de usuario completo, sin código del sistema, y no guarda nada |
@@ -19,7 +21,7 @@ del despliegue.
 | `tests/autorizacionSubrecursos.spec.mjs` | Autorización de subrecursos y permisos mixtos (S-18, U-18): un `limited_user` intenta editar un pago y un movimiento ajenos enviando su propio padre (403 y fila ajena intacta), y un usuario con `perm_recibos = escritura` pero sin permisos de cuentas ni categorías carga los catálogos (DC-49), abre Recibos y crea un recibo; crea y borra usuarios, anticipos, pagos, ahorros y movimientos `e2e_sub_*` |
 | `tests/documentacionReglas.spec.mjs` | Documentación: en `/tech-docs`, los centinelas de las reglas (DC-47) no se ven y los dos bloques se pintan; el diagrama nomnoml de `doc/db/schema/presupuestos.md` se dibuja y se vuelve a pintar al cambiar de tema (U-24, DC-56). No crea ni borra datos: solo lee el DOM |
 | `tests/configuracionBd.spec.mjs` | Pestaña Base de Datos (S-02, S-03, DC-06): valores guardados con las contraseñas vacías, obligatorios y puerto, tooltip del usuario de mantenimiento, dos columnas y una sola en pantalla pequeña, guardado sin cambiar la contraseña, respaldo descargable, 413 por encima de 100 MB, restauración con copia previa, CA TLS (g1-g3) y usuario de mantenimiento (h1-h3). 14 casos; solo sobre la réplica con `DB_CONFIG_PATH` (DC-59) |
-| `tests/sesionCaducada.spec.mjs` | Sesión caducada (S-17, U-16): un token caducado lleva al login con el aviso de caducidad, limpia los dos almacenes y el servidor responde 401; el interceptor de `apiClient` avisa al recibir un 401 (S-07) y el aviso se consume una sola vez (U-19). No crea ni borra datos |
+| `tests/sesionCaducada.spec.mjs` | Sesión caducada (S-17, U-16, U-19): un token caducado lleva al login con el aviso de caducidad, limpia los dos almacenes y el servidor responde 401; el interceptor de `apiClient` avisa al recibir un 401 (S-07); el aviso de caducidad se consume una sola vez (U-16, U-19) y un 500 de `/api/auth/verify` conserva la sesión, el token y muestra el error (F-56). No crea ni borra datos |
 
 Las aserciones se apoyan en roles accesibles, etiquetas, textos únicos y estructura DOM estable
 de la interfaz; cada spec documenta en comentarios de qué fichero de Timón sale cada selector.

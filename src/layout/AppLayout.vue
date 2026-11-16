@@ -1,7 +1,9 @@
 <script setup>
 import { useAuth } from '@/composables/useAuth';
 import { useLayout } from '@/layout/composables/layout';
-import { computed, onMounted, ref, watch } from 'vue';
+import { EVENTO_ERROR_VERIFICACION, consumirErrorVerificacion, MENSAJE_ERROR_VERIFICACION } from '@/utils/sesion';
+import { useToast } from 'primevue/usetoast';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppConfigurator from './AppConfigurator.vue';
 import AppFooter from './AppFooter.vue';
 import AppSidebar from './AppSidebar.vue';
@@ -9,6 +11,7 @@ import AppTopbar from './AppTopbar.vue';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
 const { verifySessionValidity } = useAuth();
+const toast = useToast();
 
 const outsideClickListener = ref(null);
 
@@ -57,14 +60,34 @@ function isOutsideClicked(event) {
     return !(sidebarEl.isSameNode(event.target) || sidebarEl.contains(event.target) || topbarEl.isSameNode(event.target) || topbarEl.contains(event.target));
 }
 
+/** Muestra un error de verificación sin interrumpir la sesión. */
+function mostrarErrorVerificacion(mensaje = MENSAJE_ERROR_VERIFICACION) {
+    toast.add({ severity: 'error', summary: 'Sesión', detail: mensaje, life: 5000 });
+}
+
+function alRecibirErrorVerificacion(evento) {
+    // El evento y la marca pueden llegar juntos: se consume para no repetir el aviso al remontar.
+    consumirErrorVerificacion();
+    mostrarErrorVerificacion(evento.detail?.mensaje);
+}
+
 // Verificar la validez de la sesión al cargar el layout principal
 onMounted(async () => {
+    const pendiente = consumirErrorVerificacion();
+    if (pendiente) mostrarErrorVerificacion(pendiente);
+
+    window.addEventListener(EVENTO_ERROR_VERIFICACION, alRecibirErrorVerificacion);
+
     try {
         await verifySessionValidity();
     } catch (error) {
         console.error('Error al verificar la sesión en AppLayout:', error);
-        // El método verifySessionValidity ya maneja el logout si el token es inválido
+        mostrarErrorVerificacion();
     }
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener(EVENTO_ERROR_VERIFICACION, alRecibirErrorVerificacion);
 });
 </script>
 

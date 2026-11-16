@@ -204,7 +204,16 @@ if (categorias === 0) {
 await db.end();
 
 // Fichero de configuración de la aplicación, fuera del repositorio y del fichero real
-const lineas = ['DB_HOST=' + pruebas.TEST_DB_HOST, 'DB_PORT=' + pruebas.TEST_DB_PORT, 'DB_USER=' + pruebas.TEST_DB_USER, 'DB_PASSWORD=' + pruebas.TEST_DB_PASSWORD, 'DB_DATABASE=' + BASE, ''];
+const lineas = [
+    'DB_HOST=' + pruebas.TEST_DB_HOST,
+    'DB_PORT=' + pruebas.TEST_DB_PORT,
+    'DB_USER=' + pruebas.TEST_DB_USER,
+    'DB_PASSWORD=' + pruebas.TEST_DB_PASSWORD,
+    'DB_DATABASE=' + BASE,
+    'DB_MAINT_USER=' + pruebas.TEST_DB_USER,
+    'DB_MAINT_PASSWORD=' + pruebas.TEST_DB_PASSWORD,
+    ''
+];
 
 fs.writeFileSync(RUTA_CONFIG, lineas.join('\n'), { mode: 0o600 });
 

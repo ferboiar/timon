@@ -68,7 +68,9 @@ El lanzador (`lanzador.mjs`):
 | `tests/fixtures.mjs` | Conexión CDP, contexto aislado de auth y contexto de sesión compartida |
 | `tests/helpers/timon.mjs` | `asegurarSesion`, login, navegación y CRUD de categorías |
 | `tests/helpers/diagnostico.mjs` | Adjuntos de fallo (`testInfo.attach`) sin secretos |
-| `tests/auth.spec.mjs` | Login incorrecto, login correcto y cierre de sesión |
+| `tests/auth.spec.mjs` | Login incorrecto, login correcto, cierre de sesión y revocación del token anterior (S-04a) |
+| `tests/cambioPasswordPropia.spec.mjs` | Cambio de la propia contraseña: usuario desechable admin, token nuevo, sesión activa y token anterior revocado (S-04a) |
+| `tests/loginLimite.spec.mjs` | Límite de intentos: cinco fallos con un usuario inexistente y 429 visible; un usuario legítimo sigue entrando (S-04b, DC-63) |
 | `tests/categorias.spec.mjs` | Flujo serial sobre una sola sesión |
 | `tests/smoke.spec.mjs` | Timón carga en el Edge del portátil |
 | `tests/erroresConexion.spec.mjs` | Base de Datos: mensaje de usuario ante una conexión inalcanzable, sin guardar nada |
@@ -78,7 +80,7 @@ El lanzador (`lanzador.mjs`):
 | `tests/autorizacion.spec.mjs` | Autorización: matriz de roles, propiedad, privacidad y rutas de documentación (S-01, S-06, S-12); crea y borra usuarios, cuentas y recibos `e2e_` |
 | `tests/autorizacionSubrecursos.spec.mjs` | Subrecursos: un `limited_user` no edita pagos ni movimientos ajenos usando su propio padre (S-18); permisos mixtos: catálogos legibles y recibo creado (U-18, DC-49); crea y borra datos `e2e_sub_*` |
 | `tests/documentacionReglas.spec.mjs` | Documentación: los centinelas de las reglas no se ven en el visor, los bloques se pintan (DC-47) y el diagrama nomnoml se dibuja y se repinta al cambiar de tema (U-24, DC-56), sin datos |
-| `tests/sesionCaducada.spec.mjs` | Sesión caducada: redirección al login con aviso y limpieza de almacenes (S-17, U-16), incluido el interceptor de `apiClient` (S-07) y el consumo único del aviso (U-19), sin datos |
+| `tests/sesionCaducada.spec.mjs` | Sesión caducada: redirección al login con aviso y limpieza de almacenes (S-17, U-16), incluido el interceptor de `apiClient` (S-07), el consumo único del aviso (U-19) y la sesión que se mantiene ante un 500 de verificación (F-56), sin datos |
 
 ## Specs de la Fase A (F-50, F-42, F-10, F-43)
 
@@ -136,8 +138,8 @@ que **no pueden ejecutarse contra la base de desarrollo**. El procedimiento es:
 
 1. `node e2e/scripts/prepara-base-pruebas.mjs [ruta]` recrea `conta_hogar_test` **de cero**
    (tolera restos de ejecuciones fallidas), crea el usuario de las E2E como administrador y
-   escribe el fichero de configuración. Sin `E2E_CLONAR`, aplica las migraciones y siembra una
-   cuenta y una categoría. Con `E2E_CLONAR=1` replica `conta_hogar` en `conta_hogar_test`:
+   escribe el fichero de configuración, incluidas las credenciales de mantenimiento que usa el
+   caso `h1`. Sin `E2E_CLONAR`, aplica las migraciones y siembra una cuenta y una categoría. Con `E2E_CLONAR=1` replica `conta_hogar` en `conta_hogar_test`:
 
    ```bash
    E2E_CLONAR=1 node e2e/scripts/prepara-base-pruebas.mjs /tmp/timon-e2e-db-connection
@@ -151,10 +153,19 @@ que **no pueden ejecutarse contra la base de desarrollo**. El procedimiento es:
    contraseña nunca viaja en los argumentos y nunca se escribe en `conta_hogar`. El script
    comprueba que la base destino termina en `_test`.
 
+   **`E2E_CLONAR=1` no aplica migraciones:** la réplica hereda el esquema de `conta_hogar`. Si el
+   origen no tiene desplegada una migración (por ejemplo la 0008 de S-04), la réplica clonada no
+   sirve para el código de la rama y el backend responde 500 `ER_BAD_FIELD_ERROR`. En ese caso,
+   usa el script sin `E2E_CLONAR`, que aplica todas las migraciones.
+
 2. Arranca la aplicación apuntando a ese fichero, nunca al real:
    `DB_CONFIG_PATH=<ruta> npm run nas`.
 3. Ejecuta la suite con `E2E_DB_CONFIG=<ruta>` (para el caso que siembra y borra una CA) y, si
    se quieren cubrir las reglas de mantenimiento, `E2E_MANT_USER` y `E2E_MANT_PASSWORD`.
+   Las variables que evitan skips silenciosos son tres: `E2E_MANT_USER` y
+   `E2E_MANT_PASSWORD` (caso `b)`) y `E2E_LOG_SERVIDOR`, que apunta al log del backend y habilita
+   `g2)`. Sin ellas, esos dos casos de `configuracionBd.spec.mjs` se saltan sin fallar y el
+   recuento de la pasada baja sin que nada lo indique.
 4. La suite del backend (`npm run test:backend:local`) **borra `conta_hogar_test`** al
    terminar: vuelve a ejecutar el paso 1 antes de la siguiente tanda.
 

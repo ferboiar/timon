@@ -11,6 +11,36 @@
  */
 
 const CLAVE_AVISO = 'timon.avisoSesion';
+const CLAVE_ERROR_VERIFICACION = 'timon.errorVerificacion';
+
+/** Mensaje visible cuando no se puede comprobar la sesión por un fallo técnico. */
+export const MENSAJE_ERROR_VERIFICACION = 'No se ha podido verificar la sesión. La sesión se mantiene; vuelve a intentarlo.';
+
+/** Evento que AppLayout escucha para mostrar el error sin acoplar el guard a la UI. */
+export const EVENTO_ERROR_VERIFICACION = 'timon:errorVerificacion';
+
+let ultimoAvisoVerificacion = 0;
+
+/** Deja el error pendiente y avisa a la UI; el aviso visible se limita para no duplicarlo. */
+export function marcarErrorVerificacion(mensaje = MENSAJE_ERROR_VERIFICACION) {
+    if (typeof window === 'undefined') return;
+
+    sessionStorage.setItem(CLAVE_ERROR_VERIFICACION, mensaje);
+
+    const ahora = Date.now();
+    if (ahora - ultimoAvisoVerificacion < 3000) return;
+
+    ultimoAvisoVerificacion = ahora;
+    window.dispatchEvent(new CustomEvent(EVENTO_ERROR_VERIFICACION, { detail: { mensaje } }));
+}
+
+/** Devuelve el error pendiente y lo borra, para mostrarlo una sola vez. */
+export function consumirErrorVerificacion() {
+    const mensaje = sessionStorage.getItem(CLAVE_ERROR_VERIFICACION);
+    sessionStorage.removeItem(CLAVE_ERROR_VERIFICACION);
+
+    return mensaje;
+}
 
 /** Elimina el token y el usuario de los dos almacenes. Conserva `rememberedUser`. */
 export function limpiarSesion() {

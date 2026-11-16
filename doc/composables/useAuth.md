@@ -38,7 +38,8 @@ El composable `useAuth` proporciona una solución completa para manejar el estad
 |--------|-------------|
 | `hasRole(role)` | Verifica si el usuario actual tiene exactamente el rol especificado |
 | `hasAnyRole(roles)` | Verifica si el usuario tiene al menos uno de los roles en el array |
-| `logout()` | Cierra la sesión del usuario actual, reinicia los ajustes de sesión (`reiniciarAjustesSesion`, DC-21) y redirecciona a la página de login |
+| `logout()` | Limpia la sesión local, reinicia los ajustes de sesión (`reiniciarAjustesSesion`, DC-21), redirecciona al login y avisa al servidor con `POST /api/auth/logout` usando el token capturado; si la llamada falla, el cierre local se mantiene |
+| `replaceToken(token)` | Sustituye el token guardado tras un cambio de contraseña propio (S-04a) |
 | `refreshUser()` | Actualiza los datos del usuario desde el almacenamiento local |
 | `updateStylePreferences(stylePrefs)` | Actualiza las preferencias de estilo del usuario |
 | `applyUserPreferences(prefs)` | Aplica las preferencias de estilo del usuario |
@@ -95,6 +96,8 @@ Este composable trabaja en conjunto con la directiva `vRole` para control de acc
 
 hasRole compara igualdad; hasAnyRole busca pertenencia a una lista. isUser acepta admin o user, y canRead acepta los cuatro roles, pero ninguno de esos dos atajos se utiliza para limitar las pantallas actuales. El menú utiliza hasRole y Ajustes utiliza isAdmin.
 
-verifySessionValidity llama con fetch a /api/auth/verify, cierra sesión ante rechazo y la mantiene ante error de red. La llaman la verificación periódica y AppLayout al montarse. refreshUser vuelve a leer el almacenamiento, no consulta un usuario actualizado al servidor.
+verifySessionValidity llama con fetch a /api/auth/verify. Solo un 401 revoca la sesión; un 5xx, un 403 no esperado, un error de red o un timeout conservan el token y muestran un aviso (F-56). La llaman la verificación periódica y AppLayout al montarse. refreshUser vuelve a leer el almacenamiento, no consulta un usuario actualizado al servidor.
+
+Desde S-04a, el logout avisa al servidor y el token anterior queda revocado. `replaceToken` se usa cuando el administrador cambia su propia contraseña: el servidor devuelve un token nuevo y la sesión no se interrumpe. La validación de `ver` y la revocación las aplica el servidor; el composable no decide la autorización.
 
 Cada invocación de useAuth mantiene su propio estado e intervalo (S-07). `src/config/api.js` ya no importa `useAuth`: usa `src/utils/sesion.js`, así que el interceptor no depende del composable. La autorización efectiva la aplica el servidor con la matriz DC-48 (S-01 y S-12 corregidas el 2026-11-10); la ocultación de controles en el cliente no sustituye esa comprobación.

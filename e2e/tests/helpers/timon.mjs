@@ -243,13 +243,13 @@ const usuariosUsados = new Set();
 /**
  * Nombre de usuario único con el formato exacto `e2e_usuario_AAAAMMDD_HHMMSS` (26 caracteres).
  */
-export async function nombreUsuarioUnico() {
+export async function nombreUsuarioUnico(prefijo = 'e2e_usuario') {
     for (;;) {
         const ahora = new Date();
         const dos = (numero) => String(numero).padStart(2, '0');
         const fecha = `${ahora.getFullYear()}${dos(ahora.getMonth() + 1)}${dos(ahora.getDate())}`;
         const hora = `${dos(ahora.getHours())}${dos(ahora.getMinutes())}${dos(ahora.getSeconds())}`;
-        const nombre = `e2e_usuario_${fecha}_${hora}`;
+        const nombre = `${prefijo}_${fecha}_${hora}`;
 
         if (nombre.length > LONGITUD_MAXIMA_USUARIO) {
             throw new Error(`El usuario E2E «${nombre}» supera ${LONGITUD_MAXIMA_USUARIO} caracteres`);
@@ -272,6 +272,69 @@ export function emailDeUsuario(nombre) {
 /** Contraseña de un solo uso para el usuario de prueba. */
 export function contrasenaDeUsuario(nombre) {
     return `E2e_${nombre.slice(-6)}!aB3`;
+}
+
+/** URL de la API vista desde el proceso que ejecuta Playwright (no desde el Edge remoto). */
+export function urlDeApi() {
+    return process.env.E2E_API_URL || 'http://localhost:3000';
+}
+
+/** Token guardado por la sesión actual, en cualquiera de los dos almacenes. */
+export async function tokenDePagina(page) {
+    return page.evaluate(() => localStorage.getItem('token') || sessionStorage.getItem('token'));
+}
+
+/** Crea un usuario por API con la sesión de administrador de la página indicada. */
+export async function crearUsuarioApi(page, datos) {
+    const token = await tokenDePagina(page);
+
+    if (!token) throw new Error('No hay token de administrador para crear el usuario');
+
+    return page.request.post(`${urlDeApi()}/api/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: datos
+    });
+}
+
+/** Borra un usuario por API con la sesión de administrador de la página indicada. */
+export async function eliminarUsuarioApi(page, id) {
+    const token = await tokenDePagina(page);
+
+    if (!token) throw new Error('No hay token de administrador para borrar el usuario');
+
+    return page.request.delete(`${urlDeApi()}/api/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { userIds: [id] }
+    });
+}
+
+/** Abre el diálogo de cambio de contraseña de la fila indicada. */
+export async function abrirDialogoPasswordPropia(page, nombre) {
+    const fila = filaUsuario(page, nombre);
+    await expect(fila).toHaveCount(1);
+    await fila.first().locator('button:has(.pi-key)').click();
+
+    const dialogo = page.getByRole('dialog', { name: `Cambiar contraseña (${nombre})` });
+    await expect(dialogo).toBeVisible();
+
+    return dialogo;
+}
+
+/** Cambia la contraseña desde el diálogo propio y devuelve la respuesta del PUT. */
+export async function cambiarPasswordPropia(page, nombre, password) {
+    const dialogo = await abrirDialogoPasswordPropia(page, nombre);
+    const campos = dialogo.locator('input[type="password"]');
+
+    await expect(campos).toHaveCount(2);
+    await campos.nth(0).fill(password);
+    await campos.nth(1).fill(password);
+
+    const guardar = dialogo.getByRole('button', { name: 'Guardar' });
+    await expect(guardar).toBeEnabled();
+
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/users/password') && r.request().method() === 'PUT', { timeout: 30_000 }), guardar.click()]);
+
+    return { respuesta, dialogo };
 }
 
 /** Abre `/settings` y, si se indica, activa una pestaña concreta. */

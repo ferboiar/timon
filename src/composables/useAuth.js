@@ -65,6 +65,7 @@
 import { useTheme } from '@/composables/useTheme';
 import { API_BASE_URL } from '@/config/api';
 import { reiniciarAjustesSesion } from '@/composables/useAjustesSesion';
+import { marcarErrorVerificacion } from '@/utils/sesion';
 import { useLayout } from '@/layout/composables/layout';
 import { UsersService } from '@/service/UsersService';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
@@ -204,14 +205,21 @@ export function useAuth() {
                 return true;
             }
 
-            // Si la respuesta no es exitosa, el token ha expirado o es inválido
-            console.warn('Token expirado o inválido detectado durante verificación periódica');
-            logout();
+            // Solo un 401 revoca la sesión. Un 5xx o un 403 no esperado no la invalidan.
+            if (response.status === 401) {
+                console.warn('Token expirado o inválido detectado durante verificación periódica');
+                logout();
+                return false;
+            }
+
+            console.warn('No se pudo verificar la sesión (HTTP ' + response.status + '); se mantiene la sesión');
+            marcarErrorVerificacion();
             return false;
         } catch (error) {
             console.error('Error al verificar la validez del token:', error);
-            // En caso de error de red, mantenemos la sesión activa para evitar interrupciones
-            return true;
+            // Un error de red o un timeout no demuestran que el token haya caducado.
+            marcarErrorVerificacion();
+            return false;
         }
     };
 
@@ -305,8 +313,11 @@ export function useAuth() {
     // Verificar si el usuario tiene permisos de lectura como mínimo
     const canRead = computed(() => hasAnyRole([ROLES.ADMIN, ROLES.USER, ROLES.LIMITED_USER, ROLES.READER]));
 
-    // Función para cerrar sesión
-    const logout = () => {
+    // Función para cerrar sesión. Avisa al servidor con el token capturado, aunque el
+    // almacenamiento se limpia primero para que el cierre local no dependa de la red.
+    const logout = async () => {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
         try {
             // Detener la verificación periódica del token
             if (tokenVerificationInterval) {
@@ -315,7 +326,6 @@ export function useAuth() {
             }
 
             reiniciarAjustesSesion(); // Los ajustes de sesión (DC-21) no sobreviven al cierre de sesión
-            // Eliminar tokens y datos de usuario
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             sessionStorage.removeItem('token');
@@ -331,12 +341,29 @@ export function useAuth() {
             }
 
             console.log('Sesión cerrada correctamente');
-
-            // Redireccionar a la página de login
             router.push('/auth/login');
+
+            if (token) {
+                try {
+                    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                } catch (error) {
+                    console.warn('No se pudo avisar al servidor del cierre de sesión:', error);
+                }
+            }
         } catch (error) {
             console.error('Error al cerrar la sesión:', error);
         }
+    };
+
+    // Reemplaza el token guardado tras un cambio de contraseña propio (S-04a).
+    const replaceToken = (token) => {
+        if (!token) return;
+
+        if (localStorage.getItem('token')) localStorage.setItem('token', token);
+        else if (sessionStorage.getItem('token')) sessionStorage.setItem('token', token);
     };
 
     // Cargar el usuario al montar el componente
@@ -367,6 +394,7 @@ export function useAuth() {
         hasRole,
         hasAnyRole,
         logout,
+        replaceToken,
         refreshUser,
         updateStylePreferences,
         applyUserPreferences,
