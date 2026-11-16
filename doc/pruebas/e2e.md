@@ -75,6 +75,7 @@ npm run e2e:lista                 # lista los tests sin ejecutarlos
 - Los usuarios de prueba siguen el formato exacto `e2e_usuario_AAAAMMDD_HHMMSS` (26 caracteres; `users.username` es `varchar(50)`) con correo `…@e2e.invalid` (38 caracteres; `varchar(100)`) y una contraseña de un solo uso. Cada ejecución crea y borra solo su usuario; los huérfanos con ese formato solo se informan.
 - Los recibos de prueba de U-15 siguen el formato exacto `e2e_trimestral_AAAAMMDD_HHMMSS` (30 caracteres, el máximo de `recibos.concepto`) y `e2e_bimestral_AAAAMMDD_HHMMSS` (29). Se crean desde la propia página, se borran por la interfaz y, si el test falla antes, se borran por API en `afterEach`. No se toca ningún otro recibo.
 - La prueba de conexión usa `POST /api/db-config/test`, que abre una conexión y la cierra: no escribe `.db_connection` ni crea `.db_connection.backup`, y el spec comprueba que no se emite ningún guardado ni restauración.
+- Bases desechables: una base creada para una verificación puntual lleva el sufijo **`_test`** (`conta_hogar_dump_test`, `conta_hogar_test`, …) y se elimina al terminar la comprobación. Nunca se usa `conta_hogar` para una prueba destructiva (regla 30-tests).
 
 ## Triage de fallos
 

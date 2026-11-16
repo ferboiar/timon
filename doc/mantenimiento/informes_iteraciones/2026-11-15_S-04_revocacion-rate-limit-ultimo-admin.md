@@ -9,7 +9,7 @@
 ## Base
 
 - Rama: `correccion/fase-2-S04-S04a-S04b-S04c-revocacion-rate-limit-ultimo-admin`.
-- Commit anterior: `9a013085bd6415cb0aa55bff7bca1fed671ce767`; HEAD comprobado: `6ce81e3`; PR #139 abierto.
+- Commit anterior: `9a013085bd6415cb0aa55bff7bca1fed671ce767`; HEAD de la rama: `fc421a5`; PR #139 fusionado en `main` con el merge commit `1c8fa18`.
 - Cambio local conocido y no tocado: `backend/src/db/.db_connection` (sha256 `cffe3241e7bdbd082ac15bfea36885c94ea7153613bfe01aa7f7b38081bf15ac`).
 
 ## Cambios
@@ -82,21 +82,21 @@
 
 ## No verificado
 
-- La 0008 no se aplica a `conta_hogar`. El despliegue queda para un paso aparte, con copia previa, migración antes de reiniciar el backend y re-login único de los tokens sin `ver`.
+- La 0008 se aplicó a `conta_hogar` el 2026-11-16, después de verificar la copia previa restaurándola en una base desechable; el backend de desarrollo se arrancó después y la autenticación quedó operativa. Los tokens sin `ver` dejan de valer: hay que iniciar sesión de nuevo.
 - F-57 (carrera de la espera de la fila en `eliminarCuenta`): observado en la pasada I; no reproducido en I2. No se corrige en este PR para no ampliar el alcance de la verificación; queda registrado como pendiente de prueba.
 - No se introduce un 503 específico para una base no disponible: la política común de `errorDeNegocio.mjs` mantiene 500 para todo error técnico y el frontend ya conserva la sesión ante 5xx. Cambiar solo `/verify` a 503 exigiría una decisión de proyecto sobre el mapeo global.
-- CodeQL y Snyk se comprobaron en el remoto sobre `6ce81e3`; este cambio local aún no se ha publicado ni tiene un check nuevo.
+- Checks del commit `fc421a5` en el remoto: CodeQL/Analyze, CodeQL y Snyk en verde, con 0 alertas de code scanning abiertas en la rama.
 - No hay runner de pruebas unitarias de frontend: no existe `vitest`, `jest` ni `@vue/test-utils`, ni ficheros `.test.js`. `useAuth`, el router y `Login.vue` solo tienen cobertura E2E (401, 500, interceptor y guard); no se crea un runner en este PR.
 - `E2E_CLONAR=1` clona `conta_hogar` **sin aplicar migraciones**. Mientras la 0008 no esté desplegada, la réplica clonada no sirve para este código; la válida es la que genera el script sin `E2E_CLONAR` (8 migraciones).
 
 ## Estado al preparar el informe
 
-- Cambios de F-56 aplicados y probados; **sin `git add`, commit ni push** todavía.
+- Cambios de F-56 aplicados y probados; publicados en el commit `fc421a5` y fusionados en `main` con el merge commit `1c8fa18`.
 - Árbol de trabajo: cambios de F-56, spec nueva de cambio de contraseña y documentación; `.db_connection` fuera del manifiesto.
-- PR #139 sigue abierto; #91-#94 en `En curso`, P0, Orden 10-13. Los comentarios de arranque existentes no se modifican.
+- PR #139 fusionado; #91-#94 abiertas en `En curso`, P0, Orden 10-13, pendientes de cierre con su evidencia.
 
 ## Continuidad
 
-- Siguiente: aprobación del commit de la spec/F-56, publicación y nuevo check de CodeQL; después, comentario del PR en #91 y fusión con confirmaciones separadas. La pasada final 4 (56 pruebas: 55 y 1 skipped) se ejecutó sobre el árbol final con el Edge remoto `Edg/157.0.4341.46`; la única incidencia abierta de suite es la carrera de eliminarCuenta en I, no reproducida en I2 ni en la pasada 4.
-- La 0008 se despliega aparte; después S-05 (#95) y S-11 (#96).
-- No asumir que la 0008 está aplicada ni que el remoto contiene estos cambios locales.
+- Siguiente: cierre de #91-#94 con su evidencia y después S-05 (#95) y S-11 (#96). La pasada final 4 (56 pruebas: 55 y 1 skipped) se ejecutó sobre el árbol final con el Edge remoto `Edg/157.0.4341.46`; la única incidencia abierta de suite es la carrera de eliminarCuenta en I (F-57), no reproducida en I2 ni en la pasada 4.
+- La 0008 ya está aplicada en `conta_hogar`; el siguiente paso es el cierre de #91-#94.
+- No asumir que otras bases tengan la 0008: cualquier base nueva necesita la migración antes de arrancar este código.
