@@ -172,6 +172,7 @@ const docNavigation = [
                     { title: 'Entorno de pruebas del backend', path: 'pruebas/entorno-pruebas' },
                     { title: 'Estado del proyecto (relevo)', path: 'mantenimiento/estado-del-proyecto' },
                     { title: 'Estado del proyecto (archivo 2026-11-16)', path: 'mantenimiento/archivo/estado-del-proyecto-2026-11-16/estado-del-proyecto' },
+                    { title: 'Skills de Cline', path: 'mantenimiento/skills' },
                     { title: 'Auditoría de documentación', path: 'mantenimiento/auditoria-documentacion' },
                     { title: 'Registro de hallazgos (entrada)', path: 'mantenimiento/registro-hallazgos' },
                     { title: 'Registro: parte 1 de 3', path: 'mantenimiento/registro-hallazgos_1de3' },
