@@ -6,15 +6,15 @@ Project (DC-61); aquí solo el corte y las decisiones vigentes.
 ## 0. Corte
 - Fecha y base: 2026-11-17, `main` en el merge del PR #152 (SHA con `git log --oneline -1 main`).
 - Último trabajo incorporado: PR #152 (S-05), merge del PR #152.
-- Trabajo actual: ninguno abierto.
-- Objetivo: cerrar S-05 (CORS por configuración y limpieza de `console.log` de depuración). Estado: cumplido.
+- Trabajo actual: PR #153 (F-59 y S-20).
+- Objetivo: cerrar F-59 (#143, diferencia temporal de `verifyCredentials`) y S-20 (#106, prueba negativa de `permitirFueraDeAnio`). Estado: en el PR #153.
 - Próxima acción: S-11 (#96). Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
   migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
   de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
   0007 (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar
   sesión de nuevo: los tokens anteriores no llevan `ver`.
-- Issues abiertas relevantes: #96 (S-11), #136 (O-10), #140 (O-11), #142 (F-57) y #143 (F-59).
+- Issues abiertas relevantes: #96 (S-11), #136 (O-10), #140 (O-11) y #142 (F-57).
 - Próximo trabajo: S-11 (#96); después, F-49, F-53, F-54, F-55 y el backlog del Project.
 - Identificadores: D-53 se asigna en este corte; D-52, en el anterior. Comprueba el último de cada
   familia en el registro antes de asignar; los siguientes previsibles son S-24, D-54 y DC-68.

@@ -61,6 +61,7 @@ La API utiliza las siguientes variables de configuración desde el módulo `env.
 ## Seguridad
 
 - Uso de bcrypt para almacenamiento seguro y verificación de contraseñas
+- F-59: la verificación compara siempre con bcrypt; si el usuario no existe se usa un hash ficticio de coste 10, para que el tiempo de respuesta no revele qué nombres de usuario están dados de alta
 - Tokens JWT firmados para garantizar integridad y autenticidad
 - Expiración configurable de tokens para limitar la ventana de ataque
 - Registro de intentos de acceso para monitoreo de seguridad

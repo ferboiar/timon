@@ -370,20 +370,23 @@ async function getUserByEmail(email) {
     }
 }
 
+// F-59: hash bcrypt ficticio de coste 10, el mismo coste que la ruta de usuarios usa al crear
+// o cambiar la contraseña (bcrypt.hash(..., 10)). Se compara también cuando el usuario no existe
+// para que los dos caminos pasen por bcrypt y tarden lo mismo, y el tiempo de respuesta no revele
+// qué nombres de usuario existen.
+const HASH_FICTICIO = '$2b$10$mmSr/Ye5jTYyDJc1jqhnfOJjWvVcmyC6fBZ.4fcdt/Oh5gF90Rt5.';
+
 // Función para verificar las credenciales del usuario
 async function verifyCredentials(username, password) {
     try {
         const user = await getUserByUsername(username);
 
-        if (!user) {
-            return null; // Usuario no encontrado
-        }
+        // Se compara siempre con un hash de coste 10 (el real o el ficticio): el camino de
+        // usuario inexistente y el de contraseña incorrecta cuestan lo mismo.
+        const passwordMatch = await bcrypt.compare(password, user?.password ?? HASH_FICTICIO);
 
-        // Verificar la contraseña
-        const passwordMatch = await bcrypt.compare(password, user.password);
-
-        if (!passwordMatch) {
-            return null; // Contraseña incorrecta
+        if (!user || !passwordMatch) {
+            return null; // Usuario no encontrado o contraseña incorrecta
         }
 
         // No devolvemos la contraseña en la respuesta
