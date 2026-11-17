@@ -1,24 +1,22 @@
 # Estado del proyecto Timón
 
-Última actualización: 2026-11-16. Se actualiza en cada PR (DC-27). El backlog vive en los issues del
+Última actualización: 2026-11-17. Se actualiza en cada PR (DC-27). El backlog vive en los issues del
 Project (DC-61); aquí solo el corte y las decisiones vigentes.
 
 ## 0. Corte
-- Fecha y base: 2026-11-16, `main` en `7ebeeb0` (merge del PR #144).
-- Último trabajo incorporado: PR #144 (D-47, sincronización posterior al #141), merge `7ebeeb0`.
-- Trabajo actual: D-48 con DC-64 y DC-65 (reglas en `.cline/rules/`, skills de proceso y relevo
-  único), en la rama `mantenimiento/DC-64-DC-65-reglas-cline`: PR #145 abierto, pendiente de fusión.
-- Objetivo: que las reglas se carguen sin releer 52 KB en cada sesión y que exista una sola copia de
-  cada una. Estado: implementado, verificado en local y publicado en el PR #145. Próxima acción:
-  fusión, pendiente de autorización. Bloqueos: ninguno conocido.
+- Fecha y base: 2026-11-17, `main` en el merge del PR #146 (SHA con `git log --oneline -1 main`).
+- Último trabajo incorporado: PR #146 (D-49, DC-66), merge del PR #146, comprobado.
+- Trabajo actual: ninguno abierto.
+- Objetivo: que ninguna iteración deje flecos en otro PR. Estado: cumplido. Próxima acción: S-05 (#95)
+  y S-11 (#96). Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0006 (trazabilidad e índice único de categorías), 0007
   (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar sesión de
   nuevo: los tokens anteriores no llevan `ver`.
 - Issues abiertas relevantes: #95 (S-05), #96 (S-11), #135 (O-09, limpieza de ramas), #136 (O-10),
   #140 (O-11), #142 (F-57) y #143 (F-59).
 - Próximo trabajo: S-05 (#95) y S-11 (#96); después, F-49, F-53, F-54, F-55 y el backlog del Project.
-- Identificadores: DC-64 y DC-65 se asignan en este corte. Comprueba el último de cada familia en el
-  registro antes de asignar; los siguientes previsibles son S-24 y DC-66.
+- Identificadores: DC-66 y D-49 se asignan en este corte. Comprueba el último de cada familia en el
+  registro antes de asignar; los siguientes previsibles son S-24 y DC-67.
 
 ## 1. Decisiones vigentes
 Texto completo en el registro §2; aquí solo el resumen.
@@ -42,6 +40,7 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-63 | Límite de intentos de login por IP+usuario y por IP. |
 | DC-64 | Reglas en `.cline/rules/`, skills de proceso, autorización por prompt y sin cadena de SHA. |
 | DC-65 | Umbrales: 11 000 B de reglas, 7 000 B incondicionales y 12 000 B por cuerpo de skill. |
+| DC-66 | Cierre completo: el §0 queda con el corte posterior a la fusión y sin flecos en otro PR. |
 
 ## 2. Entorno y mapa
 - Frontend: Vue 3 + PrimeVue; vistas en `src/views/pages`, componentes en `src/components`, servicios
