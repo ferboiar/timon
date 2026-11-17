@@ -4,12 +4,11 @@
 Project (DC-61); aquí solo el corte y las decisiones vigentes.
 
 ## 0. Corte
-- Fecha y base: 2026-11-17, `main` en `704adaf` (merge del PR #145).
-- Último trabajo incorporado: PR #145 (D-48, DC-64, DC-65), merge `704adaf`, comprobado.
-- Trabajo actual: D-49 con DC-66 (cierre sin flecos), en la rama
-  `mantenimiento/DC-66-cierre-sin-flecos`; el §0 se completa con el número de PR antes de fusionar.
-- Objetivo: que ninguna iteración deje flecos en otro PR. Estado: implementado y verificado en local.
-  Próxima acción: publicar el PR. Bloqueos: ninguno conocido.
+- Fecha y base: 2026-11-17, `main` en el merge del PR #146 (SHA con `git log --oneline -1 main`).
+- Último trabajo incorporado: PR #146 (D-49, DC-66), merge del PR #146, comprobado.
+- Trabajo actual: ninguno abierto.
+- Objetivo: que ninguna iteración deje flecos en otro PR. Estado: cumplido. Próxima acción: S-05 (#95)
+  y S-11 (#96). Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0006 (trazabilidad e índice único de categorías), 0007
   (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar sesión de
   nuevo: los tokens anteriores no llevan `ver`.
