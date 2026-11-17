@@ -10,14 +10,16 @@ Project (DC-61); aquí solo el corte y las decisiones vigentes.
 - Objetivo: estandarizar las migraciones de base de datos con la skill `migraciones-bd` y dejar el
   corte sin flecos. Estado: cumplido. Próxima acción:
   S-05 (#95) y S-11 (#96). Bloqueos: ninguno conocido.
-- Migraciones aplicadas en `conta_hogar`: 0006 (trazabilidad e índice único de categorías), 0007
-  (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar sesión de
-  nuevo: los tokens anteriores no llevan `ver`.
+- Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
+  migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
+  de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
+  0007 (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar
+  sesión de nuevo: los tokens anteriores no llevan `ver`.
 - Issues abiertas relevantes: #95 (S-05), #96 (S-11), #136 (O-10), #140 (O-11), #142 (F-57) y
   #143 (F-59).
 - Próximo trabajo: S-05 (#95) y S-11 (#96); después, F-49, F-53, F-54, F-55 y el backlog del Project.
-- Identificadores: D-52 se asigna en este corte; D-51, en el anterior. Comprueba el último de cada
-  familia en el registro antes de asignar; los siguientes previsibles son S-24, D-53 y DC-67.
+- Identificadores: D-53 se asigna en este corte; D-52, en el anterior. Comprueba el último de cada
+  familia en el registro antes de asignar; los siguientes previsibles son S-24, D-54 y DC-67.
 
 ## 1. Decisiones vigentes
 Texto completo en el registro §2; aquí solo el resumen.
