@@ -6,20 +6,18 @@ Project (DC-61); aquí solo el corte y las decisiones vigentes.
 ## 0. Corte
 - Fecha y base: 2026-11-17, `main` en el merge del PR #151 (SHA con `git log --oneline -1 main`).
 - Último trabajo incorporado: PR #151 (D-53), merge del PR #151.
-- Trabajo actual: ninguno abierto.
-- Objetivo: documentar la 0005 como migración aplicada con la evidencia disponible y dejar el corte
-  sin flecos. Estado: cumplido. Próxima acción:
-  S-05 (#95) y S-11 (#96). Bloqueos: ninguno conocido.
+- Trabajo actual: S-05 (#95) cerrado en el PR de esta iteración (CORS restringido y trazas de depuración retiradas).
+- Objetivo: cerrar S-05 (CORS por configuración y limpieza de `console.log` de depuración). Estado: cumplido.
+- Próxima acción: S-11 (#96). Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
   migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
   de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
   0007 (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar
   sesión de nuevo: los tokens anteriores no llevan `ver`.
-- Issues abiertas relevantes: #95 (S-05), #96 (S-11), #136 (O-10), #140 (O-11), #142 (F-57) y
-  #143 (F-59).
-- Próximo trabajo: S-05 (#95) y S-11 (#96); después, F-49, F-53, F-54, F-55 y el backlog del Project.
+- Issues abiertas relevantes: #96 (S-11), #136 (O-10), #140 (O-11), #142 (F-57) y #143 (F-59).
+- Próximo trabajo: S-11 (#96); después, F-49, F-53, F-54, F-55 y el backlog del Project.
 - Identificadores: D-53 se asigna en este corte; D-52, en el anterior. Comprueba el último de cada
-  familia en el registro antes de asignar; los siguientes previsibles son S-24, D-54 y DC-67.
+  familia en el registro antes de asignar; los siguientes previsibles son S-24, D-54 y DC-68.
 
 ## 1. Decisiones vigentes
 Texto completo en el registro §2; aquí solo el resumen.
@@ -44,6 +42,7 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-64 | Reglas en `.cline/rules/`, skills de proceso, autorización por prompt y sin cadena de SHA. |
 | DC-65 | Umbrales: 11 000 B de reglas, 7 000 B incondicionales y 12 000 B por cuerpo de skill. |
 | DC-66 | Cierre completo: el §0 queda con el corte posterior a la fusión y sin flecos en otro PR. |
+| DC-67 | CORS restringido por `CORS_ALLOWED_ORIGINS` (nombres) y `CORS_ALLOWED_NETWORKS` (redes CIDR, solo IPs literales); validado al arrancar y cerrado por defecto. |
 
 ## 2. Entorno y mapa
 - Frontend: Vue 3 + PrimeVue; vistas en `src/views/pages`, componentes en `src/components`, servicios

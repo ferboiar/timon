@@ -141,7 +141,6 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
                     'UPDATE anticipos SET concepto = ?, importe_original = ?, pago_sugerido = ?, fecha_inicio = ?, fecha_fin_prevista = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_origen_id = ?, periodicidad = ?, es_privado = COALESCE(?, es_privado), modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
                     [concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, valorPrivado, usuarioId, id]
                 );
-                console.log('Actualización realizada en anticipos, filas afectadas: ' + result.affectedRows);
 
                 // Si se especifica periodicidad y pago sugerido, recalcular el plan de pagos
                 if (periodicidad && Number(pago_sugerido) > 0) {
@@ -168,7 +167,6 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
                 valorPrivado,
                 usuarioId
             ]);
-            console.log('Inserción realizada en anticipos, filas afectadas: ' + result.affectedRows);
 
             // El anticipo recién creado solo es visible para esta transacción, así que no hace falta bloquearlo
             const anticipoId = result.insertId;
@@ -196,7 +194,6 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
  */
 async function generarPlanDePagos(connection, anticipoId) {
     try {
-        console.log('recalculatePaymentPlan - Iniciando recálculo del plan de pagos para el anticipo con ID: ' + anticipoId);
 
         // DC-38: todos los datos salen de la base de datos; el importe pendiente es el principal menos los pagos pagados
         const [anticipoData] = await connection.execute(SQL_ANTICIPO + ' WHERE a.id = ?', [anticipoId]);
@@ -205,13 +202,10 @@ async function generarPlanDePagos(connection, anticipoId) {
         }
         const { pendiente, fecha_inicio, periodicidad, cuenta_origen_id: cuentaDestinoId } = anticipoData[0];
         let pago_sugerido = anticipoData[0].pago_sugerido;
-        console.log('recalculatePaymentPlan - Datos obtenidos de la base de datos: pendiente=' + pendiente + ', pago_sugerido=' + pago_sugerido + ', fecha_inicio=' + fecha_inicio + ', periodicidad=' + periodicidad);
-        console.log('recalculatePaymentPlan - Cuenta origen asociada al anticipo: ' + cuentaDestinoId);
 
         // Obtener todos los pagos existentes (pagados y pendientes)
         const [existingPagos] = await connection.execute('SELECT * FROM anticipos_pagos WHERE anticipo_id = ? ORDER BY fecha ASC', [anticipoId]);
 
-        console.log('recalculatePaymentPlan - Pagos existentes: ' + JSON.stringify(existingPagos));
 
         // Filtrar los pagos pendientes
         const pagosPendientes = existingPagos.filter((pago) => pago.estado === 'pendiente');
@@ -223,7 +217,6 @@ async function generarPlanDePagos(connection, anticipoId) {
         }
 
         porPlanificar = Math.round(porPlanificar * 100) / 100; // F-36: sin residuos de coma flotante
-        console.log('recalculatePaymentPlan - Importe por planificar después de considerar los pagos pendientes: ' + porPlanificar);
 
         // F-46/DC-41: la secuencia está anclada en el día de fecha_inicio. Si el día no existe
         // en un mes se usa el último día de ese mes, sin arrastrar desvíos ni depender de la zona horaria.
@@ -262,7 +255,6 @@ async function generarPlanDePagos(connection, anticipoId) {
                 'pendiente',
                 cuentaDestinoId
             ]);
-            console.log('recalculatePaymentPlan - Nuevo pago creado con importe: ' + importePago + ', fecha: ' + fechaPagoISO);
             porPlanificar = Math.round((porPlanificar - importePago) * 100) / 100; // F-36
             ultimaFechaPago = fechaPagoISO;
             fechaPagoISO = sumarMesesAnclado(fechaPagoISO, mesesPeriodo, diaAncla);
@@ -271,7 +263,6 @@ async function generarPlanDePagos(connection, anticipoId) {
         // Actualizar la fecha fin prevista del anticipo con la fecha del último pago
         if (ultimaFechaPago) {
             await connection.execute('UPDATE anticipos SET fecha_fin_prevista = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [ultimaFechaPago, anticipoId]);
-            console.log('recalculatePaymentPlan - Fecha fin prevista actualizada a: ' + ultimaFechaPago);
         }
 
         console.log('recalculatePaymentPlan - Plan de pagos recalculado exitosamente para el anticipo con ID: ' + anticipoId);
@@ -320,7 +311,6 @@ function getMonthsFromPeriodicidad(periodicidad) {
  */
 async function deleteAdvances(advances) {
     if (!Array.isArray(advances)) advances = [advances];
-    console.log('deleteAdvances - IDs de anticipos a eliminar:', advances);
     try {
         return await enTransaccion(null, async (connection) => {
             const placeholders = advances.map(() => '?').join(',');
@@ -330,11 +320,9 @@ async function deleteAdvances(advances) {
 
             // Eliminar pagos asociados (la clave foránea también los borraría en cascada, pero así queda traza)
             const [deletePagosResult] = await connection.execute('DELETE FROM anticipos_pagos WHERE anticipo_id IN (' + placeholders + ')', advances);
-            console.log('deleteAdvances - Pagos eliminados, filas afectadas:', deletePagosResult.affectedRows);
 
             // Eliminar anticipos
             const [deleteAnticiposResult] = await connection.execute('DELETE FROM anticipos WHERE id IN (' + placeholders + ')', advances);
-            console.log('deleteAdvances - Anticipos eliminados, filas afectadas:', deleteAnticiposResult.affectedRows);
             return deleteAnticiposResult.affectedRows;
         });
     } catch (error) {
@@ -431,7 +419,6 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                     cuenta_destino_id,
                     id
                 ]);
-                console.log('Actualización en anticipos_pagos, filas afectadas: ' + result.affectedRows);
                 console.log('pushPago - Pago ' + id + ' del anticipo ' + anticipoDelPago + ': estado ' + previousEstado + ' -> ' + estado + ', importe ' + previousImporte + ' -> ' + importe + ', fecha ' + previousFecha + ' -> ' + fecha);
 
                 // Si el importe cambia, la diferencia se reparte entre los pagos pendientes posteriores (DC-08) para que la suma de
@@ -463,7 +450,6 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                 estado,
                 cuenta_destino_id
             ]);
-            console.log('Inserción en anticipos_pagos, filas afectadas: ' + result.affectedRows);
 
             // Si el pago es extraordinario, ajustar los últimos pagos regulares
             if (tipo === 'extraordinario') {
@@ -484,8 +470,6 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
  */
 async function recalculatePostEditPayments(connection, anticipo_id, previousImporte, newImporte, previousFecha) {
     try {
-        console.log('recalculatePostEditPayments - Inicio para anticipo_id: ' + anticipo_id);
-        console.log(`recalculatePostEditPayments - previousImporte: ${previousImporte}, newImporte: ${newImporte}, previousFecha: ${previousFecha}`);
 
         // Convertir importes a números para asegurar operaciones numéricas correctas
         const prevImporte = parseFloat(previousImporte);
@@ -493,11 +477,9 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
         // Diferencia a redistribuir (positiva si hay que añadir a otros pagos, negativa si hay que restar)
         let diferencia = prevImporte - nuevoImporte;
 
-        console.log(`recalculatePostEditPayments - Diferencia a redistribuir: ${diferencia}`);
 
         // Si no hay diferencia a redistribuir, terminamos
         if (Math.abs(diferencia) < 0.01) {
-            console.log('recalculatePostEditPayments - No hay diferencia significativa para redistribuir');
             return;
         }
 
@@ -508,18 +490,14 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
         const importeTotal = parseFloat(anticipo[0].pendiente);
         const pagoSugerido = parseFloat(anticipo[0].pago_sugerido);
 
-        console.log(`recalculatePostEditPayments - Importe total del anticipo: ${importeTotal}`);
-        console.log(`recalculatePostEditPayments - Importe sugerido: ${pagoSugerido}`);
 
         // Obtener pagos pendientes posteriores a la fecha del pago editado
         const [pendingPayments] = await connection.execute("SELECT id, importe, fecha FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' AND fecha > ? ORDER BY fecha ASC", [anticipo_id, previousFecha]);
 
         if (pendingPayments.length === 0) {
-            console.log('recalculatePostEditPayments - No hay pagos pendientes posteriores para redistribuir');
             return;
         }
 
-        console.log(`recalculatePostEditPayments - Número de pagos pendientes posteriores: ${pendingPayments.length}`);
 
         // Convertir todos los importes a números
         const pagos = pendingPayments.map((p) => ({
@@ -529,14 +507,8 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
             nuevoImporte: null // Inicializar nuevoImporte como null
         }));
 
-        // Mostrar estado inicial de los pagos
-        pagos.forEach((pago, idx) => {
-            console.log(`recalculatePostEditPayments - Pago pendiente #${idx + 1}: ID=${pago.id}, Fecha=${pago.fecha}, Importe=${pago.importe.toFixed(2)}`);
-        });
-
         // CASO 1: Si hay que añadir a los pagos posteriores (diferencia > 0)
         if (diferencia > 0) {
-            console.log(`recalculatePostEditPayments - CASO 1: Reducción del pago, redistribuyendo ${diferencia} entre los demás pagos`);
 
             // Paso 1: Primero intentamos llevar los pagos por debajo del importe sugerido hasta el importe sugerido
             let diferenciaRestante = diferencia;
@@ -553,13 +525,11 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
                     pago.nuevoImporte = parseFloat((pago.importe + incrementoMaximo).toFixed(2));
                     diferenciaRestante -= incrementoMaximo;
 
-                    console.log(`recalculatePostEditPayments - Incrementando pago ID ${pago.id} de ${pago.importe.toFixed(2)} a ${pago.nuevoImporte.toFixed(2)} (incremento: ${incrementoMaximo.toFixed(2)})`);
                 }
             }
 
             // Paso 2: Distribuir la diferencia restante entre TODOS los pagos posteriores equitativamente
             if (diferenciaRestante > 0) {
-                console.log(`recalculatePostEditPayments - Diferencia restante para distribuir equitativamente: ${diferenciaRestante.toFixed(2)}`);
 
                 // Calculamos cuánto corresponde a cada pago de la diferencia restante (en números enteros)
                 const numeroPagos = pagos.length;
@@ -568,7 +538,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
                 let resto = cantidadBase - cantidadPorPago * numeroPagos;
                 const centavosExtra = Math.round((diferenciaRestante - cantidadBase) * 100);
 
-                console.log(`recalculatePostEditPayments - Distribución base: ${cantidadPorPago} por pago, resto: ${resto}, centavos extra: ${centavosExtra}`);
 
                 // Distribuir la cantidad base y el resto entre los pagos
                 for (let i = 0; i < pagos.length; i++) {
@@ -590,7 +559,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
                     const importeBase = pago.nuevoImporte !== null ? pago.nuevoImporte : pago.importe;
                     const nuevoImporte = parseFloat((importeBase + ajuste).toFixed(2));
 
-                    console.log(`recalculatePostEditPayments - Ajustando pago ID ${pago.id} de ${importeBase.toFixed(2)} a ${nuevoImporte} (ajuste: ${ajuste.toFixed(2)})`);
                     pago.nuevoImporte = nuevoImporte;
                 }
             }
@@ -600,7 +568,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
             // Código para el caso de aumento del pago (diferencia < 0)
             // Este caso funciona correctamente según las pruebas, así que lo dejamos sin cambios
             const diferenciaAbs = Math.abs(diferencia);
-            console.log(`recalculatePostEditPayments - CASO 2: Aumento del pago, quitando ${diferenciaAbs.toFixed(2)} de los demás pagos`);
 
             // Paso 1: Primero intentamos reducir los pagos por encima del importe sugerido hasta el importe sugerido
             const pagosAltos = pagos.filter((p) => p.importe > pagoSugerido).sort((a, b) => b.importe - a.importe); // Del más alto al más bajo
@@ -613,7 +580,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
                 pago.nuevoImporte = parseFloat((pago.importe - reduccionMaxima).toFixed(2));
                 reduccionAplicada += reduccionMaxima;
 
-                console.log(`recalculatePostEditPayments - Reduciendo pago ID ${pago.id} de ${pago.importe.toFixed(2)} a ${pago.nuevoImporte.toFixed(2)} (reducción: ${reduccionMaxima.toFixed(2)})`);
 
                 if (Math.abs(reduccionAplicada - diferenciaAbs) < 0.01) break;
             }
@@ -621,7 +587,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
             // Paso 2: Si aún queda diferencia por reducir, reducir proporcionalmente los pagos restantes
             const restantePorReducir = diferenciaAbs - reduccionAplicada;
             if (restantePorReducir > 0.01) {
-                console.log(`recalculatePostEditPayments - Reducción restante por aplicar: ${restantePorReducir.toFixed(2)}`);
 
                 const pagosRestantes = pagos.filter((p) => p.nuevoImporte === null);
                 if (pagosRestantes.length > 0) {
@@ -648,7 +613,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
                         const nuevoImporte = Math.max(0.01, parseFloat((pago.importe - reduccion).toFixed(2)));
 
                         pago.nuevoImporte = nuevoImporte;
-                        console.log(`recalculatePostEditPayments - Reduciendo pago ID ${pago.id} de ${pago.importe.toFixed(2)} a ${pago.nuevoImporte.toFixed(2)} (reducción: ${reduccion.toFixed(2)})`);
                     }
                 }
             }
@@ -665,13 +629,10 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
         const [allPendingPayments] = await connection.execute("SELECT id, importe FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente'", [anticipo_id]);
 
         const totalActual = allPendingPayments.reduce((sum, p) => sum + parseFloat(p.importe), 0);
-        console.log(`recalculatePostEditPayments - Suma de todos los pagos pendientes después de ajustes: ${totalActual.toFixed(2)}`);
-        console.log(`recalculatePostEditPayments - Importe total del anticipo: ${importeTotal.toFixed(2)}`);
 
         // Ajustar el último pago si hay alguna discrepancia
         const diferenciaTotales = Math.round((importeTotal - totalActual) * 100) / 100;
         if (Math.abs(diferenciaTotales) > 0.01) {
-            console.log(`recalculatePostEditPayments - Detectada discrepancia de ${diferenciaTotales.toFixed(2)}. Ajustando el último pago...`);
 
             const [lastPayments] = await connection.execute("SELECT id, importe FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' ORDER BY fecha DESC LIMIT 1", [anticipo_id]);
 
@@ -679,7 +640,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
                 const lastPago = lastPayments[0];
                 const nuevoImporte = Math.max(0.01, parseFloat(lastPago.importe) + diferenciaTotales);
 
-                console.log(`recalculatePostEditPayments - Ajustando último pago ID ${lastPago.id} de ${parseFloat(lastPago.importe).toFixed(2)} a ${nuevoImporte.toFixed(2)}`);
                 await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [nuevoImporte, lastPago.id]);
             }
         }
@@ -688,9 +648,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
         const [finalPendingPayments] = await connection.execute("SELECT importe FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente'", [anticipo_id]);
 
         const totalFinal = finalPendingPayments.reduce((sum, p) => sum + parseFloat(p.importe), 0);
-        console.log(`recalculatePostEditPayments - Suma final de todos los pagos pendientes: ${totalFinal.toFixed(2)}`);
-        console.log(`recalculatePostEditPayments - Importe total del anticipo: ${importeTotal.toFixed(2)}`);
-        console.log(`recalculatePostEditPayments - Diferencia final: ${(totalFinal - importeTotal).toFixed(2)}`);
         console.log(`recalculatePostEditPayments - Recálculo completado para anticipo ${anticipo_id}`);
     } catch (error) {
         console.error('Error en recalculatePostEditPayments:', error.status ? error.message : error);
@@ -790,7 +747,6 @@ async function handlePaymentDeletion(pagoId, redistribuir = false, usuarioId = n
             // Eliminar el pago
             console.log('handlePaymentDeletion - Eliminando el pago ID: ' + pagoId + ' (anticipo ' + anticipo_id + ', importe ' + importe + ', estado ' + estado + ', redistribuir: ' + (redistribuir ? 'sí' : 'no') + ')');
             const [result] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [pagoId]);
-            console.log('Pago eliminado, filas afectadas: ' + result.affectedRows);
 
             // DC-38: el importe pendiente se deriva de los pagos pagados y sube solo al borrar un pagado
             const pendiente = await leerPendiente(connection, anticipo_id);

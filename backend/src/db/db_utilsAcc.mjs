@@ -59,13 +59,11 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
                 activa,
                 id
             ]);
-            console.log(`Update realizado correctamente en tabla cuentas. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             // Insertar nueva cuenta
             if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear la cuenta');
             console.log(`pushAccount - Nueva cuenta: ${nombre} (${tipo}), IBAN: ${iban ?? 'sin IBAN'}`);
             const [insertResult] = await connection.execute('INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id]);
-            console.log(`Insert realizado correctamente en tabla cuentas. Filas afectadas: ${insertResult.affectedRows}`);
         }
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
@@ -97,10 +95,8 @@ async function deleteAccounts(accounts) {
         if (!Array.isArray(accounts)) {
             accounts = [accounts];
         }
-        console.log('Cuentas a eliminar:', accounts);
         const placeholders = accounts.map(() => '?').join(',');
         const [deleteResult] = await connection.execute(`DELETE FROM cuentas WHERE id IN (${placeholders})`, accounts);
-        console.log(`Delete realizado correctamente en tabla cuentas. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('Error al eliminar las cuentas:', error);
         if (esErrorDeReferencia(error)) {

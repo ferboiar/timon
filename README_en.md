@@ -85,6 +85,11 @@ The migrations create all the tables and relationships (users, accounts, bills, 
 JWT_SECRET=your_secure_jwt_secret
 JWT_EXPIRATION=24h
 PORT_BACKEND=3000
+
+# CORS: allowed hostnames (domains or localhost), not IPs.
+CORS_ALLOWED_ORIGINS=localhost
+# CORS: allowed CIDR networks of IPs (not names). Only applied when the Origin host is an IP.
+CORS_ALLOWED_NETWORKS=192.168.0.0/24
 ```
 
    Create the `backend/src/db/.db_connection` file with the database configuration:

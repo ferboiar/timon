@@ -9,12 +9,12 @@
  * @module server
  */
 
-import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
 // Importaciones usando los subpath imports configurados en package.json
 import { config } from '#backend/config/env.mjs';
+import { crearMiddlewareCors, leerConfigCors } from '#backend/config/cors.mjs';
 import ahorrosRouter from '#backend/routes/ahorros.mjs';
 import ajustesRouter from '#backend/routes/ajustes.mjs';
 import anticiposRouter from '#backend/routes/anticipos.mjs';
@@ -33,8 +33,8 @@ const port = config.server.port; //ver en ./config/env.mjs
 // Implementar Helmet para seguridad (incluye desactivar x-powered-by)
 app.use(helmet());
 
-// Usar el middleware cors
-app.use(cors());
+// S-05: CORS restringido a los orígenes configurados; la configuración se valida al arrancar.
+app.use(crearMiddlewareCors(leerConfigCors()));
 
 app.use(express.json());
 app.use('/api/recibos', recibosRouter);
