@@ -7,10 +7,10 @@ Project (DC-61); aquí solo el corte y las decisiones vigentes.
 - Fecha y base: 2026-11-16, `main` en `7ebeeb0` (merge del PR #144).
 - Último trabajo incorporado: PR #144 (D-47, sincronización posterior al #141), merge `7ebeeb0`.
 - Trabajo actual: D-48 con DC-64 y DC-65 (reglas en `.cline/rules/`, skills de proceso y relevo
-  único), en la rama `mantenimiento/DC-64-DC-65-reglas-cline`; pendiente de publicar.
+  único), en la rama `mantenimiento/DC-64-DC-65-reglas-cline`: PR #145 abierto, pendiente de fusión.
 - Objetivo: que las reglas se carguen sin releer 52 KB en cada sesión y que exista una sola copia de
-  cada una. Estado: implementado y verificado en local. Próxima acción: abrir el PR. Bloqueos:
-  ninguno conocido.
+  cada una. Estado: implementado, verificado en local y publicado en el PR #145. Próxima acción:
+  fusión, pendiente de autorización. Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0006 (trazabilidad e índice único de categorías), 0007
   (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar sesión de
   nuevo: los tokens anteriores no llevan `ver`.
