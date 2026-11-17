@@ -4,9 +4,9 @@
 Project (DC-61); aquí solo el corte y las decisiones vigentes.
 
 ## 0. Corte
-- Fecha y base: 2026-11-17, `main` en el merge del PR #151 (SHA con `git log --oneline -1 main`).
-- Último trabajo incorporado: PR #151 (D-53), merge del PR #151.
-- Trabajo actual: S-05 (#95) cerrado en el PR de esta iteración (CORS restringido y trazas de depuración retiradas).
+- Fecha y base: 2026-11-17, `main` en el merge del PR #152 (SHA con `git log --oneline -1 main`).
+- Último trabajo incorporado: PR #152 (S-05), merge del PR #152.
+- Trabajo actual: ninguno abierto.
 - Objetivo: cerrar S-05 (CORS por configuración y limpieza de `console.log` de depuración). Estado: cumplido.
 - Próxima acción: S-11 (#96). Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
