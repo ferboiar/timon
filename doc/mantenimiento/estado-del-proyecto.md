@@ -4,11 +4,11 @@
 Project (DC-61); aquí solo el corte y las decisiones vigentes.
 
 ## 0. Corte
-- Fecha y base: 2026-11-17, `main` en el merge del PR #149 (SHA con `git log --oneline -1 main`).
-- Último trabajo incorporado: PR #149 (D-52), merge del PR #149.
+- Fecha y base: 2026-11-17, `main` en el merge del PR #151 (SHA con `git log --oneline -1 main`).
+- Último trabajo incorporado: PR #151 (D-53), merge del PR #151.
 - Trabajo actual: ninguno abierto.
-- Objetivo: estandarizar las migraciones de base de datos con la skill `migraciones-bd` y dejar el
-  corte sin flecos. Estado: cumplido. Próxima acción:
+- Objetivo: documentar la 0005 como migración aplicada con la evidencia disponible y dejar el corte
+  sin flecos. Estado: cumplido. Próxima acción:
   S-05 (#95) y S-11 (#96). Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
   migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
