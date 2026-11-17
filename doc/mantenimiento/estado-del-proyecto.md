@@ -4,19 +4,19 @@
 Project (DC-61); aquí solo el corte y las decisiones vigentes.
 
 ## 0. Corte
-- Fecha y base: 2026-11-17, `main` en el merge del PR #147 (SHA con `git log --oneline -1 main`).
-- Último trabajo incorporado: PR #147 (D-50), merge del PR #147, comprobado.
+- Fecha y base: 2026-11-17, `main` en el merge del PR #148 (SHA con `git log --oneline -1 main`).
+- Último trabajo incorporado: PR #148 (D-51), merge del PR #148, comprobado.
 - Trabajo actual: ninguno abierto.
-- Objetivo: documentar las skills y que el cierre siga sin flecos. Estado: cumplido. Próxima acción:
+- Objetivo: retirar O-09 del relevo y que el corte siga sin flecos. Estado: cumplido. Próxima acción:
   S-05 (#95) y S-11 (#96). Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0006 (trazabilidad e índice único de categorías), 0007
   (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar sesión de
   nuevo: los tokens anteriores no llevan `ver`.
-- Issues abiertas relevantes: #95 (S-05), #96 (S-11), #135 (O-09, limpieza de ramas), #136 (O-10),
-  #140 (O-11), #142 (F-57) y #143 (F-59).
+- Issues abiertas relevantes: #95 (S-05), #96 (S-11), #136 (O-10), #140 (O-11), #142 (F-57) y
+  #143 (F-59).
 - Próximo trabajo: S-05 (#95) y S-11 (#96); después, F-49, F-53, F-54, F-55 y el backlog del Project.
-- Identificadores: D-50 se asigna en este corte; DC-66 y D-49, en el anterior. Comprueba el último de
-  cada familia en el registro antes de asignar; los siguientes previsibles son S-24, D-51 y DC-67.
+- Identificadores: D-51 se asigna en este corte; D-50, en el anterior. Comprueba el último de cada
+  familia en el registro antes de asignar; los siguientes previsibles son S-24, D-52 y DC-67.
 
 ## 1. Decisiones vigentes
 Texto completo en el registro §2; aquí solo el resumen.
