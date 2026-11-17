@@ -85,6 +85,32 @@ documentación coincide con la implementación.
 
 **Invocación:** `/auditoria-documental` o automática al pedir una auditoría.
 
+## migraciones-bd
+
+**Cuándo se usa:** al crear una migración, ensayar una transición de esquema o preparar y ejecutar
+su despliegue en `conta_hogar`.
+
+**Qué hace:** prepara el SQL y sus pruebas, realiza el prevuelo, crea una copia completa en un
+directorio persistente validado, comprueba su restauración en una base `_test`, aplica el archivo
+versionado solo con autorización expresa y verifica esquema, datos y flujos afectados.
+
+**Qué no hace:**
+- No publica, fusiona ni cierra issues.
+- No detiene procesos o servicios que el prompt no nombre explícitamente.
+- No lee `.db_connection` ni pide contraseñas en claro.
+- No ejecuta nada sobre `conta_hogar` sin autorización en el prompt.
+- No reintenta migraciones fallidas a ciegas ni restaura copias automáticamente.
+- No borra automáticamente la copia previa: su retención y borrado requieren una decisión separada
+  del usuario.
+
+**Interacción:** para commit, push, PR, fusión y cierre de issue, invoca `/cierre-iteracion`;
+no duplica ese procedimiento.
+
+**Trabajo derivado:** se propone evaluar un ejecutor o registro de migraciones. `O-12` es un ID
+provisional que debe revalidarse al crear el registro y su issue.
+
+**Invocación:** `/migraciones-bd` o automática al preparar o aplicar una migración.
+
 ## Límites
 
 - El documento resume; **no** reproduce el cuerpo de las skills. Cambiar un procedimiento es cambiar

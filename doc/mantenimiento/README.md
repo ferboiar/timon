@@ -41,7 +41,7 @@ Regla práctica: P0 antes que P1, P1 antes que P2, P2 antes que P3. Dentro de un
 
 - `00-timon-obligatorio.md` y `01-proceso.md` se cargan siempre: rol, seguridad, autorización de publicación, edición de ficheros, plan/act, IDs, commits, PR y ramas.
 - `10-frontend.md`, `20-backend.md`, `30-tests.md` y `40-documentacion.md` se activan por `paths`.
-- Los procedimientos largos son skills y se cargan solo al usarse: `cierre-iteracion`, `limpieza-ramas` y `auditoria-documental`.
+- Los procedimientos largos son skills y se cargan solo al usarse: `cierre-iteracion`, `limpieza-ramas`, `auditoria-documental` y `migraciones-bd`.
 - Una regla, un sitio: no se copian en `doc/`. Los umbrales de tamaño están en DC-65.
 
 ## `estado-del-proyecto` (relevo) — guía de reanudación

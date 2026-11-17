@@ -120,6 +120,7 @@ Parte 3 de 3 del [registro de hallazgos](./registro-hallazgos.md): secciones 6 a
 | D-49 | Medio | Cierre sin flecos (DC-66): relevo §0 con el corte posterior a la fusión del PR #145 (`704adaf`), regla nueva en `40-documentacion.md` y en la skill `cierre-iteracion`, y registro de DC-66. Sin cambios de código de aplicación. Acordado el 2026-11-17. |
 | D-50 | Bajo | Documentar las skills de Cline en `doc/mantenimiento/skills.md`: qué hace cada una, cómo se invoca y cuándo se carga, con entrada en `doc/index.md` y en `docNavigation`. No cambia reglas, skills ni código. Acordado el 2026-11-17. |
 | D-51 | Bajo | Cerrar O-09 en el relevo (DC-66): se retira #135 de las issues abiertas relevantes del §0 y el corte queda con el PR de esta iteración. Sin cambios de código ni de reglas. Acordado el 2026-11-17. |
+| D-52 | Medio | Crear la skill `migraciones-bd` para estandarizar el ciclo de una migración: diseño y SQL, pruebas, prevuelo, ventana sin escrituras, copia completa validada, restauración en `_test`, aplicación autorizada, diagnóstico de DDL parcial y verificación. Incluye la documentación en `skills.md` y el README de mantenimiento; no cambia reglas ni código de aplicación. `O-12`, sobre un futuro registro de migraciones, queda como propuesta provisional en el `Pendiente` del PR: no se crea issue en esta iteración y su ID debe revalidarse antes de asignarlo. Acordado el 2026-11-17. |
 
 
 
