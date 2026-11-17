@@ -62,7 +62,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `changePassword(userId, password)` | Cambia la contraseña, incrementa `token_version` y devuelve la versión nueva |
 | `deleteUsers(userIds)` | Elimina uno o más usuarios por sus IDs; rechaza con 409 `ULTIMO_ADMIN` si dejaría cero administradores |
 | `revocarSesiones(userId)` | Incrementa `token_version` y devuelve la versión nueva (logout) |
-| `verifyCredentials(username, password)` | Verifica las credenciales de un usuario para autenticación |
+| `verifyCredentials(username, password)` | Verifica las credenciales de un usuario para autenticación; compara siempre con bcrypt (hash ficticio de coste 10 si el usuario no existe, F-59) |
 
 ### Sesión revocable y último administrador (S-04)
 
@@ -83,7 +83,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 
 El módulo utiliza la biblioteca bcrypt para el manejo seguro de contraseñas:
 - createUser y changePassword guardan el hash recibido de las rutas; no cifran su argumento
-- Verificación de contraseñas durante la autenticación
+- Verificación de contraseñas durante la autenticación; si el usuario no existe, `verifyCredentials` compara también contra un hash ficticio de coste 10 (F-59) para no delatar por tiempo qué nombres de usuario existen
 - Las rutas generan hash y salt con bcrypt.hash(password, 10), fuera de este módulo
 
 ### Validación de Datos

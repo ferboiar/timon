@@ -100,3 +100,9 @@ La prueba fija `process.env.DB_*` y `DB_CONFIG_PATH` sobre un fichero temporal: 
 ## Objetos de esquema y DEFINER (O-07, O-08)
 
 `mantenimientoEsquema.test.mjs` aplica todas las migraciones (0001 a 0007) en `conta_hogar_o08_origen_test`, comprueba que los cuatro objetos de esquema tienen el `DEFINER` del ejecutor y que la 0007 es repetible, vuelca y restaura en `conta_hogar_o08_destino_test` con la misma cuenta (sin `SET USER`), y comprueba que una copia con `DEFINER='root'@'%'` falla con 409 `RESTAURACION_SIN_SET_USER`. Usa el patrón de permisos `GRANT ALL PRIVILEGES ON `conta\_hogar\_%\_test`.*`; sin él la prueba se omite (no es evidencia). El detalle está en `doc/pruebas/entorno-pruebas.md`.
+
+## Pruebas de temporización de login y regla del año (F-59, S-20)
+
+- `verifyCredentials.test.mjs` (F-59) crea una base `*_test` propia, siembra un usuario con hash bcrypt real y, espiando `bcrypt.compare`, comprueba que el camino de usuario inexistente ejecuta bcrypt una vez (contra un hash ficticio de coste 10) y que el de contraseña incorrecta también.
+- `recibosFueraDeAnio.test.mjs` (S-20) monta la ruta real `POST /api/recibos` en un Express propio y, por HTTP con JWT real, comprueba que un usuario no administrador con `permitirFueraDeAnio: true` recibe el 400 de DC-14 y que un administrador recibe 201 (control).
+- Ambas necesitan la base `*_test`; cada una crea y destruye la suya.
