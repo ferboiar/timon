@@ -119,6 +119,7 @@ Parte 3 de 3 del [registro de hallazgos](./registro-hallazgos.md): secciones 6 a
 | D-48 | Medio | Migración del proceso a `.cline/rules/` y skills (DC-64, DC-65): reglas nuevas y recortadas, tres skills, archivo de la instrucción persistente y del relevo partido, relevo único, retirada de `scripts/comprobar-reglas.mjs` y `backend/test/reglas.test.mjs`, spec E2E renombrado y referencias adaptadas. Sin cambios de código de aplicación. Incluye la autorización por paquete de commit + push + PR y la parada única de confirmación del título y el cuerpo del PR. Acordado el 2026-11-16. |
 | D-49 | Medio | Cierre sin flecos (DC-66): relevo §0 con el corte posterior a la fusión del PR #145 (`704adaf`), regla nueva en `40-documentacion.md` y en la skill `cierre-iteracion`, y registro de DC-66. Sin cambios de código de aplicación. Acordado el 2026-11-17. |
 | D-50 | Bajo | Documentar las skills de Cline en `doc/mantenimiento/skills.md`: qué hace cada una, cómo se invoca y cuándo se carga, con entrada en `doc/index.md` y en `docNavigation`. No cambia reglas, skills ni código. Acordado el 2026-11-17. |
+| D-51 | Bajo | Cerrar O-09 en el relevo (DC-66): se retira #135 de las issues abiertas relevantes del §0 y el corte queda con el PR de esta iteración. Sin cambios de código ni de reglas. Acordado el 2026-11-17. |
 
 
 

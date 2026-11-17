@@ -12,8 +12,8 @@ Project (DC-61); aquí solo el corte y las decisiones vigentes.
 - Migraciones aplicadas en `conta_hogar`: 0006 (trazabilidad e índice único de categorías), 0007
   (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar sesión de
   nuevo: los tokens anteriores no llevan `ver`.
-- Issues abiertas relevantes: #95 (S-05), #96 (S-11), #135 (O-09, limpieza de ramas), #136 (O-10),
-  #140 (O-11), #142 (F-57) y #143 (F-59).
+- Issues abiertas relevantes: #95 (S-05), #96 (S-11), #136 (O-10), #140 (O-11), #142 (F-57) y
+  #143 (F-59).
 - Próximo trabajo: S-05 (#95) y S-11 (#96); después, F-49, F-53, F-54, F-55 y el backlog del Project.
 - Identificadores: D-50 se asigna en este corte; DC-66 y D-49, en el anterior. Comprueba el último de
   cada familia en el registro antes de asignar; los siguientes previsibles son S-24, D-51 y DC-67.
