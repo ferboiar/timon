@@ -170,21 +170,15 @@ const docNavigation = [
                     { title: 'Páginas vacías de la plantilla', path: 'components/PaginasVacias' },
                     { title: 'Suite E2E (Playwright)', path: 'pruebas/e2e' },
                     { title: 'Entorno de pruebas del backend', path: 'pruebas/entorno-pruebas' },
-                    { title: 'Estado del proyecto (entrada)', path: 'mantenimiento/estado-del-proyecto' },
-                    { title: 'Estado: parte 1 de 3', path: 'mantenimiento/estado-del-proyecto_1de3' },
-                    { title: 'Estado: parte 2 de 3', path: 'mantenimiento/estado-del-proyecto_2de3' },
-                    { title: 'Estado: parte 3 de 3', path: 'mantenimiento/estado-del-proyecto_3de3' },
+                    { title: 'Estado del proyecto (relevo)', path: 'mantenimiento/estado-del-proyecto' },
+                    { title: 'Estado del proyecto (archivo 2026-11-16)', path: 'mantenimiento/archivo/estado-del-proyecto-2026-11-16/estado-del-proyecto' },
                     { title: 'Auditoría de documentación', path: 'mantenimiento/auditoria-documentacion' },
                     { title: 'Registro de hallazgos (entrada)', path: 'mantenimiento/registro-hallazgos' },
                     { title: 'Registro: parte 1 de 3', path: 'mantenimiento/registro-hallazgos_1de3' },
                     { title: 'Registro: parte 2 de 3', path: 'mantenimiento/registro-hallazgos_2de3' },
                     { title: 'Registro: parte 3 de 3', path: 'mantenimiento/registro-hallazgos_3de3' },
-                    { title: 'Instrucción persistente (entrada)', path: 'mantenimiento/instruccion-persistente' },
-                    { title: 'Instrucción: parte 1 de 4', path: 'mantenimiento/instruccion-persistente_1de4' },
-                    { title: 'Instrucción: parte 2 de 4', path: 'mantenimiento/instruccion-persistente_2de4' },
-                    { title: 'Instrucción: parte 3 de 4', path: 'mantenimiento/instruccion-persistente_3de4' },
-                    { title: 'Instrucción: parte 4 de 4', path: 'mantenimiento/instruccion-persistente_4de4' },
-                    { title: 'Informes de iteración (índice)', path: 'mantenimiento/informes_iteraciones/index' }
+                    { title: 'Instrucción persistente (archivo)', path: 'mantenimiento/archivo/instruccion-persistente/instruccion-persistente' },
+                    { title: 'Informes de iteración (histórico)', path: 'mantenimiento/informes_iteraciones/index' }
                 ]
             }
         ]

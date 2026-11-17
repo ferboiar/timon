@@ -1,6 +1,6 @@
 # Informes de iteración
 
-Índice de los informes de cierre de iteración: uno por PR (apartado 9 de la instrucción persistente), del más reciente al más antiguo. Cada informe nuevo se añade a esta tabla en el mismo PR que lo crea. Los informes de los PR #43 y #44 son retroactivos (D-18).
+Histórico congelado el 2026-11-16 (DC-64). Índice de los informes de cierre anteriores, del más reciente al más antiguo. **No se añaden informes nuevos**: el detalle de cada PR vive en GitHub, en su descripción y sus comentarios. Los informes de los PR #43 y #44 son retroactivos (D-18).
 
 | Fecha | IDs | Informe |
 |---|---|---|

@@ -5,5 +5,6 @@ paths:
 
 # Frontend de Timón
 
-- Sigue la instrucción persistente y el relevo antes de modificar pantallas, servicios o composables.
-- Actualiza la documentación de componentes afectada en `doc/components/` en el mismo PR.
+- Vistas en `src/views/pages`, componentes en `src/components`, servicios en `src/service` y
+  composables en `src/composables` y `src/layout/composables`.
+- Actualiza la documentación del componente afectado en `doc/components/` en el mismo PR.
