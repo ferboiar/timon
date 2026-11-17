@@ -19,7 +19,7 @@
         "e2e:trimestrales": "node lanzador.mjs tests/recibosTrimestrales.spec.mjs",
         "e2e:autorizacion": "node lanzador.mjs tests/autorizacion.spec.mjs",
         "e2e:subrecursos": "node lanzador.mjs tests/autorizacionSubrecursos.spec.mjs",
-        "e2e:documentacion": "node lanzador.mjs tests/documentacionReglas.spec.mjs",
+        "e2e:documentacion": "node lanzador.mjs tests/documentacionVisor.spec.mjs",
         "e2e:sesion": "node lanzador.mjs tests/sesionCaducada.spec.mjs",
         "e2e:trazabilidad": "node lanzador.mjs tests/recibosTrazabilidad.spec.mjs",
         "e2e:validacionUsuarios": "node lanzador.mjs tests/usuariosValidacion.spec.mjs",

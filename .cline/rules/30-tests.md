@@ -1,17 +1,31 @@
 ---
 paths:
   - "backend/test/**"
-  - "backend/src/**"
-  - "src/**"
+  - "e2e/**"
   - "**/*.test.mjs"
-  - "**/*.test.js"
+  - "dev/utils/**"
 ---
 
 # Pruebas de Timón
 
-- Las pruebas destructivas usan exclusivamente una base cuyo nombre termina en `_test`; nunca `conta_hogar`.
-- Para la suite de backend, sigue `backend/test/README.md` y la configuración confirmada en el relevo.
-- Las pruebas del frontend (UI) se hacen con la suite E2E de `e2e/`; sigue `e2e/README.md`.
-- Conserva el código de salida de los comandos; no lo ocultes con tuberías.
+- Pruebas destructivas solo contra bases cuyo nombre termina en `_test`, comprobando el destino;
+  nunca `conta_hogar`. El sufijo no sustituye la comprobación.
+- Backend: `npm run test:backend:local` (credenciales cifradas de `backend/test/.env.test`, DC-46).
+  Sin ese fichero, entrega el comando de `backend/test/README.md` y espera el resumen. No leas
+  `.db_connection` para credenciales y no pidas ni escribas contraseñas en claro.
+- Interfaz: suite E2E de `e2e/` (Playwright); lee `e2e/README.md` y mantén el spec y su README.
+- Conserva el código de salida y cita `# tests`, `# pass`, `# fail`, `# cancelled`.
 - Una prueba unitaria no sustituye una prueba de interfaz cuando esta es necesaria.
-- No declares pruebas superadas sin evidencia real de su ejecución.
+- No declares nada en verde sin la salida real; distingue entorno, fixture y análisis estático.
+
+## Selección de pruebas
+- Cambios de lógica, API, autorización, persistencia o esquema: ejecuta las pruebas de backend
+  pertinentes y añade o actualiza los casos que demuestren el comportamiento cambiado.
+- Cambios de interfaz o de flujos observables por el usuario: ejecuta las E2E pertinentes con
+  Playwright y añade o actualiza los escenarios afectados.
+- Un cambio exclusivamente de backend también requiere E2E si afecta a un flujo integrado que
+  no quede suficientemente demostrado con pruebas de backend.
+- Selecciona la cobertura por impacto y riesgo: pruebas focalizadas y, cuando proceda, la suite
+  completa. Justifica la selección; no declares las pruebas opcionales solo por conveniencia.
+- Lint, sintaxis y build complementan las pruebas funcionales, pero no las sustituyen.
+- Si no hacen falta pruebas de backend o E2E, explica brevemente por qué en el PR.

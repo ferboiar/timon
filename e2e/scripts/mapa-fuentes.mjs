@@ -138,13 +138,10 @@ export const MAPA_FUENTES = {
         'backend/src/routes/auth.mjs',
         'backend/src/middleware/auth.mjs'
     ],
-    'tests/documentacionReglas.spec.mjs': [
+    'tests/documentacionVisor.spec.mjs': [
         'src/views/pages/Tech-documentation.vue',
         'src/router/index.js',
-        'doc/mantenimiento/instruccion-persistente_2de4.md',
-        'doc/mantenimiento/instruccion-persistente_3de4.md',
-        'doc/db/schema/presupuestos.md',
-        '.cline/rules/00-timon-obligatorio.md'
+        'doc/db/schema/presupuestos.md'
     ],
     'tests/configuracionBd.spec.mjs': [
         'src/views/pages/ProfileSettings.vue',

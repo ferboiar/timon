@@ -126,7 +126,7 @@ npm run dev
 
 ## Documentación y pruebas
 
-- Empieza por `doc/mantenimiento/estado-del-proyecto.md`: cómo está montado el proyecto, cómo se trabaja y qué toca después. Es la entrada de un relevo dividido en tres partes (`estado-del-proyecto_1de3.md` a `estado-del-proyecto_3de3.md`) que se leen en orden. El índice de la documentación es `doc/index.md`; los hallazgos, las decisiones y el plan están en `doc/mantenimiento/registro-hallazgos.md` y el backlog en los issues y el Project de GitHub.
+- Empieza por `doc/mantenimiento/estado-del-proyecto.md`: el relevo, en un solo fichero, con el corte (fecha, base, trabajo actual y próxima acción), las decisiones vigentes y el mapa por módulo. El índice de la documentación es `doc/index.md`; los hallazgos, las decisiones y el plan están en `doc/mantenimiento/registro-hallazgos.md` y el backlog en los issues y el Project de GitHub. Las reglas de trabajo viven en `.cline/rules/` y los procedimientos en `.cline/skills/`.
 - Pruebas del backend: `npm run test:backend`. La suite completa necesita MariaDB de pruebas; los tests independientes de fechas, pool y generación anual no. Ver `backend/test/README.md`. Desde DC-46, con `backend/test/.env.test` disponible, usa `npm run test:backend:local`.
 
 ## Entorno de desarrollo con GitHub Codespaces y git-crypt
