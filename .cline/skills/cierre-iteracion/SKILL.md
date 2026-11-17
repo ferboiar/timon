@@ -47,9 +47,11 @@ El PR es el único registro del trabajo: no hay informes aparte. Debe entenderse
 - `gh pr merge <n>` solo si el prompt lo autoriza y los checks están en verde.
 - Después: `git switch main && git pull --ff-only origin main && git log --oneline -1` para leer el
   SHA real. Ese SHA no se copia al PR siguiente (DC-64).
-- Actualiza el relevo §0 y cierra el issue en el mismo acto.
+- Actualiza el relevo §0 y cierra el issue en el mismo acto. El §0 describe el estado posterior a la
+  fusión, con el número de PR y sin SHA copiado; nada queda delegado al PR siguiente (DC-66).
 
 ## Qué no hacer
 - No declares una fusión sin un `gh pr view` que la muestre.
 - No inventes números de PR ni SHA.
 - No reapliques un cambio funcional por un fallo de commit o push: corrige y repite.
+- No dejes en §0 «pendiente de publicar» ni flecos que otro PR deba cerrar (DC-66).
