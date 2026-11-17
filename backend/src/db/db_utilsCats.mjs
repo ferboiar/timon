@@ -58,13 +58,11 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
             // Actualizar categoría existente por ID
             console.log(`pushCategoria - Categoría ${id}: nombre ${existe[0].nombre} -> ${nombre}`);
             const [updateResult] = await connection.execute('UPDATE categorias SET nombre = ?, descripcion = COALESCE(?, descripcion) WHERE id = ?', [nombre, descripcion, id]);
-            console.log(`Update realizado correctamente en tabla categorias. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             // Insertar nueva categoría
             if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear la categoría');
             console.log(`pushCategoria - Nueva categoría: ${nombre || 'Sin nombre'}`);
             const [insertResult] = await connection.execute('INSERT INTO categorias (nombre, descripcion, propietario_id) VALUES (?, ?, ?)', [nombre || 'Sin nombre', descripcion, propietario_id]);
-            console.log(`Insert realizado correctamente en tabla categorias. Filas afectadas: ${insertResult.affectedRows}`);
         }
     } catch (error) {
         console.error('Error al insertar o actualizar la categoría:', error);
@@ -86,10 +84,8 @@ async function deleteCategorias(categoriaIds) {
             categoriaIds = [categoriaIds];
         }
         categoriaIds = categoriaIds.map(Number); // Asegurarse de que todos los IDs sean números
-        console.log('API. Categorías a eliminar:', categoriaIds);
         const placeholders = categoriaIds.map(() => '?').join(','); // Crear placeholders para cada ID
         const [deleteResult] = await connection.execute(`DELETE FROM categorias WHERE id IN (${placeholders})`, categoriaIds); // Pasar los IDs como una lista
-        console.log(`API. Delete realizado correctamente en tabla categorias. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('API. Error al eliminar las categorías:', error);
         if (esErrorDeReferencia(error)) {

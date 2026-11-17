@@ -85,34 +85,16 @@ router.post('/', autorizar('recibos', 'escritura'), async (req, res) => {
 
         const propietarioId = req.usuario.id; // Obtenemos el ID del usuario del token JWT
 
-        console.log('recibos - ==== INICIO PETICIÓN POST /recibos ====');
-        console.log('recibos - Datos validados correctamente, procediendo a llamar pushRecibo');
-        console.log('recibos - Llamando a pushRecibo con ID:', id);
-        console.log('recibos - Tipo de cargo:', Array.isArray(cargo) ? 'Array' : typeof cargo);
-        console.log('recibos - Número de fechas en cargo:', cargo ? cargo.length : 0);
-
-        if (cargo && cargo.length > 0) {
-            console.log('recibos - Primera fecha en cargo:', JSON.stringify(cargo[0]));
-            console.log('recibos - Comentario en cargo[0]:', cargo[0].comentario, 'Tipo:', typeof cargo[0].comentario);
-            if (cargo.length > 1) {
-                console.log('recibos - Segunda fecha en cargo:', JSON.stringify(cargo[1]));
-            }
-        }
         const fueraDeAnioPermitido = permitirFueraDeAnio === true && req.usuario.rol === 'admin'; // DC-29: solo un administrador puede saltarse la regla del año del recibo
-        if (permitirFueraDeAnio === true && !fueraDeAnioPermitido) {
-            console.log('recibos - permitirFueraDeAnio ignorado: el usuario no es administrador');
-        }
         if (id) {
             asegurarEdicion(req.usuario, await registroDeRecibo(id), 'recibos');
         }
 
         const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido, es_privado, req.usuario.id);
         console.log('recibos - pushRecibo completado con éxito para ID:', id);
-        console.log('recibos - ==== FIN PETICIÓN POST /recibos (ÉXITO) ====');
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente', ...resultado });
     } catch (error) {
         console.error('recibos - alta o edición: ' + detalleParaLog(error));
-        console.log('recibos - ==== FIN PETICIÓN POST /recibos (ERROR) ====');
         responderError(res, error, 'No se pudo guardar el recibo.', { contexto: 'recibos - POST' });
     }
 });

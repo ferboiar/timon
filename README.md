@@ -88,6 +88,11 @@ PORT_BACKEND=3000
 LOGIN_MAX_INTENTOS=5
 LOGIN_IP_MAX_INTENTOS=30
 LOGIN_VENTANA_MS=900000
+
+# CORS: nombres de host permitidos (dominios o localhost), no IPs.
+CORS_ALLOWED_ORIGINS=localhost
+# CORS: redes CIDR de IPs permitidas (no nombres). Solo se aplican si el host del Origin es una IP.
+CORS_ALLOWED_NETWORKS=192.168.0.0/24
 ```
 
    Crear el archivo `backend/src/db/.db_connection` con la configuración de la base de datos:

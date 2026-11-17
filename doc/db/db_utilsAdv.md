@@ -139,7 +139,7 @@ Cada paso deja trazas en el log del backend con el formato «módulo - acción: 
 - `pushAdvance - Concepto normalizado a minúsculas: …` Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31).
 - `handlePaymentDeletion - Eliminando el pago ID: … (anticipo …, importe …, estado …, redistribuir: …)` al borrar un pago.
 - `completarPlanTrasBorrado - Anticipo …: pendiente …, pagos pendientes …, por colocar …` con el importe que falta por colocar, `… Pago ID … de A a B (+C)` por cada pago ajustado y un resumen `… N pagos ajustados y M pagos nuevos`. Los pagos nuevos dejan además las trazas habituales de `recalculatePaymentPlan`.
-- Las líneas `recalculatePaymentPlan - …` y `recalculatePostEditPayments - …` describen cada importe y fecha calculados.
+- `recalculatePaymentPlan - Plan de pagos recalculado exitosamente para el anticipo …` y `recalculatePostEditPayments - Recálculo completado para anticipo …` resumen el resultado del recálculo; los pasos intermedios (importes y fechas calculados) ya no se registran (S-05).
 - `sustituirPago - Pago … sustituido por el pago … en el anticipo … (filas borradas: …)` al sustituir un pago; `pushPago - Pago … del anticipo …: estado A -> B, importe A -> B, fecha A -> B` al editar un pago, para comprobar en el log qué cambió; `enTransaccion - Transacción confirmada` o `enTransaccion - Transacción deshecha: motivo` al terminar cada operación, y `enTransaccion - Error al deshacer la transacción: …` si falla un rollback. Los errores con código (400 y 404) se registran solo con su mensaje, sin la pila; los fallos internos, con la traza completa.
 
 ## Consideraciones de Rendimiento

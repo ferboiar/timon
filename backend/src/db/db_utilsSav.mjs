@@ -88,7 +88,6 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
                 usuarioId,
                 id
             ]);
-            console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateResult.affectedRows}`);
 
             await connection.commit();
             enTransaccion = false;
@@ -109,7 +108,6 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
                 valorPrivado,
                 usuarioId
             ]);
-            console.log(`Insert realizado correctamente en tabla ahorros. Filas afectadas: ${insertResult.affectedRows}`);
         }
     } catch (error) {
         if (connection && enTransaccion) {
@@ -134,10 +132,8 @@ async function deleteSavings(savings) {
         if (!Array.isArray(savings)) {
             savings = [savings];
         }
-        console.log('Ahorros a eliminar:', savings);
         const placeholders = savings.map(() => '?').join(',');
         const [deleteResult] = await connection.execute(`DELETE FROM ahorros WHERE id IN (${placeholders})`, savings);
-        console.log(`Delete realizado correctamente en tabla ahorros. Filas afectadas: ${deleteResult.affectedRows}`);
     } catch (error) {
         console.error('Error al eliminar los ahorros:', error);
         if (esErrorDeReferencia(error)) {
@@ -213,11 +209,9 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
             console.log(`pushMovimiento - Editando el movimiento ID ${id} del ahorro ${ahorroId}: importe ${importeAnterior} -> ${importe} (diferencia ${diferencia.toFixed(2)})`);
 
             const [updateResult] = await connection.execute('UPDATE ahorros_movimientos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion) WHERE id = ?', [importe, fecha, tipo, descripcion, id]);
-            console.log(`Update realizado correctamente en tabla ahorros_movimientos. Filas afectadas: ${updateResult.affectedRows}`);
         } else {
             console.log(`pushMovimiento - Nuevo movimiento del ahorro ${ahorroId}: importe ${importe}, fecha ${fecha}, tipo ${tipo}`);
             const [insertResult] = await connection.execute('INSERT INTO ahorros_movimientos (ahorro_id, importe, fecha, tipo, descripcion) VALUES (?, ?, ?, ?, ?)', [ahorro_id, importe, fecha, tipo, descripcion]);
-            console.log(`Insert realizado correctamente en tabla ahorros_movimientos. Filas afectadas: ${insertResult.affectedRows}`);
         }
 
         // Actualizar ahorrado solo con la diferencia que aporta este movimiento
@@ -225,7 +219,6 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
         if (updateAhorroResult.affectedRows === 0) {
             throw new ErrorDeNegocio(`Ahorro con ID ${ahorroId} no encontrado`, 404);
         }
-        console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateAhorroResult.affectedRows} (ahorrado ${diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)})`);
 
         await connection.commit();
         enTransaccion = false;
@@ -266,12 +259,10 @@ async function deleteMovimiento(id, usuarioId = null) {
 
         // Eliminar el movimiento
         const [deleteResult] = await connection.execute('DELETE FROM ahorros_movimientos WHERE id = ?', [id]);
-        console.log(`Delete realizado correctamente en tabla ahorros_movimientos. Filas afectadas: ${deleteResult.affectedRows}`);
 
         // Actualizar el valor de ahorrado en la tabla ahorros
         const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) - ?, modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [importe, usuarioId, ahorro_id]);
         const variacion = -Number(importe);
-        console.log(`Update realizado correctamente en tabla ahorros. Filas afectadas: ${updateAhorroResult.affectedRows} (ahorrado ${variacion >= 0 ? '+' : ''}${variacion.toFixed(2)})`);
 
         await connection.commit();
         enTransaccion = false;

@@ -117,7 +117,6 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 |-------|--------|
 | `pushMovimiento - Nuevo movimiento del ahorro …` | Al crear un movimiento |
 | `pushMovimiento - Editando el movimiento ID … : importe A -> B (diferencia D)` | Al editar un movimiento |
-| `Update realizado correctamente en tabla ahorros. Filas afectadas: … (ahorrado +D)` | Tras ajustar el saldo |
 | `pushMovimiento - Transacción confirmada …` o `… revertida …` | Al terminar o fallar |
 | `deleteMovimiento - Eliminando el movimiento ID …` y las de transacción | Al eliminar un movimiento |
 | `pushSaving - Nuevo ahorro: …` | Al crear un ahorro |
