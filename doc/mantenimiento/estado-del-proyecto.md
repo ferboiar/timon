@@ -4,11 +4,11 @@
 Project (DC-61); aquí solo el corte y las decisiones vigentes.
 
 ## 0. Corte
-- Fecha y base: 2026-11-18, `main` en el merge del PR #153 (SHA con `git log --oneline -1 main`).
-- Último trabajo incorporado: PR #153 (F-59 y S-20).
-- Trabajo actual: S-11 (#96), revisión y actualización de dependencias. Estado: preparado y verificado en local; en su PR, cuyo número se escribe en cuanto exista (DC-66).
+- Fecha y base: 2026-11-18, `main` en el merge del PR #154 (SHA con `git log --oneline -1 main`).
+- Último trabajo incorporado: PR #154 (S-11).
+- Trabajo actual: ninguno abierto; S-11 (#96) se cierra con el PR #154.
 - Objetivo: cerrar las alertas críticas y altas de Dependabot sin romper funcionalidad, con bcrypt 6.0.0 como único salto major y el resto dentro de los rangos semver ya declarados. Las 124 alertas abiertas quedan en 1, que pasa a S-24.
-- Próxima acción: publicar y fusionar S-11; después, cerrar los PR de Snyk #4–#9 y borrar las ramas `snyk-*` (con autorización aparte y comentario en cada PR), y seguir con F-49, F-53, F-54 y F-55. Bloqueos: ninguno conocido.
+- Próxima acción: cerrar los PR de Snyk #4–#9 y borrar las ramas `snyk-*` (con autorización aparte y comentario en cada PR), y seguir con F-49, F-53, F-54 y F-55. Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
   migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
   de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
