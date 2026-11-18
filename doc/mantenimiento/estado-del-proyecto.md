@@ -8,7 +8,7 @@ Project (DC-61); aquí solo el corte y las decisiones vigentes.
 - Último trabajo incorporado: PR #154 (S-11).
 - Trabajo actual: ninguno abierto; S-11 (#96) se cierra con el PR #154.
 - Objetivo: cerrar las alertas críticas y altas de Dependabot sin romper funcionalidad, con bcrypt 6.0.0 como único salto major y el resto dentro de los rangos semver ya declarados. Las 124 alertas abiertas quedan en 1, que pasa a S-24.
-- Próxima acción: limpieza de Snyk hecha el 2026-11-18 (PR #4–#9 cerrados con comentario y las seis ramas `snyk-*` borradas en remoto). Ramas que quedan: `main`, `correccion/fase-1-S11-dependencias` (local y remota, viva y pendiente de decisión futura sobre su borrado) y `mantenimiento/migraciones-bd-skill` (previa, ajena a S-11). Siguiente trabajo: F-49, F-53, F-54 y F-55. Bloqueos: ninguno conocido.
+- Próxima acción: limpieza de Snyk hecha el 2026-11-18 (PR #4–#9 cerrados con comentario y las seis ramas `snyk-*` borradas en remoto). Ramas que quedan: `main` y `mantenimiento/migraciones-bd-skill` (previa, ajena a S-11); `correccion/fase-1-S11-dependencias` fue borrada en local y en remoto (comprobado el 2026-11-18 con `git branch -a` y `git ls-remote --heads origin`). Siguiente trabajo: F-49, F-53, F-54 y F-55. Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
   migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
   de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
