@@ -1,23 +1,23 @@
 # Estado del proyecto Timón
 
-Última actualización: 2026-11-17. Se actualiza en cada PR (DC-27). El backlog vive en los issues del
+Última actualización: 2026-11-18. Se actualiza en cada PR (DC-27). El backlog vive en los issues del
 Project (DC-61); aquí solo el corte y las decisiones vigentes.
 
 ## 0. Corte
-- Fecha y base: 2026-11-17, `main` en el merge del PR #152 (SHA con `git log --oneline -1 main`).
-- Último trabajo incorporado: PR #152 (S-05), merge del PR #152.
-- Trabajo actual: PR #153 (F-59 y S-20).
-- Objetivo: cerrar F-59 (#143, diferencia temporal de `verifyCredentials`) y S-20 (#106, prueba negativa de `permitirFueraDeAnio`). Estado: en el PR #153.
-- Próxima acción: S-11 (#96). Bloqueos: ninguno conocido.
+- Fecha y base: 2026-11-18, `main` en el merge del PR #154 (SHA con `git log --oneline -1 main`).
+- Último trabajo incorporado: PR #154 (S-11).
+- Trabajo actual: ninguno abierto; S-11 (#96) se cierra con el PR #154.
+- Objetivo: cerrar las alertas críticas y altas de Dependabot sin romper funcionalidad, con bcrypt 6.0.0 como único salto major y el resto dentro de los rangos semver ya declarados. Las 124 alertas abiertas quedan en 1, que pasa a S-24.
+- Próxima acción: cerrar los PR de Snyk #4–#9 y borrar las ramas `snyk-*` (con autorización aparte y comentario en cada PR), y seguir con F-49, F-53, F-54 y F-55. Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
   migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
   de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
   0007 (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar
   sesión de nuevo: los tokens anteriores no llevan `ver`.
-- Issues abiertas relevantes: #96 (S-11), #136 (O-10), #140 (O-11) y #142 (F-57).
-- Próximo trabajo: S-11 (#96); después, F-49, F-53, F-54, F-55 y el backlog del Project.
-- Identificadores: D-53 se asigna en este corte; D-52, en el anterior. Comprueba el último de cada
-  familia en el registro antes de asignar; los siguientes previsibles son S-24, D-54 y DC-68.
+- Issues abiertas relevantes: #96 (S-11), #136 (O-10), #140 (O-11) y #142 (F-57); S-24 queda enlazado a #96 (sin issue propio por ahora).
+- Próximo trabajo: cerrar S-11 y los PR de Snyk; después, F-49, F-53, F-54, F-55 y el backlog del Project.
+- Identificadores: en este corte se asignan DC-68, S-24, R-14 y R-15; D-53 y D-52, en cortes anteriores. Comprueba el último de cada
+  familia en el registro antes de asignar; los siguientes previsibles son D-54, DC-69 y R-16.
 
 ## 1. Decisiones vigentes
 Texto completo en el registro §2; aquí solo el resumen.
@@ -43,6 +43,7 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-65 | Umbrales: 11 000 B de reglas, 7 000 B incondicionales y 12 000 B por cuerpo de skill. |
 | DC-66 | Cierre completo: el §0 queda con el corte posterior a la fusión y sin flecos en otro PR. |
 | DC-67 | CORS restringido por `CORS_ALLOWED_ORIGINS` (nombres) y `CORS_ALLOWED_NETWORKS` (redes CIDR, solo IPs literales); validado al arrancar y cerrado por defecto. |
+| DC-68 | Ámbito de actualización de dependencias: solo lo gobernado por `package.json`/`package-lock.json`; Node, npm y la imagen son del contenedor y no se actualizan desde el repositorio. Si el parche de una alerta exige un Node mayor, queda como resto justificado. |
 
 ## 2. Entorno y mapa
 - Frontend: Vue 3 + PrimeVue; vistas en `src/views/pages`, componentes en `src/components`, servicios
