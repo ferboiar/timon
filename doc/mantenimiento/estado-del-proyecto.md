@@ -8,13 +8,13 @@ Project (DC-61); aquí solo el corte y las decisiones vigentes.
 - Último trabajo incorporado: PR #154 (S-11).
 - Trabajo actual: ninguno abierto; S-11 (#96) se cierra con el PR #154.
 - Objetivo: cerrar las alertas críticas y altas de Dependabot sin romper funcionalidad, con bcrypt 6.0.0 como único salto major y el resto dentro de los rangos semver ya declarados. Las 124 alertas abiertas quedan en 1, que pasa a S-24.
-- Próxima acción: cerrar los PR de Snyk #4–#9 y borrar las ramas `snyk-*` (con autorización aparte y comentario en cada PR), y seguir con F-49, F-53, F-54 y F-55. Bloqueos: ninguno conocido.
+- Próxima acción: limpieza de Snyk hecha el 2026-11-18 (PR #4–#9 cerrados con comentario y las seis ramas `snyk-*` borradas en remoto). Ramas que quedan: `main`, `correccion/fase-1-S11-dependencias` (local y remota, viva y pendiente de decisión futura sobre su borrado) y `mantenimiento/migraciones-bd-skill` (previa, ajena a S-11). Siguiente trabajo: F-49, F-53, F-54 y F-55. Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
   migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
   de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
   0007 (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar
   sesión de nuevo: los tokens anteriores no llevan `ver`.
-- Issues abiertas relevantes: #96 (S-11), #136 (O-10), #140 (O-11) y #142 (F-57); S-24 queda enlazado a #96 (sin issue propio por ahora).
+- Issues abiertas relevantes: #96 (S-11), #136 (O-10), #140 (O-11) y #142 (F-57); S-24 tiene issue propio #155.
 - Próximo trabajo: cerrar S-11 y los PR de Snyk; después, F-49, F-53, F-54, F-55 y el backlog del Project.
 - Identificadores: en este corte se asignan DC-68, S-24, R-14 y R-15; D-53 y D-52, en cortes anteriores. Comprueba el último de cada
   familia en el registro antes de asignar; los siguientes previsibles son D-54, DC-69 y R-16.
