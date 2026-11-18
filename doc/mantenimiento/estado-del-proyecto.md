@@ -14,8 +14,8 @@ Project (DC-61); aquí solo el corte y las decisiones vigentes.
   de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
   0007 (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar
   sesión de nuevo: los tokens anteriores no llevan `ver`.
-- Issues abiertas relevantes: #96 (S-11), #136 (O-10), #140 (O-11) y #142 (F-57); S-24 tiene issue propio #155.
-- Próximo trabajo: cerrar S-11 y los PR de Snyk; después, F-49, F-53, F-54, F-55 y el backlog del Project.
+- Issues abiertas relevantes: #155 (S-24), #136 (O-10), #140 (O-11) y #142 (F-57). S-11 (#96) queda cerrada.
+- Próximo trabajo: F-49, F-53, F-54, F-55 y el backlog del Project; S-24 sigue en su issue #155.
 - Identificadores: en este corte se asignan DC-68, S-24, R-14 y R-15; D-53 y D-52, en cortes anteriores. Comprueba el último de cada
   familia en el registro antes de asignar; los siguientes previsibles son D-54, DC-69 y R-16.
 
