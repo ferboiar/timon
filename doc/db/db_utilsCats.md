@@ -19,7 +19,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `id` | INT | Clave primaria |
-| `nombre` | VARCHAR | Nombre de la categoría. El servidor rechaza duplicados y el índice único `uq_categorias_nombre` (migración 0006) los impide también ante concurrencia o escrituras externas (F-22, DC-02) |
+| `nombre` | VARCHAR(30) | Nombre de la categoría; el servidor rechaza los de más de 30 caracteres con un 400 de negocio (F-55). Rechaza duplicados y el índice único `uq_categorias_nombre` (migración 0006) los impide también ante concurrencia o escrituras externas (F-22, DC-02) |
 | `descripcion` | VARCHAR | Descripción detallada (opcional) |
 | `propietario_id` | INT | Usuario que creó la categoría; no limita su visibilidad, las categorías son globales (DC-02) |
 | `es_privado` | TINYINT | Sin efecto: las categorías son compartidas y visibles para todos (DC-02, DC-48) |
@@ -47,6 +47,8 @@ La función `deleteCategorias()` convierte la entrada a array y aplica `Number` 
 ## Validaciones y Manejo de Errores
 
 - Normaliza el nombre (trim y minúsculas) y comprueba si otra categoría lo tiene antes de insertar o actualizar; el índice único `uq_categorias_nombre` (migración 0006) cubre la concurrencia y el duplicado se traduce a 400 de negocio (F-22, DC-02)
+- Valida las longitudes del nombre (30) y de la descripción (255) antes de consultar la base (F-41, F-55)
+- Traduce `ER_DATA_TOO_LONG` a un 400 de negocio cuando informa de la columna `nombre` o `descripcion` (F-55)
 - Convierte IDs con Number, sin verificar explícitamente que sean válidos
 - Si el borrado choca con una clave foránea (ER_ROW_IS_REFERENCED_2), lanza «No se puede eliminar la categoría porque está en uso (recibos, presupuestos u otros registros)» (F-10)
 - Trazas (DC-09): `pushCategoria - Nueva categoría: …`, `pushCategoria - Categoría ID: nombre A -> B`, `pushCategoria - Rechazado: …` y `deleteCategorias - Rechazado: …`
@@ -59,9 +61,9 @@ La función `deleteCategorias()` convierte la entrada a array y aplica `Number` 
 - Las operaciones de eliminación en lote utilizan una sola consulta SQL para mejorar la eficiencia
 - Se implementa liberación inmediata de conexiones para maximizar la disponibilidad del pool
 
-## Índice único y descripción (F-22, F-41)
+## Índice único y longitudes (F-22, F-41, F-55)
 
-La migración 0006 añade el índice único uq_categorias_nombre. pushCategoria valida que la descripción no supere 255 caracteres (el mismo límite de la columna y del control) y traduce ER_DUP_ENTRY a un 400 de negocio si dos peticiones concurren.
+La migración 0006 añade el índice único uq_categorias_nombre. pushCategoria valida que el nombre no supere 30 caracteres y la descripción 255 (los límites de las columnas y de los controles), traduce ER_DUP_ENTRY a un 400 de negocio si dos peticiones concurren y traduce ER_DATA_TOO_LONG de nombre o descripcion al mismo tipo de error.
 
 ## Referencias
 
