@@ -10,9 +10,9 @@ Con Recordarme guarda token/user en localStorage y nombre en rememberedUser, y l
 
 ## Estado y preferencias
 
-Cada invocación de useAuth crea su propio estado e intervalo (S-07). Carga el usuario almacenado y preferencias visuales del servidor; aplica colorScheme con useLayout y los colores/preset con useTheme. colorScheme admite system/light/dark y tiene caché visual en timon.colorScheme; el servidor prevalece sobre ella.
+useAuth guarda el estado en el módulo (F-54): todas las invocaciones comparten el usuario y un único intervalo de verificación. Carga el usuario almacenado y preferencias visuales del servidor; aplica colorScheme con useLayout y los colores/preset con useTheme. colorScheme admite system/light/dark y tiene caché visual en timon.colorScheme; el servidor prevalece sobre ella.
 
-Logout borra token/user de ambos almacenes, limpia el estado de esa instancia, cancela su intervalo, reinicia ajustes de sesión y redirige al login. Conserva rememberedUser. Después avisa al servidor con POST /api/auth/logout y el token capturado; si la llamada falla, el cierre local se mantiene (S-04a).
+Logout borra token/user de ambos almacenes, limpia el estado compartido, cancela el intervalo único, reinicia ajustes de sesión y redirige al login. Conserva rememberedUser. Después avisa al servidor con POST /api/auth/logout y el token capturado; si la llamada falla, el cierre local se mantiene (S-04a).
 
 ## Límites
 

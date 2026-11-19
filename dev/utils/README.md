@@ -18,7 +18,7 @@ El ejemplo requiere archivo/ancla reales. Si el parche está en /tmp, importar l
 
 ## Contrato
 
-Conserva las operaciones originales: sustituir, regexUnico, reemplazarEnElementos, reemplazarLinea, insertarTrasLinea, reemplazarBloque y terminar. `bloque(texto)` convierte un bloque en líneas. Añade planificar/aplicar y ErrorDeEdicion. `crearEditor({raiz,permitidos,logger})` usa cwd por defecto y recomienda manifiesto explícito; logger requiere log/warn.
+Conserva las operaciones originales: sustituir, regexUnico, reemplazarEnElementos, reemplazarLinea, insertarTrasLinea, reemplazarBloque y terminar. `bloque(texto)` convierte un bloque en líneas. Añade planificar/aplicar y ErrorDeEdicion. `crearEditor({raiz,permitidos,logger})` usa cwd por defecto y recomienda manifiesto explícito; logger requiere log/warn. Versión 1.1.0: `--apply` analiza la sintaxis del destino y revierte si no es válida (D-43).
 
 - Sustitución literal única; regex global con recuento exacto y lastIndex independiente.
 - Elementos: recuento exterior e interior, con `{porElemento=1}`.
@@ -27,6 +27,7 @@ Conserva las operaciones originales: sustituir, regexUnico, reemplazarEnElemento
 - Opcional omite la operación con aviso; no usarlo para requisitos obligatorios.
 - planificar o terminar({comprobar:true}) no escriben. terminar() aplica por compatibilidad; no llama process.exit.
 - Solo diferencias reales cuentan o se escriben. Las configuraciones inválidas y los errores de edición se notifican, no terminan el proceso desde la biblioteca.
+- Validación de sintaxis (D-43): al aplicar, se analiza cada destino ya escrito con `node --check` (o `JSON.parse` en `.json`) y, si no es válido, se restauran los originales y se lanza `ErrorDeEdicion` con la copia y las rutas restauradas. Cubre `.js`, `.mjs`, `.cjs` y `.json`.
 
 ## Protección y límites
 
@@ -36,7 +37,7 @@ Comprueba contenido e identidad/atributos del original. Prepara modo/propietario
 
 Si falla, intenta recuperar; informa copia/restaurados/noRestaurados si procede y no pisa modificaciones ajenas detectadas. Un rollback puede fallar: las copias se conservan. Fallos de limpieza son avisos.
 
-No es una transacción global ante apagados ni protección frente a escritores hostiles entre comprobaciones. No analiza sintaxis ni garantiza idempotencia universal; el parche debe fijar sus precondiciones y ejecutar sus controles. Es más estricto que el original: revisar scripts antiguos antes de reutilizarlos.
+No es una transacción global ante apagados ni protección frente a escritores hostiles entre comprobaciones. No analiza `.vue`, `.md` ni el resto de extensiones sin analizador: en esos casos el parche sigue dependiendo de sus propias comprobaciones. No garantiza idempotencia universal; el parche debe fijar sus precondiciones y ejecutar sus controles. Es más estricto que el original: revisar scripts antiguos antes de reutilizarlos.
 
 ## Errores comunes
 
@@ -52,4 +53,4 @@ No es una transacción global ante apagados ni protección frente a escritores h
 
 `node --test dev/utils/ayudas.test.mjs`; sintaxis con `node --check` de módulo/tests.
 
-43 tests ejecutados con Node 20.20.1/Linux en entorno aislado del asistente: 43 pasan, 0 omitidos, incluidos fallos simulados. No ejecutados en el contenedor del usuario ni lint/build/backend/MariaDB/UI. No cambia aplicación ni datos.
+49 tests ejecutados con Node 20.20.2/Linux en el contenedor del proyecto: 49 pasan, 0 omitidos, incluidos los fallos simulados y los seis casos de validación de sintaxis. La suite es solo del ayudante: no ejecuta lint, build, backend, MariaDB ni interfaz. No cambia la aplicación ni los datos.

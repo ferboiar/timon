@@ -11,8 +11,8 @@
 
 import { getConnection } from './db_connection.mjs';
 import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
-import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
-import { validarCategoria } from '../utils/validacionCategorias.mjs';
+import { campoDemasiadoLargo, esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
+import { mensajeDeCategoriaDemasiadoLarga, validarCategoria } from '../utils/validacionCategorias.mjs';
 
 async function getCategorias() {
     let connection;
@@ -69,6 +69,13 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
         if (error.code === 'ER_DUP_ENTRY') {
             console.log('pushCategoria - Rechazado por el índice único: ' + nombre);
             throw new ErrorDeNegocio(`Ya existe otra categoría con el nombre «${nombre}».`);
+        }
+        // F-55: si el desbordamiento de columna escapa a la validación, sigue siendo un 400
+        const campoDesbordado = campoDemasiadoLargo(error);
+        const mensajeDesbordado = campoDesbordado ? mensajeDeCategoriaDemasiadoLarga(campoDesbordado) : null;
+        if (mensajeDesbordado) {
+            console.log('pushCategoria - Rechazado: ' + campoDesbordado + ' demasiado largo');
+            throw new ErrorDeNegocio(mensajeDesbordado, 400);
         }
         throw error;
     } finally {

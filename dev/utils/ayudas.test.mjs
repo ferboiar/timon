@@ -46,7 +46,7 @@ for(const [name,files,edit,error,result] of casos)test(name,t=>{
  const f=fixture(t,Object.keys(files).length?files:undefined);const original=f.read('a');edit(f.editor);
  if(error){a.throws(()=>f.apply(),error);a.equal(f.read('a'),original);}else{f.apply();a.equal(f.read('a'),result);}
 });
-test('versión, bloque y argumentos de constructor',t=>{const f=fixture(t);a.equal(VERSION,'1.0.0');a.deepEqual(bloque('A\r\nB\r\n'),['A','B']);a.throws(()=>bloque(null));a.throws(()=>crearEditor({raiz:f.dir,permitidos:[]}));a.throws(()=>crearEditor({raiz:f.dir,logger:{}}));});
+test('versión, bloque y argumentos de constructor',t=>{const f=fixture(t);a.equal(VERSION,'1.1.0');a.deepEqual(bloque('A\r\nB\r\n'),['A','B']);a.throws(()=>bloque(null));a.throws(()=>crearEditor({raiz:f.dir,permitidos:[]}));a.throws(()=>crearEditor({raiz:f.dir,logger:{}}));});
 test('plan, comprobar y avisos cuentan solo diferencias reales',t=>{const f=fixture(t);f.editor.sustituir('a','AAA','X');f.editor.sustituir('b','NO','Y',true);const p=f.editor.terminar({comprobar:true});a.equal(p.archivos.length,1);a.equal(p.avisos.length,1);a.equal(f.read('a'),'AAA\n');f.apply();a.equal(f.read('a'),'X\n');});
 test('error obligatorio bloquea todos los archivos',t=>{const f=fixture(t);f.editor.sustituir('a','AAA','X');f.editor.sustituir('b','NO','Y');a.throws(()=>f.apply(),ErrorDeEdicion);a.equal(f.read('a'),'AAA\n');a.equal(f.read('b'),'BBB\n');});
 test('cargados sin diferencia no se reescriben',t=>{const f=fixture(t);const before=fs.statSync(path.join(f.dir,'a'));f.editor.sustituir('a','NO','X',true);const r=f.apply();a.equal(r.aplicados,0);a.equal(r.copia,null);a.equal(fs.statSync(path.join(f.dir,'a')).ino,before.ino);a.equal(fs.statSync(path.join(f.dir,'a')).mtimeMs,before.mtimeMs);});
@@ -70,5 +70,42 @@ test('fallo de limpieza no oculta éxito',{concurrency:false},t=>{
 });
 test('binario y sustitución por otra inode',{skip:process.platform==='win32'},t=>{
  const f=fixture(t);fs.writeFileSync(path.join(f.dir,'a'),Buffer.from([255,0]));f.editor.sustituir('a','A','X');a.throws(()=>f.apply(),/UTF-8/);
- const g=fixture(t);g.editor.sustituir('a','AAA','X');fs.writeFileSync(path.join(g.dir,'nuevo'),'AAA\n');fs.renameSync(path.join(g.dir,'nuevo'),path.join(g.dir,'a'));a.throws(()=>g.apply(),/cambió/);
+ const g=fixture(t);g.editor.sustituir('a','AAA','X');fs.writeFileSync(path.join(g.dir,'nuevo'),'AAA\n');fs.renameSync(path.join(g.dir,'nuevo'),path.join(g.dir,'a')); a.throws(()=>g.apply(),/cambió/);
+});
+
+test('sintaxis: un .mjs roto no se aplica y deja el fichero como estaba',(t)=>{
+ const f=fixture(t,{'a.mjs':'export const A = 1;\n'});f.editor.sustituir('a.mjs','= 1','= ;');
+ a.throws(()=>f.apply(),(e)=>{a.equal(e.name,'ErrorDeEdicion');a.ok(e.copia);a.ok(e.restaurados.includes('a.mjs'));return /Sintaxis no válida/.test(e.message);});
+ a.equal(f.read('a.mjs'),'export const A = 1;\n');
+});
+
+test('sintaxis: un .mjs válido se aplica',(t)=>{
+ const f=fixture(t,{'a.mjs':'export const A = 1;\n'});f.editor.sustituir('a.mjs','= 1','= 2');const r=f.apply();
+ a.equal(r.aplicados,1);
+ a.equal(f.read('a.mjs'),'export const A = 2;\n');
+});
+
+test('sintaxis: un .js se analiza como ESM si el paquete lo declara',(t)=>{
+ const f=fixture(t,{'package.json':'{"type":"module"}\n','a.js':'export const A = 1;\n'});
+ f.editor.sustituir('a.js','= 1','= ;');
+ a.throws(()=>f.apply(),(e)=>e.restaurados.includes('a.js'));
+ a.equal(f.read('a.js'),'export const A = 1;\n');
+});
+
+test('sintaxis: un .js fuera de un paquete de módulos se analiza como CJS',(t)=>{
+ const f=fixture(t,{'a.js':'module.exports = 1;\n'});f.editor.sustituir('a.js','1',';');
+ a.throws(()=>f.apply(),(e)=>e.restaurados.includes('a.js'));
+ a.equal(f.read('a.js'),'module.exports = 1;\n');
+});
+
+test('sintaxis: un .json inválido se revierte',(t)=>{
+ const f=fixture(t,{'a.json':'{"a":1}\n'});f.editor.sustituir('a.json','1','');
+ a.throws(()=>f.apply(),(e)=>e.restaurados.includes('a.json'));
+ a.equal(f.read('a.json'),'{"a":1}\n');
+});
+
+test('sintaxis: las extensiones sin analizador no bloquean el parche',(t)=>{
+ const f=fixture(t,{'a.md':'# Título\n'});f.editor.sustituir('a.md','# Título','Texto');const r=f.apply();
+ a.equal(r.aplicados,1);
+ a.equal(f.read('a.md'),'Texto\n');
 });

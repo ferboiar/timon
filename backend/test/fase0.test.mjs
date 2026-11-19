@@ -762,6 +762,28 @@ describe('F-41: descripción de categorías', () => {
     });
 });
 
+describe('F-55: nombre de categorías', () => {
+    test('rechaza 31 caracteres con un 400 de negocio y acepta 30', async () => {
+        const totalDeCategorias = async () => Number((await db.query('SELECT COUNT(*) AS total FROM categorias'))[0][0].total);
+        const nombre30 = 'z'.repeat(30);
+        const nombre31 = 'z'.repeat(31);
+        try {
+            const totalAntes = await totalDeCategorias();
+            await assert.rejects(
+                () => pushCategoria(undefined, nombre31, null, 2),
+                (error) => error instanceof ErrorDeNegocio && error.status === 400 && error.message === 'El nombre de la categoría no puede superar los 30 caracteres.'
+            );
+            assert.equal(await totalDeCategorias(), totalAntes);
+
+            await pushCategoria(undefined, nombre30, null, 2);
+            const [[fila]] = await db.query('SELECT CHAR_LENGTH(nombre) AS n FROM categorias WHERE nombre = ?', [nombre30]);
+            assert.equal(Number(fila.n), 30);
+        } finally {
+            await db.query('DELETE FROM categorias WHERE nombre IN (?)', [[nombre30, nombre31]]);
+        }
+    });
+});
+
 describe('F-10: borrado de cuentas bloqueado por FK', () => {
     test('una cuenta usada por un recibo responde 409 de negocio', async () => {
         let cuentaId;

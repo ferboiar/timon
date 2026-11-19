@@ -22,10 +22,12 @@ const categoryDialog = ref(false);
 const categoryOriginal = ref(null);
 const snapshotCategory = (c) => ({ nombre: (c.nombre ?? '').trim().toLowerCase(), descripcion: c.descripcion ?? '' });
 const deleteCategoryDialog = ref(false);
+const LONGITUD_MAXIMA_NOMBRE = 30;
 const LONGITUD_MAXIMA_DESCRIPCION = 255;
 const deleteSelectedCategoriesDialog = ref(false);
 
-const isSaveDisabled = computed(() => !category.value.nombre || (category.value.descripcion?.length ?? 0) > LONGITUD_MAXIMA_DESCRIPCION);
+// F-55: los límites son los de las columnas; el servidor responde 400 de negocio si se superan.
+const isSaveDisabled = computed(() => !category.value.nombre || (category.value.nombre?.trim().length ?? 0) > LONGITUD_MAXIMA_NOMBRE || (category.value.descripcion?.length ?? 0) > LONGITUD_MAXIMA_DESCRIPCION);
 
 const fetchCategories = async () => {
     try {
@@ -188,8 +190,10 @@ onMounted(() => {
         <div class="flex flex-col gap-6">
             <div>
                 <label for="nombre" class="block font-bold mb-3">Nombre</label>
-                <InputText id="nombre" v-model.trim="category.nombre" required="true" autofocus fluid />
+                <InputText id="nombre" v-model.trim="category.nombre" required="true" :maxlength="LONGITUD_MAXIMA_NOMBRE" autofocus fluid />
                 <small v-if="!category.nombre" class="text-red-500">El nombre es obligatorio.</small>
+                <small v-else-if="category.nombre.length > LONGITUD_MAXIMA_NOMBRE" class="text-red-500">El nombre no puede superar los {{ LONGITUD_MAXIMA_NOMBRE }} caracteres.</small>
+                <small class="text-surface-500">{{ category.nombre.length }}/{{ LONGITUD_MAXIMA_NOMBRE }}</small>
             </div>
             <div>
                 <label for="descripcion" class="block font-bold mb-3">Descripción</label>

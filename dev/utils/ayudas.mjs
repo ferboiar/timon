@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 const hash = (data) => crypto.createHash('sha256').update(data).digest('hex');
 const normalizar = (texto) => texto.replace(/\r\n/g, '\n');
 const textoValido = (texto, nombre, vacio = false) => {
@@ -23,6 +24,27 @@ export class ErrorDeEdicion extends Error {
 export function bloque(texto) {
   textoValido(texto, 'bloque', true); return normalizar(texto).trimEnd().split('\n');
 }
+/**
+ * ¿La copia de análisis debe interpretarse como módulo ES? (D-43)
+ *
+ * `node --check` no detecta errores de ESM en un .js que no está en un paquete con
+ * `type`: `module`: hay que analizarlo con extensión explícita.
+ */
+function esModulo(archivo, extension) {
+  if (extension === '.mjs') return true;
+  if (extension === '.cjs') return false;
+  let actual = path.dirname(archivo);
+  for (;;) {
+    const candidato = path.join(actual, 'package.json');
+    if (fs.existsSync(candidato)) {
+      try { return JSON.parse(fs.readFileSync(candidato, 'utf8')).type === 'module'; } catch { return false; }
+    }
+    const padre = path.dirname(actual);
+    if (padre === actual) return false;
+    actual = padre;
+  }
+}
+
 export function crearEditor({ raiz = process.cwd(), permitidos = null, logger = console } = {}) {
   if (!logger || typeof logger.log !== 'function' || typeof logger.warn !== 'function') throw new TypeError('logger requiere log y warn');
   const base = fs.realpathSync(raiz);
@@ -155,6 +177,28 @@ export function crearEditor({ raiz = process.cwd(), permitidos = null, logger = 
       fs.chmodSync(temporal, a.stat.mode & 0o777); return { dir, temporal };
     } catch (e) { limpiarTemporal(dir); throw e; }
   }
+  /** Extensiones con analizador propio; el resto no se valida (límite documentado, D-43). */
+  const EXTENSIONES_ANALIZABLES = new Set(['.js', '.mjs', '.cjs', '.json']);
+  /** Valida la sintaxis del destino ya escrito; lanza Error si no es válida. */
+  function validarSintaxis(archivo, dirTemporal) {
+    const extension = path.extname(archivo).toLowerCase();
+    if (!EXTENSIONES_ANALIZABLES.has(extension)) return;
+    const bytes = fs.readFileSync(archivo), relativa = nombreRelativo(archivo);
+    if (extension === '.json') {
+      try { JSON.parse(bytes.toString('utf8')); } catch (error) { throw new Error('Sintaxis no válida en ' + relativa + ': ' + error.message); }
+      return;
+    }
+    const copia = path.join(dirTemporal, 'analisis' + (esModulo(archivo, extension) ? '.mjs' : '.cjs'));
+    fs.writeFileSync(copia, bytes, { flag: 'w', mode: 0o600 });
+    let resultado;
+    try { resultado = spawnSync(process.execPath, ['--check', copia], { encoding: 'utf8', timeout: 15000 }); }
+    finally { try { fs.rmSync(copia, { force: true }); } catch { /* el temporal se limpia fuera */ } }
+    if (resultado.error) throw new Error('No se pudo analizar la sintaxis de ' + relativa + ': ' + resultado.error.message);
+    if (resultado.status !== 0) {
+      const detalle = String(resultado.stderr || '').split('\n').find((linea) => /Error/.test(linea)) || 'sintaxis no válida';
+      throw new Error('Sintaxis no válida en ' + relativa + ': ' + detalle.trim());
+    }
+  }
   function aplicar() {
     if (aplicado) throw new ErrorDeEdicion(['El editor ya fue aplicado']);
     const plan = planificar(), cambios = entradasCambiadas();
@@ -165,6 +209,8 @@ export function crearEditor({ raiz = process.cwd(), permitidos = null, logger = 
       for (const a of cambios) { const b = path.join(copia, nombreRelativo(a.ruta)); fs.mkdirSync(path.dirname(b), { recursive: true }); fs.writeFileSync(b, a.original, { flag: 'wx', mode: 0o600 }); preparados.push({ a, ...prepararArchivo(a, Buffer.from(a.texto, 'utf8')) }); }
       for (const a of archivos.values()) verificar(a);
       for (const p of preparados) { verificar(p.a); fs.renameSync(p.temporal, p.a.ruta); escritos.push(p.a); }
+      // D-43: se valida el destino ya escrito; si la sintaxis no es válida, el catch restaura.
+      for (const a of escritos) validarSintaxis(a.ruta, preparados.find((p) => p.a === a).dir);
       aplicado = true; return { ...plan, avisos, aplicados: cambios.length, copia };
     } catch (error) {
       for (const a of escritos.reverse()) {

@@ -35,7 +35,7 @@ Esta ruta crea una nueva categoría (sin `id`) o actualiza la categoría indicad
 | Campo | Tipo | Descripción | Requerido |
 |-------|------|-------------|-----------|
 | `id` | Number | ID de la categoría a actualizar (vacío para crear una nueva) | No |
-| `nombre` | String | Nombre de la categoría (se guarda en minúsculas, DC-31) | Sí |
+| `nombre` | String | Nombre de la categoría, máximo 30 caracteres (se guarda en minúsculas, DC-31; F-55) | Sí |
 | `descripcion` | String | Descripción de la categoría | No |
 
 Al crear una categoría, el propietario (`propietario_id`) se toma del usuario autenticado (`req.user.id`); las categorías son visibles para todos (DC-02).
@@ -49,6 +49,7 @@ Esta ruta permite eliminar una o más categorías basándose en sus IDs. Acepta 
 La API implementa las siguientes validaciones:
 - El nombre de la categoría es obligatorio para crear o actualizar
 - Un nombre que ya tiene otra categoría se rechaza con 400 (F-22); desde la migración 0006 existe el índice único uq_categorias_nombre
+- Un nombre de más de 30 caracteres se rechaza con 400 de negocio, antes de consultar la base (F-55)
 - Los IDs de categoría deben ser proporcionados como un array para eliminar
 - No se permite enviar un array vacío de IDs para eliminar
 
@@ -63,9 +64,9 @@ Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
 
 Este módulo depende directamente de las funciones de base de datos definidas en [`db_utilsCats.mjs`](../db/db_utilsCats.md), que manejan todas las operaciones de base de datos relacionadas con categorías.
 
-## Límite de descripción e índice único (F-41, F-22)
+## Límites e índice único (F-41, F-55, F-22)
 
-La descripción de una categoría admite como máximo 255 caracteres, el mismo límite del control de la pantalla y de la columna categorias.descripcion (VARCHAR(255)). El servidor valida antes de escribir y responde 400 si se supera. El índice único uq_categorias_nombre (migración 0006) garantiza la unicidad también ante concurrencia; pushCategoria traduce el duplicado a un 400 de negocio.
+El nombre admite como máximo 30 caracteres (categorias.nombre, VARCHAR(30)) y la descripción 255 (VARCHAR(255)), los mismos límites de los controles de la pantalla. El servidor valida antes de escribir y responde 400 de negocio si se superan; ya no hay 500 por un nombre largo. El índice único uq_categorias_nombre (migración 0006) garantiza la unicidad también ante concurrencia; pushCategoria traduce el duplicado a un 400 de negocio.
 
 ## Referencias
 

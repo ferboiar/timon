@@ -40,7 +40,7 @@ El componente `Categories` permite la administración completa de categorías en
 
 | Propiedad | Descripción |
 |-----------|-------------|
-| `isSaveDisabled` | Deshabilita Guardar mientras el nombre esté vacío; no comprueba la descripción |
+| `isSaveDisabled` | Deshabilita Guardar si el nombre está vacío o supera 30 caracteres, o si la descripción supera 255 (F-41, F-55) |
 
 ## Funciones Principales
 
@@ -92,12 +92,13 @@ El template está estructurado en varias secciones:
 ## Validaciones
 
 - El nombre de la categoría es obligatorio
+- El nombre admite como máximo 30 caracteres, el límite de la columna `categorias.nombre` (VARCHAR(30)): el control lo recorta, el contador lo muestra y el servidor responde 400 de negocio si se supera (F-55)
 - El servidor rechaza (400) un nombre que ya tiene otra categoría y la pantalla muestra su mensaje (F-22)
 - La descripción admite como máximo 255 caracteres en el control, en la validación del servidor y en la columna (F-41)
 
-## Límite y unicidad (F-41, F-22)
+## Límites y unicidad (F-41, F-55, F-22)
 
-El campo Descripción usa maxlength 255 y el contador muestra el límite. El servidor valida la longitud antes de escribir. El índice único uq_categorias_nombre de la migración 0006 garantiza la unicidad del nombre.
+El nombre usa maxlength 30 y su contador; la descripción, maxlength 255 y el suyo. El servidor valida las dos longitudes antes de escribir y responde 400 de negocio (antes, un nombre de 31 caracteres acababa en un 500 técnico). El índice único uq_categorias_nombre de la migración 0006 garantiza la unicidad del nombre.
 
 ## Dependencias
 
@@ -111,7 +112,7 @@ La pantalla transmite el ID y `pushCategoria` edita esa fila por ID, de modo que
 
 ## Particularidades verificadas
 
-- La validación del botón Guardar solo comprueba el nombre.
-- El control y el servidor comparten el máximo de 255 caracteres (F-41).
+- La validación del botón Guardar comprueba el nombre (obligatorio y hasta 30 caracteres) y la descripción (hasta 255).
+- El control y el servidor comparten los máximos de 30 caracteres del nombre y 255 de la descripción (F-41, F-55).
 - La pantalla pasa un objeto a CatsService.deleteCategorias; el servicio lo envuelve otra vez. La ruta admite y desenvuelve ese cuerpo anidado. Funciona, pero conviene normalizar el contrato a un array.
 - El renombrado se hace por ID en el servidor (F-09). Los avisos de guardar y borrar muestran el mensaje del servidor (F-10, F-22); borrar una categoría en uso responde 409.

@@ -25,7 +25,9 @@ import {
     dialogoCategoria,
     eliminarCategoria,
     filaCategoria,
-    nombreCategoriaUnico
+    nombreCategoriaUnico,
+    tokenDePagina,
+    urlDeApi
 } from './helpers/timon.mjs';
 
 test.describe.configure({ mode: 'serial' });
@@ -153,6 +155,46 @@ test.describe('Categorías', () => {
         await expect(dialogo).toBeHidden();
 
         await expect(filaCategoria(page, nombre)).toHaveCount(1);
+    });
+
+    test('rechaza un nombre de más de 30 caracteres en la pantalla y en el servidor (F-55)', async ({ paginaSesion: page }) => {
+        await abrirCategorias(page);
+
+        const nombreLargo = 'x'.repeat(31);
+
+        await page.getByRole('button', { name: 'Nueva' }).click();
+
+        const dialogo = dialogoCategoria(page);
+        await expect(dialogo).toBeVisible();
+
+        // `maxlength` recorta lo que se teclea; se fija el valor para reproducir el caso del
+        // límite (un nombre heredado de 31 caracteres) sin depender del comportamiento del control.
+        await dialogo.getByLabel('Nombre').evaluate((el, valor) => {
+            el.value = valor;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        }, nombreLargo);
+
+        // `Categories.vue`: contador, aviso y Guardar deshabilitado antes de enviar.
+        await expect(dialogo.getByText('31/30')).toBeVisible();
+        await expect(dialogo.getByText('El nombre no puede superar los 30 caracteres.')).toBeVisible();
+        await expect(dialogo.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+        await dialogo.getByRole('button', { name: 'Cancel' }).click();
+        await expect(dialogo).toBeHidden();
+
+        // El servidor responde 400 de negocio (antes era un 500 técnico).
+        const token = await tokenDePagina(page);
+        const respuesta = await page.request.post(`${urlDeApi()}/api/categorias`, {
+            headers: { Authorization: `Bearer ${token}` },
+            data: { nombre: nombreLargo, descripcion: null }
+        });
+
+        expect(respuesta.status()).toBe(400);
+        expect((await respuesta.json()).error).toBe('El nombre de la categoría no puede superar los 30 caracteres.');
+
+        // No se ha creado ninguna categoría con ese nombre.
+        await abrirCategorias(page);
+        await expect(page.locator('table tbody tr').filter({ hasText: nombreLargo })).toHaveCount(0);
     });
 
     test('edita la descripción de la categoría creada', async ({ paginaSesion: page }) => {
