@@ -14,6 +14,9 @@ Este archivo es la entrada del registro. El contenido está dividido por seccion
 | 2 de 3 | [registro-hallazgos_2de3.md](./registro-hallazgos_2de3.md) | 5 | Hallazgos funcionales (F) |
 | 3 de 3 | [registro-hallazgos_3de3.md](./registro-hallazgos_3de3.md) | 6 a 10 | Seguridad y operación (S, O), interfaz y documentación (U, D), hoja de ruta (R), cobertura de la revisión y plan por fases |
 
+Las filas cerradas y las decisiones sustituidas están en
+[archivo/registro-cerrados.md](./archivo/registro-cerrados.md), que se consulta por ID (DC-69).
+
 ## Dónde está cada sección
 
 | Sección | Contenido | Parte |

@@ -34,6 +34,7 @@ SET time_zone = "+00:00";
 ## Optimizaciones de la Base de Datos
 
 1. [Configuraciones y Optimizaciones](./optimizaciones.md) - Zona horaria, índices y mantenimiento automático
+2. [Migración de estructura para Recibos y Cuentas](./migracion_recibos_cuentas.md) - Documento histórico (2026-10-23); no coincide con el esquema actual
 
 ## Diagrama de Relaciones Principales
 

@@ -1,0 +1,23 @@
+# Fuera de la lectura por defecto (DC-69). Quita la línea si hace falta consultarlo.
+# No se excluyen `e2e/test-results` ni `e2e/playwright-report`: se leen para diagnosticar la E2E.
+# Histórico congelado
+doc/mantenimiento/archivo/
+doc/mantenimiento/informes_iteraciones/
+# Dependencias y compilados
+node_modules/
+dist/
+coverage/
+e2e/node_modules/
+# Ficheros generados o enormes que no aportan al razonar
+package-lock.json
+e2e/package-lock.json
+*.log
+*.sql.gz
+backup.sql
+nohup.out
+tmp/
+# Datos de ejemplo de la plantilla (miles de líneas sin lógica del proyecto)
+src/service/CustomerService.js
+src/service/ProductService.js
+src/service/NodeService.js
+src/service/CountryService.js

@@ -24,9 +24,11 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-09 | Log de toda operación con el formato «módulo - acción: datos». |
 | DC-13 | El esquema se define solo en `backend/src/db/migrations`. |
 | DC-27 | Documentación al día en el mismo PR; documento nuevo en `doc/index.md` y `docNavigation`. En nivel ligero basta el `doc/` afectado (DC-69). |
+| DC-28 | El registro de hallazgos se divide en partes por secciones completas; repartirlo de otro modo es una iteración de proceso aprobada. |
 | DC-39 | Escrituras de varias filas con transacción y bloqueo. |
 | DC-45 | git-crypt en las rutas cifradas; nada sensible en claro en el remoto. |
 | DC-46 | `backend/test/.env.test` cifrado y `npm run test:backend:local`. |
+| DC-47 | Edición con la herramienta normal; `dev/utils/ayudas.mjs` solo para varios ficheros, cambios repetidos o ancla ambigua, con verificación posterior (modificada por DC-69). |
 | DC-48 / DC-49 | Matriz de autorización; cuentas y categorías se leen con sesión. |
 | DC-55 | Lo que quede «Pendiente» en un PR se registra en el registro y en su issue; en nivel ligero no hay registro (DC-69). |
 | DC-58 | Un hallazgo viable se corrige en el mismo PR; si no, ID nuevo e issue. |
