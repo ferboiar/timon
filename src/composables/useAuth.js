@@ -12,6 +12,7 @@
  * - Métodos para comprobar permisos específicos (isAdmin, isUser, canRead)
  * - Gestión del cierre de sesión con redirección automática
  * - Verificación periódica de la validez del token
+ * - Estado único de módulo y un solo intervalo por aplicación (F-54)
  *
  * Valores y métodos exportados:
  * -------------------------------------
@@ -68,33 +69,47 @@ import { reiniciarAjustesSesion } from '@/composables/useAjustesSesion';
 import { marcarErrorVerificacion } from '@/utils/sesion';
 import { useLayout } from '@/layout/composables/layout';
 import { UsersService } from '@/service/UsersService';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, getCurrentInstance, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+
+// F-54: el estado de la sesión vive en el módulo. Todas las invocaciones de useAuth comparten
+// el mismo usuario, los mismos atajos de rol y un único intervalo de verificación; antes cada
+// invocación creaba su copia del estado y su temporizador, y al desmontarse cancelaba solo el suyo.
+const currentUser = ref(null); //almacena id, username, email, rol, stylePreferences
+const isAuthenticated = computed(() => !!currentUser.value); // Verifica si el usuario está autenticado
+const userRole = computed(() => currentUser.value?.rol || null); // Obtiene el rol del usuario actual
+
+// Intervalo para verificación periódica del token
+let tokenVerificationInterval = null;
+// Tiempo entre verificaciones (5 minutos)
+const TOKEN_VERIFICATION_INTERVAL = 5 * 60 * 1000;
+
+// Router capturado por el primer componente que invoca el composable. La directiva vRole lo
+// llama fuera de setup, así que solo se captura cuando hay instancia.
+let routerDeLaApp = null;
+
+// Usuario cuyas preferencias de estilo ya se han pedido al servidor (F-54).
+let preferenciasCargadasPara = null;
+
+// Roles disponibles en la aplicación según la estructura de la base de datos
+const ROLES = Object.freeze({
+    ADMIN: 'admin',
+    USER: 'user',
+    LIMITED_USER: 'limited_user',
+    READER: 'reader'
+});
 
 /**
  * Composable para gestionar la autenticación y comprobación de roles
  * @returns {Object} Métodos y propiedades para gestionar la autenticación
  */
 export function useAuth() {
-    const currentUser = ref(null); //almacena id, username, email, rol, stylePreferences
-    const isAuthenticated = computed(() => !!currentUser.value); // Verifica si el usuario está autenticado
-    const userRole = computed(() => currentUser.value?.rol || null); // Obtiene el rol del usuario actual
-    const router = useRouter();
+    // El router solo se puede resolver dentro de un componente; el resto de invocaciones
+    // (por ejemplo, la directiva vRole) comparten el estado de módulo y no lo necesitan.
+    if (getCurrentInstance()) routerDeLaApp = useRouter();
+
     const { layoutConfig, applyColorScheme } = useLayout();
     const { applyFullTheme } = useTheme();
-
-    // Intervalo para verificación periódica del token
-    let tokenVerificationInterval = null;
-    // Tiempo entre verificaciones (5 minutos)
-    const TOKEN_VERIFICATION_INTERVAL = 5 * 60 * 1000;
-
-    // Roles disponibles en la aplicación según la estructura de la base de datos
-    const ROLES = {
-        ADMIN: 'admin',
-        USER: 'user',
-        LIMITED_USER: 'limited_user',
-        READER: 'reader'
-    };
 
     // Aplicar las preferencias de estilo del usuario
     const applyUserPreferences = (prefs) => {
@@ -141,7 +156,12 @@ export function useAuth() {
 
         if (user) {
             try {
-                currentUser.value = JSON.parse(user);
+                const guardado = JSON.parse(user);
+                // F-54: cada montaje relee el almacén (el login escribe fuera del layout), pero
+                // solo reasigna si cambió; el estado es único para toda la aplicación.
+                if (JSON.stringify(guardado) !== JSON.stringify(currentUser.value)) {
+                    currentUser.value = guardado;
+                }
                 // Cargar preferencias de estilo si el usuario está autenticado
                 if (currentUser.value && currentUser.value.id) {
                     loadStylePreferences();
@@ -159,12 +179,9 @@ export function useAuth() {
      * Inicia la verificación periódica del token JWT
      */
     const startTokenVerification = () => {
-        // Limpiar cualquier intervalo existente
-        if (tokenVerificationInterval) {
-            clearInterval(tokenVerificationInterval);
-        }
+        // F-54: un único intervalo para toda la aplicación; no se reinicia en cada montaje
+        if (tokenVerificationInterval) return;
 
-        // Configurar un nuevo intervalo para verificar el token
         tokenVerificationInterval = setInterval(() => {
             verifySessionValidity();
         }, TOKEN_VERIFICATION_INTERVAL);
@@ -229,6 +246,9 @@ export function useAuth() {
      */
     const loadStylePreferences = async () => {
         if (!currentUser.value || !currentUser.value.id) return;
+        // F-54: una sola petición por sesión, aunque el composable se invoque varias veces
+        if (preferenciasCargadasPara === currentUser.value.id) return;
+        preferenciasCargadasPara = currentUser.value.id;
 
         try {
             const stylePrefs = await UsersService.getStylePreferences();
@@ -246,6 +266,7 @@ export function useAuth() {
                 applyUserPreferences(stylePrefs);
             }
         } catch (error) {
+            preferenciasCargadasPara = null; // se reintenta en el siguiente montaje
             console.error('Error al cargar preferencias de estilo:', error);
         }
     };
@@ -331,6 +352,7 @@ export function useAuth() {
             sessionStorage.removeItem('token');
             sessionStorage.removeItem('user');
             currentUser.value = null;
+            preferenciasCargadasPara = null;
 
             // Mantener el usuario recordado si existe
             if (localStorage.getItem('rememberedUser')) {
@@ -341,6 +363,9 @@ export function useAuth() {
             }
 
             console.log('Sesión cerrada correctamente');
+            // El router se captura en un componente; fuera de setup (o si aún no se ha
+            // montado ninguno) se resuelve aquí, sin ciclo de importación.
+            const router = routerDeLaApp || (await import('@/router')).default;
             router.push('/auth/login');
 
             if (token) {
@@ -366,18 +391,13 @@ export function useAuth() {
         else if (sessionStorage.getItem('token')) sessionStorage.setItem('token', token);
     };
 
-    // Cargar el usuario al montar el componente
-    onMounted(() => {
-        loadUser();
-    });
-
-    // Detener el intervalo de verificación al desmontar el componente
-    onUnmounted(() => {
-        if (tokenVerificationInterval) {
-            clearInterval(tokenVerificationInterval);
-            tokenVerificationInterval = null;
-        }
-    });
+    // Cargar el usuario al montar el componente que usa el composable. El intervalo no se
+    // detiene al desmontar: es único para la aplicación y lo cierra logout (F-54).
+    if (getCurrentInstance()) {
+        onMounted(() => {
+            loadUser();
+        });
+    }
 
     // Refrescar el usuario (útil después de cambios de rol o datos)
     const refreshUser = () => {

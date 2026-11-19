@@ -129,4 +129,71 @@ test.describe('Autenticación', () => {
         expect(almacen.local).toBeNull();
         expect(almacen.sesion).toBeNull();
     });
+
+    test('una sola instancia de useAuth comparte estado e intervalo (F-54)', async ({ paginaAuth: page }) => {
+        const { usuario, password } = credenciales();
+
+        // Instrumenta los temporizadores antes de que cargue la aplicación: se cuentan los
+        // intervalos de verificación de sesión, que `useAuth.js` fija en 5 minutos.
+        await page.addInitScript(() => {
+            window.__timonIntervalos = [];
+            const crear = window.setInterval;
+            const parar = window.clearInterval;
+
+            window.setInterval = (fn, ms, ...resto) => {
+                const id = crear(fn, ms, ...resto);
+                window.__timonIntervalos.push({ id, ms, activo: true });
+                return id;
+            };
+
+            window.clearInterval = (id) => {
+                const entrada = window.__timonIntervalos.find((intervalo) => intervalo.id === id);
+                if (entrada) entrada.activo = false;
+                return parar(id);
+            };
+        });
+
+        await iniciarSesion(page, { usuario, password });
+        await expect(page).toHaveURL(/\/dashboard$/);
+
+        const estado = await page.evaluate(async () => {
+            const { useAuth } = await import('/src/composables/useAuth.js');
+            const uno = useAuth();
+            const otro = useAuth();
+
+            return {
+                verificaciones: window.__timonIntervalos.filter((intervalo) => intervalo.ms === 5 * 60 * 1000),
+                mismoUsuario: uno.currentUser === otro.currentUser,
+                mismaAutenticacion: uno.isAuthenticated === otro.isAuthenticated,
+                usuarioCargado: uno.currentUser.value?.username ?? null
+            };
+        });
+
+        // Un único intervalo de verificación, aunque el layout invoque useAuth varias veces.
+        expect(estado.verificaciones).toHaveLength(1);
+        expect(estado.verificaciones.filter((intervalo) => intervalo.activo)).toHaveLength(1);
+
+        // Un único estado: las dos invocaciones devuelven el mismo `ref` y la misma sesión.
+        expect(estado.mismoUsuario).toBe(true);
+        expect(estado.mismaAutenticacion).toBe(true);
+        expect(estado.usuarioCargado).toBe(usuario);
+
+        // El logout cierra el intervalo y deja los almacenes vacíos.
+        await page.evaluate(async () => {
+            const { useAuth } = await import('/src/composables/useAuth.js');
+            await useAuth().logout();
+        });
+
+        await expect(page).toHaveURL(/\/auth\/login$/);
+
+        const cierre = await page.evaluate(() => ({
+            activos: window.__timonIntervalos.filter((intervalo) => intervalo.ms === 5 * 60 * 1000 && intervalo.activo).length,
+            local: localStorage.getItem('token'),
+            sesion: sessionStorage.getItem('token')
+        }));
+
+        expect(cierre.activos).toBe(0);
+        expect(cierre.local).toBeNull();
+        expect(cierre.sesion).toBeNull();
+    });
 });
