@@ -28,7 +28,9 @@
 - Un hallazgo que aparezca en el PR se incluye solo si es viable: mismo ámbito, riesgo y revisión,
   verificable con sus pruebas y sin depender de una decisión de producto ni de otro PR. Si no, se
   registra con ID nuevo y un issue (DC-58). Con más de tres tareas nuevas, divide el PR.
-- Lo que quede en «Pendiente» de un PR se refleja en el mismo PR en el registro y en su issue (DC-55).
+- Lo que quede en «Pendiente» de un PR se refleja en el mismo PR en el registro y en su issue
+  (DC-55). En nivel ligero, un «Pendiente» que exija registro obliga a reclasificar la iteración
+  como completa.
 
 ## Criterios
 - Ante discrepancias manda DC-03: Excel del usuario, documentación de diseño, BD viva y, por último,

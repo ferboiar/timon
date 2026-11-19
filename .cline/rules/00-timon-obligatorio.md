@@ -48,6 +48,6 @@ mecánicos son `npm run iter:previa|pruebas|cierre` (DC-69).
 - Fichero existente: la herramienta de edición normal. `dev/utils/ayudas.mjs` con `--check` antes de
   `--apply` (contrato en `dev/utils/README.md`) solo para cambios en tres o más ficheros, cambios
   repetidos o anclas ambiguas. Fichero nuevo: `cat > ruta <<'EOF'`.
-- Después de editar, `npm run iter:previa` y lectura de `git diff --stat`: si un fichero pierde líneas
+- Al terminar las ediciones, `npm run iter:previa` y lectura de `git diff --stat`: si un fichero pierde líneas
   de forma anómala, para y revisa. Nada de Python ni scripts ad hoc sin explicarlo y obtener
   confirmación.
