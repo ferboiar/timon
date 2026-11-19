@@ -15,7 +15,8 @@ operaciones y espera.
   typo, enlace, comentario, formato, doc que no fija decisión, prueba que no cambia comportamiento,
   dependencia dentro de rango. Una frase de alcance, rama `mantenimiento/<tema>`, commit, PR de tres
   líneas (qué / verificado / pendiente), sin registro ni relevo. Se ejecuta `npm run iter:previa` y el
-  test o spec tocado, si lo hay.
+  test o spec tocado, si lo hay. Si toca `doc/`, ejecuta `npm run iter:pruebas` (propone la
+  coherencia documental y las reglas).
 - **Completo**: lo demás (lógica, API, autorización, esquema, seguridad, decisión nueva, script de
   proceso, dependencia con cambio de major, borrado de código). Todo el resto de esta skill.
 - **Ante la duda, completo.** Casos intermedios: un refactor sin cambio de comportamiento es completo;
@@ -40,6 +41,10 @@ operaciones y espera.
   No toques registro, relevo ni issues. Si el cambio deja de ser ligero, para y avísame.
   ```
 
+- **PR de tres líneas** (formato fijo): `Qué: <una frase>.` · `Verificado: <comando y resultado>.` ·
+  `Pendiente: <nada o el resto con su motivo>.` Ejemplo real: «Qué: corrige el enlace a
+  `optimizaciones.md` en `doc/db/schema/index.md`. Verificado: `iter:previa` exit 0; coherencia 7/7.
+  Pendiente: nada.»
 - **Modo autónomo del nivel completo**: solo si el prompt lo pide o autoriza publicar el PR junto al
   plan. Dos aprobaciones: (1) el plan, que ya incluye publicar y abrir el PR; (2) fusionar y limpiar,
   tras comprobar los checks. Entre ambas no se pregunta. Se para solo ante un error real: checks en
