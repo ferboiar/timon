@@ -31,6 +31,15 @@ test('solo documentación: pruebas de documentación y ninguna de BD', () => {
     assert.deepEqual(r.e2e, []);
 });
 
+test('los nombres con metacaracteres no se interpretan como expresión regular', () => {
+    const indiceMeta = { testsBackend: { 'backend/test/meta.test.mjs': 'usa aaab, aaXb y aXb en el texto' }, specsE2e: {} };
+
+    // `a+b` no debe casar con «aaab»: sin escape, el patrón \ba+b\b sí casaría.
+    assert.equal(seleccionarPruebas(['backend/src/utils/a+b.mjs'], indiceMeta).backendCompleto, true);
+    // `a.b` no debe casar con «aaXb» ni con «aaab».
+    assert.equal(seleccionarPruebas(['backend/src/utils/a.b.mjs'], indiceMeta).backendCompleto, true);
+});
+
 test('un módulo con pruebas que lo nombran lanza solo esas', () => {
     const r = seleccionarPruebas(['backend/src/utils/fechas.mjs'], indice);
 

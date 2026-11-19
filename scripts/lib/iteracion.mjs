@@ -31,6 +31,14 @@ const NUCLEO_FRONTEND = [
 const nombreBase = (ruta) => path.basename(ruta).replace(/\.[^.]+$/, '');
 const esMd = (r) => r.endsWith('.md');
 
+/** Escapa los metacaracteres de una expresión regular (evita inyección de patrón). */
+const METACARACTERES = ['.', '*', '+', '?', '^', '$', '{', '}', '(', ')', '|', '[', ']', '\\'];
+const escaparRegex = (texto) =>
+    String(texto)
+        .split('')
+        .map((c) => (METACARACTERES.includes(c) ? '\\' + c : c))
+        .join('');
+
 /** @param {string} ruta @returns {boolean} */
 export const esRutaProhibida = (ruta) => RUTAS_PROHIBIDAS.some((er) => er.test(ruta));
 
@@ -58,7 +66,11 @@ export function seleccionarPruebas(cambiados, indice) {
     const r = { e2eCompleta: false, backendCompleto: false, backend: new Set(), e2e: new Set(), docs: false, lint: [], sintaxis: [], build: false, motivos: [] };
     const tests = Object.keys(indice.testsBackend);
     const specs = Object.keys(indice.specsE2e);
-    const que = (conjunto, base) => conjunto.filter((f) => new RegExp(`\\b${base}\\b`).test(conjunto === tests ? indice.testsBackend[f] : indice.specsE2e[f]));
+    const que = (conjunto, base) => {
+        const patron = new RegExp(`\\b${escaparRegex(base)}\\b`);
+
+        return conjunto.filter((f) => patron.test(conjunto === tests ? indice.testsBackend[f] : indice.specsE2e[f]));
+    };
 
     for (const f of cambiados) {
         if (esRutaProhibida(f)) continue;
