@@ -178,6 +178,7 @@ const docNavigation = [
                     { title: 'Registro: parte 1 de 3', path: 'mantenimiento/registro-hallazgos_1de3' },
                     { title: 'Registro: parte 2 de 3', path: 'mantenimiento/registro-hallazgos_2de3' },
                     { title: 'Registro: parte 3 de 3', path: 'mantenimiento/registro-hallazgos_3de3' },
+                    { title: 'Registro: filas cerradas (archivo)', path: 'mantenimiento/archivo/registro-cerrados' },
                     { title: 'Instrucción persistente (archivo)', path: 'mantenimiento/archivo/instruccion-persistente/instruccion-persistente' },
                     { title: 'Informes de iteración (histórico)', path: 'mantenimiento/informes_iteraciones/index' }
                 ]
