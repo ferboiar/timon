@@ -32,6 +32,8 @@ operaciones y espera.
 - `git push -u origin <rama>`.
 ## Cuerpo del PR (sustituye al informe de iteración)
 El PR es el único registro del trabajo: no hay informes aparte. Debe entenderse sin leer los commits.
+- `Closes #<id> …` con todos los issues del alcance: GitHub los cierra al fusionar. No se
+  cierran a mano después ni se declaran como acción manual pendiente.
 - `## Qué hace`: IDs, objetivo, base, alcance y exclusiones; tabla de ficheros agrupada por tipo
   (nuevos, modificados, movidos, borrados) con el motivo de cada grupo; decisiones registradas y
   qué sustituyen; mapa de conservación cuando se muevan reglas.
@@ -47,8 +49,9 @@ El PR es el único registro del trabajo: no hay informes aparte. Debe entenderse
 - `gh pr merge <n>` solo si el prompt lo autoriza y los checks están en verde.
 - Después: `git switch main && git pull --ff-only origin main && git log --oneline -1` para leer el
   SHA real. Ese SHA no se copia al PR siguiente (DC-64).
-- Actualiza el relevo §0 y cierra el issue en el mismo acto. El §0 describe el estado posterior a la
-  fusión, con el número de PR y sin SHA copiado; nada queda delegado al PR siguiente (DC-66).
+- Actualiza el relevo §0 en el mismo acto. Los issues se cierran solos con `Closes` al fusionar;
+  comprueba que quedaron cerrados. El §0 describe el estado posterior a la fusión, con el número de
+  PR y sin SHA copiado; nada queda delegado al PR siguiente (DC-66).
 
 ## Qué no hacer
 - No declares una fusión sin un `gh pr view` que la muestre.

@@ -4,18 +4,18 @@
 Project (DC-61); aquí solo el corte y las decisiones vigentes.
 
 ## 0. Corte
-- Fecha y base: 2026-11-18, `main` en el merge del PR #154 (SHA con `git log --oneline -1 main`).
+- Fecha y base: 2026-11-18, `main` en `1c9db46` (merge del PR #154) más el commit de docs `7f81a39` (estado de la rama de S-11 en este §0).
 - Último trabajo incorporado: PR #154 (S-11).
-- Trabajo actual: ninguno abierto; S-11 (#96) se cierra con el PR #154.
+- Trabajo actual: F-54 (#104), F-55 (#105) y D-43 (#98) en la rama `correccion/fase-1-F54-F55-D43`; sin migraciones y con los ficheros de las tres separados.
 - Objetivo: cerrar las alertas críticas y altas de Dependabot sin romper funcionalidad, con bcrypt 6.0.0 como único salto major y el resto dentro de los rangos semver ya declarados. Las 124 alertas abiertas quedan en 1, que pasa a S-24.
-- Próxima acción: limpieza de Snyk hecha el 2026-11-18 (PR #4–#9 cerrados con comentario y las seis ramas `snyk-*` borradas en remoto). Ramas que quedan: `main` y `mantenimiento/migraciones-bd-skill` (previa, ajena a S-11); `correccion/fase-1-S11-dependencias` fue borrada en local y en remoto (comprobado el 2026-11-18 con `git branch -a` y `git ls-remote --heads origin`). Siguiente trabajo: F-49, F-53, F-54 y F-55. Bloqueos: ninguno conocido.
+- Próxima acción: limpieza de Snyk hecha el 2026-11-18 (PR #4–#9 cerrados con comentario y las seis ramas `snyk-*` borradas en remoto). Ramas que quedan: `main`, `mantenimiento/migraciones-bd-skill` (previa, ajena a S-11) y `correccion/fase-1-F54-F55-D43`; `correccion/fase-1-S11-dependencias` fue borrada en local y en remoto (comprobado el 2026-11-18 con `git branch -a` y `git ls-remote --heads origin`). Siguiente trabajo: F-49 y F-53. Bloqueos: ninguno conocido.
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; la
   migración consta aplicada según el esquema observado en el PR #53; no consta evidencia documental
   de los bytes aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías),
   0007 (objetos reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar
   sesión de nuevo: los tokens anteriores no llevan `ver`.
 - Issues abiertas relevantes: #155 (S-24), #136 (O-10), #140 (O-11) y #142 (F-57). S-11 (#96) queda cerrada.
-- Próximo trabajo: F-49, F-53, F-54, F-55 y el backlog del Project; S-24 sigue en su issue #155.
+- Próximo trabajo: F-49, F-53 y el backlog del Project; S-24 sigue en su issue #155.
 - Identificadores: en este corte se asignan DC-68, S-24, R-14 y R-15; D-53 y D-52, en cortes anteriores. Comprueba el último de cada
   familia en el registro antes de asignar; los siguientes previsibles son D-54, DC-69 y R-16.
 

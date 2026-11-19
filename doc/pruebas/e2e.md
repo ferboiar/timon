@@ -8,10 +8,10 @@ del despliegue.
 
 | Spec | Qué valida |
 |---|---|
-| `tests/auth.spec.mjs` | Login incorrecto (401 y mensaje del servidor), login correcto (200, `/dashboard`, pie con el usuario y token de sesión) y cierre de sesión desde el menú de perfil; tras el logout, el token anterior responde 401 (S-04a) |
+| `tests/auth.spec.mjs` | Login incorrecto (401 y mensaje del servidor), login correcto (200, `/dashboard`, pie con el usuario y token de sesión) y cierre de sesión desde el menú de perfil; tras el logout, el token anterior responde 401 (S-04a). Y que `useAuth` es único por aplicación: un solo intervalo de verificación compartido y un único `currentUser` entre invocaciones (F-54) |
 | `tests/cambioPasswordPropia.spec.mjs` | Cambio de la propia contraseña (S-04a): crea un administrador desechable por API, inicia sesión en un contexto aislado, cambia la contraseña desde Ajustes › Usuarios, comprueba que el token guardado cambia, que `/api/auth/verify` con el token nuevo responde 200, que el token anterior responde 401 contra `/api/users` y que la sesión sigue activa; borra el usuario en `afterAll` |
 | `tests/loginLimite.spec.mjs` | Límite de intentos (S-04b, DC-63): cinco fallos con un usuario inexistente y respuesta 429 con el mensaje en pantalla; el usuario legítimo de la suite sigue pudiendo entrar. No crea datos |
-| `tests/categorias.spec.mjs` | Listado y detección de categorías E2E de ejecuciones anteriores, alta, presencia en la tabla tras recargar, rechazo de duplicado, edición de la descripción y borrado |
+| `tests/categorias.spec.mjs` | Listado y detección de categorías E2E de ejecuciones anteriores, alta, presencia en la tabla tras recargar, rechazo de duplicado, rechazo de un nombre de más de 30 caracteres en la pantalla y en el servidor (F-55), edición de la descripción y borrado |
 | `tests/smoke.spec.mjs` | Que Timón carga en el navegador real y que el layout autenticado se pinta |
 | `tests/erroresConexion.spec.mjs` | Pestaña Base de Datos: una prueba de conexión con una dirección inalcanzable (`127.0.0.1` y un puerto sin escuchar) muestra el mensaje de usuario completo, sin código del sistema, y no guarda nada |
 | `tests/usuarios.spec.mjs` | Pestaña Usuarios: alta de un usuario `e2e_` y rechazo del nombre duplicado con el mensaje completo del servidor (409, `USUARIO_DUPLICADO`) |
