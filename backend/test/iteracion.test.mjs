@@ -34,7 +34,7 @@ test('solo documentación: pruebas de documentación y ninguna de BD', () => {
 test('los nombres con metacaracteres no se interpretan como expresión regular', () => {
     const indiceMeta = { testsBackend: { 'backend/test/meta.test.mjs': 'usa aaab, aaXb y aXb en el texto' }, specsE2e: {} };
 
-    // `a+b` no debe casar con «aaab»: sin escape, el patrón \ba+b\b sí casaría.
+    // `a+b` no debe casar con «aaab»: un patrón \ba+b\b sí casaría.
     assert.equal(seleccionarPruebas(['backend/src/utils/a+b.mjs'], indiceMeta).backendCompleto, true);
     // `a.b` no debe casar con «aaXb» ni con «aaab».
     assert.equal(seleccionarPruebas(['backend/src/utils/a.b.mjs'], indiceMeta).backendCompleto, true);
