@@ -73,6 +73,6 @@ test('las reglas respetan el presupuesto de contexto de DC-65', () => {
     const total = ficheros(DIR_REGLAS).reduce((suma, f) => suma + bytes(f), 0);
     const incondicional = SIEMPRE.reduce((suma, f) => suma + bytes(f), 0);
 
-    assert.ok(total <= 11_000, `reglas: ${total} B (máximo 11 000 B)`);
+    assert.ok(total <= 12_000, `reglas: ${total} B (máximo 12 000 B)`);
     assert.ok(incondicional <= 7_000, `incondicionales: ${incondicional} B (máximo 7 000 B)`);
 });

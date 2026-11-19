@@ -10,7 +10,7 @@ Este archivo es la entrada del registro. El contenido está dividido por seccion
 
 | Parte | Archivo | Secciones | Contenido |
 |---|---|---|---|
-| 1 de 3 | [registro-hallazgos_1de3.md](./registro-hallazgos_1de3.md) | 0 a 4 | Reanudación operativa, método, decisiones (DC), entorno de referencia y casos de aceptación |
+| 1 de 3 | [registro-hallazgos_1de3.md](./registro-hallazgos_1de3.md) | 1 a 4 | Método, decisiones (DC), entorno de referencia y casos de aceptación |
 | 2 de 3 | [registro-hallazgos_2de3.md](./registro-hallazgos_2de3.md) | 5 | Hallazgos funcionales (F) |
 | 3 de 3 | [registro-hallazgos_3de3.md](./registro-hallazgos_3de3.md) | 6 a 10 | Seguridad y operación (S, O), interfaz y documentación (U, D), hoja de ruta (R), cobertura de la revisión y plan por fases |
 
@@ -18,7 +18,6 @@ Este archivo es la entrada del registro. El contenido está dividido por seccion
 
 | Sección | Contenido | Parte |
 |---|---|---|
-| 0 | Reanudación operativa | [1 de 3](./registro-hallazgos_1de3.md) |
 | 1 | Método | [1 de 3](./registro-hallazgos_1de3.md) |
 | 2 | Decisiones (DC) | [1 de 3](./registro-hallazgos_1de3.md) |
 | 3 | Entorno de referencia | [1 de 3](./registro-hallazgos_1de3.md) |
