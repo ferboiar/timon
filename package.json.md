@@ -27,8 +27,14 @@ Estado actualizado por D-13, 2026-10-24. Este documento sustituye el ejemplo ant
 | `npm run build` | `npm run build:frontend` |
 | `npm run start` | `npm run start:backend` |
 | `npm run prepush` | `node scripts/incrementVersion.js` |
+| `npm run iter:previa` | `node scripts/iteracion.mjs previa` |
+| `npm run iter:pruebas` | `node scripts/iteracion.mjs pruebas` |
+| `npm run iter:cierre` | `node scripts/iteracion.mjs cierre` |
+| `npm run iter:ids` | `node scripts/iteracion.mjs ids` |
 
 lint:frontend incluye correcciones automáticas: no es un análisis de solo lectura. build construye el frontend; start inicia el backend y no demuestra por sí mismo que se estén sirviendo los archivos compilados.
+
+Los scripts `iter:*` son mecánicos: no hacen commit, push ni PR. `npm run iter:cierre -- <tema> --ficheros a,b` necesita el `--` para pasar las opciones. `iter:pruebas -- --ejecuta` sin `--incluye-entorno` omite la E2E y las pruebas con base `_test`: esa ejecución **no** es verde.
 
 El script prepush es una entrada de npm. Declararla no demuestra que exista un hook de Git que la ejecute automáticamente.
 

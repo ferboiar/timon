@@ -19,7 +19,11 @@
         "nas": "concurrently \"npm run dev:backend\" \"npm run dev:frontend -- --host\"",
         "build": "npm run build:frontend",
         "start": "npm run start:backend",
-        "prepush": "node scripts/incrementVersion.js"
+        "prepush": "node scripts/incrementVersion.js",
+        "iter:previa": "node scripts/iteracion.mjs previa",
+        "iter:pruebas": "node scripts/iteracion.mjs pruebas",
+        "iter:cierre": "node scripts/iteracion.mjs cierre",
+        "iter:ids": "node scripts/iteracion.mjs ids"
     },
     "keywords": [
         "contabilidad",
