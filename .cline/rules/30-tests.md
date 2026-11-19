@@ -14,7 +14,9 @@ paths:
   Sin ese fichero, entrega el comando de `backend/test/README.md` y espera el resumen. No leas
   `.db_connection` para credenciales y no pidas ni escribas contraseñas en claro.
 - Interfaz: suite E2E de `e2e/` (Playwright); lee `e2e/README.md` y mantén el spec y su README.
-- Conserva el código de salida y cita `# tests`, `# pass`, `# fail`, `# cancelled`.
+- Cita código de salida y `# tests`, `# pass`, `# fail`, `# cancelled`. Salida corta (DC-69):
+  `npm run iter:pruebas -- --ejecuta` o `| grep -E "^# (tests|pass|fail|cancelled)|^not ok"`.
+  `--ejecuta` sin `--incluye-entorno` omite la E2E y la base: esa ejecución **no** es verde.
 - Una prueba unitaria no sustituye una prueba de interfaz cuando esta es necesaria.
 - No declares nada en verde sin la salida real; distingue entorno, fixture y análisis estático.
 

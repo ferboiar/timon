@@ -1,6 +1,6 @@
 # Documentación del Sistema Timon
 
-Si retomas el proyecto, empieza por el [estado del proyecto](./mantenimiento/estado-del-proyecto.md), entrada de un relevo dividido en tres partes que se leen en orden.
+Si retomas el proyecto, empieza por el [estado del proyecto](./mantenimiento/estado-del-proyecto.md), el relevo mínimo (estado, decisiones y mapa), y por los issues del Project.
 
 ## Introducción
 
@@ -334,9 +334,9 @@ La pantalla de Ajustes (`/settings`) reúne, por pestañas, la personalización 
 
 ## Mantenimiento del proyecto
 
-- [Estado del proyecto](./mantenimiento/estado-del-proyecto.md) - Relevo en un solo fichero: corte (fecha, base, trabajo actual, próxima acción y bloqueos), decisiones vigentes y mapa por módulo. El corte anterior, dividido en tres partes, queda en el [archivo del 2026-11-16](./mantenimiento/archivo/estado-del-proyecto-2026-11-16/estado-del-proyecto.md) (DC-64).
+- [Estado del proyecto](./mantenimiento/estado-del-proyecto.md) - Relevo mínimo (DC-69): estado vigente, decisiones y mapa por módulo; sin PR, SHA ni ramas. El corte anterior queda en el [archivo del 2026-11-16](./mantenimiento/archivo/estado-del-proyecto-2026-11-16/estado-del-proyecto.md) (DC-64).
 - [Skills de Cline](./mantenimiento/skills.md) - Procedimientos bajo demanda: qué hace cada skill, cómo se invoca y cuándo se carga.
-- [Registro de hallazgos y decisiones](./mantenimiento/registro-hallazgos.md) - Entrada y mapa del registro (decisiones DC, hallazgos y plan por fases), dividido en 3 partes que se leen en orden: [1 de 3](./mantenimiento/registro-hallazgos_1de3.md), [2 de 3](./mantenimiento/registro-hallazgos_2de3.md), [3 de 3](./mantenimiento/registro-hallazgos_3de3.md)
+- [Registro de hallazgos y decisiones](./mantenimiento/registro-hallazgos.md) - Entrada y mapa del registro (decisiones DC, hallazgos y plan por fases), dividido en 3 partes que se consultan por ID, no se leen enteras: [1 de 3](./mantenimiento/registro-hallazgos_1de3.md), [2 de 3](./mantenimiento/registro-hallazgos_2de3.md), [3 de 3](./mantenimiento/registro-hallazgos_3de3.md)
 - [Instrucción persistente (archivada)](./mantenimiento/archivo/instruccion-persistente/instruccion-persistente.md) - Histórico congelado el 2026-11-16. Las reglas vigentes viven en `.cline/rules/` y los procedimientos en `.cline/skills/` (DC-64).
 - [Informes de iteración (histórico)](./mantenimiento/informes_iteraciones/index.md) - Archivo de los informes de cierre anteriores al 2026-11-16. Congelado: el detalle de cada PR vive en GitHub (DC-64).
 - [Archivo histórico: TODO (congelado)](./mantenimiento/archivo/TODO-2026-11-14.md) - Antiguo fichero `TODO`, archivado al migrar el backlog a los issues del Project (DC-61, D-45). No se actualiza.

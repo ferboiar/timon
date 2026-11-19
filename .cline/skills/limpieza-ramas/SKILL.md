@@ -1,6 +1,6 @@
 ---
 name: limpieza-ramas
-description: Limpia ramas locales y remotas ya fusionadas en Timón. Úsala cuando se pida borrar o limpiar ramas, comprobar si una rama está integrada o retomar la limpieza pendiente (O-09).
+description: Limpia ramas locales y remotas ya fusionadas en Timón. Úsala cuando se pida borrar o limpiar ramas o comprobar si una rama está integrada.
 ---
 
 # Limpieza de ramas
@@ -12,18 +12,18 @@ Si el prompt no nombra ninguna, pregunta cuáles antes de tocar nada.
 - `git fetch --prune` y `git branch -vv`.
 - Por rama: `git log --oneline -1 <rama>`, `git branch --merged main` y
   `gh pr view <rama> --json state,mergedAt,mergeCommit`.
-- Está lista si su PR consta fusionado y su punta está integrada en `origin/main`.
+- Está lista si su PR consta `MERGED` y su punta está integrada en `origin/main`.
 
 ## 2. Local
 - `git branch -d <rama>`.
-- Si rechaza por upstream atrasado: no uses `-D` por reflejo. Comprueba la integración, retira el
-  upstream con `git branch --unset-upstream <rama>` y repite `-d`.
-- Solo si el PR consta fusionado (squash o rebase) y la punta es la del PR: pide autorización y usa
-  `git branch -D <rama>`.
+- Con squash, `-d` falla siempre porque la punta no es ancestro de `main`. Si el PR consta `MERGED` y
+  la rama está nombrada en el prompt, `-D` queda autorizado.
+- Si rechaza por upstream atrasado, retira el upstream con `git branch --unset-upstream <rama>` y
+  repite `-d`.
 
 ## 3. Remota
 - `git push origin --delete <rama>`, solo con esa rama nombrada y autorizada.
 - Después, `git fetch --prune`.
 
-## 4. Registrar
-- Anota en el relevo §0 o en el issue O-09 qué ramas quedan y por qué.
+## 4. Si una rama sobrevive
+- El motivo va como comentario en el PR de esa rama. No se anota en el relevo ni en un issue.

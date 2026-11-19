@@ -6,12 +6,16 @@ sustituir sus decisiones. Verifica dos veces lo que vas a ejecutar antes de ejec
 
 ## Al empezar
 1. `git branch --show-current; git status --short; git log --oneline -3; git rev-parse --short HEAD`.
-2. Lee `doc/mantenimiento/estado-del-proyecto.md` (corte y decisiones vigentes). Después, solo lo que
-   pida el alcance: el mapa por módulo está en su sección 2 y en `doc/index.md`.
-3. Declara base, trabajo acordado, alcance, exclusiones, aceptación y verificaciones. No edites hasta
-   que el usuario apruebe el alcance. En modo Plan no editas ni cambias estado.
+2. Lee `doc/mantenimiento/estado-del-proyecto.md` (estado y decisiones vigentes). Después, solo lo que
+   pida el alcance. El registro no se lee entero: se busca el ID, y los identificadores se consultan
+   con `npm run iter:ids`.
+3. Declara base, trabajo acordado, alcance, exclusiones, aceptación y verificaciones. En **nivel
+   completo** no edites hasta que el usuario apruebe el alcance; en **nivel ligero** la petición del
+   usuario, con su frase de alcance, es el alcance y no exige Plan previo (DC-69). En modo Plan no
+   editas ni cambias estado.
 
-No releas el registro ni el backlog en cada mensaje. Los issues del Project son la lista de trabajo.
+No releas el registro ni el backlog. Los issues del Project son la lista de trabajo. Los pasos
+mecánicos son `npm run iter:previa|pruebas|cierre` (DC-69).
 
 ## Seguridad
 - `backend/src/db/.db_connection` y `.db_connection.backup`: no se abren para leer credenciales, no se
@@ -35,17 +39,15 @@ No releas el registro ni el backlog en cada mensaje. Los issues del Project son 
   o una tarea aprobada no autorizan a publicar.
 - La autorización puede darse por paquete: «commit + push + PR» en un mismo mensaje cubre la cadena
   completa si el prompt nombra la rama y el alcance. La fusión (`gh pr merge`), `gh pr edit` y el
-  borrado de ramas requieren su propia autorización. La única parada previa a crear el PR es
-  confirmar su título y su cuerpo.
+  borrado de ramas requieren su propia autorización. Fuera del modo autónomo (DC-69), antes de
+  `gh pr create` se muestran el título y el cuerpo y se espera confirmación.
 - Antes de escribir en el remoto: comprueba rama, `HEAD` y el PR real (`gh pr view`). No declares una
   fusión sin verificar el merge.
 
-## Edición de ficheros (DC-47)
-- Fichero existente: `dev/utils/ayudas.mjs` con manifiesto explícito y `--check` antes de `--apply`
-  (contrato en `dev/utils/README.md`). Fichero nuevo: `cat > ruta <<'EOF'`.
-- Cambio trivial con una única coincidencia: `grep -c` = 1 y `sed -i`. Fuera del repositorio: `cat` o
-  `sed -i`. Nada de Python ni scripts ad hoc sin explicarlo y obtener confirmación.
-
-## Reglas
-Viven solo en `.cline/rules/`: una regla, un sitio. No se copian a `doc/`. Cambiarlas es una
-iteración de proceso con aprobación y decisión registrada. Los umbrales de tamaño son los de DC-65.
+## Edición de ficheros (DC-47, DC-69)
+- Fichero existente: la herramienta de edición normal. `dev/utils/ayudas.mjs` con `--check` antes de
+  `--apply` (contrato en `dev/utils/README.md`) solo para cambios en tres o más ficheros, cambios
+  repetidos o anclas ambiguas. Fichero nuevo: `cat > ruta <<'EOF'`.
+- Al terminar las ediciones, `npm run iter:previa` y lectura de `git diff --stat`: si un fichero pierde líneas
+  de forma anómala, para y revisa. Nada de Python ni scripts ad hoc sin explicarlo y obtener
+  confirmación.
