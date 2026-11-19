@@ -44,6 +44,19 @@ Regla práctica: P0 antes que P1, P1 antes que P2, P2 antes que P3. Dentro de un
 - Los procedimientos largos son skills y se cargan solo al usarse: `cierre-iteracion`, `limpieza-ramas`, `auditoria-documental` y `migraciones-bd`.
 - Una regla, un sitio: no se copian en `doc/`. Los umbrales de tamaño están en DC-65.
 
+## Scripts de iteración
+
+Herramientas mecánicas del flujo; no hacen commit, push ni PR. La lógica pura vive en `scripts/lib/iteracion.mjs` y se prueba en `backend/test/iteracion.test.mjs`.
+
+| Orden | Qué hace |
+|---|---|
+| `npm run iter:previa` | Rama, estado y últimos commits; `git diff --check` y `git diff --cached --check`; `node --check` de los `.mjs` tocados fuera de `src/`; ESLint de los `src/` tocados y con `--no-ignore` de los `e2e/` (O-12); avisa de CRLF en las líneas añadidas y de cercas de código impares en `.md`, sin bloquear. |
+| `npm run iter:pruebas` | Propone las pruebas por impacto. Un cambio en `src/composables`, `config`, `layout`, `router`, `service` o `utils` pide E2E completa y build. Con `-- --ejecuta` lanza las que no necesitan entorno; `--incluye-entorno` añade las de base `_test` y la E2E. |
+| `npm run iter:cierre -- <tema> --ficheros a,b` | Manifiesto explícito en `/tmp/manifiesto-<tema>.txt`, `git add --` de esas rutas, rechazo de `.db_connection`, `.env` y `node_modules`, y comparación con el índice. Sin `--ficheros` solo propone y sale con código 2. |
+| `npm run iter:ids` | Último ID asignado de cada familia (DC, F, S, O, U, D, R) con orden numérico, leído del registro. |
+
+`--ejecuta` sin `--incluye-entorno` omite la E2E y las pruebas con base: esa ejecución no es verde y el script lo avisa.
+
 ## `estado-del-proyecto` (relevo) — guía de reanudación
 
 Es la guía de continuidad: la «memoria de trabajo» que permite a un chat nuevo seguir sin perder contexto. Desde DC-64 es un solo fichero, corto, sin duplicar el backlog.
