@@ -25,7 +25,7 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 - Apariencia general: Sistema (sigue el modo claro u oscuro del navegador), Claro u Oscuro
 - Vista previa en tiempo real de los cambios de estilo
 - Guardado de preferencias asociadas al perfil del usuario
-- Opción para restaurar valores por defecto
+- Opción para restaurar valores por defecto: el botón conserva la etiqueta «Reset» y su aviso el resumen «Reset», ambos en inglés por la excepción de DC-72
 
 ### Gestión de Usuarios (solo administradores)
 
@@ -35,7 +35,8 @@ Orden (DC-26): General, Usuarios, Aspecto, Administrar recibos y Base de Datos. 
 - Cambio de contraseñas de usuario; si es la propia, el token anterior se revoca y se guarda el nuevo sin cerrar la sesión
 - Eliminación de usuarios individuales o en lote
 - Validación de campos para garantizar datos correctos
-- Notificaciones de éxito/error mediante sistema de mensajes
+- Notificaciones de éxito/error mediante sistema de mensajes, con resumen «Éxito», «Aviso» o «Error» (DC-72)
+- La columna del correo se titula «Correo» (DC-72); los pies de diálogo usan «Cancelar»/«Guardar» y «No»/«Sí» con título «Confirmar»
 
 ### Ajustes generales y administración de recibos (solo administradores)
 

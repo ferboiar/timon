@@ -111,7 +111,7 @@ async function saveAccount() {
         }
         // El IBAN es opcional: se envía NULL cuando está vacío (F-06)
         await AccService.saveAccount({ ...account.value, iban: account.value.iban?.trim() || null });
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Cuenta guardada!', life: 5000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Cuenta guardada!', life: 5000 });
         fetchAccounts();
         hideDialog();
     } catch (error) {
@@ -144,7 +144,7 @@ function confirmDeleteAccount(acc) {
 async function deleteAccount() {
     try {
         await AccService.deleteAccounts([account.value.id]);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Cuenta eliminada', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Cuenta eliminada', life: 3000 });
         fetchAccounts();
         hideDialog();
     } catch (error) {
@@ -220,7 +220,11 @@ onMounted(() => {
                     </template>
                 </Column>
                 <Column field="iban" header="IBAN" sortable style="min-width: 12rem"></Column>
-                <Column field="saldo_actual" header="Saldo actual" sortable style="min-width: 4rem"></Column>
+                <Column field="saldo_actual" header="Saldo actual" sortable style="min-width: 4rem">
+                    <template #body="slotProps">
+                        {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(slotProps.data.saldo_actual ?? 0) }}
+                    </template>
+                </Column>
                 <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"></Column>
                 <Column :exportable="false">
                     <template #body="accountsSlotProps">
@@ -251,7 +255,7 @@ onMounted(() => {
                     <small v-if="account.tipo === ''" class="text-red-500">El tipo es obligatorio</small>
                 </div>
                 <div class="flex-1">
-                    <label for="saldo_actual" class="block font-bold mb-3">Saldo Actual</label>
+                    <label for="saldo_actual" class="block font-bold mb-3">Saldo actual</label>
                     <InputNumber id="saldo_actual" v-model="account.saldo_actual" mode="currency" currency="EUR" locale="es-ES" fluid />
                 </div>
             </div>
@@ -264,12 +268,12 @@ onMounted(() => {
         </div>
 
         <template #footer>
-            <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-            <Button label="Save" icon="pi pi-check" @click="saveAccount" :disabled="!isFormValid" />
+            <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+            <Button label="Guardar" icon="pi pi-check" @click="saveAccount" :disabled="!isFormValid" />
         </template>
     </Dialog>
 
-    <Dialog v-model:visible="deleteAccountDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+    <Dialog v-model:visible="deleteAccountDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
         <div class="flex items-center gap-4">
             <i class="pi pi-exclamation-triangle !text-3xl" />
             <span v-if="account"
@@ -279,18 +283,18 @@ onMounted(() => {
         </div>
         <template #footer>
             <Button label="No" icon="pi pi-times" autofocus text @click="deleteAccountDialog = false" />
-            <Button label="Yes" icon="pi pi-check" @click="deleteAccount" />
+            <Button label="Sí" icon="pi pi-check" @click="deleteAccount" />
         </template>
     </Dialog>
 
-    <Dialog v-model:visible="deleteSelectedAccountsDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+    <Dialog v-model:visible="deleteSelectedAccountsDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
         <div class="flex items-center gap-4">
             <i class="pi pi-exclamation-triangle !text-3xl" />
             <span v-if="selectedAccounts.length">¿Seguro que quieres borrar las cuentas seleccionadas?</span>
         </div>
         <template #footer>
             <Button label="No" icon="pi pi-times" autofocus text @click="deleteSelectedAccountsDialog = false" />
-            <Button label="Yes" icon="pi pi-check" text @click="deleteSelectedAccounts" />
+            <Button label="Sí" icon="pi pi-check" text @click="deleteSelectedAccounts" />
         </template>
     </Dialog>
 </template>

@@ -26,7 +26,7 @@ const toggleShowInactive = () => {
             </Toolbar>
         </div>
 
-        <div className="card">
+        <div class="card">
             <div class="font-semibold text-xl mb-4">Presupuestos</div>
             <p></p>
         </div>

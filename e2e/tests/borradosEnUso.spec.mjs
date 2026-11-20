@@ -124,7 +124,7 @@ test.describe('Borrados en uso y validación de cuerpos (F-10, F-43)', () => {
         expect(respuesta.status()).toBe(409);
         await expect(page.getByRole('alert').filter({ hasText: 'No se puede eliminar la categoría porque está en uso' })).toBeVisible();
 
-        const confirmacion = page.getByRole('dialog', { name: 'Confirm' });
+        const confirmacion = page.getByRole('dialog', { name: 'Confirmar' });
         if (await confirmacion.isVisible()) await confirmacion.getByRole('button', { name: 'No' }).click();
     });
 
@@ -136,7 +136,7 @@ test.describe('Borrados en uso y validación de cuerpos (F-10, F-43)', () => {
         expect(respuesta.status()).toBe(409);
         await expect(page.getByRole('alert').filter({ hasText: 'No se puede eliminar la cuenta porque está en uso' })).toBeVisible();
 
-        const confirmacion = page.getByRole('dialog', { name: 'Confirm' });
+        const confirmacion = page.getByRole('dialog', { name: 'Confirmar' });
         if (await confirmacion.isVisible()) await confirmacion.getByRole('button', { name: 'No' }).click();
     });
 

@@ -5,8 +5,8 @@
  * Deducciones:
  * - `src/router/index.js`: ruta `/pages/categories`.
  * - `src/views/pages/Categories.vue`: toolbar `Nueva`, diálogo `Detalle de la categoría`
- *   (`InputText id="nombre"`, `Textarea id="descripcion"`, botones `Cancel`/`Save`), toast
- *   `Categoría guardada!`, tabla `DataTable`, diálogo `Confirm` con `No`/`Yes` y toast
+ *   (`InputText id="nombre"`, `Textarea id="descripcion"`, botones `Cancelar`/`Guardar`), toast
+ *   `Categoría guardada!`, tabla `DataTable`, diálogo `Confirmar` con `No`/`Sí` y toast
  *   `Categoría eliminada`.
  * - `backend/src/routes/categorias.mjs` + `db_utilsCats.mjs`: 201 al crear, 400 con
  *   `Ya existe otra categoría con el nombre «...»` al duplicar.
@@ -141,7 +141,7 @@ test.describe('Categorías', () => {
         // El diálogo sigue abierto porque el guardado falló; se cierra sin guardar.
         const dialogo = dialogoCategoria(page);
         await expect(dialogo).toBeVisible();
-        await dialogo.getByRole('button', { name: 'Cancel' }).click();
+        await dialogo.getByRole('button', { name: 'Cancelar' }).click();
         await expect(dialogo).toBeHidden();
 
         await expect(filaCategoria(page, nombre)).toHaveCount(1);
@@ -167,9 +167,9 @@ test.describe('Categorías', () => {
         // `Categories.vue`: contador, aviso y Guardar deshabilitado antes de enviar.
         await expect(dialogo.getByText('31/30')).toBeVisible();
         await expect(dialogo.getByText('El nombre no puede superar los 30 caracteres.')).toBeVisible();
-        await expect(dialogo.getByRole('button', { name: 'Save' })).toBeDisabled();
+        await expect(dialogo.getByRole('button', { name: 'Guardar' })).toBeDisabled();
 
-        await dialogo.getByRole('button', { name: 'Cancel' }).click();
+        await dialogo.getByRole('button', { name: 'Cancelar' }).click();
         await expect(dialogo).toBeHidden();
 
         // El servidor responde 400 de negocio (antes era un 500 técnico).
@@ -200,7 +200,7 @@ test.describe('Categorías', () => {
         await expect(dialogo).toBeVisible();
         await dialogo.getByLabel('Descripción').fill(descripcion);
 
-        const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'POST', { timeout: 30_000 }), dialogo.getByRole('button', { name: 'Save' }).click()]);
+        const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'POST', { timeout: 30_000 }), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
 
         expect(respuesta.status()).toBe(201);
         await expect(page.getByRole('alert').filter({ hasText: 'Categoría guardada!' })).toBeVisible();

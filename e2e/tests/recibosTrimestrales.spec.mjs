@@ -11,8 +11,8 @@
  * - La tabla de trimestrales enlaza `v-model:selection="selectedQuarterlyBills"` y la de
  *   bimestrales `v-model:selection="selectedBimonthlyBills"` (F-30). Marcar filas en las dos a
  *   la vez es lo que distingue la corrección del estado compartido anterior.
- * - El diálogo de borrado de una fila es `header="Confirm"` con «¿Seguro que quieres borrar el
- *   recibo <b>{{ bill.concepto }}</b>?» y botones «No» y «Yes» (F-31).
+ * - El diálogo de borrado de una fila es `header="Confirmar"` con «¿Seguro que quieres borrar el
+ *   recibo <b>{{ bill.concepto }}</b>?» y botones «No» y «Sí» (F-31).
  * - `src/service/BillService.js`: `deleteBill(id, fecha, periodicidad)` llama a
  *   `DELETE /api/recibos/:id`; la fila agrupada de trimestrales no lleva `fecha`, así que se
  *   borra el recibo completo.
@@ -355,7 +355,7 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
         // F-31: el diálogo muestra el concepto real del recibo trimestral
         await filaTrimestral.locator('button:has(.pi-trash)').click();
 
-        const dialogo = page.getByRole('dialog', { name: 'Confirm' }).filter({ hasText: estado.trimestral });
+        const dialogo = page.getByRole('dialog', { name: 'Confirmar' }).filter({ hasText: estado.trimestral });
         await expect(dialogo).toBeVisible();
 
         const texto = (await dialogo.innerText()).replace(/\s+/g, ' ').trim();
@@ -368,7 +368,7 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
         // Borrado por la interfaz: la fila agrupada no lleva fecha, así que se borra el recibo
         const borradoTrimestral = page.waitForResponse((r) => r.request().method() === 'DELETE' && r.url().includes('/api/recibos/'), { timeout: 30_000 });
 
-        await dialogo.getByRole('button', { name: 'Yes' }).click();
+        await dialogo.getByRole('button', { name: 'Sí' }).click();
 
         expect((await borradoTrimestral).status()).toBe(200);
 
@@ -382,13 +382,13 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
             await expect(filaBimestralPropia).toBeVisible({ timeout: 20_000 });
             await filaBimestralPropia.locator('button:has(.pi-trash)').click();
 
-            const dialogoBimestral = page.getByRole('dialog', { name: 'Confirm' }).filter({ hasText: estado.bimestral });
+            const dialogoBimestral = page.getByRole('dialog', { name: 'Confirmar' }).filter({ hasText: estado.bimestral });
             await expect(dialogoBimestral).toBeVisible();
             expect(await dialogoBimestral.innerText()).toContain(estado.bimestral);
 
             const borradoBimestral = page.waitForResponse((r) => r.request().method() === 'DELETE' && r.url().includes('/api/recibos/'), { timeout: 30_000 });
 
-            await dialogoBimestral.getByRole('button', { name: 'Yes' }).click();
+            await dialogoBimestral.getByRole('button', { name: 'Sí' }).click();
 
             expect((await borradoBimestral).status()).toBe(200);
             await expect(filaBimestralPropia).toHaveCount(0, { timeout: 20_000 });

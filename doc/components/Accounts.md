@@ -62,6 +62,10 @@ El componente `Accounts` permite la administración completa de cuentas bancaria
 
 `saldo_actual` se introduce y se edita a mano en el diálogo de la cuenta. Ninguna operación lo recalcula a partir de recibos, anticipos, ahorros o movimientos: la conciliación automática depende del modelo común de movimientos (R-02) y no está implementada ni prometida (F-21, DC-43).
 
+### Formato y etiqueta (DC-72)
+
+La columna de la tabla y la etiqueta del diálogo se llaman igual, «Saldo actual». El importe se pinta con `Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' })` y con `?? 0`, porque `saldo_actual` es `decimal(12,2) DEFAULT '0.00'` **y admite nulos**: un valor nulo se muestra como `0,00 €` y nunca como `NaN €`. La exportación no cambia: el CSV sigue escribiendo el saldo como número con coma decimal y conserva su cabecera `Saldo Actual`.
+
 ## Ciclo de Vida
 
 En el evento `onMounted`, el componente:
