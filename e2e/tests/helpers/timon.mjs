@@ -16,7 +16,7 @@
  * - `src/views/pages/Categories.vue`: toolbar `Nueva`, diálogo `Detalle de la categoría`,
  *   botones `Cancel`/`Save`, tabla `DataTable` y diálogo `Confirm` con `No`/`Yes`.
  */
-import { expect } from '@playwright/test';
+import { errors, expect } from '@playwright/test';
 
 import { credenciales, urlDe } from '../../scripts/entorno.mjs';
 
@@ -416,11 +416,22 @@ export function filaCuenta(page, nombre) {
 /**
  * Borra una cuenta desde la interfaz. Devuelve la respuesta del DELETE /api/cuentas,
  * o null si la cuenta no está en la tabla.
+ *
+ * Antes de concluir que no está, se espera la fila concreta: la tabla se repinta al cargar
+ * las cuentas y `count()` puede ejecutarse antes de ese repintado (F-57). El plazo es el
+ * mismo que el resto de esperas del fichero para el primer pintado. Solo un timeout justifica
+ * devolver null; cualquier otro fallo del `waitFor` se propaga.
  */
 export async function eliminarCuenta(page, nombre) {
     const fila = filaCuenta(page, nombre);
 
-    if ((await fila.count()) === 0) return null;
+    try {
+        await fila.first().waitFor({ state: 'visible', timeout: 20_000 });
+    } catch (error) {
+        if (error instanceof errors.TimeoutError) return null;
+
+        throw error;
+    }
 
     await fila.first().locator('button:has(.pi-trash)').click();
 

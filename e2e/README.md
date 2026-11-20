@@ -131,6 +131,19 @@ Comandos: npm run e2e:trazabilidad, npm run e2e:validacionUsuarios y npm run e2e
 - Al terminar se para **solo** lo que arrancó la suite (`SIGTERM` y, si hace falta,
   `SIGKILL` al grupo) y se verifica que 5173 y 3000 ya no escuchan.
 
+## Arranque en frío (O-14)
+
+Con los servidores recién arrancados, el primer `goto` de un contexto nuevo compila la ruta en Vite y
+puede agotar las esperas de la primera prueba. Por eso `scripts/setup.mjs` **calienta** el entorno
+antes de la primera prueba, en un contexto desechable por CDP: carga `/auth/login`, inicia sesión con
+el usuario de la suite y espera las pestañas de `/settings`. El calentamiento no crea ni modifica
+datos y su contexto se cierra al terminar; nunca se cierra el navegador (con CDP cerraría Edge).
+
+`retries` sigue en **0**: no se reintenta un test para que pase. El calentamiento sí reintenta hasta
+tres veces, porque los servidores se acaban de arrancar y el primer `goto` puede llegar antes de que
+Vite atienda en la dirección que ve el Edge. Si aun así no se completa, solo avisa con
+`[calentamiento]` y la suite continúa; las esperas de cada test dicen qué falta.
+
 ## Base de datos de las pruebas (pestaña Base de Datos)
 
 Los specs de la pestaña **Base de Datos** guardan la configuración y restauran un volcado, así
@@ -184,9 +197,10 @@ está definida, la aplicación lee y escribe ahí su configuración. Así las E2
 ## Lint
 
 `npx eslint e2e --ext .mjs,.js,.cjs` analiza los 30 ficheros versionados de `e2e/` con la configuración
-raíz: 0 errores y los avisos `prettier/prettier` preexistentes, aceptados en DC-70. `npm run iter:previa`
-analiza los `e2e/` que cambian. `lint:frontend` incluye `--fix` y también reescribe `e2e/`: para
-comprobar sin tocar, usa el comando de arriba.
+raíz: 0 errores y 0 avisos `prettier/prettier`, porque la suite está formateada con `.prettierrc.json`
+(DC-71). `npm run iter:previa` analiza los `e2e/` que cambian. `npm run lint:frontend` conserva `--fix`
+y también reescribe `e2e/`: se mantiene porque, con la suite formateada, el autofix es idempotente; para
+comprobar sin tocar, usa el comando de arriba (sin `--fix`) o `npx prettier --check "e2e/**/*.mjs"`.
 
 ## Triage de fallos
 
