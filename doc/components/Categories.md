@@ -17,6 +17,7 @@ El componente `Categories` permite la administración completa de categorías en
 - Eliminación múltiple de categorías seleccionadas
 - Ordenación de datos por columnas
 - Validación de formularios
+- Vocabulario de interfaz (DC-72): pies de diálogo «Cancelar»/«Guardar» y «No»/«Sí», título de confirmación «Confirmar» y avisos con resumen «Éxito», «Aviso» o «Error»
 
 ## Datos y Propiedades
 

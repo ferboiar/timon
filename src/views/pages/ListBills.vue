@@ -738,7 +738,7 @@ async function deleteBill() {
         updateBills('inactivo');
         deleteBillDialog.value = false;
         bill.value = {};
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibo eliminado', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Recibo eliminado', life: 3000 });
     } catch (error) {
         toast.add({ severity: 'error', summary: 'Error', detail: `Error al eliminar el recibo: ${getApiErrorMessage(error)}`, life: 5000 });
         console.error('deleteBill(). Error al eliminar el recibo: ', error.response?.data || error.message);
@@ -800,7 +800,7 @@ async function deleteSelectedBills() {
         const selectedBills = [...(selectedAnualBills.value || []), ...(selectedQuarterlyBills.value || []), ...(selectedBimonthlyBills.value || []), ...(selectedMonthlyBills.value || [])];
 
         if (selectedBills.length === 0) {
-            toast.add({ severity: 'warn', summary: 'Warning', detail: 'No hay recibos seleccionados para eliminar', life: 3000 });
+            toast.add({ severity: 'warn', summary: 'Aviso', detail: 'No hay recibos seleccionados para eliminar', life: 3000 });
             return;
         }
 
@@ -814,7 +814,7 @@ async function deleteSelectedBills() {
         selectedBimonthlyBills.value = null;
         selectedMonthlyBills.value = null;
 
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Recibos eliminados', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Recibos eliminados', life: 3000 });
 
         // Actualizar las listas de recibos según la periodicidad
         const periodicitiesToUpdate = new Set(selectedBills.map((bill) => bill.periodicidad));
@@ -1664,8 +1664,8 @@ const inactiveBillsCount = (periodicity) => {
             </div>
 
             <template #footer>
-                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-                <Button label="Save" icon="pi pi-check" @click="guardarRecibo" />
+                <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Guardar" icon="pi pi-check" @click="guardarRecibo" />
             </template>
         </Dialog>
 
@@ -1736,8 +1736,8 @@ const inactiveBillsCount = (periodicity) => {
             </div>
 
             <template #footer>
-                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-                <Button label="Save" icon="pi pi-check" @click="guardarRecibo" />
+                <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Guardar" icon="pi pi-check" @click="guardarRecibo" />
             </template>
         </Dialog>
 
@@ -1770,12 +1770,12 @@ const inactiveBillsCount = (periodicity) => {
             </div>
 
             <template #footer>
-                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-                <Button label="Save" icon="pi pi-check" @click="guardarRecibo" />
+                <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Guardar" icon="pi pi-check" @click="guardarRecibo" />
             </template>
         </Dialog>
 
-        <Dialog v-model:visible="deleteBillDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+        <Dialog v-model:visible="deleteBillDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
                 <span v-if="bill"
@@ -1785,18 +1785,18 @@ const inactiveBillsCount = (periodicity) => {
             </div>
             <template #footer>
                 <Button label="No" icon="pi pi-times" autofocus text @click="deleteBillDialog = false" />
-                <Button label="Yes" icon="pi pi-check" @click="deleteBill" />
+                <Button label="Sí" icon="pi pi-check" @click="deleteBill" />
             </template>
         </Dialog>
 
-        <Dialog v-model:visible="deleteSelectedBillsDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+        <Dialog v-model:visible="deleteSelectedBillsDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
                 <span v-if="bill">¿Seguro que quieres borrar los recibos seleccionados?</span>
             </div>
             <template #footer>
                 <Button label="No" icon="pi pi-times" autofocus text @click="deleteSelectedBillsDialog = false" />
-                <Button label="Yes" icon="pi pi-check" text @click="deleteSelectedBills" />
+                <Button label="Sí" icon="pi pi-check" text @click="deleteSelectedBills" />
             </template>
         </Dialog>
     </div>

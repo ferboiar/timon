@@ -5,8 +5,8 @@
  * Deducciones:
  * - `src/router/index.js`: ruta `/pages/bills` (componente `ListBills.vue`).
  * - `ListBills.vue`: toolbar con «Nuevo» y, en cada fila (`table tbody tr`), un botón con
- *   `pi-trash` que llama a `confirmDeleteBill`; el diálogo es `header="Confirm"` con
- *   «No» y «Yes» y el texto «¿Seguro que quieres borrar el recibo <b>concepto</b>?».
+ *   `pi-trash` que llama a `confirmDeleteBill`; el diálogo es `header="Confirmar"` con
+ *   «No» y «Sí» y el texto «¿Seguro que quieres borrar el recibo <b>concepto</b>?».
  *
  * El test **no crea ni borra nada**: abre el diálogo del primer recibo visible y pulsa «No».
  * Antes de F-31 el diálogo usaba `bill.name`, un campo inexistente, así que el nombre salía
@@ -45,7 +45,7 @@ test.describe('Recibos: diálogo de borrado (F-31)', () => {
 
         await fila.locator('button:has(.pi-trash)').first().click();
 
-        const dialogo = page.getByRole('dialog', { name: 'Confirm' });
+        const dialogo = page.getByRole('dialog', { name: 'Confirmar' });
         await expect(dialogo).toBeVisible();
 
         const texto = (await dialogo.innerText()).replace(/\s+/g, ' ').trim();

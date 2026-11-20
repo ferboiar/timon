@@ -616,7 +616,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div className="card">
+    <div class="card">
         <div class="font-semibold text-xl mb-4">Ajustes</div>
         <Tabs v-model:value="pestanaActiva">
             <TabList>
@@ -697,7 +697,7 @@ onMounted(() => {
                             <div class="text-center p-4">No hay usuarios a mostrar.</div>
                         </template>
                         <Column field="username" header="Usuario" sortable style="min-width: 4rem"></Column>
-                        <Column field="email" header="E-Mail" sortable style="min-width: 12rem"></Column>
+                        <Column field="email" header="Correo" sortable style="min-width: 12rem"></Column>
                         <Column field="rol" header="Rol" sortable style="min-width: 12rem"></Column>
                         <Column :exportable="false">
                             <template #body="usersSlotProps">

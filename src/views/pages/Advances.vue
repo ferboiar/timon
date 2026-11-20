@@ -142,7 +142,7 @@ async function saveAdvance() {
         };
 
         await AdvService.saveAdvance(payload);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Anticipo guardado!', life: 5000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Anticipo guardado!', life: 5000 });
         await fetchAdvances(); // Actualizar la lista de anticipos
         await fetchAllPagos(); // Actualizar los pagos relacionados
         hideDialog();
@@ -172,7 +172,7 @@ function confirmDeleteAdvance(adv) {
 async function deleteAdvance() {
     try {
         await AdvService.deleteAdvances([advance.value.id]);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Anticipo eliminado', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Anticipo eliminado', life: 3000 });
         await fetchAdvances(); // Actualizar la lista de anticipos
         await fetchAllPagos(); // Actualizar los pagos relacionados
         hideDialog();
@@ -255,7 +255,7 @@ async function createPaymentPlan(anticipoId) {
         await AdvService.recalculatePaymentPlan(anticipoId);
         await fetchAdvances();
         await fetchAllPagos();
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Plan de pagos creado correctamente.', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Plan de pagos creado correctamente.', life: 3000 });
     } catch (error) {
         console.error('Error en createPaymentPlan:', error);
         toast.add({ severity: 'error', summary: 'Error al crear el plan de pagos', detail: getApiErrorMessage(error), life: 5000 });
@@ -453,7 +453,7 @@ const recalculatePayments = async () => {
 
         toast.add({
             severity: resultado.redistribuido ? 'success' : 'warn',
-            summary: resultado.redistribuido ? 'Successful' : 'Sin cambios',
+            summary: resultado.redistribuido ? 'Éxito' : 'Sin cambios',
             detail: resultado.redistribuido
                 ? `Pagos recalculados: ${resultado.pagosAjustados} ajustados hasta el pago sugerido y ${resultado.pagosCreados} nuevos.`
                 : 'No había importe que colocar: el plan de pagos ya cubre el importe pendiente del anticipo.',
@@ -814,9 +814,9 @@ async function handleCreatePaymentPlan() {
                 </div>
             </div>
             <template #footer>
-                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
                 <Button
-                    label="Save"
+                    label="Guardar"
                     icon="pi pi-check"
                     @click="saveAdvance"
                     :disabled="
@@ -891,13 +891,13 @@ async function handleCreatePaymentPlan() {
                         completar el plan de pagos».
                     </p>
                     <div class="flex justify-end">
-                        <Button label="Cancel" icon="pi pi-times" text @click="advancePagoDialog = false" />
-                        <Button label="Save" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />
+                        <Button label="Cancelar" icon="pi pi-times" text @click="advancePagoDialog = false" />
+                        <Button label="Guardar" icon="pi pi-check" @click="savePago" :disabled="!isPagoFormValid || !pago.cuenta_destino_id" />
                     </div>
                 </div>
             </template>
         </Dialog>
-        <Dialog v-model:visible="deleteAdvanceDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+        <Dialog v-model:visible="deleteAdvanceDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
             <div class="flex items-center gap-4">
                 <i class="pi pi-exclamation-triangle !text-3xl" />
                 <span v-if="advance"
@@ -907,7 +907,7 @@ async function handleCreatePaymentPlan() {
             </div>
             <template #footer>
                 <Button label="No" icon="pi pi-times" autofocus text @click="deleteAdvanceDialog = false" />
-                <Button label="Yes" icon="pi pi-check" @click="deleteAdvance" />
+                <Button label="Sí" icon="pi pi-check" @click="deleteAdvance" />
             </template>
         </Dialog>
         <Dialog v-model:visible="deletePaymentDialog" :style="{ width: '450px' }" header="Eliminar Pago" :modal="true">

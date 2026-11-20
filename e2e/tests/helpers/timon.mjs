@@ -14,7 +14,7 @@
  *   exige `token` en `localStorage` o `sessionStorage`.
  * - `src/layout/AppFooter.vue`: muestra `logged in as <usuario>` con sesión iniciada.
  * - `src/views/pages/Categories.vue`: toolbar `Nueva`, diálogo `Detalle de la categoría`,
- *   botones `Cancel`/`Save`, tabla `DataTable` y diálogo `Confirm` con `No`/`Yes`.
+ *   botones `Cancelar`/`Guardar`, tabla `DataTable` y diálogo `Confirmar` con `No`/`Sí`.
  */
 import { errors, expect } from '@playwright/test';
 
@@ -165,7 +165,7 @@ export async function categoriasE2EEnTabla(page) {
  * Crea una categoría desde la interfaz y devuelve la respuesta del `POST /api/categorias`.
  *
  * Selectores (`Categories.vue`): botón `Nueva` de la toolbar, campo `Nombre` del diálogo
- * (`InputText id="nombre"` con `<label for="nombre">`) y botón `Save` del pie.
+ * (`InputText id="nombre"` con `<label for="nombre">`) y botón `Guardar` del pie.
  */
 export async function crearCategoria(page, nombre) {
     await page.getByRole('button', { name: 'Nueva' }).click();
@@ -175,7 +175,7 @@ export async function crearCategoria(page, nombre) {
 
     await dialogo.getByLabel('Nombre').fill(nombre);
 
-    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'POST', { timeout: 30_000 }), dialogo.getByRole('button', { name: 'Save' }).click()]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'POST', { timeout: 30_000 }), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
 
     return respuesta;
 }
@@ -186,7 +186,7 @@ export async function crearCategoria(page, nombre) {
  *
  * La papelera se localiza por su icono de PrimeIcons (`pi-trash`, clase propia de la
  * librería, no CSS generado) dentro de la fila del nombre exacto; la confirmación es el
- * diálogo `Confirm` con botón `Yes`.
+ * diálogo `Confirmar` con botón `Sí`.
  */
 export async function eliminarCategoria(page, nombre) {
     const fila = filaCategoria(page, nombre);
@@ -195,10 +195,10 @@ export async function eliminarCategoria(page, nombre) {
 
     await fila.first().locator('button:has(.pi-trash)').click();
 
-    const confirmacion = page.getByRole('dialog', { name: 'Confirm' });
+    const confirmacion = page.getByRole('dialog', { name: 'Confirmar' });
     await expect(confirmacion).toBeVisible();
 
-    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'DELETE', { timeout: 30_000 }), confirmacion.getByRole('button', { name: 'Yes' }).click()]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'DELETE', { timeout: 30_000 }), confirmacion.getByRole('button', { name: 'Sí' }).click()]);
 
     return respuesta;
 }
@@ -213,7 +213,7 @@ export async function eliminarCategoria(page, nombre) {
  *   visible es «General», «Usuarios», «Aspecto», «Administrar recibos» y «Base de Datos».
  * - Pestaña Base de Datos: `InputText id="db-host|db-port|db-user|db-database"`, `Password`
  *   `id="db-password"` y botones «Probar», «Guardar» y «Restaurar».
- * - Pestaña Usuarios: toolbar con «Nuevo», `DataTable` (columnas Usuario, E-Mail, Rol) y, en
+ * - Pestaña Usuarios: toolbar con «Nuevo», `DataTable` (columnas Usuario, Correo, Rol) y, en
  *   cada fila, botones `pi-pencil`, `pi-key` y `pi-trash`; el diálogo de alta es
  *   «Detalle del usuario» con `#username`, `#password`, `#email`, `#rol` y «Cancelar»/«Guardar».
  * - Los toasts de error usan `role="alert"` (PrimeVue Toast).
@@ -435,10 +435,10 @@ export async function eliminarCuenta(page, nombre) {
 
     await fila.first().locator('button:has(.pi-trash)').click();
 
-    const confirmacion = page.getByRole('dialog', { name: 'Confirm' });
+    const confirmacion = page.getByRole('dialog', { name: 'Confirmar' });
     await expect(confirmacion).toBeVisible();
 
-    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/cuentas') && r.request().method() === 'DELETE', { timeout: 30_000 }), confirmacion.getByRole('button', { name: 'Yes' }).click()]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/cuentas') && r.request().method() === 'DELETE', { timeout: 30_000 }), confirmacion.getByRole('button', { name: 'Sí' }).click()]);
 
     return respuesta;
 }

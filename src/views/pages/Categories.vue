@@ -115,7 +115,7 @@ async function saveCategory() {
             return;
         }
         await CatsService.saveCategoria(category.value);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Categoría guardada!', life: 5000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Categoría guardada!', life: 5000 });
         fetchCategories();
         hideDialog();
     } catch (error) {
@@ -138,7 +138,7 @@ function confirmDeleteCategory(cat) {
 async function deleteCategory() {
     try {
         await CatsService.deleteCategorias({ categoriaIds: [Number(category.value.id)] }); // Asegurarse de que el ID sea un número
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Categoría eliminada', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Categoría eliminada', life: 3000 });
         fetchCategories();
         hideDialog();
     } catch (error) {
@@ -203,12 +203,12 @@ onMounted(() => {
         </div>
 
         <template #footer>
-            <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-            <Button label="Save" icon="pi pi-check" @click="saveCategory" :disabled="isSaveDisabled" />
+            <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+            <Button label="Guardar" icon="pi pi-check" @click="saveCategory" :disabled="isSaveDisabled" />
         </template>
     </Dialog>
 
-    <Dialog v-model:visible="deleteCategoryDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+    <Dialog v-model:visible="deleteCategoryDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
         <div class="flex items-center gap-4">
             <i class="pi pi-exclamation-triangle !text-3xl" />
             <span v-if="category"
@@ -218,18 +218,18 @@ onMounted(() => {
         </div>
         <template #footer>
             <Button label="No" icon="pi pi-times" autofocus text @click="deleteCategoryDialog = false" />
-            <Button label="Yes" icon="pi pi-check" @click="deleteCategory" />
+            <Button label="Sí" icon="pi pi-check" @click="deleteCategory" />
         </template>
     </Dialog>
 
-    <Dialog v-model:visible="deleteSelectedCategoriesDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+    <Dialog v-model:visible="deleteSelectedCategoriesDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
         <div class="flex items-center gap-4">
             <i class="pi pi-exclamation-triangle !text-3xl" />
             <span v-if="selectedCategories.length">¿Seguro que quieres borrar las categorías seleccionadas?</span>
         </div>
         <template #footer>
             <Button label="No" icon="pi pi-times" autofocus text @click="deleteSelectedCategoriesDialog = false" />
-            <Button label="Yes" icon="pi pi-check" text @click="deleteSelectedCategories" />
+            <Button label="Sí" icon="pi pi-check" text @click="deleteSelectedCategories" />
         </template>
     </Dialog>
 </template>

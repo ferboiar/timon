@@ -25,6 +25,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 - Gestión diferenciada según la periodicidad del recibo (anual, trimestral, bimestral, mensual)
 - Selección de cuenta bancaria asociada al recibo
 - Exportación de datos a formato CSV
+- Vocabulario de interfaz (DC-72): pies de diálogo «Cancelar»/«Guardar» y «No»/«Sí», título de confirmación «Confirmar» y avisos con resumen «Éxito», «Aviso» o «Error»
 - «Hoy», el año y el mes en curso se calculan en la zona horaria de Ajustes (`useZonaHoraria`, DC-25)
 - El flujo global «Actualizar fechas» (`updateAllDates`) se retiró el 2026-10-27 (F-11/F-23/F-32); «Generar nuevas fechas» (`generateDates`) sigue activo (DC-22)
 

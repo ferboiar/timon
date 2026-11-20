@@ -52,6 +52,10 @@ U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'
 
 `exportCSV` genera `anticipos.csv` con la utilidad común ([utils/csv](../utils/csv.md)): BOM UTF-8, separador `;`, coma decimal, escape RFC 4180 (entrecomilla solo lo que lo necesita, antes entrecomillaba todos los campos) y neutralización de fórmulas (F-19). No incluye filas de pagos.
 
+## Vocabulario de interfaz (DC-72)
+
+Los pies de diálogo usan «Cancelar»/«Guardar» y «No»/«Sí», el título de confirmación es «Confirmar» y los avisos resumen con «Éxito», «Aviso» o «Error». Las etiquetas de importes no cambian: «Importe» y «Pendiente» en la tabla (DC-38) y «Pago sugerido» en el formulario.
+
 ## Fallos y límites documentados, no corregidos aquí
 
 - F-14 / DC-38: el importe pendiente se deriva y es coherente; al editar un pago pagado los pagos pendientes se recalculan solo si el plan cuadraba (DC-40); del paso c siguen pendientes el modo automático o manual por anticipo y la vista previa. No se debe prometer conciliación automática del plan pendiente.

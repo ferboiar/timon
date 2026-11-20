@@ -29,7 +29,7 @@ Al montar se ejecutan `fetchSavings`, `fetchPeriodicidades` y `fetchAllMovimient
 
 ## Aportaciones periódicas o sin patrón
 
-La periodicidad y el importe sugerido son campos descriptivos: no disparan movimientos automáticos. El selector obtiene opciones del servidor y añade una vacía; esta se guarda como NULL. Ya se pueden registrar manualmente movimientos con fechas e importes arbitrarios, positivos o negativos, sin elegir una periodicidad. Las etiquetas regular/extraordinario son seleccionadas por el usuario, no comprobadas contra un calendario.
+La periodicidad y el importe sugerido son campos descriptivos: no disparan movimientos automáticos. El selector obtiene opciones del servidor y añade una vacía; esta se guarda como NULL. Ya se pueden registrar manualmente movimientos con fechas e importes arbitrarios, positivos o negativos, sin elegir una periodicidad. Las etiquetas regular/extraordinario son seleccionadas por el usuario, no comprobadas contra un calendario. El importe asociado a la periodicidad se llama «Ahorro sugerido» en la tabla, en el formulario y en el CSV (DC-72); antes el formulario decía «Importe periódico».
 
 El requisito del usuario permite ahorros diarios, semanales, otras cadencias o puntuales. El código no los trata como recibos: las opciones explícitas disponibles dependen del esquema que consulta getPeriodicidades (F-37). No deben inferirse reglas de negocio de los registros de prueba.
 

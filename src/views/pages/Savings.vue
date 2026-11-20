@@ -135,7 +135,7 @@ async function saveSaving() {
         };
 
         await SavService.saveSaving(payload);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Ahorro guardado!', life: 5000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Ahorro guardado!', life: 5000 });
         fetchSavings();
         hideDialog();
     } catch (error) {
@@ -167,7 +167,7 @@ function confirmDeleteSaving(sav) {
 async function deleteSaving() {
     try {
         await SavService.deleteSavings([saving.value.id]);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Ahorro eliminado', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Ahorro eliminado', life: 3000 });
         fetchSavings();
         hideDialog();
     } catch (error) {
@@ -305,7 +305,7 @@ const saveMovimiento = async () => {
         };
 
         await SavService.saveMovimiento(payload);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Movimiento guardado!', life: 5000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Movimiento guardado!', life: 5000 });
         fetchSavings();
         fetchAllMovimientos();
         savingMovimientoDialog.value = false;
@@ -318,7 +318,7 @@ const saveMovimiento = async () => {
 const deleteMovimiento = async (mov) => {
     try {
         await SavService.deleteMovimiento(mov.id);
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Movimiento eliminado', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Movimiento eliminado', life: 3000 });
         fetchSavings();
         fetchAllMovimientos();
     } catch (error) {
@@ -516,8 +516,8 @@ onMounted(async () => {
         </div>
 
         <template #footer>
-            <Button label="Cancel" icon="pi pi-times" text @click="savingMovimientoDialog = false" />
-            <Button label="Save" icon="pi pi-check" @click="saveMovimiento" :disabled="!isMovimientoFormValid" />
+            <Button label="Cancelar" icon="pi pi-times" text @click="savingMovimientoDialog = false" />
+            <Button label="Guardar" icon="pi pi-check" @click="saveMovimiento" :disabled="!isMovimientoFormValid" />
         </template>
     </Dialog>
 
@@ -550,7 +550,7 @@ onMounted(async () => {
                     <Select id="periodicidad" v-model="saving.periodicidad" :options="periodicidades" optionValue="value" optionLabel="label" fluid />
                 </div>
                 <div class="flex-1">
-                    <label for="importe_periodico" class="block font-bold mb-3">Importe periódico</label>
+                    <label for="importe_periodico" class="block font-bold mb-3">Ahorro sugerido</label>
                     <InputNumber id="importe_periodico" v-model="saving.importe_periodico" mode="currency" currency="EUR" locale="es-ES" fluid />
                 </div>
             </div>
@@ -561,12 +561,12 @@ onMounted(async () => {
         </div>
 
         <template #footer>
-            <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-            <Button label="Save" icon="pi pi-check" @click="saveSaving" :disabled="!isFormValid" />
+            <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+            <Button label="Guardar" icon="pi pi-check" @click="saveSaving" :disabled="!isFormValid" />
         </template>
     </Dialog>
 
-    <Dialog v-model:visible="deleteSavingDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+    <Dialog v-model:visible="deleteSavingDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
         <div class="flex items-center gap-4">
             <i class="pi pi-exclamation-triangle !text-3xl" />
             <span v-if="saving"
@@ -576,18 +576,18 @@ onMounted(async () => {
         </div>
         <template #footer>
             <Button label="No" icon="pi pi-times" autofocus text @click="deleteSavingDialog = false" />
-            <Button label="Yes" icon="pi pi-check" @click="deleteSaving" />
+            <Button label="Sí" icon="pi pi-check" @click="deleteSaving" />
         </template>
     </Dialog>
 
-    <Dialog v-model:visible="deleteSelectedSavingsDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+    <Dialog v-model:visible="deleteSelectedSavingsDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
         <div class="flex items-center gap-4">
             <i class="pi pi-exclamation-triangle !text-3xl" />
             <span v-if="selectedSavings.length">¿Seguro que quieres borrar los ahorros seleccionados?</span>
         </div>
         <template #footer>
             <Button label="No" icon="pi pi-times" autofocus text @click="deleteSelectedSavingsDialog = false" />
-            <Button label="Yes" icon="pi pi-check" text @click="deleteSelectedSavings" />
+            <Button label="Sí" icon="pi pi-check" text @click="deleteSelectedSavings" />
         </template>
     </Dialog>
 </template>

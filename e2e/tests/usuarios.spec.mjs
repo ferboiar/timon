@@ -4,7 +4,7 @@
  *
  * Deducciones:
  * - `src/router/index.js`: ruta `/settings`; `ProfileSettings.vue`: pestaña «Usuarios» con
- *   toolbar «Nuevo», `DataTable` (Usuario, E-Mail, Rol) y botones por fila (`pi-pencil`,
+ *   toolbar «Nuevo», `DataTable` (Usuario, Correo, Rol) y botones por fila (`pi-pencil`,
  *   `pi-key`, `pi-trash`).
  * - `ProfileSettings.vue`: diálogo «Detalle del usuario» con `#username`, `#password`, `#email`
  *   y `#rol`; el toast de error es `Error al guardar usuario: ${getApiErrorMessage(error)}`.
@@ -66,7 +66,7 @@ test.describe('Usuarios: mensajes de error (F-48)', () => {
         await abrirAjustes(page, 'Usuarios');
 
         await expect(page.getByRole('columnheader', { name: 'Usuario' })).toBeVisible();
-        await expect(page.getByRole('columnheader', { name: 'E-Mail' })).toBeVisible();
+        await expect(page.getByRole('columnheader', { name: 'Correo' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Nuevo' })).toBeVisible();
 
         const nombres = (await page.locator('table tbody tr td:first-child').allInnerTexts()).map((texto) => texto.trim()).filter(Boolean);
