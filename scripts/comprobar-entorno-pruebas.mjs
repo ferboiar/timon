@@ -103,11 +103,10 @@ export function asegurarPermisos(rutaFichero) {
  * Revisa el fichero de entorno. Devuelve la lista de problemas; vacía si todo está bien.
  *
  * @param {string} rutaFichero Ruta absoluta o relativa a la raíz del repositorio.
- * @param {{ statSync?: typeof fs.statSync, readFileSync?: typeof fs.readFileSync }} [fsSimulado]
+ * @param {{ readFileSync?: typeof fs.readFileSync }} [fsSimulado]
  * @returns {{ problemas: string[], variables: Map<string, string> }}
  */
 export function revisarFichero(rutaFichero, fsSimulado = {}) {
-    const leerStat = fsSimulado.statSync || fs.statSync;
     const leer = fsSimulado.readFileSync || fs.readFileSync;
     const problemas = [];
 

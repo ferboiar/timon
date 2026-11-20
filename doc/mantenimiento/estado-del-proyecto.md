@@ -42,6 +42,7 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-67 | CORS restringido por `CORS_ALLOWED_ORIGINS` (nombres) y `CORS_ALLOWED_NETWORKS` (CIDR, IPs literales); validado al arrancar y cerrado por defecto. |
 | DC-68 | Actualización de dependencias solo de lo gobernado por `package.json` y `package-lock.json`; Node, npm e imagen no se actualizan desde el repositorio. |
 | DC-69 | Proceso ligero: relevo mínimo sin PR, SHA ni ramas; registro por ID y no entero; niveles ligero y completo con modo autónomo; edición con la herramienta normal; umbral de reglas 12 000 B. |
+| DC-70 | Lint y formato: `e2e/` se analiza con la configuración raíz de ESLint y sus 33 avisos `prettier/prettier` se aceptan; `dev/utils/` se formatea con `.prettierrc.json` y no se exceptúa. |
 
 ## 2. Entorno y mapa
 - Frontend: Vue 3 + PrimeVue; vistas en `src/views/pages`, componentes en `src/components`, servicios

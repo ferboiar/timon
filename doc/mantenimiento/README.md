@@ -20,7 +20,7 @@ Herramientas mecánicas del flujo; no hacen commit, push ni PR. La lógica pura 
 
 | Orden | Qué hace |
 |---|---|
-| `npm run iter:previa` | Rama, estado y últimos commits; `git diff --check` y `git diff --cached --check`; `node --check` de los `.mjs` tocados fuera de `src/`; ESLint de los `src/` tocados y con `--no-ignore` de los `e2e/` (O-12); avisa de CRLF en las líneas añadidas y de cercas de código impares en `.md`, sin bloquear. |
+| `npm run iter:previa` | Rama, estado y últimos commits; `git diff --check` y `git diff --cached --check`; `node --check` de los `.mjs` tocados fuera de `src/`; ESLint de los `src/` y de los `e2e/` tocados (`--no-ignore` como guarda, DC-70); avisa de CRLF en las líneas añadidas y de cercas de código impares en `.md`, sin bloquear. |
 | `npm run iter:pruebas` | Propone las pruebas por impacto. Un cambio en `src/composables`, `config`, `layout`, `router`, `service` o `utils` pide E2E completa y build. Con `-- --ejecuta` lanza las que no necesitan entorno; `--incluye-entorno` añade las de base `_test` y la E2E. |
 | `npm run iter:cierre -- <tema> --ficheros a,b` | Manifiesto explícito en `/tmp/manifiesto-<tema>.txt`, `git add --` de esas rutas, rechazo de `.db_connection`, `.env` y `node_modules`, y comparación con el índice. Sin `--ficheros` solo propone y sale con código 2. |
 | `npm run iter:ids` | Último ID asignado de cada familia (DC, F, S, O, U, D, R) con orden numérico, leído del registro. |

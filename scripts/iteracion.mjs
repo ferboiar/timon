@@ -111,7 +111,7 @@ function previa() {
     for (const f of cambiados.filter((x) => /\.mjs$/.test(x) && !x.startsWith('src/'))) fallos += ejecutar('node', ['--check', f]) ? 1 : 0;
 
     const lint = cambiados.filter((f) => /^src\/.*\.(vue|js|mjs|cjs)$/.test(f));
-    // `.eslintrc.cjs` ignora `e2e/**` (O-12): sin --no-ignore ESLint responde «File ignored» con exit 0 y parece que analizó.
+    // `e2e/**` ya no está en `ignorePatterns` (O-12); `--no-ignore` queda como guarda ante un ignore que reaparezca.
     const lintE2e = cambiados.filter((f) => /^e2e\/.*\.(js|mjs|cjs)$/.test(f));
     const arreglo = bandera('--fix') ? ['--fix'] : [];
 

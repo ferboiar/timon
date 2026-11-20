@@ -181,6 +181,13 @@ válido para los specs de la pestaña Base de Datos.
 está definida, la aplicación lee y escribe ahí su configuración. Así las E2E no tocan
 `backend/src/db/.db_connection`.
 
+## Lint
+
+`npx eslint e2e --ext .mjs,.js,.cjs` analiza los 30 ficheros versionados de `e2e/` con la configuración
+raíz: 0 errores y los avisos `prettier/prettier` preexistentes, aceptados en DC-70. `npm run iter:previa`
+analiza los `e2e/` que cambian. `lint:frontend` incluye `--fix` y también reescribe `e2e/`: para
+comprobar sin tocar, usa el comando de arriba.
+
 ## Triage de fallos
 
 - `.last-green.json` guarda la rama, el HEAD y el `sha256` de los ficheros de Timón

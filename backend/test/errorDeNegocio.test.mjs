@@ -1,15 +1,7 @@
 // F-47 y F-48: pruebas de la utilidad de errores de negocio y técnicos; no necesitan base de datos.
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import {
-    detalleParaLog,
-    ErrorDeNegocio,
-    esErrorDeNegocio,
-    MARCA_ERROR_DE_NEGOCIO,
-    responderError,
-    respuestaDeError,
-    sanearParaLog
-} from '../src/utils/errorDeNegocio.mjs';
+import { detalleParaLog, ErrorDeNegocio, esErrorDeNegocio, MARCA_ERROR_DE_NEGOCIO, responderError, respuestaDeError, sanearParaLog } from '../src/utils/errorDeNegocio.mjs';
 import { AUDIENCIA_ADMIN } from '../src/utils/catalogoErrores.mjs';
 
 const AVISO_GENERAL = 'Inténtalo de nuevo y, si persiste, avisa al administrador.';
@@ -17,7 +9,6 @@ const AVISO_ADMIN = 'La causa no se ha podido identificar; consulta el registro 
 
 function respuestaFalsa() {
     return {
-        status: null,
         cuerpo: null,
         status(codigo) {
             this.status = codigo;
