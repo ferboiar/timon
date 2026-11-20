@@ -95,7 +95,11 @@ El PR es el único registro del trabajo: no hay informes aparte. Debe entenderse
 - `## Pendiente`: lo no verificado con su motivo exacto y siguiente paso, riesgos, trabajo derivado y
   hallazgos registrados con su ID.
 - Sin tope de líneas: el detalle es la fuente de verdad. Fuera de las tres secciones, una línea de
-  coste: `Coste: turnos=N · inicio=<AAAA-MM-DD HH:MM> · nivel=ligero|completo`.
+  coste: `Coste: turnos=N · inicio=<AAAA-MM-DD HH:MM> · fin=<AAAA-MM-DD HH:MM> · nivel=ligero|completo`,
+  en hora de Europe/Madrid. `inicio` es el primer mensaje del usuario (si no consta, la creación de la
+  rama, indicándolo); `fin`, la hora del commit (`git log -1 --format=%cI`) y, si se fusiona en la misma
+  sesión, `mergedAt` de `gh pr view --json mergedAt`; `turnos`, los mensajes del usuario entre la
+  petición y la fusión.
 - Antes de `gh pr create`, muestra el título y el cuerpo completos y espera confirmación, salvo en modo
   autónomo (se muestran al crear el PR).
 - `gh pr create --title "tipo(IDs): resumen" --body-file /tmp/pr-<tema>.md` con la etiqueta
