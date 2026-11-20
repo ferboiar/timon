@@ -103,6 +103,43 @@ SET time_zone = "+00:00";
 - Se declaran sin cláusula `DEFINER`: la cuenta que ejecuta la migración es la propietaria. Es lo que permite que una copia nueva se restaure con la misma cuenta sin `SET USER`.
 - La copia y la restauración son fieles: conservan y reproducen el `DEFINER`, el estado y el horario de los eventos. Las copias antiguas con otro `DEFINER` siguen necesitando `SET USER`.
 
+## Reversión de migraciones
+
+Documentación de la reversión de las migraciones que no la llevan en su propio fichero (D-37).
+No son scripts ejecutables: exigen copia de seguridad previa, ventana sin escrituras y la
+autorización de la skill `migraciones-bd`. La 0006, la 0007 y la 0008 la incluyen como comentario
+en el `.sql`; la 0003, la 0004 y la 0005 tampoco la tienen documentada (el issue #131 daba por
+cubiertas de la 0003 a la 0007 y no lo están).
+
+### 0001: línea base
+
+Revierte dejando el esquema vacío. **Pierde todos los datos.**
+
+```sql
+-- Reversión (solo con copia de seguridad verificada y sin escrituras en curso):
+-- SET FOREIGN_KEY_CHECKS = 0;
+-- DROP TABLE IF EXISTS `users_style_preferences`, `users`, `recibos_historico`, `recibos`,
+--   `presupuesto_periodos`, `presupuestos`, `mantenimiento_logs`, `fechas_cargo`, `cuentas`,
+--   `categorias`, `anticipos_pagos`, `anticipos`, `ahorros_movimientos`, `ahorros`;
+-- SET FOREIGN_KEY_CHECKS = 1;
+-- ADVERTENCIA: borra las 14 tablas de la línea base. `recibos_historico` desaparece en la 0003;
+-- `IF EXISTS` evita el error si ya no está.
+```
+
+### 0002: recibo por año
+
+```sql
+-- Reversión (solo con copia de seguridad y tras revertir antes la 0003):
+-- ALTER TABLE `recibos` DROP FOREIGN KEY `fk_recibos_origen`;
+-- ALTER TABLE `recibos` DROP INDEX `uq_recibos_origen`;
+-- ALTER TABLE `recibos` DROP COLUMN `replicar`, DROP COLUMN `recibo_origen_id`;
+-- ALTER TABLE `fechas_cargo` DROP KEY `idx_fechas_cargo_fecha`;
+-- ALTER TABLE `fechas_cargo` DROP COLUMN `importe`;
+-- ADVERTENCIA: `recibo_origen_id` sostiene el reparto de la 0003; revertir la 0002 con la 0003
+-- aplicada deja recibos repartidos sin vínculo. `fechas_cargo.importe` guarda el importe real
+-- cobrado y se pierde.
+```
+
 ## Convenciones del Esquema
 
 - Todos los IDs son de tipo `INT` con auto-incremento

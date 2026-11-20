@@ -27,7 +27,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `fecha_inicio` | DATE | Fecha de inicio del anticipo |
 | `fecha_fin_prevista` | DATE | Fecha estimada de finalización |
 | `descripcion` | VARCHAR(255) | Descripción detallada (opcional) |
-| `estado` | ENUM | Estado manual del anticipo: 'activo', 'pausado' o 'cancelado'. 'completado' se deduce del importe pendiente y las consultas lo devuelven, pero no se guarda (DC-38) |
+| `estado` | ENUM | Estado manual del anticipo. El ENUM del esquema admite 'activo', 'pausado', 'cancelado' y 'completado' (0001); la 0005 solo convierte a 'activo' los valores guardados. La aplicación no guarda 'completado': lo deduce del importe pendiente, lo devuelve en las consultas y normaliza a 'activo' el que recibe (DC-38). Sigue admitido en el esquema (D-39) |
 | `cuenta_origen_id` | INT | ID de la cuenta de origen |
 | `periodicidad` | ENUM | Frecuencia de pagos: 'mensual', 'bimestral', 'trimestral', 'anual' |
 | `propietario_id` | INT | Usuario que creó el anticipo; obligatorio al crear |
