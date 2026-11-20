@@ -43,11 +43,10 @@
   iter:ids`); no reutilices ni renumere.
 - Commit: `tipo(IDs): resumen breve`, con cada ID desglosado y cuerpo en español (qué cambia, por qué,
   qué queda). Tipos: feat, fix, refactor, docs, test, chore, perf, security, revert. Un cambio
-  funcional no se etiqueta `docs` por tocar documentación.
+  funcional no se etiqueta `docs` por tocar documentación. En nivel ligero, sin ID: `tipo: resumen`.
 
 ## PR y ramas
-- Cuerpo del PR y publicación: skill `cierre-iteracion`. No inventes números de PR ni SHA; el de
-  fusión lo da `git log --oneline -1 main`.
+- Cuerpo del PR y publicación: skill `cierre-iteracion`.
 - Ramas: `correccion/fase-<n>-<tema>` y `mantenimiento/<tema>`. Preparación: `git switch main && git
   pull --ff-only origin main && git fetch --prune && git switch -c <rama>`; si un paso falla, para.
 - Borrado de ramas: `/limpieza-ramas`, solo las nombradas en el prompt.
