@@ -1,6 +1,6 @@
 # Informes de iteración
 
-Histórico congelado el 2026-11-16 (DC-64). Índice de los informes de cierre anteriores, del más reciente al más antiguo. **No se añaden informes nuevos**: el detalle de cada PR vive en GitHub, en su descripción y sus comentarios. Los informes de los PR #43 y #44 son retroactivos (D-18).
+Histórico congelado el 2026-11-16 (DC-64). Índice de los informes de cierre anteriores, del más reciente al más antiguo. **No se añaden informes nuevos**: el detalle de cada PR vive en GitHub, en su descripción y sus comentarios. Los informes de los PR #43 y #44 son retroactivos (D-18). Los PR #64 y #65 no tienen informe: no se redactaron por indicación expresa del usuario y D-40 decide no crearlos retroactivos. Constan abajo, sin enlace.
 
 | Fecha | IDs | Informe |
 |---|---|---|
@@ -31,6 +31,8 @@ Histórico congelado el 2026-11-16 (DC-64). Índice de los informes de cierre an
 | 2026-11-06 | S-15 | [Hooks ejecutables con `core.fileMode=false`](./2026-11-06_S-15-hooks-ejecutables.md) |
 | 2026-11-06 | S-09, DC-45 | [Cifrado con git-crypt: `e2e/.env` cifrado, hooks y política](./2026-11-06_S-09-cifrado-git-crypt.md) |
 | 2026-11-06 | O-02, DC-44, D-27 | [Suite E2E persistente con Playwright](./2026-11-06_O-02_suite-e2e.md) |
+| 2026-11-06 | — | PR #64: sin informe por indicación expresa del usuario (D-40) |
+| 2026-11-06 | — | PR #65: sin informe por indicación expresa del usuario (D-40) |
 | 2026-11-05 | F-47, F-48 | [Errores de negocio y técnicos en el backend](./2026-11-05_F-47_errorDeNegocio.md) |
 | 2026-11-05 | F-28, D-26 | [Mensajes del servidor en servicios y pantallas](./2026-11-05_F-28_mensajes-servidor.md) |
 | 2026-11-05 | F-20, F-21, DC-43 | [Retirada de `getBillById` y decisión del saldo manual](./2026-11-05_F-20_F-21_retirada-getbillbyid-dc43.md) |
