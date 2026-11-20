@@ -27,7 +27,9 @@ Herramientas mecánicas del flujo; no hacen commit, push ni PR. La lógica pura 
 
 `--ejecuta` sin `--incluye-entorno` omite la E2E y las pruebas con base: esa ejecución no es verde y el script lo avisa.
 
-# Informe: cómo se trabaja en Timón después de DC-69
+> Apunte personal, fotografía a 2026-11-19, no se mantiene; la fuente de verdad son las reglas 00/01 y las skills.
+
+## Informe: cómo se trabaja en Timón después de DC-69
 
 Todo lo que sigue está verificado contra `main` en `34f443d` (PR #163). Cada afirmación cita la regla o skill real; lo que no está cubierto se dice en el apartado 6.
 
