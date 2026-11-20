@@ -62,9 +62,10 @@ operaciones y espera.
   avisos de formato; `-- --completo` para la salida íntegra).
 - `git branch --show-current; git status --short; git log --oneline -3`.
 - `git diff --stat` y lectura del diff real, no solo del resumen.
-- ESLint de `src/` y de `e2e/` con `--no-ignore` (O-12), que hace `npm run iter:previa`; `--fix`
-  **solo si el usuario lo pide en el prompt**; si se usa, se cita en `## Qué hace` con los ficheros que
-  tocó. Sin `--no-ignore`, ESLint sobre `e2e/` responde «File ignored» con exit 0 y no es verde.
+- ESLint de `src/` y de `e2e/`, que hace `npm run iter:previa` (los `e2e/` con `--no-ignore` como
+  guarda; `npx eslint e2e --ext .mjs,.js,.cjs` cubre los 30 ficheros, DC-70); `--fix` **solo si el
+  usuario lo pide en el prompt**; si se usa, se cita en `## Qué hace` con los ficheros que tocó. Si
+  ESLint responde «File ignored» con exit 0, no ha analizado nada y no es verde.
   `node --check` de los `.mjs` tocados.
 - Pruebas que correspondan (regla `30-tests`), con código de salida y `# tests/# pass/# fail`. Si se
   usa `--ejecuta` sin `--incluye-entorno`, la E2E y la base quedan omitidas: no es verde.
