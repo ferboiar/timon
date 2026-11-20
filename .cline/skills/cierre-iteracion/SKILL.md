@@ -38,19 +38,22 @@ operaciones y espera.
   Autorizo: crear la rama mantenimiento/<tema>, commit, push, gh pr create y gh pr merge si los
   checks están en verde; después borra mantenimiento/<tema> en local y en remoto.
 
-  No toques registro, relevo ni issues. Si el cambio deja de ser ligero, para y avísame.
+  No toques registro ni relevo. Si el PR cierra un issue, usa `Closes` y compruébalo al fusionar.
+  Si el cambio deja de ser ligero, para y avísame.
   ```
 
 - **PR de tres líneas** (formato fijo): `Qué: <una frase>.` · `Verificado: <comando y resultado>.` ·
   `Pendiente: <nada o el resto con su motivo>.` Ejemplo real: «Qué: corrige el enlace a
   `optimizaciones.md` en `doc/db/schema/index.md`. Verificado: `iter:previa` exit 0; coherencia 7/7.
   Pendiente: nada.»
+- **Issue en el PR**: mismo criterio que §4 — `Closes #n` solo si el PR lo cierra; si no, `Refs #n`; si
+  el issue ya está cerrado, no se referencia.
 - **Modo autónomo del nivel completo**: solo si el prompt lo pide o autoriza publicar el PR junto al
   plan. Dos aprobaciones: (1) el plan, que ya incluye publicar y abrir el PR; (2) fusionar y limpiar,
   tras comprobar los checks. Entre ambas no se pregunta. Se para solo ante un error real: checks en
   rojo, ficheros sensibles en el índice, push rechazado, divergencia con `main` o un hallazgo que
   cambie el alcance. Lo no autorizado se sigue pidiendo aparte. La revisión del PR se hace antes de la
-  aprobación de fusión.
+  aprobación de fusión. Esa revisión es la del usuario en el chat, no una revisión de GitHub (§5).
 - Se trabaja en Act desde el principio cuando el alcance ya está aprobado: el modo Plan bloquea
   `git add` y `git commit`.
 
@@ -59,8 +62,9 @@ operaciones y espera.
   avisos de formato; `-- --completo` para la salida íntegra).
 - `git branch --show-current; git status --short; git log --oneline -3`.
 - `git diff --stat` y lectura del diff real, no solo del resumen.
-- ESLint de `src/` y de `e2e/` con `--no-ignore` (O-12), que hace `npm run iter:previa`; `--fix` solo
-  si se pide. Sin `--no-ignore`, ESLint sobre `e2e/` responde «File ignored» con exit 0 y no es verde.
+- ESLint de `src/` y de `e2e/` con `--no-ignore` (O-12), que hace `npm run iter:previa`; `--fix`
+  **solo si el usuario lo pide en el prompt**; si se usa, se cita en `## Qué hace` con los ficheros que
+  tocó. Sin `--no-ignore`, ESLint sobre `e2e/` responde «File ignored» con exit 0 y no es verde.
   `node --check` de los `.mjs` tocados.
 - Pruebas que correspondan (regla `30-tests`), con código de salida y `# tests/# pass/# fail`. Si se
   usa `--ejecuta` sin `--incluye-entorno`, la E2E y la base quedan omitidas: no es verde.
@@ -85,8 +89,9 @@ operaciones y espera.
 
 ## Cuerpo del PR (sustituye al informe de iteración)
 El PR es el único registro del trabajo: no hay informes aparte. Debe entenderse sin leer los commits.
-- `Closes #<id>, closes #<id> …` con todos los issues del alcance, o `Refs #<id>` si el PR no cierra el
-  issue. La palabra clave se repite antes de cada número. No se cierran a mano después.
+- `Closes #<id>, closes #<id> …` **solo** para los issues que el PR cierra; en otro caso `Refs #<id>`.
+  La palabra clave se repite antes de cada número. Si el issue ya está cerrado, no se referencia. No se
+  cierran a mano después.
 - `## Qué hace`: IDs, objetivo, base, alcance y exclusiones; tabla de ficheros agrupada por tipo
   (nuevos, modificados, movidos, borrados) con el motivo de cada grupo; decisiones registradas y qué
   sustituyen; mapa de conservación cuando se muevan reglas.
@@ -108,6 +113,12 @@ El PR es el único registro del trabajo: no hay informes aparte. Debe entenderse
 
 ## 5. Fusión y después
 - `gh pr merge <n>` solo si el prompt lo autoriza y los checks están en verde.
+- `reviewDecision: REVIEW_REQUIRED` es el estado **normal** de un PR creado con el token de `ferboiar`:
+  el ruleset de `main` exige una aprobación y el usuario tiene bypass `Exempt`, así que **no bloquea** y
+  no hay que hacer nada. La «aprobación 2» es del usuario en el chat, no una revisión de GitHub.
+  `--admin` **no** se usa nunca.
+- Salvaguarda: si `gh pr merge` se bloquea de forma inesperada (cambio de token o de ruleset), se para y
+  se muestra el mensaje exacto; el bypass lo decide el usuario.
 - Después: `git switch main && git pull --ff-only origin main && git log --oneline -1` para leer el
   SHA real. Ese SHA no se copia al PR siguiente (DC-64).
 - Los issues se cierran solos con `Closes` al fusionar; comprueba que quedaron cerrados. El relevo solo
