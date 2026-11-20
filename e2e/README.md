@@ -144,6 +144,10 @@ tres veces, porque los servidores se acaban de arrancar y el primer `goto` puede
 Vite atienda en la dirección que ve el Edge. Si aun así no se completa, solo avisa con
 `[calentamiento]` y la suite continúa; las esperas de cada test dicen qué falta.
 
+El calentamiento **es** la espera a `E2E_BASE_URL` tal y como la ve el Edge: desde el contenedor esa
+misma dirección responde `ECONNRESET` (ver «Requisitos»), así que una espera desde el proceso de la
+suite no demuestra lo que ve el Edge (O-16).
+
 ## Base de datos de las pruebas (pestaña Base de Datos)
 
 Los specs de la pestaña **Base de Datos** guardan la configuración y restauran un volcado, así

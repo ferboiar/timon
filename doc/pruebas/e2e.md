@@ -55,7 +55,9 @@ Los tres usan datos e2e_ y limpieza en afterAll/afterEach. Se ejecutan con npm r
 - Arranque en frío (O-14): `scripts/setup.mjs` calienta Vite antes de la primera prueba en un contexto
   desechable por CDP (`/auth/login` con el formulario montado, sesión iniciada y las pestañas de
   `/settings` visibles), con hasta tres intentos porque los servidores acaban de arrancar. `retries`
-  sigue en 0: la intermitencia se mitiga, no se reintenta.
+  sigue en 0: la intermitencia se mitiga, no se reintenta. Ese calentamiento es la espera a
+  `E2E_BASE_URL` tal como la ve el Edge: desde el contenedor esa dirección responde `ECONNRESET`,
+  así que esperarla desde el proceso de la suite no es concluyente (O-16).
 - Lint (O-15, DC-71): `npx eslint e2e --ext .mjs,.js,.cjs` (0 errores y 0 avisos) y
   `npx prettier --check "e2e/**/*.mjs"`. `npm run lint:frontend` conserva `--fix`, idempotente sobre
   la suite formateada; para comprobar sin reescribir, usa los dos comandos anteriores.
