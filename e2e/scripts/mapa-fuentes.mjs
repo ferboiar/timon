@@ -63,13 +63,7 @@ export const MAPA_FUENTES = {
         'backend/src/utils/errorDeNegocio.mjs',
         'backend/src/db/migrations/0001_baseline.sql'
     ],
-    'tests/recibosTrazabilidad.spec.mjs': [
-        'src/views/pages/ListBills.vue',
-        'src/service/BillService.js',
-        'backend/src/routes/recibos.mjs',
-        'backend/src/db/db_utils.mjs',
-        'backend/src/db/migrations/0006_trazabilidad_y_categoria_unica.sql'
-    ],
+    'tests/recibosTrazabilidad.spec.mjs': ['src/views/pages/ListBills.vue', 'src/service/BillService.js', 'backend/src/routes/recibos.mjs', 'backend/src/db/db_utils.mjs', 'backend/src/db/migrations/0006_trazabilidad_y_categoria_unica.sql'],
     'tests/usuariosValidacion.spec.mjs': [
         'src/views/pages/ProfileSettings.vue',
         'src/utils/validacionUsuarios.js',
@@ -91,19 +85,8 @@ export const MAPA_FUENTES = {
         'backend/src/db/db_utilsSav.mjs',
         'backend/src/utils/catalogoErrores.mjs'
     ],
-    'tests/recibosBorrado.spec.mjs': [
-        'src/views/pages/ListBills.vue',
-        'src/service/BillService.js',
-        'src/router/index.js',
-        'backend/src/routes/recibos.mjs'
-    ],
-    'tests/recibosTrimestrales.spec.mjs': [
-        'src/views/pages/ListBills.vue',
-        'src/service/BillService.js',
-        'src/router/index.js',
-        'backend/src/routes/recibos.mjs',
-        'backend/src/db/db_utils.mjs'
-    ],
+    'tests/recibosBorrado.spec.mjs': ['src/views/pages/ListBills.vue', 'src/service/BillService.js', 'src/router/index.js', 'backend/src/routes/recibos.mjs'],
+    'tests/recibosTrimestrales.spec.mjs': ['src/views/pages/ListBills.vue', 'src/service/BillService.js', 'src/router/index.js', 'backend/src/routes/recibos.mjs', 'backend/src/db/db_utils.mjs'],
     'tests/autorizacion.spec.mjs': [
         'src/views/pages/ListBills.vue',
         'src/router/index.js',
@@ -138,11 +121,7 @@ export const MAPA_FUENTES = {
         'backend/src/routes/auth.mjs',
         'backend/src/middleware/auth.mjs'
     ],
-    'tests/documentacionVisor.spec.mjs': [
-        'src/views/pages/Tech-documentation.vue',
-        'src/router/index.js',
-        'doc/db/schema/presupuestos.md'
-    ],
+    'tests/documentacionVisor.spec.mjs': ['src/views/pages/Tech-documentation.vue', 'src/router/index.js', 'doc/db/schema/presupuestos.md'],
     'tests/configuracionBd.spec.mjs': [
         'src/views/pages/ProfileSettings.vue',
         'src/service/DbConfigService.js',

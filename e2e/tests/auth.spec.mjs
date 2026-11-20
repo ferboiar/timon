@@ -34,10 +34,7 @@ test.describe('Autenticación', () => {
         await page.getByLabel('Usuario').fill(usuario);
         await page.getByPlaceholder('Contraseña').fill('contrasena-incorrecta-e2e');
 
-        const [respuesta] = await Promise.all([
-            page.waitForResponse((r) => r.url().includes('/api/auth/login') && r.request().method() === 'POST', { timeout: 30_000 }),
-            page.getByRole('button', { name: 'Iniciar Sesión' }).click()
-        ]);
+        const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/auth/login') && r.request().method() === 'POST', { timeout: 30_000 }), page.getByRole('button', { name: 'Iniciar Sesión' }).click()]);
 
         // `routes/auth.mjs`: credenciales incorrectas => 401.
         expect(respuesta.status()).toBe(401);
@@ -105,10 +102,7 @@ test.describe('Autenticación', () => {
         expect(tokenAnterior).toBeTruthy();
 
         // `AppTopbar.vue`: ítem «Salir» del menú de perfil.
-        const [respuestaLogout] = await Promise.all([
-            page.waitForResponse((r) => r.url().includes('/api/auth/logout') && r.request().method() === 'POST', { timeout: 30_000 }),
-            page.getByText('Salir', { exact: true }).click()
-        ]);
+        const [respuestaLogout] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/auth/logout') && r.request().method() === 'POST', { timeout: 30_000 }), page.getByText('Salir', { exact: true }).click()]);
 
         // S-04a: el servidor revoca la versión y el token anterior deja de valer.
         expect(respuestaLogout.status()).toBe(200);

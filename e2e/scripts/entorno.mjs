@@ -60,10 +60,7 @@ export function baseUrl() {
     const valor = process.env.E2E_BASE_URL;
 
     if (!valor) {
-        throw new Error(
-            'Falta E2E_BASE_URL: define la URL de la aplicación (por ejemplo http://localhost:5173) ' +
-                'en e2e/.env o expórtala antes de ejecutar. Consulta e2e/.env.example.'
-        );
+        throw new Error('Falta E2E_BASE_URL: define la URL de la aplicación (por ejemplo http://localhost:5173) ' + 'en e2e/.env o expórtala antes de ejecutar. Consulta e2e/.env.example.');
     }
 
     return valor;
@@ -89,7 +86,10 @@ export function credenciales() {
 /** Bases de datos sobre las que se permite ejecutar la suite. */
 export function basesPermitidas() {
     const lista = process.env.E2E_BASES_PERMITIDAS || 'conta_hogar';
-    return lista.split(',').map((base) => base.trim()).filter(Boolean);
+    return lista
+        .split(',')
+        .map((base) => base.trim())
+        .filter(Boolean);
 }
 
 /** ¿Debe la suite arrancar front y back si no están vivos? */

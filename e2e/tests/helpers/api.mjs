@@ -55,6 +55,6 @@ export async function peticionApi(page, api, { metodo, ruta, cuerpo = null }) {
 export async function idDeSesion(page) {
     return page.evaluate(() => {
         const guardado = localStorage.getItem('user') || sessionStorage.getItem('user');
-        return guardado ? JSON.parse(guardado)?.id ?? null : null;
+        return guardado ? (JSON.parse(guardado)?.id ?? null) : null;
     });
 }

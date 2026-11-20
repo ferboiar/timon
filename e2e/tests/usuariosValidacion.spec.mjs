@@ -8,14 +8,7 @@
  */
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
-import {
-    abrirAjustes,
-    cerrarDialogoUsuario,
-    contrasenaDeUsuario,
-    dialogoUsuario,
-    emailDeUsuario,
-    nombreUsuarioUnico
-} from './helpers/timon.mjs';
+import { abrirAjustes, cerrarDialogoUsuario, contrasenaDeUsuario, dialogoUsuario, emailDeUsuario, nombreUsuarioUnico } from './helpers/timon.mjs';
 import { origenApi, peticionApi } from './helpers/api.mjs';
 
 const estado = { api: null, nombre: null };
