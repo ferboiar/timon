@@ -18,17 +18,7 @@
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
 import { debeLimpiarHuerfanas } from '../scripts/entorno.mjs';
-import {
-    abrirCategorias,
-    categoriasE2EEnTabla,
-    crearCategoria,
-    dialogoCategoria,
-    eliminarCategoria,
-    filaCategoria,
-    nombreCategoriaUnico,
-    tokenDePagina,
-    urlDeApi
-} from './helpers/timon.mjs';
+import { abrirCategorias, categoriasE2EEnTabla, crearCategoria, dialogoCategoria, eliminarCategoria, filaCategoria, nombreCategoriaUnico, tokenDePagina, urlDeApi } from './helpers/timon.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -210,10 +200,7 @@ test.describe('Categorías', () => {
         await expect(dialogo).toBeVisible();
         await dialogo.getByLabel('Descripción').fill(descripcion);
 
-        const [respuesta] = await Promise.all([
-            page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'POST', { timeout: 30_000 }),
-            dialogo.getByRole('button', { name: 'Save' }).click()
-        ]);
+        const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'POST', { timeout: 30_000 }), dialogo.getByRole('button', { name: 'Save' }).click()]);
 
         expect(respuesta.status()).toBe(201);
         await expect(page.getByRole('alert').filter({ hasText: 'Categoría guardada!' })).toBeVisible();

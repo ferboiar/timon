@@ -334,12 +334,7 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
 
         // U-15: espera por condición en vez de los 5 s por defecto. Primero se confirma por API
         // que el recibo está en el listado; después, que la fila se ha pintado.
-        await expect
-            .poll(
-                async () => (await idsDelConcepto(page, { ...estado, concepto: estado.trimestral, periodicidad: 'trimestral' })).length,
-                { timeout: 20_000, message: 'el recibo trimestral no aparece en /api/recibos' }
-            )
-            .toBeGreaterThan(0);
+        await expect.poll(async () => (await idsDelConcepto(page, { ...estado, concepto: estado.trimestral, periodicidad: 'trimestral' })).length, { timeout: 20_000, message: 'el recibo trimestral no aparece en /api/recibos' }).toBeGreaterThan(0);
 
         await expect(filaTrimestral.locator('td').first()).toBeVisible({ timeout: 20_000 });
 
@@ -389,7 +384,7 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
 
             const dialogoBimestral = page.getByRole('dialog', { name: 'Confirm' }).filter({ hasText: estado.bimestral });
             await expect(dialogoBimestral).toBeVisible();
-            expect((await dialogoBimestral.innerText())).toContain(estado.bimestral);
+            expect(await dialogoBimestral.innerText()).toContain(estado.bimestral);
 
             const borradoBimestral = page.waitForResponse((r) => r.request().method() === 'DELETE' && r.url().includes('/api/recibos/'), { timeout: 30_000 });
 

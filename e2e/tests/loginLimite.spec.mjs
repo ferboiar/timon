@@ -26,10 +26,7 @@ test.describe('Límite de intentos de login', () => {
             await page.getByLabel('Usuario').fill(usuarioInexistente);
             await page.getByPlaceholder('Contraseña').fill(password);
 
-            const [respuesta] = await Promise.all([
-                page.waitForResponse((r) => r.url().includes('/api/auth/login') && r.request().method() === 'POST', { timeout: 30_000 }),
-                page.getByRole('button', { name: 'Iniciar Sesión' }).click()
-            ]);
+            const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/auth/login') && r.request().method() === 'POST', { timeout: 30_000 }), page.getByRole('button', { name: 'Iniciar Sesión' }).click()]);
 
             return respuesta;
         };

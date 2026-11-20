@@ -34,7 +34,9 @@ test.describe('Recibos: diálogo de borrado (F-31)', () => {
         const filas = page.locator('table tbody tr').filter({ has: page.locator('button:has(.pi-trash)') });
 
         // Se espera a la primera fila; si no aparece, se omite con el motivo a la vista
-        await expect(filas.first()).toBeVisible({ timeout: 20_000 }).catch(() => {});
+        await expect(filas.first())
+            .toBeVisible({ timeout: 20_000 })
+            .catch(() => {});
         test.skip((await filas.count()) === 0, 'No hay recibos visibles en el año en curso');
 
         const fila = filas.first();

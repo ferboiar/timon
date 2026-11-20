@@ -18,18 +18,7 @@
  */
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
-import {
-    abrirAjustes,
-    cerrarDialogoUsuario,
-    contrasenaDeUsuario,
-    crearUsuario,
-    dialogoUsuario,
-    eliminarUsuario,
-    emailDeUsuario,
-    filaUsuario,
-    nombreUsuarioUnico,
-    PATRON_USUARIO_E2E
-} from './helpers/timon.mjs';
+import { abrirAjustes, cerrarDialogoUsuario, contrasenaDeUsuario, crearUsuario, dialogoUsuario, eliminarUsuario, emailDeUsuario, filaUsuario, nombreUsuarioUnico, PATRON_USUARIO_E2E } from './helpers/timon.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -80,9 +69,7 @@ test.describe('Usuarios: mensajes de error (F-48)', () => {
         await expect(page.getByRole('columnheader', { name: 'E-Mail' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Nuevo' })).toBeVisible();
 
-        const nombres = (await page.locator('table tbody tr td:first-child').allInnerTexts())
-            .map((texto) => texto.trim())
-            .filter(Boolean);
+        const nombres = (await page.locator('table tbody tr td:first-child').allInnerTexts()).map((texto) => texto.trim()).filter(Boolean);
 
         for (const nombreTabla of nombres) {
             if (PATRON_USUARIO_E2E.test(nombreTabla) && nombreTabla !== nombre) huerfanos.push(nombreTabla);

@@ -84,10 +84,7 @@ export async function iniciarSesion(page, { usuario, password } = credenciales()
     await page.getByLabel('Usuario').fill(usuario);
     await page.getByPlaceholder('Contraseña').fill(password);
 
-    const [respuesta] = await Promise.all([
-        page.waitForResponse((r) => r.url().includes('/api/auth/login') && r.request().method() === 'POST', { timeout: 30_000 }),
-        page.getByRole('button', { name: 'Iniciar Sesión' }).click()
-    ]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/auth/login') && r.request().method() === 'POST', { timeout: 30_000 }), page.getByRole('button', { name: 'Iniciar Sesión' }).click()]);
 
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 30_000 });
 
@@ -178,10 +175,7 @@ export async function crearCategoria(page, nombre) {
 
     await dialogo.getByLabel('Nombre').fill(nombre);
 
-    const [respuesta] = await Promise.all([
-        page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'POST', { timeout: 30_000 }),
-        dialogo.getByRole('button', { name: 'Save' }).click()
-    ]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'POST', { timeout: 30_000 }), dialogo.getByRole('button', { name: 'Save' }).click()]);
 
     return respuesta;
 }
@@ -204,10 +198,7 @@ export async function eliminarCategoria(page, nombre) {
     const confirmacion = page.getByRole('dialog', { name: 'Confirm' });
     await expect(confirmacion).toBeVisible();
 
-    const [respuesta] = await Promise.all([
-        page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'DELETE', { timeout: 30_000 }),
-        confirmacion.getByRole('button', { name: 'Yes' }).click()
-    ]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/categorias') && r.request().method() === 'DELETE', { timeout: 30_000 }), confirmacion.getByRole('button', { name: 'Yes' }).click()]);
 
     return respuesta;
 }
@@ -376,10 +367,7 @@ export async function crearUsuario(page, { username, email, password }) {
     await dialogo.locator('input[type="password"]').first().fill(password);
     await dialogo.locator('#email').fill(email);
 
-    const [respuesta] = await Promise.all([
-        page.waitForResponse((r) => r.url().includes('/api/users') && r.request().method() === 'POST', { timeout: 30_000 }),
-        dialogo.getByRole('button', { name: 'Guardar' }).click()
-    ]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/users') && r.request().method() === 'POST', { timeout: 30_000 }), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
 
     return respuesta;
 }
@@ -408,10 +396,7 @@ export async function eliminarUsuario(page, nombre) {
     const confirmacion = page.getByRole('dialog', { name: 'Confirmar' });
     await expect(confirmacion).toBeVisible();
 
-    const [respuesta] = await Promise.all([
-        page.waitForResponse((r) => r.url().includes('/api/users') && r.request().method() === 'DELETE', { timeout: 30_000 }),
-        confirmacion.getByRole('button', { name: 'Sí' }).click()
-    ]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/users') && r.request().method() === 'DELETE', { timeout: 30_000 }), confirmacion.getByRole('button', { name: 'Sí' }).click()]);
 
     return respuesta;
 }
@@ -442,10 +427,7 @@ export async function eliminarCuenta(page, nombre) {
     const confirmacion = page.getByRole('dialog', { name: 'Confirm' });
     await expect(confirmacion).toBeVisible();
 
-    const [respuesta] = await Promise.all([
-        page.waitForResponse((r) => r.url().includes('/api/cuentas') && r.request().method() === 'DELETE', { timeout: 30_000 }),
-        confirmacion.getByRole('button', { name: 'Yes' }).click()
-    ]);
+    const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/cuentas') && r.request().method() === 'DELETE', { timeout: 30_000 }), confirmacion.getByRole('button', { name: 'Yes' }).click()]);
 
     return respuesta;
 }

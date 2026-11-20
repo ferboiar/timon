@@ -8,11 +8,7 @@
  */
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
-import {
-    abrirCategorias,
-    eliminarCategoria,
-    nombreCategoriaUnico
-} from './helpers/timon.mjs';
+import { abrirCategorias, eliminarCategoria, nombreCategoriaUnico } from './helpers/timon.mjs';
 import { abrirCuentas, eliminarCuenta } from './helpers/timon.mjs';
 import { origenApi, peticionApi } from './helpers/api.mjs';
 

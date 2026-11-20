@@ -95,10 +95,7 @@ function rotarLogs() {
 
 /** Resuelve el CLI de Playwright instalado en `e2e/`. */
 function rutaCliPlaywright() {
-    const candidatos = [
-        path.join(DIR_E2E, 'node_modules', '@playwright', 'test', 'cli.js'),
-        path.join(DIR_E2E, 'node_modules', 'playwright', 'cli.js')
-    ];
+    const candidatos = [path.join(DIR_E2E, 'node_modules', '@playwright', 'test', 'cli.js'), path.join(DIR_E2E, 'node_modules', 'playwright', 'cli.js')];
 
     const encontrado = candidatos.find((ruta) => fs.existsSync(ruta));
 

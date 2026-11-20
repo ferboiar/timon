@@ -147,9 +147,7 @@ export async function asegurarServidores() {
     }
 
     if (!debeArrancarServidores()) {
-        throw new Error(
-            `[servidores] Falta algún servidor (frontend=${estado.frontend}, backend=${estado.backend}) y E2E_ARRANCAR_SERVIDORES=0.`
-        );
+        throw new Error(`[servidores] Falta algún servidor (frontend=${estado.frontend}, backend=${estado.backend}) y E2E_ARRANCAR_SERVIDORES=0.`);
     }
 
     const base = comprobarBasePermitida();
@@ -172,11 +170,7 @@ export async function asegurarServidores() {
     fs.closeSync(descriptor);
 
     fs.mkdirSync(path.dirname(rutaEstadoServidores()), { recursive: true });
-    fs.writeFileSync(
-        rutaEstadoServidores(),
-        `${JSON.stringify({ pid: hijo.pid, arrancadoEn: new Date().toISOString(), log: rutaLog, base }, null, 4)}\n`,
-        'utf8'
-    );
+    fs.writeFileSync(rutaEstadoServidores(), `${JSON.stringify({ pid: hijo.pid, arrancadoEn: new Date().toISOString(), log: rutaLog, base }, null, 4)}\n`, 'utf8');
 
     const limite = Date.now() + 90_000;
 

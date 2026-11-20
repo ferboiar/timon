@@ -24,8 +24,7 @@ import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
 import { abrirAjustes, haySesion } from './helpers/timon.mjs';
 
 const MENSAJE_413 = 'El fichero supera el límite de 100 MB. Reduce el tamaño o divide el volcado.';
-const TOOLTIP_MANTENIMIENTO =
-    'Usuario opcional con permisos para copias de seguridad y restauración. Si lo dejas vacío, se usa el usuario de la aplicación.';
+const TOOLTIP_MANTENIMIENTO = 'Usuario opcional con permisos para copias de seguridad y restauración. Si lo dejas vacío, se usa el usuario de la aplicación.';
 
 /** Credenciales de mantenimiento de la prueba, si el entorno las aporta. */
 const MANT_USER = process.env.E2E_MANT_USER || '';
@@ -199,10 +198,7 @@ test.describe('Base de Datos: guardado, copias y restauración', () => {
         await abrirAjustes(page, 'Base de Datos');
         await expect(page.locator('#db-password input')).toHaveValue('');
 
-        const [prueba] = await Promise.all([
-            page.waitForResponse((r) => r.url().includes('/api/db-config/test'), { timeout: 60_000 }),
-            page.getByRole('button', { name: 'Probar' }).click()
-        ]);
+        const [prueba] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/db-config/test'), { timeout: 60_000 }), page.getByRole('button', { name: 'Probar' }).click()]);
 
         expect(prueba.status()).toBe(200);
     });
@@ -321,10 +317,7 @@ test.describe('Base de Datos: CA TLS y usuario de mantenimiento', () => {
     test('g2) sin CA la conexión vuelve a no verificar el certificado y el aviso queda en el log', async ({ paginaSesion: page }) => {
         await abrirAjustes(page, 'Base de Datos');
 
-        const [prueba] = await Promise.all([
-            page.waitForResponse((r) => r.url().includes('/api/db-config/test'), { timeout: 60_000 }),
-            page.getByRole('button', { name: 'Probar' }).click()
-        ]);
+        const [prueba] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/db-config/test'), { timeout: 60_000 }), page.getByRole('button', { name: 'Probar' }).click()]);
 
         expect(prueba.status()).toBe(200);
 

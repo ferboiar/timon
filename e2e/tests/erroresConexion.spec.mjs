@@ -21,8 +21,7 @@ import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
 import { abrirAjustes, irAPestana } from './helpers/timon.mjs';
 
 /** Texto exacto del catálogo para la causa «base no accesible» (backend/src/utils/catalogoErrores.mjs). */
-const MENSAJE_BASE_NO_ACCESIBLE =
-    'No se puede acceder a la base de datos. Comprueba que el servicio esté en marcha y que la dirección y el puerto sean correctos.';
+const MENSAJE_BASE_NO_ACCESIBLE = 'No se puede acceder a la base de datos. Comprueba que el servicio esté en marcha y que la dirección y el puerto sean correctos.';
 
 /** Puerto local sin escuchar: el fallo es inmediato y no depende de la red. */
 const PUERTO_CERRADO = '3399';
@@ -56,10 +55,7 @@ test.describe('Base de Datos: errores de conexión (F-48)', () => {
         await page.locator('#db-user').fill('e2e_usuario_inexistente');
         await page.locator('#db-database').fill('e2e_base_inexistente');
 
-        const [respuesta] = await Promise.all([
-            page.waitForResponse((r) => r.url().includes('/api/db-config/test') && r.request().method() === 'POST', { timeout: 30_000 }),
-            page.getByRole('button', { name: 'Probar' }).click()
-        ]);
+        const [respuesta] = await Promise.all([page.waitForResponse((r) => r.url().includes('/api/db-config/test') && r.request().method() === 'POST', { timeout: 30_000 }), page.getByRole('button', { name: 'Probar' }).click()]);
 
         expect(respuesta.status()).toBe(400);
 
