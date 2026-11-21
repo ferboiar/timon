@@ -113,6 +113,7 @@ El PR es el único registro del trabajo: no hay informes aparte. Debe entenderse
 - `gh pr view <n> --json state,mergeable,statusCheckRollup` y `gh pr checks <n>`.
 
 ## 5. Fusión y después
+- Si el PR introduce una migración de la que depende su propio código, no fusiones hasta que esté aplicada en conta_hogar (DC-73); si no lo está, para y propón la ventana.
 - `gh pr merge <n>` solo si el prompt lo autoriza y los checks están en verde.
 - `reviewDecision: REVIEW_REQUIRED` es el estado **normal** de un PR creado con el token de `ferboiar`:
   el ruleset de `main` exige una aprobación y el usuario tiene bypass `Exempt`, así que **no bloquea** y
