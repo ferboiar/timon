@@ -22,6 +22,8 @@ const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 
  * Si se proporciona un filtro no válido, lanza un error.
  * Puede manejar rangos de fechas si el filtro 'fecha' contiene dos fechas separadas por la 'a'.
  * Ej.: http://127.0.0.1:3000/api/recibos?fecha=2024-09-01a2024-12-01
+ * El filtro 'estado' admite uno o varios estados separados por comas (DC-01), validados contra el ENUM de fechas_cargo.
+ * Ej.: http://127.0.0.1:3000/api/recibos?estado=pendiente,rechazado
  * @param {Object} filters - Filtros para aplicar a la consulta.
  * @returns {Array} - Lista de recibos que cumplen con los filtros.
  */
@@ -50,6 +52,9 @@ async function getRecibos(filters) {
         }
 
         // Construir la consulta basada en los filtros válidos
+        // DC-01: `estado` admite uno o varios estados separados por comas («pendiente,rechazado» en los atrasados)
+        const estadosDelFiltro = filters.estado === undefined || filters.estado === null ? null : String(filters.estado).split(',').map((estado) => estado.trim()).filter(Boolean);
+
         for (const [key, value] of Object.entries(filters)) {
             if (value !== undefined && value !== null) {
                 // Cambiado para permitir valores false
@@ -65,6 +70,16 @@ async function getRecibos(filters) {
                     const numericValue = value === true || value === 'true' || value === 1 || value === '1' ? 1 : 0;
                     query += ' AND fc.activo = ?';
                     params.push(numericValue);
+                } else if (key === 'estado') {
+                    // DC-01: la lista se valida contra el ENUM vivo y viaja como parámetros, nunca interpolada
+                    const [columnasEstado] = await connection.execute("SHOW COLUMNS FROM fechas_cargo LIKE 'estado'");
+                    const estadosValidos = columnasEstado[0].Type.match(/enum\((.*)\)/)[1].replace(/'/g, '').split(',');
+                    const invalidos = estadosDelFiltro.filter((estado) => !estadosValidos.includes(estado));
+                    if (estadosDelFiltro.length === 0 || invalidos.length > 0) {
+                        throw new ErrorDeNegocio(`El estado del cargo debe ser uno de los siguientes: ${estadosValidos.join(', ')}.`);
+                    }
+                    query += ` AND fc.estado IN (${estadosDelFiltro.map(() => '?').join(',')})`;
+                    params.push(...estadosDelFiltro);
                 } else if (validFilters.includes(key)) {
                     query += ` AND ${key === 'estado' ? 'fc.' : 'r.'}${key} = ?`;
                     params.push(value);
@@ -115,7 +130,7 @@ async function getValidValues(column, table = 'recibos') {
  * @param {string} fechaInicial - Fecha inicial en formato YYYY-MM-DD
  * @param {string} periodicidad - mensual, bimestral, trimestral o anual
  * @param {number} cantidad - Número de fechas a generar
- * @returns {Array} - Fechas con estado pendiente; la primera lleva el comentario Fecha inicial
+ * @returns {Array} - Fechas con estado pendiente y el comentario vacío (F-15)
  */
 function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
     const mesesPorPeriodo = { mensual: 1, bimestral: 2, trimestral: 3, anual: 12 }[periodicidad];
@@ -134,7 +149,7 @@ function generarFechasFuturas(fechaInicial, periodicidad, cantidad) {
         const mesCargo = (mesesDesdeEnero % 12) + 1;
         const ultimoDia = new Date(Date.UTC(anioCargo, mesCargo, 0)).getUTCDate();
         const diaCargo = Math.min(dia, ultimoDia);
-        fechas.push({ fecha: anioCargo + '-' + dosCifras(mesCargo) + '-' + dosCifras(diaCargo), estado: 'pendiente', comentario: k === 0 ? 'Fecha inicial' : '', activo: 1 });
+        fechas.push({ fecha: anioCargo + '-' + dosCifras(mesCargo) + '-' + dosCifras(diaCargo), estado: 'pendiente', comentario: '', activo: 1 });
     }
     return fechas;
 }
@@ -162,14 +177,15 @@ function generarFechasDelAnio(fechaInicial, periodicidad) {
         const mesCargo = mesesDesdeEnero + 1;
         const ultimoDia = new Date(Date.UTC(anio, mesCargo, 0)).getUTCDate();
         const diaCargo = Math.min(dia, ultimoDia);
-        fechas.push({ fecha: `${anio}-${dosCifras(mesCargo)}-${dosCifras(diaCargo)}`, estado: 'pendiente', comentario: k === 0 ? 'Fecha inicial' : '', activo: 1 });
+        fechas.push({ fecha: `${anio}-${dosCifras(mesCargo)}-${dosCifras(diaCargo)}`, estado: 'pendiente', comentario: '', activo: 1 });
     }
     return fechas;
 }
 
 /**
- * Importe que debe quedar guardado en un cargo (DC-15). Un cargo pagado guarda siempre el suyo (el indicado,
- * el que ya tuviera o el del recibo); uno pendiente solo si se ha personalizado: si coincide con el del recibo, queda vacío y lo sigue.
+ * Importe que debe quedar guardado en un cargo (DC-15). Un cargo pagado (`cargado`) guarda siempre el suyo (el indicado,
+ * el que ya tuviera o el del recibo); uno pendiente o `rechazado` (DC-01) solo si se ha personalizado: si coincide con
+ * el del recibo, queda vacío y lo sigue. Al pasar de `cargado` a `pendiente` o `rechazado` se vacía.
  * @param {string} estado - Estado del cargo tras la operación
  * @param {Object|null} cargoActual - Fila actual de fechas_cargo, si existe
  * @param {Object} cargoPeticion - Cargo recibido en la petición
@@ -397,7 +413,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                             rechazarFechasFueraDelAnio(anioRecibo, existingFechas.map((f, i) => (f.estado === 'pendiente' ? nuevasFechas[i].fecha : null)).filter(Boolean));
                         }
 
-                        // Solo se reescriben las fechas pendientes; las cargadas y las rechazadas se conservan (F-04, DC-11)
+                        // Solo se reescriben las fechas pendientes; las cargadas y las rechazadas se conservan (F-04, DC-11, DC-01)
                         const formatear = (f) => (f instanceof Date ? f.toISOString().split('T')[0] : String(f));
                         let reescritas = 0;
                         let conservadas = 0;

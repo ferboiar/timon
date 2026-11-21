@@ -129,6 +129,10 @@ Los diálogos de recibo ofrecen dos modos para las fechas de cargo (`modoFechas`
 
 Si en modo automático se ha conservado alguna fecha pagada, el aviso de guardado pasa de «Éxito» a una advertencia que indica cuántas fechas pagadas no se han modificado y cuántas pendientes se han actualizado. Para corregir una fecha pagada hay que editarla en modo manual.
 
+### Estado de un cargo (DC-01)
+
+Cada cargo se marca con un desplegable de tres valores: `Pendiente`, `Cargado` y `Rechazado`. Está en el diálogo del recibo (un control por fecha de cargo) y en el diálogo de una fecha individual; antes era una casilla binaria pagado/pendiente. En las tablas, la columna «Estado» pinta un icono por valor: check verde (`Cargado`), reloj naranja (`Pendiente`) y aspa roja (`Rechazado`). Cambiar solo el estado cuenta como cambio: el diálogo envía la petición y no muestra «Sin cambios» (DC-30). Un rechazado puede volver a `Pendiente` y sigue apareciendo en los atrasados.
+
 ## Gestión de Propiedad de Recibos
 
 La propiedad de los recibos se maneja automáticamente a través del sistema de autenticación:

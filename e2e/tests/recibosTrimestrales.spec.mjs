@@ -34,6 +34,7 @@ import { urlDe } from './helpers/timon.mjs';
 /** Formatos exactos de los datos que crea este spec. */
 const PATRON_TRIMESTRAL = /^e2e_trimestral_\d{8}_\d{6}$/;
 const PATRON_BIMESTRAL = /^e2e_bimestral_\d{8}_\d{6}$/;
+const PATRON_RECHAZADO = /^e2e_rechazado_\d{8}_\d{6}$/;
 
 /** `recibos.concepto` es `varchar(30)`. */
 const LONGITUD_MAXIMA_CONCEPTO = 30;
@@ -189,6 +190,21 @@ async function idsDelConcepto(page, { api, anio, concepto, periodicidad }) {
     return [...new Set(datos.filter((fila) => fila.concepto === concepto).map((fila) => fila.id))];
 }
 
+/** Estados de los cargos del recibo con ese concepto (el listado devuelve una fila por fecha de cargo). */
+async function estadosDelConcepto(page, { api, anio, concepto, periodicidad }) {
+    const url = new URL(`${api}/api/recibos`);
+    url.searchParams.set('periodicidad', periodicidad);
+    url.searchParams.set('año', String(anio));
+
+    const { status, datos, texto } = await peticionApi(page, { metodo: 'GET', url: url.toString() });
+
+    if (status !== 200 || !Array.isArray(datos)) {
+        throw new Error(`GET /api/recibos respondió ${status}: ${texto}`);
+    }
+
+    return datos.filter((fila) => fila.concepto === concepto).map((fila) => fila.estado);
+}
+
 /** Crea un recibo de prueba con la periodicidad indicada y los primeros datos reales. */
 async function crearRecibo(page, { api, anio, concepto, periodicidad }) {
     const categorias = await peticionApi(page, { metodo: 'GET', url: `${api}/api/categorias` });
@@ -240,6 +256,7 @@ async function limpiarPorApi(page) {
 
     if (estado.trimestral) pendientes.push({ concepto: estado.trimestral, periodicidad: 'trimestral' });
     if (estado.bimestral) pendientes.push({ concepto: estado.bimestral, periodicidad: 'bimestral' });
+    if (estado.rechazado) pendientes.push({ concepto: estado.rechazado, periodicidad: 'anual' });
 
     for (const { concepto, periodicidad } of pendientes) {
         const ids = await idsDelConcepto(page, { ...estado, concepto, periodicidad });
@@ -264,10 +281,12 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
             api: null,
             anio: null,
             trimestral: await conceptoUnico('e2e_trimestral'),
-            bimestral: null
+            bimestral: null,
+            rechazado: await conceptoUnico('e2e_rechazado')
         };
 
         expect(estado.trimestral).toMatch(PATRON_TRIMESTRAL);
+        expect(estado.rechazado).toMatch(PATRON_RECHAZADO);
 
         // El año y el origen de la API salen del propio listado de la pantalla.
         const listado = await abrirRecibos(page);
@@ -394,5 +413,71 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
             await expect(filaBimestralPropia).toHaveCount(0, { timeout: 20_000 });
             await expect.poll(() => idsDelConcepto(page, { ...estado, concepto: estado.bimestral, periodicidad: 'bimestral' }), { timeout: 20_000 }).toEqual([]);
         }
+    });
+
+    test('un cargo se marca como rechazado y vuelve a pendiente (DC-01)', async ({ paginaSesion: page }) => {
+        // Un recibo anual: su diálogo de edición contiene los cargos y su estado.
+        await crearRecibo(page, { ...estado, concepto: estado.rechazado, periodicidad: 'anual' });
+        await recargarRecibos(page);
+
+        const fila = filasConBorrado(tarjeta(page, 'Anuales')).filter({ hasText: estado.rechazado }).first();
+
+        await expect(fila).toBeVisible({ timeout: 20_000 });
+
+        // DC-30: abrir y guardar sin tocar nada no envía nada al servidor
+        await fila.locator('button:has(.pi-pencil)').first().click();
+
+        const dialogo = page.getByRole('dialog', { name: 'Detalle del recibo' }).first();
+        await expect(dialogo).toBeVisible();
+
+        let peticiones = 0;
+        const contarPeticiones = (peticion) => {
+            if (peticion.method() === 'POST' && peticion.url().includes('/api/recibos')) peticiones += 1;
+        };
+
+        page.on('request', contarPeticiones);
+
+        await dialogo.getByRole('button', { name: 'Guardar' }).click();
+        await expect(page.getByText('Sin cambios')).toBeVisible({ timeout: 10_000 });
+        await expect(dialogo).toBeHidden();
+
+        page.off('request', contarPeticiones);
+        expect(peticiones, 'guardar sin cambios no debe enviar la petición').toBe(0);
+
+        // Cambiar solo el estado del primer cargo: ahora sí se envía y se persiste
+        await fila.locator('button:has(.pi-pencil)').first().click();
+
+        const dialogoEstado = page.getByRole('dialog', { name: 'Detalle del recibo' }).first();
+        await expect(dialogoEstado).toBeVisible();
+
+        await dialogoEstado.locator('[aria-label="Estado del cargo 1"]').first().click();
+        await page.getByRole('option', { name: 'Rechazado' }).click();
+
+        const guardado = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/api/recibos'), { timeout: 30_000 });
+
+        await dialogoEstado.getByRole('button', { name: 'Guardar' }).click();
+
+        expect((await guardado).status()).toBe(201);
+        await expect.poll(() => estadosDelConcepto(page, { ...estado, concepto: estado.rechazado, periodicidad: 'anual' }), { timeout: 20_000 }).toContain('rechazado');
+
+        // Volver a pendiente desde la pantalla
+        await recargarRecibos(page);
+
+        const filaRechazada = filasConBorrado(tarjeta(page, 'Anuales')).filter({ hasText: estado.rechazado }).first();
+        await expect(filaRechazada).toBeVisible({ timeout: 20_000 });
+        await filaRechazada.locator('button:has(.pi-pencil)').first().click();
+
+        const dialogoVuelta = page.getByRole('dialog', { name: 'Detalle del recibo' }).first();
+        await expect(dialogoVuelta).toBeVisible();
+
+        await dialogoVuelta.locator('[aria-label="Estado del cargo 1"]').first().click();
+        await page.getByRole('option', { name: 'Pendiente' }).click();
+
+        const guardadoVuelta = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/api/recibos'), { timeout: 30_000 });
+
+        await dialogoVuelta.getByRole('button', { name: 'Guardar' }).click();
+
+        expect((await guardadoVuelta).status()).toBe(201);
+        await expect.poll(() => estadosDelConcepto(page, { ...estado, concepto: estado.rechazado, periodicidad: 'anual' }), { timeout: 20_000 }).toEqual(['pendiente']);
     });
 });

@@ -38,9 +38,15 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `recibo_id` | INT | Referencia al recibo asociado |
 | `fecha` | DATE | Fecha del cargo |
 | `importe` | DECIMAL | Importe real del cargo: vacío mientras el cargo sigue el importe del recibo; fijado al pagarlo y, en un cargo pendiente, cuando se personaliza (DC-15); lo escribe `pushRecibo` |
-| `estado` | ENUM | Estado del cargo: 'pendiente' o 'cargado' |
-| `comentario` | TEXT | Comentario opcional sobre el cargo |
+| `estado` | ENUM | Estado del cargo: `pendiente`, `cargado` o `rechazado` (DC-01) |
+| `comentario` | TEXT | Comentario opcional del cargo; no se rellena automáticamente (F-15) |
 | `activo` | TINYINT | Estado del cargo (1 activo, 0 inactivo) |
+
+### Estados del cargo (DC-01)
+
+Un cargo está `pendiente`, `cargado` o `rechazado`. `rechazado` significa que el banco devolvió el recibo: no escribe historial (la tabla `recibos_historico` no existe desde DC-14), cuenta como pendiente y puede volver a `pendiente`. La migración 0009 amplía el ENUM de forma repetible y el servidor valida los estados contra el ENUM vivo, así que no hay lista duplicada en el código.
+
+En el modo automático solo se reescriben las fechas `pendiente`; las `cargado` y las `rechazado` se conservan. Un cargo rechazado no bloquea el borrado (solo `cargado` cuenta como pagado) y entra en los atrasados: `getRecibos` acepta `estado` como lista separada por comas y el servicio de atrasados pide `pendiente,rechazado`. Queda fuera de alcance el «disponible» financiero: no está implementado, así que «cuenta como pendiente en el disponible» se cubre solo en atrasados y en el borrado.
 
 ## Relaciones Estructurales
 
@@ -122,7 +128,7 @@ Al actualizar un recibo que ya tiene fechas, calcula la secuencia para el mismo 
 
 ### Importe de cada cargo (DC-15)
 
-Cada fecha de cargo puede tener su importe en `fechas_cargo.importe` (por ejemplo, la factura de la luz cambia cada mes). Vacío significa que el cargo sigue el importe del recibo. Al pasar un cargo a «cargado», `pushRecibo` fija su importe: el indicado en la petición, el que ya tuviera o el del recibo; un cargo pagado lo conserva aunque después cambie el del recibo. En un cargo pendiente solo se guarda un importe si es distinto del importe del recibo; si coincide, queda vacío y lo sigue. Al volver de «cargado» a «pendiente» sin indicar importe, se vacía. `getRecibos` devuelve ese valor como `importe_cargo`, sin tocar `importe`, que sigue siendo el del recibo.
+Cada fecha de cargo puede tener su importe en `fechas_cargo.importe` (por ejemplo, la factura de la luz cambia cada mes). Vacío significa que el cargo sigue el importe del recibo. Al pasar un cargo a «cargado», `pushRecibo` fija su importe: el indicado en la petición, el que ya tuviera o el del recibo; un cargo pagado lo conserva aunque después cambie el del recibo. Un cargo `pendiente` o `rechazado` solo guarda un importe si es distinto del importe del recibo; si coincide, queda vacío y lo sigue. Al volver de «cargado» a «pendiente» o a «rechazado» sin indicar importe, se vacía. `getRecibos` devuelve ese valor como `importe_cargo`, sin tocar `importe`, que sigue siendo el del recibo.
 
 ### Fechas que faltan y «Generar nuevas fechas» (DC-22)
 
