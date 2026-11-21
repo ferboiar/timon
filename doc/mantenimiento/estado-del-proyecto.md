@@ -45,6 +45,7 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-70 | Lint y formato: `e2e/` se analiza con la configuración raíz de ESLint y sus 33 avisos `prettier/prettier` se aceptan; `dev/utils/` se formatea con `.prettierrc.json` y no se exceptúa. *(Completada por DC-71: `e2e/` está formateado y el `--fix` de `lint:frontend` queda documentado como idempotente.)* |
 | DC-71 | Estabilidad de la E2E: calentamiento en `globalSetup` con `retries` en 0; `eliminarCuenta` espera la fila; `e2e/` formateado con Prettier y `--fix` de `lint:frontend` documentado como idempotente. |
 | DC-72 | Vocabulario de interfaz (`Guardar`/`Cancelar`/`Sí`/`No`, `Confirmar`, resúmenes `Éxito`/`Aviso`/`Error`) e importes de tabla con `Intl.NumberFormat('es-ES', …, EUR)` tolerando `null`; «Ahorro sugerido» en Ahorros; `Reset` suelto se conserva en inglés. |
+| DC-73 | El código que depende de una migración no se fusiona antes de que esté aplicada, o se escribe para tolerar el esquema anterior. Acordado el 2026-11-21. |
 
 
 ## 2. Entorno y mapa
