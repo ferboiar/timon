@@ -7,10 +7,10 @@ solo si cambia una decisión vigente o el mapa. El histórico está en el
 
 ## 0. Estado
 - Migraciones aplicadas en `conta_hogar`: 0005 (principal de anticipos y pendiente derivado; consta
-  aplicada según el esquema observado en el PR #53, pero no consta evidencia documental de los bytes
-  aplicados ni de la copia previa), 0006 (trazabilidad e índice único de categorías), 0007 (objetos
-  reproducibles y `DEFINER`) y 0008 (`users.token_version`). La 0008 exige iniciar sesión de nuevo:
-  los tokens anteriores no llevan `ver`.
+  aplicada según el esquema observado en el PR #53, sin evidencia documental de los bytes aplicados ni
+  de la copia previa), 0006 (trazabilidad e índice único de categorías), 0007 (objetos reproducibles y
+  `DEFINER`), 0008 (`users.token_version`) y 0009 (`fechas_cargo.estado` admite `rechazado`; no exige
+  re-login). La 0008 exige iniciar sesión de nuevo: los tokens anteriores no llevan `ver`.
 - Siguiente trabajo y bloqueos: los issues del Project.
 - Identificadores: `npm run iter:ids` da el último de cada familia antes de asignar uno nuevo.
 

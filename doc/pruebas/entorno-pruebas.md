@@ -41,6 +41,49 @@ install -m 600 /dev/null backend/test/.env.test
 
 Al prepararlo con `git add`, el filtro `clean` de git-crypt lo cifra: al repositorio solo viaja el blob cifrado. Sin la clave del proyecto (`git-crypt unlock`) el clon no puede leerlo.
 
+## Credenciales administrativas para migraciones (precisión de DC-59)
+
+Las operaciones que escriben en el esquema —aplicar una migración, volcar o restaurar una base— usan
+una cuenta administrativa (`timon_admin`) con un fichero de opciones de cliente **fuera del
+repositorio**. No son credenciales de la suite: `backend/test/.env.test` y sus `TEST_DB_*` siguen
+siendo las de las pruebas y no se usan como credencial administrativa. Como DC-59 exige para operar
+sobre bases reales, cada conexión se autoriza por prompt y no se comparten credenciales entre suite y
+operación.
+
+| Dato | Valor |
+|---|---|
+| Ruta estándar del operador | `/home/node/.timon/admin.cnf` |
+| Permisos | directorio `700`, fichero `600` |
+| Contenido | sección `[client]` con `host`, `port`, `user` y `password` (y lo que exija TLS) |
+| Versionado | **No**: nunca entra en Git, ni en `doc/`, ni en un chat, un log o un PR |
+
+Cómo se genera (terminal del operador):
+
+```bash
+install -d -m 700 /home/node/.timon
+install -m 600 /dev/null /home/node/.timon/admin.cnf
+# editar y escribir:
+# [client]
+# host=mariadb01
+# port=3306
+# user=timon_admin
+# password=…
+```
+
+Comprobación previa al uso, **sin leer el contenido**:
+
+```bash
+test -f "$CNF" && test ! -L "$CNF" && test -O "$CNF"
+stat -c 'modo=%a tipo=%F uid=%u' "$CNF"   # esperado: 600 regular <uid efectivo>
+```
+
+Los clientes lo reciben como primera opción (`--defaults-extra-file="$CNF"`); la contraseña no viaja
+en argumentos y no se ejecuta `cat`, `head` ni `source` sobre él.
+
+Cuándo regenerarlo: al rotar la contraseña, al cambiar host, puerto o cuenta, si se pierde o se
+corrompe, y ante cualquier sospecha de exposición. Se borra al terminar la operación si así se acuerda;
+mientras exista, cada conexión —también de solo lectura— requiere autorización expresa en el prompt.
+
 ## Cómo se ejecuta
 
 ```bash
