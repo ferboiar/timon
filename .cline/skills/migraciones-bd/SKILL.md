@@ -168,6 +168,6 @@ en una sola secuencia sin separar claramente qué skill gobierna cada paso.
   Documentación, registro y relevo se preparan en el mismo alcance, sin informe de iteración.
 - Distingue versionada, ensayada, aplicada y verificada: si el código del PR depende de la migración y aún no está aplicada, la fusión espera (DC-73).
 - Como trabajo derivado, propón evaluar un ejecutor o tabla de control con nombre, SHA-256,
-  fecha de aplicación y cuenta. La referencia `O-12` es una propuesta, no una asignación
+  fecha de aplicación y cuenta. La referencia `S-08` (#130) es una propuesta, no una asignación
   definitiva: al crear el registro y su issue, comprueba el último ID de la familia y usa el
   siguiente libre. La idempotencia no cierra ese trabajo y esta skill no implementa ese mecanismo.
