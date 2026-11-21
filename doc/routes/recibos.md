@@ -32,7 +32,7 @@ Esta ruta permite obtener todos los recibos o filtrarlos según diversos criteri
 - `año`: Filtrar por el año de las fechas de cargo
 - `concepto`: Filtrar por concepto del recibo
 - `categoria`: Filtrar por categoría asociada
-- `estado`: Filtrar por estado de los cargos
+- `estado`: Filtrar por uno o varios estados de cargo separados por comas (`pendiente`, `cargado`, `rechazado`), validados contra el ENUM. Los atrasados piden `pendiente,rechazado`, porque un rechazado sigue debiéndose (DC-01)
 - `activo`: Filtrar por estado de actividad (1 activo, 0 inactivo)
 
 La respuesta es un array de objetos con los datos de los recibos y sus fechas de cargo correspondientes. Cada objeto incluye `importe` (el del recibo) e `importe_cargo` (el real del cargo, vacío si está pendiente). Las columnas `DATE` (`fecha_inicial` del recibo y `fecha` del cargo) se devuelven como texto `YYYY-MM-DD` (F-13, DC-05).
@@ -62,7 +62,7 @@ Cada elemento del array `cargo` debe contener:
 |-------|------|-------------|
 | `id` | Number | ID de la fecha de cargo (solo para actualización) |
 | `fecha` | String | Fecha del cargo (formato YYYY-MM-DD) |
-| `estado` | String | Estado del cargo (pendiente o cargado) |
+| `estado` | String | Estado del cargo: `pendiente`, `cargado` o `rechazado` (DC-01) |
 | `importe` | Number | Importe real del cargo. Al pasarlo a cargado siempre se guarda; en un cargo pendiente solo si difiere del importe del recibo (si coincide, el cargo sigue al recibo). Si no se indica, se conserva el que ya tuviera o, al pagar, el del recibo (DC-15) |
 | `comentario` | String | Comentario opcional |
 | `activo` | Boolean/Number | Estado de actividad (1 activo, 0 inactivo) |
@@ -71,7 +71,7 @@ Cada elemento del array `cargo` debe contener:
 
 - `manual`: se guardan las fechas recibidas. Las que traen `id` se actualizan, las demás se insertan y las entradas sin fecha se ignoran.
 - `auto` en un recibo nuevo: el servidor genera las fechas desde `fecha_inicial` hasta el 31 de diciembre de ese año (DC-16); en un año completo son 12 mensuales, 6 bimestrales, 4 trimestrales o 1 anual.
-- `auto` al actualizar un recibo con fechas: se reescriben solo las fechas en estado `pendiente`, siguiendo la secuencia generada desde `fecha_inicial`. Las fechas con cualquier otro estado no se tocan (DC-11) y el log registra cada cambio.
+- `auto` al actualizar un recibo con fechas: se reescriben solo las fechas en estado `pendiente`, siguiendo la secuencia generada desde `fecha_inicial`. Las fechas con cualquier otro estado (incluido `rechazado`, DC-01) no se tocan (DC-11) y el log registra cada cambio.
 
 La respuesta 201 incluye, además de `message`, `fechasReescritas` y `fechasConservadas`: ambos valen 0 salvo en modo automático sobre un recibo con fechas.
 

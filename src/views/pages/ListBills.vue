@@ -67,6 +67,13 @@ const periodicidad = ref([
     { label: 'Mensual', value: 'mensual' }
 ]);
 
+// DC-01: estados de un cargo. `rechazado` es una devolución del banco: sigue debiendo y puede volver a `pendiente`.
+const ESTADOS_CARGO = [
+    { label: 'Pendiente', value: 'pendiente' },
+    { label: 'Cargado', value: 'cargado' },
+    { label: 'Rechazado', value: 'rechazado' }
+];
+
 // DC-18: un año anterior al actual es un ejercicio cerrado: solo se pueden editar los cargos que siguen pendientes
 const anioCerrado = computed(() => selectedYear.value < currentYear.value);
 
@@ -1007,8 +1014,8 @@ const inactiveBillsCount = (periodicity) => {
                         <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                             <template #body="anualSlotProps">
                                 <i
-                                    :class="anualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : anualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
-                                    v-tooltip="anualSlotProps.data.estado === 'cargado' ? 'Cargado' : anualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                    :class="anualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : anualSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : anualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                    v-tooltip="anualSlotProps.data.estado === 'cargado' ? 'Cargado' : anualSlotProps.data.estado === 'rechazado' ? 'Rechazado' : anualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                 />
                             </template>
                         </Column>
@@ -1134,8 +1141,8 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="trimestralSlotProps">
                                         <i
-                                            :class="trimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : trimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
-                                            v-tooltip="trimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : trimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                            :class="trimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : trimestralSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : trimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            v-tooltip="trimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : trimestralSlotProps.data.estado === 'rechazado' ? 'Rechazado' : trimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
                                 </Column>
@@ -1266,8 +1273,8 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="bimestralSlotProps">
                                         <i
-                                            :class="bimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : bimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
-                                            v-tooltip="bimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : bimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                            :class="bimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : bimestralSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : bimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            v-tooltip="bimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : bimestralSlotProps.data.estado === 'rechazado' ? 'Rechazado' : bimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
                                 </Column>
@@ -1401,8 +1408,8 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="mensualSlotProps">
                                         <i
-                                            :class="mensualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : mensualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
-                                            v-tooltip="mensualSlotProps.data.estado === 'cargado' ? 'Cargado' : mensualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
+                                            :class="mensualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : mensualSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : mensualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            v-tooltip="mensualSlotProps.data.estado === 'cargado' ? 'Cargado' : mensualSlotProps.data.estado === 'rechazado' ? 'Rechazado' : mensualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
                                 </Column>
@@ -1557,55 +1564,67 @@ const inactiveBillsCount = (periodicity) => {
                                 <div v-if="!showFields.commentBox">
                                     <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[0].comentario, 0, 'editComment')" v-tooltip="bill.cargo[0].comentario" />
                                 </div>
-                                <Checkbox
-                                    :modelValue="(bill.cargo[0].estado || 'pendiente') === 'cargado'"
-                                    @update:modelValue="(value) => (bill.cargo[0].estado = value ? 'cargado' : 'pendiente')"
-                                    v-tooltip="(bill.cargo[0].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                    :binary="true"
-                                />
                             </div>
                         </label>
                         <DatePicker id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Select
+                            :modelValue="bill.cargo[0].estado || 'pendiente'"
+                            @update:modelValue="(value) => (bill.cargo[0].estado = value)"
+                            :options="ESTADOS_CARGO"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="mt-2 w-full"
+                            aria-label="Estado del cargo 1"
+                        />
                     </div>
                     <div v-if="showFields.estadoCheck" class="col-span-4">
-                        <label for="estado" class="block font-bold mb-3"
-                            >Estado&nbsp;&nbsp;&nbsp;&nbsp;
-                            <Checkbox
-                                :modelValue="(bill.cargo[0].estado || 'pendiente') === 'cargado'"
-                                @update:modelValue="(value) => (bill.cargo[0].estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="(bill.cargo[0].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                :binary="true"
-                        /></label>
+                        <label for="estado" class="block font-bold mb-3">Estado</label>
+                        <Select
+                            id="estado"
+                            :modelValue="bill.cargo[0].estado || 'pendiente'"
+                            @update:modelValue="(value) => (bill.cargo[0].estado = value)"
+                            :options="ESTADOS_CARGO"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="w-full"
+                            aria-label="Estado del cargo 1"
+                        />
                     </div>
                     <div v-if="showFields.fechaCargo2" class="col-span-4">
                         <label for="fecha2" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>2º cargo</span>
                             <div class="flex items-center absolute right-2">
                                 <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[1].comentario, 1, 'editComment')" v-tooltip="bill.cargo[1].comentario" />
-                                <Checkbox
-                                    :modelValue="(bill.cargo[1].estado || 'pendiente') === 'cargado'"
-                                    @update:modelValue="(value) => (bill.cargo[1].estado = value ? 'cargado' : 'pendiente')"
-                                    v-tooltip="(bill.cargo[1].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                    :binary="true"
-                                />
                             </div>
                         </label>
                         <DatePicker id="fecha2" v-model="bill.cargo[1].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Select
+                            :modelValue="bill.cargo[1].estado || 'pendiente'"
+                            @update:modelValue="(value) => (bill.cargo[1].estado = value)"
+                            :options="ESTADOS_CARGO"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="mt-2 w-full"
+                            aria-label="Estado del cargo 2"
+                        />
                     </div>
                     <div v-if="showFields.fechaCargo3" class="col-span-4">
                         <label for="fecha3" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>3<sup>er</sup> cargo</span>
                             <div class="flex items-center absolute right-2">
                                 <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[2].comentario, 2, 'editComment')" v-tooltip="bill.cargo[2].comentario" />
-                                <Checkbox
-                                    :modelValue="(bill.cargo[2].estado || 'pendiente') === 'cargado'"
-                                    @update:modelValue="(value) => (bill.cargo[2].estado = value ? 'cargado' : 'pendiente')"
-                                    v-tooltip="(bill.cargo[2].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                    :binary="true"
-                                />
                             </div>
                         </label>
                         <DatePicker id="fecha3" v-model="bill.cargo[2].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Select
+                            :modelValue="bill.cargo[2].estado || 'pendiente'"
+                            @update:modelValue="(value) => (bill.cargo[2].estado = value)"
+                            :options="ESTADOS_CARGO"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="mt-2 w-full"
+                            aria-label="Estado del cargo 3"
+                        />
                     </div>
                 </div>
 
@@ -1616,15 +1635,17 @@ const inactiveBillsCount = (periodicity) => {
                             <div class="flex items-center absolute right-7">
                                 <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[3].comentario, 3, 'editComment')" v-tooltip="bill.cargo[3].comentario" />
                             </div>
-                            <Checkbox
-                                :modelValue="(bill.cargo[3].estado || 'pendiente') === 'cargado'"
-                                @update:modelValue="(value) => (bill.cargo[3].estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="(bill.cargo[3].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                :binary="true"
-                                class="absolute right-2"
-                            />
                         </label>
                         <DatePicker id="fecha4" v-model="bill.cargo[3].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Select
+                            :modelValue="bill.cargo[3].estado || 'pendiente'"
+                            @update:modelValue="(value) => (bill.cargo[3].estado = value)"
+                            :options="ESTADOS_CARGO"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="mt-2 w-full"
+                            aria-label="Estado del cargo 4"
+                        />
                     </div>
 
                     <div v-if="showFields.fechaCargo5" class="col-span-4">
@@ -1633,15 +1654,17 @@ const inactiveBillsCount = (periodicity) => {
                             <div class="flex items-center absolute right-7">
                                 <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[4].comentario, 4, 'editComment')" v-tooltip="bill.cargo[4].comentario" />
                             </div>
-                            <Checkbox
-                                :modelValue="(bill.cargo[4].estado || 'pendiente') === 'cargado'"
-                                @update:modelValue="(value) => (bill.cargo[4].estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="(bill.cargo[4].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                :binary="true"
-                                class="absolute right-2"
-                            />
                         </label>
                         <DatePicker id="fecha5" v-model="bill.cargo[4].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Select
+                            :modelValue="bill.cargo[4].estado || 'pendiente'"
+                            @update:modelValue="(value) => (bill.cargo[4].estado = value)"
+                            :options="ESTADOS_CARGO"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="mt-2 w-full"
+                            aria-label="Estado del cargo 5"
+                        />
                     </div>
 
                     <div v-if="showFields.fechaCargo6" class="col-span-4">
@@ -1650,15 +1673,17 @@ const inactiveBillsCount = (periodicity) => {
                             <div class="flex items-center absolute right-7">
                                 <Button icon="pi pi-comment" class="p-button-text" @click="(event) => toggleComment(event, bill.cargo[5].comentario, 5, 'editComment')" v-tooltip="bill.cargo[5].comentario" />
                             </div>
-                            <Checkbox
-                                :modelValue="(bill.cargo[5].estado || 'pendiente') === 'cargado'"
-                                @update:modelValue="(value) => (bill.cargo[5].estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="(bill.cargo[5].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                :binary="true"
-                                class="absolute right-2"
-                            />
                         </label>
                         <DatePicker id="fecha6" v-model="bill.cargo[5].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Select
+                            :modelValue="bill.cargo[5].estado || 'pendiente'"
+                            @update:modelValue="(value) => (bill.cargo[5].estado = value)"
+                            :options="ESTADOS_CARGO"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="mt-2 w-full"
+                            aria-label="Estado del cargo 6"
+                        />
                     </div>
                 </div>
             </div>
@@ -1752,15 +1777,17 @@ const inactiveBillsCount = (periodicity) => {
                     <div class="col-span-4">
                         <label for="fecha" class="block font-bold mb-3 flex justify-between items-center relative">
                             <span>Fecha cargo</span>
-                            <Checkbox
-                                :modelValue="(bill.cargo[0].estado || 'pendiente') === 'cargado'"
-                                @update:modelValue="(value) => (bill.cargo[0].estado = value ? 'cargado' : 'pendiente')"
-                                v-tooltip="(bill.cargo[0].estado || 'pendiente') === 'cargado' ? 'Pagado' : 'Pendiente de pago'"
-                                :binary="true"
-                                class="absolute right-2"
-                            />
                         </label>
                         <DatePicker id="fecha" v-model="bill.cargo[0].fecha" dateFormat="dd/mm/yy" showIcon :showOnFocus="false" showButtonBar />
+                        <Select
+                            :modelValue="bill.cargo[0].estado || 'pendiente'"
+                            @update:modelValue="(value) => (bill.cargo[0].estado = value)"
+                            :options="ESTADOS_CARGO"
+                            optionLabel="label"
+                            optionValue="value"
+                            class="mt-2 w-full"
+                            aria-label="Estado del cargo"
+                        />
                     </div>
                     <div class="col-span-4">
                         <label for="importe_cargo" class="block font-bold mb-3">Importe</label>

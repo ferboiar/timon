@@ -20,7 +20,7 @@ El servicio `BillService` actúa como intermediario entre la interfaz de usuario
 | Método | Descripción | Endpoint |
 |--------|-------------|----------|
 | `getBillsByPeriodicity(periodicity, year)` | Obtiene recibos filtrados por periodicidad y, si se indica, por el año de sus fechas de cargo | `GET /api/recibos?periodicidad=:periodicity&año=:year` |
-| `getOverdueBills(periodicity, year)` | Obtiene los cargos pendientes de años anteriores al indicado (atrasados) | `GET /api/recibos?periodicidad=:periodicity&estado=pendiente&fecha=1900-01-01a:año-1-12-31` |
+| `getOverdueBills(periodicity, year)` | Obtiene los cargos pendientes y rechazados de años anteriores al indicado (atrasados); un rechazado sigue debiéndose (DC-01) | `GET /api/recibos?periodicidad=:periodicity&estado=pendiente,rechazado&fecha=1900-01-01a:año-1-12-31` |
 | `getBillsByYear(year)` | Obtiene recibos filtrados por año | `GET /api/recibos?año=:year` |
 | `getInactiveBills()` | Obtiene recibos inactivos | `GET /api/recibos?activo=0` |
 

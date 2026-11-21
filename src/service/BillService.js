@@ -80,11 +80,12 @@ export class BillService {
         }
     }
 
-    // Obtener los cargos pendientes de años anteriores al indicado (atrasados) de una periodicidad
+    // Obtener los cargos pendientes de años anteriores al indicado (atrasados) de una periodicidad.
+    // DC-01: un cargo rechazado sigue debiéndose, así que cuenta como pendiente y se pide también.
     static async getOverdueBills(periodicity, year) {
         try {
             const response = await apiClient.get(API_URL, {
-                params: { periodicidad: periodicity, estado: 'pendiente', fecha: '1900-01-01a' + (year - 1) + '-12-31' }
+                params: { periodicidad: periodicity, estado: 'pendiente,rechazado', fecha: '1900-01-01a' + (year - 1) + '-12-31' }
             });
             return response.data;
         } catch (error) {

@@ -2,7 +2,7 @@
 // Se pueden ejecutar solas: node --test backend/test/fechas.test.mjs
 import assert from 'node:assert/strict';
 import { afterEach, describe, test } from 'node:test';
-import { generarFechasFuturas } from '../src/db/db_utils.mjs';
+import { generarFechasDelAnio, generarFechasFuturas } from '../src/db/db_utils.mjs';
 
 const fechas = (inicial, periodicidad, cantidad) => generarFechasFuturas(inicial, periodicidad, cantidad).map((f) => f.fecha);
 const tzOriginal = process.env.TZ;
@@ -41,9 +41,23 @@ describe('generarFechasFuturas: secuencia anclada (F-12, DC-16)', () => {
 
     test('cada elemento conserva la forma esperada por pushRecibo', () => {
         const [primera, segunda] = generarFechasFuturas('2026-03-15', 'mensual', 2);
-        assert.deepEqual(primera, { fecha: '2026-03-15', estado: 'pendiente', comentario: 'Fecha inicial', activo: 1 });
+        assert.deepEqual(primera, { fecha: '2026-03-15', estado: 'pendiente', comentario: '', activo: 1 });
         assert.deepEqual(segunda, { fecha: '2026-04-15', estado: 'pendiente', comentario: '', activo: 1 });
         assert.deepEqual(generarFechasFuturas('2026-03-15', 'mensual', 0), []);
+    });
+
+    test('ninguna fecha generada escribe el comentario «Fecha inicial» (F-15)', () => {
+        for (const periodicidad of ['mensual', 'bimestral', 'trimestral', 'anual']) {
+            const futuras = generarFechasFuturas('2026-01-15', periodicidad, 3);
+            const delAnio = generarFechasDelAnio('2026-01-15', periodicidad);
+
+            assert.ok(futuras.length > 0 && delAnio.length > 0, periodicidad);
+            assert.deepEqual(
+                [...futuras, ...delAnio].map((f) => f.comentario),
+                [...futuras, ...delAnio].map(() => ''),
+                periodicidad
+            );
+        }
     });
 
     test('rechaza una periodicidad o una fecha inicial no válidas', () => {
