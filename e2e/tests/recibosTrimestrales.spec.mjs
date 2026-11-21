@@ -205,6 +205,16 @@ async function estadosDelConcepto(page, { api, anio, concepto, periodicidad }) {
     return datos.filter((fila) => fila.concepto === concepto).map((fila) => fila.estado);
 }
 
+/** Comprueba el icono de estado de una fila y su tooltip (DC-01). */
+async function comprobarIconoEstado(page, fila, clase, texto) {
+    const icono = fila.locator(`i.${clase}`);
+
+    await expect(icono).toBeVisible({ timeout: 20_000 });
+
+    await icono.hover();
+    await expect(page.getByRole('tooltip').filter({ hasText: texto }).first()).toBeVisible({ timeout: 10_000 });
+}
+
 /** Crea un recibo de prueba con la periodicidad indicada y los primeros datos reales. */
 async function crearRecibo(page, { api, anio, concepto, periodicidad }) {
     const categorias = await peticionApi(page, { metodo: 'GET', url: `${api}/api/categorias` });
@@ -460,11 +470,14 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
         expect((await guardado).status()).toBe(201);
         await expect.poll(() => estadosDelConcepto(page, { ...estado, concepto: estado.rechazado, periodicidad: 'anual' }), { timeout: 20_000 }).toContain('rechazado');
 
-        // Volver a pendiente desde la pantalla
+        // La tabla lo refleja: aspa roja y tooltip «Rechazado» (DC-01)
         await recargarRecibos(page);
 
         const filaRechazada = filasConBorrado(tarjeta(page, 'Anuales')).filter({ hasText: estado.rechazado }).first();
         await expect(filaRechazada).toBeVisible({ timeout: 20_000 });
+        await comprobarIconoEstado(page, filaRechazada, 'pi-times-circle', 'Rechazado');
+
+        // Volver a pendiente desde la pantalla
         await filaRechazada.locator('button:has(.pi-pencil)').first().click();
 
         const dialogoVuelta = page.getByRole('dialog', { name: 'Detalle del recibo' }).first();
@@ -479,5 +492,12 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
 
         expect((await guardadoVuelta).status()).toBe(201);
         await expect.poll(() => estadosDelConcepto(page, { ...estado, concepto: estado.rechazado, periodicidad: 'anual' }), { timeout: 20_000 }).toEqual(['pendiente']);
+
+        // Y la tabla vuelve al reloj con tooltip «Pendiente»
+        await recargarRecibos(page);
+
+        const filaPendiente = filasConBorrado(tarjeta(page, 'Anuales')).filter({ hasText: estado.rechazado }).first();
+        await expect(filaPendiente).toBeVisible({ timeout: 20_000 });
+        await comprobarIconoEstado(page, filaPendiente, 'pi-clock', 'Pendiente');
     });
 });
