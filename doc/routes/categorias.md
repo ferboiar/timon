@@ -24,7 +24,7 @@ Este módulo implementa las rutas de la API REST para la gestión de categorías
 
 ### Obtener todas las categorías (GET /api/categorias)
 
-Esta ruta devuelve un array con todas las categorías registradas en el sistema. Los datos son obtenidos desde la función `getCategorias()` del módulo de utilidades de base de datos, que asegura que la categoría "Otros" siempre aparezca al final de la lista.
+Esta ruta devuelve un array con todas las categorías registradas en el sistema. Los datos son obtenidos desde la función `getCategorias()` del módulo de utilidades de base de datos, que asegura que la categoría "Otros" siempre aparezca al final de la lista. Desde la migración 0010, cada objeto incluye además `modificado_por` (id del autor de la última escritura directa), porque `getCategorias` usa `SELECT *`; no se muestra en la pantalla (F-53, DC-74).
 
 ### Crear o actualizar una categoría (POST /api/categorias)
 

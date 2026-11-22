@@ -26,6 +26,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `descripcion` | TEXT | Descripción detallada (opcional) |
 | `activa` | TINYINT | Estado de la cuenta (1 activa, 0 inactiva) |
 | `propietario_id` | INT | Usuario que creó la cuenta; se guarda al crearla (F-01) |
+| `modificado_por` | INT | Autor de la última escritura directa (F-53, DC-74); clave foránea a `users` con `ON DELETE SET NULL` |
 | `es_privado` | TINYINT | Sin efecto: las cuentas son compartidas y visibles para todos (DC-48) |
 
 ## Funciones Principales
@@ -35,7 +36,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getAccounts()` | Recupera todas las cuentas ordenadas alfabéticamente por nombre |
-| `pushAccount(id, nombre, tipo, ...)` | Crea o actualiza una cuenta con todos sus atributos. Guarda el nombre sin espacios sobrantes y en minúsculas (DC-31, F-44) y el IBAN vacío como NULL (F-06) |
+| `pushAccount(id, nombre, tipo, ..., usuarioId)` | Crea o actualiza una cuenta con todos sus atributos. Guarda el nombre sin espacios sobrantes y en minúsculas (DC-31, F-44) y el IBAN vacío como NULL (F-06). El último parámetro, `usuarioId`, se guarda en `modificado_por` en el alta y en la edición (F-53) |
 | `deleteAccounts(accounts)` | Elimina una o más cuentas especificadas por sus IDs |
 | `getTipos()` | Obtiene los tipos de cuenta definidos en el esquema |
 

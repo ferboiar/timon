@@ -206,12 +206,12 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
             ahorroId = anterior[0].ahorro_id;
             const importeAnterior = anterior[0].importe;
             diferencia = Math.round((Number(importe) - Number(importeAnterior)) * 100) / 100;
-            console.log(`pushMovimiento - Editando el movimiento ID ${id} del ahorro ${ahorroId}: importe ${importeAnterior} -> ${importe} (diferencia ${diferencia.toFixed(2)})`);
+            console.log(`pushMovimiento - Editando el movimiento ID ${id} del ahorro ${ahorroId}: importe ${importeAnterior} -> ${importe} (diferencia ${diferencia.toFixed(2)}), autor ${usuarioId ?? 'sistema'}`);
 
-            const [updateResult] = await connection.execute('UPDATE ahorros_movimientos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion) WHERE id = ?', [importe, fecha, tipo, descripcion, id]);
+            const [updateResult] = await connection.execute('UPDATE ahorros_movimientos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), modificado_por = ? WHERE id = ?', [importe, fecha, tipo, descripcion, usuarioId, id]);
         } else {
-            console.log(`pushMovimiento - Nuevo movimiento del ahorro ${ahorroId}: importe ${importe}, fecha ${fecha}, tipo ${tipo}`);
-            const [insertResult] = await connection.execute('INSERT INTO ahorros_movimientos (ahorro_id, importe, fecha, tipo, descripcion) VALUES (?, ?, ?, ?, ?)', [ahorro_id, importe, fecha, tipo, descripcion]);
+            console.log(`pushMovimiento - Nuevo movimiento del ahorro ${ahorroId}: importe ${importe}, fecha ${fecha}, tipo ${tipo}, autor ${usuarioId ?? 'sistema'}`);
+            const [insertResult] = await connection.execute('INSERT INTO ahorros_movimientos (ahorro_id, importe, fecha, tipo, descripcion, modificado_por) VALUES (?, ?, ?, ?, ?, ?)', [ahorro_id, importe, fecha, tipo, descripcion, usuarioId]);
         }
 
         // Actualizar ahorrado solo con la diferencia que aporta este movimiento

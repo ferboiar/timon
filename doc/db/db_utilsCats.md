@@ -22,6 +22,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `nombre` | VARCHAR(30) | Nombre de la categoría; el servidor rechaza los de más de 30 caracteres con un 400 de negocio (F-55). Rechaza duplicados y el índice único `uq_categorias_nombre` (migración 0006) los impide también ante concurrencia o escrituras externas (F-22, DC-02) |
 | `descripcion` | VARCHAR | Descripción detallada (opcional) |
 | `propietario_id` | INT | Usuario que creó la categoría; no limita su visibilidad, las categorías son globales (DC-02) |
+| `modificado_por` | INT | Autor de la última escritura directa (F-53, DC-74); clave foránea a `users` con `ON DELETE SET NULL`. Las filas anteriores a la 0010 quedan a NULL |
 | `es_privado` | TINYINT | Sin efecto: las categorías son compartidas y visibles para todos (DC-02, DC-48) |
 
 ## Funciones Principales
@@ -31,7 +32,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getCategorias()` | Obtiene todas las categorías ordenadas alfabéticamente, con "Otros" al final |
-| `pushCategoria(id, nombre, descripcion, propietario_id)` | Con `id` actualiza esa categoría (nombre y descripción); sin `id` crea una nueva. Normaliza el nombre a minúsculas (DC-31) y lanza un error si otra categoría ya tiene ese nombre (F-22) |
+| `pushCategoria(id, nombre, descripcion, propietario_id, usuarioId)` | Con `id` actualiza esa categoría (nombre y descripción); sin `id` crea una nueva. Normaliza el nombre a minúsculas (DC-31), lanza un error si otra categoría ya tiene ese nombre (F-22) y guarda `modificado_por` con `usuarioId` en el alta y en la edición (F-53) |
 | `deleteCategorias(categoriaIds)` | Elimina una o más categorías por sus IDs |
 
 ## Características Especiales
@@ -51,7 +52,7 @@ La función `deleteCategorias()` convierte la entrada a array y aplica `Number` 
 - Traduce `ER_DATA_TOO_LONG` a un 400 de negocio cuando informa de la columna `nombre` o `descripcion` (F-55)
 - Convierte IDs con Number, sin verificar explícitamente que sean válidos
 - Si el borrado choca con una clave foránea (ER_ROW_IS_REFERENCED_2), lanza «No se puede eliminar la categoría porque está en uso (recibos, presupuestos u otros registros)» (F-10)
-- Trazas (DC-09): `pushCategoria - Nueva categoría: …`, `pushCategoria - Categoría ID: nombre A -> B`, `pushCategoria - Rechazado: …` y `deleteCategorias - Rechazado: …`
+- Trazas (DC-09): `pushCategoria - Nueva categoría: …`, `pushCategoria - Categoría ID: nombre A -> B`, `pushCategoria - Rechazado: …` y `deleteCategorias - Rechazado: …`; las dos primeras terminan con `autor <id>` o `autor sistema` (F-53)
 - Transformación automática de tipos de datos para asegurar compatibilidad con la base de datos
 - Manejo detallado de errores con mensajes específicos para facilitar la depuración
 

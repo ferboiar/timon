@@ -70,6 +70,8 @@ Los movimientos representan aportaciones a un objetivo de ahorro y pueden ser de
 
 Crear, editar y eliminar un movimiento ajusta `ahorrado` en la misma transacción. Al editar, solo se suma la diferencia entre el importe nuevo y el anterior, y el ahorro afectado es el que ya tiene el movimiento en la base de datos (el `ahorro_id` del cuerpo solo se usa al crear). Si algo falla, no se guarda ningún cambio.
 
+Desde la migración 0010, `GET /api/ahorros` y `GET /api/ahorros/:ahorroId/movimientos` devuelven `modificado_por` (solo el id del usuario, sin nombre): el del ahorro y el de cada movimiento. El movimiento guarda el autor de su alta o edición; no hay escritura de sistema sobre esa tabla (F-53, DC-74).
+
 ## Trazas en el log
 
 Las operaciones sobre ahorros y movimientos escriben sus pasos en el log del backend (DC-09); el detalle está en [db_utilsSav](../db/db_utilsSav.md#trazas-en-el-log).

@@ -32,7 +32,7 @@ async function getRecibos(filters) {
     try {
         connection = await getConnection();
         let query = `
-            SELECT r.*, c.nombre AS categoria, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.activo, fc.comentario, fc.importe AS importe_cargo
+            SELECT r.*, c.nombre AS categoria, fc.id AS fc_id, fc.recibo_id, fc.fecha, fc.estado, fc.activo, fc.comentario, fc.importe AS importe_cargo, fc.modificado_por AS cargo_modificado_por
             FROM recibos r
             LEFT JOIN fechas_cargo fc ON r.id = fc.recibo_id
             LEFT JOIN categorias c ON r.categoria_id = c.id
@@ -428,7 +428,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                                 console.log(`pushRecibo - Recibo ${id}: fecha ${nuevasFechas[i].fecha} (fechas_cargo ${actual.id}) sin cambios`);
                                 continue;
                             }
-                            await connection.execute('UPDATE fechas_cargo SET fecha = ? WHERE id = ?', [nuevasFechas[i].fecha, actual.id]);
+                            await connection.execute('UPDATE fechas_cargo SET fecha = ?, modificado_por = ? WHERE id = ?', [nuevasFechas[i].fecha, usuarioId, actual.id]);
                             reescritas++;
                             console.log(`pushRecibo - Recibo ${id}: fecha ${formatear(actual.fecha)} -> ${nuevasFechas[i].fecha} (fechas_cargo ${actual.id})`);
                         }
@@ -438,7 +438,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                     } else {
                         // Si no hay fechas existentes, crear nuevas
                         for (const c of fechasCargo) {
-                            await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [id, c.fecha, c.estado, c.comentario || '', c.activo]);
+                            await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, modificado_por) VALUES (?, ?, ?, ?, ?, ?)', [id, c.fecha, c.estado, c.comentario || '', c.activo, usuarioId]);
                         }
                     }
                 } else {
@@ -461,7 +461,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
 
 
                                     const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
-                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ?, importe = ? WHERE id = ?', [estado, comentario, activo, importeCargo, c.id]);
+                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ?, importe = ?, modificado_por = ? WHERE id = ?', [estado, comentario, activo, importeCargo, usuarioId, c.id]);
                                 }
                             } catch (error) {
                                 console.error('API: ERROR en actualización parcial:', error.message);
@@ -500,7 +500,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
 
                                     // DC-15: al pagar se fija el importe del cargo; al volver a pendiente se vacía
                                     const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
-                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ?, importe = ? WHERE id = ?', [estado, comentarioFinal, fecha, c.activo, importeCargo, c.id]);
+                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ?, importe = ?, modificado_por = ? WHERE id = ?', [estado, comentarioFinal, fecha, c.activo, importeCargo, usuarioId, c.id]);
 
                                     // Verificar que la actualización fue efectiva
                                     if (updateResult.affectedRows === 0) {
@@ -513,14 +513,14 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                             }
                         } else {
                             // Insertar si no existe, incluyendo activo
-                            await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, importe) VALUES (?, ?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario || '', c.activo, importeDelCargo(estado, null, c, importe)]);
+                            await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, importe, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, fecha, estado, c.comentario || '', c.activo, importeDelCargo(estado, null, c, importe), usuarioId]);
                         }
                     }
                 }
 
                 // Actualizar el valor de activo para todas las fechas de cargo del recibo
                 if (cargo && cargo.length > 0 && cargo[0].activo !== undefined) {
-                    await connection.execute('UPDATE fechas_cargo SET activo = ? WHERE recibo_id = ?', [cargo[0].activo, id]);
+                    await connection.execute('UPDATE fechas_cargo SET activo = ?, modificado_por = ? WHERE recibo_id = ?', [cargo[0].activo, usuarioId, id]);
                 }
             } else {
                 throw new ErrorDeNegocio('El recibo con el ID especificado no existe.', 404);
@@ -557,7 +557,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
 
                 // Insertar las fechas generadas automáticamente
                 for (const c of fechasAutomaticas) {
-                    await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo) VALUES (?, ?, ?, ?, ?)', [newReciboId, c.fecha, c.estado, c.comentario, c.activo]);
+                    await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, modificado_por) VALUES (?, ?, ?, ?, ?, ?)', [newReciboId, c.fecha, c.estado, c.comentario, c.activo, usuarioId]);
                 }
             } else if (cargo && cargo.length > 0) {
                 // Insertar fechas de cargo proporcionadas manualmente
@@ -579,7 +579,7 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                         continue; // Ignorar fechas inválidas
                     }
 
-                    await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, importe) VALUES (?, ?, ?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario || '', c.activo, importeDelCargo(estado, null, c, importe)]);
+                    await connection.execute('INSERT INTO fechas_cargo (recibo_id, fecha, estado, comentario, activo, importe, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?)', [newReciboId, fecha, estado, c.comentario || '', c.activo, importeDelCargo(estado, null, c, importe), usuarioId]);
                 }
             }
         }

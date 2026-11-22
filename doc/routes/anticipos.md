@@ -138,7 +138,7 @@ Los errores de los parámetros (`advances`, identificador, `redistribuir`) son 4
 
 ## Trazabilidad y borrado (F-50, F-10)
 
-Las escrituras de anticipos y pagos actualizan anticipos.modificado_por y updated_at dentro de la misma transacción. El borrado de anticipos traduce defensivamente una clave foránea a un 409 EN_USO; hoy anticipos_pagos tiene ON DELETE CASCADE, así que la traducción es defensiva y no una corrección de un bloqueo real.
+Las escrituras de anticipos y pagos actualizan anticipos.modificado_por y updated_at dentro de la misma transacción. Desde la migración 0010, `GET /api/anticipos` devuelve `modificado_por` del anticipo y `GET /api/anticipos/:anticipoId/pagos` devuelve el de cada pago; en ambos casos solo el id, sin nombre de usuario. El autor de un pago es el de la ruta que lo crea o edita con `pushPago`/`sustituirPago`; las filas derivadas (plan generado, reparto por edición y reparto tras borrado) quedan a NULL por DC-74. El borrado de anticipos traduce defensivamente una clave foránea a un 409 EN_USO; hoy anticipos_pagos tiene ON DELETE CASCADE, así que la traducción es defensiva y no una corrección de un bloqueo real.
 
 ## Referencias
 

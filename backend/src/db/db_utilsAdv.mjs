@@ -24,7 +24,7 @@ import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
 // DC-38: el importe pendiente no se guarda; es el principal menos la suma de los pagos pagados. El estado completado se deduce de él.
 const SQL_PENDIENTE = "a.importe_original - COALESCE((SELECT SUM(p.importe) FROM anticipos_pagos p WHERE p.anticipo_id = a.id AND p.estado = 'pagado'), 0)";
 const SQL_ESTADO = "CASE WHEN a.estado IN ('pausado', 'cancelado') THEN a.estado WHEN (" + SQL_PENDIENTE + ") < 0.005 THEN 'completado' ELSE 'activo' END";
-const SQL_ANTICIPO = 'SELECT a.id, a.concepto, a.importe_original, ROUND(' + SQL_PENDIENTE + ', 2) AS pendiente, a.pago_sugerido, a.fecha_inicio, a.fecha_fin_prevista, a.descripcion, ' + SQL_ESTADO + ' AS estado, a.cuenta_origen_id, a.periodicidad, a.created_at, a.updated_at, a.propietario_id, a.es_privado FROM anticipos a';
+const SQL_ANTICIPO = 'SELECT a.id, a.concepto, a.importe_original, ROUND(' + SQL_PENDIENTE + ', 2) AS pendiente, a.pago_sugerido, a.fecha_inicio, a.fecha_fin_prevista, a.descripcion, ' + SQL_ESTADO + ' AS estado, a.cuenta_origen_id, a.periodicidad, a.created_at, a.updated_at, a.propietario_id, a.es_privado, a.modificado_por FROM anticipos a';
 
 async function leerPendiente(connection, anticipoId) {
     const [filas] = await connection.execute('SELECT ROUND(' + SQL_PENDIENTE + ', 2) AS pendiente FROM anticipos a WHERE a.id = ?', [anticipoId]);
@@ -410,16 +410,17 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                 const planCuadrabaAntes = await planCuadra(connection, anticipoDelPago);
 
                 // Actualizar el pago existente. DC-38: el importe pendiente se deriva de los pagos pagados, así que no hay nada que ajustar
-                const [result] = await connection.execute('UPDATE anticipos_pagos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_destino_id = ? WHERE id = ?', [
+                const [result] = await connection.execute('UPDATE anticipos_pagos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_destino_id = ?, modificado_por = ? WHERE id = ?', [
                     importe,
                     fecha,
                     tipo,
                     descripcion,
                     estado,
                     cuenta_destino_id,
+                    usuarioId,
                     id
                 ]);
-                console.log('pushPago - Pago ' + id + ' del anticipo ' + anticipoDelPago + ': estado ' + previousEstado + ' -> ' + estado + ', importe ' + previousImporte + ' -> ' + importe + ', fecha ' + previousFecha + ' -> ' + fecha);
+                console.log('pushPago - Pago ' + id + ' del anticipo ' + anticipoDelPago + ': estado ' + previousEstado + ' -> ' + estado + ', importe ' + previousImporte + ' -> ' + importe + ', fecha ' + previousFecha + ' -> ' + fecha + ', autor ' + (usuarioId ?? 'sistema'));
 
                 // Si el importe cambia, la diferencia se reparte entre los pagos pendientes posteriores (DC-08) para que la suma de
                 // los pendientes siga igual al importe pendiente del anticipo:
@@ -441,14 +442,15 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
             if (!(await bloquearAnticipo(connection, anticipo_id))) {
                 throw errorHttp(404, 'Anticipo con ID ' + anticipo_id + ' no encontrado');
             }
-            const [result] = await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+            const [result] = await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
                 anticipo_id,
                 importe,
                 fecha,
                 tipo,
                 descripcion,
                 estado,
-                cuenta_destino_id
+                cuenta_destino_id,
+                usuarioId
             ]);
 
             // Si el pago es extraordinario, ajustar los últimos pagos regulares
@@ -621,7 +623,7 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
         // Aplicar los nuevos importes a la base de datos
         for (const pago of pagos) {
             if (pago.nuevoImporte !== null) {
-                await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [pago.nuevoImporte, pago.id]);
+                await connection.execute('UPDATE anticipos_pagos SET importe = ?, modificado_por = NULL WHERE id = ?', [pago.nuevoImporte, pago.id]);
             }
         }
 
@@ -640,7 +642,7 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
                 const lastPago = lastPayments[0];
                 const nuevoImporte = Math.max(0.01, parseFloat(lastPago.importe) + diferenciaTotales);
 
-                await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [nuevoImporte, lastPago.id]);
+                await connection.execute('UPDATE anticipos_pagos SET importe = ?, modificado_por = NULL WHERE id = ?', [nuevoImporte, lastPago.id]);
             }
         }
 
@@ -686,7 +688,7 @@ async function completarPlanTrasBorrado(connection, anticipoId) {
             if (actual >= pagoSugerido) continue;
             const incremento = Math.round(Math.min(restante, pagoSugerido - actual) * 100) / 100;
             const nuevoImporte = Math.round((actual + incremento) * 100) / 100;
-            await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [nuevoImporte, pago.id]);
+            await connection.execute('UPDATE anticipos_pagos SET importe = ?, modificado_por = NULL WHERE id = ?', [nuevoImporte, pago.id]);
             restante = Math.round((restante - incremento) * 100) / 100;
             pagosAjustados++;
             console.log('completarPlanTrasBorrado - Pago ID ' + pago.id + ' de ' + actual.toFixed(2) + ' a ' + nuevoImporte.toFixed(2) + ' (+' + incremento.toFixed(2) + ')');
@@ -815,14 +817,15 @@ async function sustituirPago(pagoId, datos, usuarioId = null) {
             // Primero se crea el pago nuevo: si falla (por ejemplo, cuenta inexistente) no se ha borrado nada
             let resultadoAlta;
             try {
-                [resultadoAlta] = await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+                [resultadoAlta] = await connection.execute('INSERT INTO anticipos_pagos (anticipo_id, importe, fecha, tipo, descripcion, estado, cuenta_destino_id, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
                     anticipo_id,
                     importeNuevo,
                     fecha,
                     tipo,
                     descripcion,
                     'pendiente',
-                    cuenta_destino_id
+                    cuenta_destino_id,
+                    usuarioId
                 ]);
             } catch (error) {
                 if (error.code === 'ER_NO_REFERENCED_ROW_2') {
@@ -833,7 +836,7 @@ async function sustituirPago(pagoId, datos, usuarioId = null) {
 
             // Después se borra el pago antiguo, sin repartir su importe
             const [resultadoBaja] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [pagoId]);
-            console.log('sustituirPago - Pago ' + pagoId + ' sustituido por el pago ' + resultadoAlta.insertId + ' en el anticipo ' + anticipo_id + ' (filas borradas: ' + resultadoBaja.affectedRows + ')');
+            console.log('sustituirPago - Pago ' + pagoId + ' sustituido por el pago ' + resultadoAlta.insertId + ' en el anticipo ' + anticipo_id + ' (filas borradas: ' + resultadoBaja.affectedRows + '), autor ' + (usuarioId ?? 'sistema'));
 
             const pendiente = await leerPendiente(connection, anticipo_id);
             await marcarAnticipoModificado(connection, anticipo_id, usuarioId);
@@ -876,7 +879,7 @@ async function recalculatePendingPayments(anticipoId, conexion = null) {
                 const importeFinal = nuevoImporte + (ajuste > 0 ? 0.01 : ajuste < 0 ? -0.01 : 0);
                 ajuste -= ajuste > 0 ? 0.01 : ajuste < 0 ? -0.01 : 0;
 
-                await connection.execute('UPDATE anticipos_pagos SET importe = ? WHERE id = ?', [importeFinal, pago.id]);
+                await connection.execute('UPDATE anticipos_pagos SET importe = ?, modificado_por = NULL WHERE id = ?', [importeFinal, pago.id]);
             }
 
             console.log('recalculatePendingPayments - Pagos pendientes recalculados para el anticipo ' + anticipoId);

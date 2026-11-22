@@ -34,7 +34,8 @@ async function getCategorias() {
     }
 }
 
-async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
+async function pushCategoria(id, nombre, descripcion = null, propietario_id, usuarioId = null) {
+    usuarioId = usuarioId ?? null;
     validarCategoria({ nombre, descripcion });
     // DC-31: en la base de datos los nombres de categoría van en minúsculas; la pantalla los muestra con la primera letra en mayúscula
     nombre = typeof nombre === 'string' ? nombre.trim().toLowerCase() : nombre;
@@ -56,13 +57,13 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id) {
                 throw new ErrorDeNegocio('Categoría con ID ' + id + ' no encontrada', 404);
             }
             // Actualizar categoría existente por ID
-            console.log(`pushCategoria - Categoría ${id}: nombre ${existe[0].nombre} -> ${nombre}`);
-            const [updateResult] = await connection.execute('UPDATE categorias SET nombre = ?, descripcion = COALESCE(?, descripcion) WHERE id = ?', [nombre, descripcion, id]);
+            console.log(`pushCategoria - Categoría ${id}: nombre ${existe[0].nombre} -> ${nombre}, autor ${usuarioId ?? 'sistema'}`);
+            const [updateResult] = await connection.execute('UPDATE categorias SET nombre = ?, descripcion = COALESCE(?, descripcion), modificado_por = ? WHERE id = ?', [nombre, descripcion, usuarioId, id]);
         } else {
             // Insertar nueva categoría
             if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear la categoría');
-            console.log(`pushCategoria - Nueva categoría: ${nombre || 'Sin nombre'}`);
-            const [insertResult] = await connection.execute('INSERT INTO categorias (nombre, descripcion, propietario_id) VALUES (?, ?, ?)', [nombre || 'Sin nombre', descripcion, propietario_id]);
+            console.log(`pushCategoria - Nueva categoría: ${nombre || 'Sin nombre'}, autor ${usuarioId ?? 'sistema'}`);
+            const [insertResult] = await connection.execute('INSERT INTO categorias (nombre, descripcion, propietario_id, modificado_por) VALUES (?, ?, ?, ?)', [nombre || 'Sin nombre', descripcion, propietario_id, usuarioId]);
         }
     } catch (error) {
         console.error('Error al insertar o actualizar la categoría:', error);

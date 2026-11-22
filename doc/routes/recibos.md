@@ -159,7 +159,7 @@ Este módulo depende directamente de las funciones de base de datos definidas en
 
 ## Trazabilidad y borrado (F-50, F-10)
 
-Desde la migración 0006, cada recibo incluye modificado_por, created_at y updated_at. Las escrituras de la ruta rellenan modificado_por con el usuario vigente; las fechas de cargo actualizan el padre en la misma transacción. El borrado traduce defensivamente una clave foránea que impida borrar el recibo a un 409 con mensaje de negocio (F-10); el esquema actual ya borra las fechas y comprueba los sucesores antes.
+Desde la migración 0006, cada recibo incluye modificado_por, created_at y updated_at. Las escrituras de la ruta rellenan modificado_por con el usuario vigente; las fechas de cargo actualizan el padre en la misma transacción. Desde la 0010, `GET /api/recibos` devuelve además `cargo_modificado_por`, el autor de la fila de `fechas_cargo` (solo el id): se devuelve con alias porque la consulta combina `SELECT r.*` con campos explícitos de `fechas_cargo` y, sin él, ambas columnas `modificado_por` se pisarían. Las fechas creadas por `completarFechasAnio` quedan a NULL (DC-74). El borrado traduce defensivamente una clave foránea que impida borrar el recibo a un 409 con mensaje de negocio (F-10); el esquema actual ya borra las fechas y comprueba los sucesores antes.
 
 ## Referencias
 

@@ -4,6 +4,8 @@
 
 Este módulo contiene todas las funciones de acceso a la base de datos relacionadas con recibos y sus fechas de cargo. Implementa operaciones CRUD básicas para la gestión completa de recibos en la aplicación Timon, permitiendo la administración de pagos periódicos con un seguimiento detallado de sus fechas de cargo.
 
+> **Nota sobre el nombre:** este documento se llama `db_utilsBill.md` por el nombre histórico del módulo, pero el fichero real es `backend/src/db/db_utils.mjs`. No se renombra la documentación; el código y las rutas importan `db_utils.mjs`.
+
 ## Características Principales
 
 - Gestión completa de operaciones CRUD para recibos y sus fechas de cargo
@@ -200,9 +202,9 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 | `pushRecibo - Recibo …: fechas fuera del año … admitidas por permitirFueraDeAnio` | Un administrador las admitió con el interruptor de sesión (DC-29) |
 | `pushRecibo - Concepto normalizado a minúsculas: …` | Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 
-## Trazabilidad y borrado (F-50, F-10)
+## Trazabilidad y borrado (F-50, F-10, F-53, DC-74)
 
-pushRecibo escribe modificado_por en el alta y en los dos UPDATE, y actualiza recibos.modificado_por/updated_at cuando cambian las fechas de cargo. completarFechasAnio y el borrado de una sola fecha también actualizan el padre. deleteRecibo traduce defensivamente una referencia FK a 409 de negocio (F-10).
+pushRecibo escribe modificado_por en el alta y en los dos UPDATE, y actualiza recibos.modificado_por/updated_at cuando cambian las fechas de cargo. Desde la migración 0010, cada fila de fechas_cargo guarda el autor de la escritura directa: altas y ediciones de pushRecibo, incluido el UPDATE masivo de activo (excepción de DC-74). Las fechas creadas por completarFechasAnio son derivadas y quedan a NULL. completarFechasAnio y el borrado de una sola fecha también actualizan el padre. Las filas anteriores a la 0010 y las que deja el borrado del usuario quedan a NULL. deleteRecibo traduce defensivamente una referencia FK a 409 de negocio (F-10).
 
 ## Referencias
 

@@ -105,7 +105,7 @@ describe('paridad con el entorno de referencia', () => {
 });
 
 describe('esquema de la línea base', () => {
-    test('14 tablas y 22 claves foráneas', async () => {
+    test('14 tablas y 27 claves foráneas', async () => {
         const [[v]] = await db.query(
             `SELECT
                (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?) AS tablas,
@@ -113,7 +113,8 @@ describe('esquema de la línea base', () => {
             [dbName, dbName]
         );
         assert.equal(Number(v.tablas), 14);
-        assert.equal(Number(v.fks), 22);
+        // 22 de la línea base y las migraciones anteriores, más las 5 de modificado_por de la 0010 (F-53, DC-74)
+        assert.equal(Number(v.fks), 27);
     });
 
     test('propietario_id es obligatorio y no tiene valor por defecto', async () => {

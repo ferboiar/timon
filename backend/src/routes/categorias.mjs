@@ -31,7 +31,7 @@ router.post('/', autorizar('categorias', 'escritura'), async (req, res) => {
         return res.status(400).json({ error: 'El nombre de la categoría es obligatorio' });
     }
     try {
-        await pushCategoria(id, nombre, descripcion, req.user.id);
+        await pushCategoria(id, nombre, descripcion, req.user.id, req.user.id);
         res.status(201).json({ message: 'Categoría insertada o actualizada correctamente' });
     } catch (error) {
         responderError(res, error, 'No se pudo guardar la categoría.', { contexto: 'categorias - POST' });
