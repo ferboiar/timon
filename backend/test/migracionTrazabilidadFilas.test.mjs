@@ -32,7 +32,7 @@ let db;
 let admin;
 let cerrarPool;
 let pushCategoria, pushAccount, pushSaving, pushMovimiento, pushPago, pushAdvance, pushRecibo;
-let completarFechasAnio, handlePaymentDeletion, getAdvances, getRecibos;
+let completarFechasAnio, handlePaymentDeletion, getAdvances, getRecibos, sustituirPago;
 
 async function crearBase(nombre) {
     assert.match(nombre, /_test$/, 'la base debe terminar en _test');
@@ -137,7 +137,7 @@ before(async () => {
     ({ pushCategoria } = await import('../src/db/db_utilsCats.mjs'));
     ({ pushAccount } = await import('../src/db/db_utilsAcc.mjs'));
     ({ pushSaving, pushMovimiento } = await import('../src/db/db_utilsSav.mjs'));
-    ({ pushAdvance, pushPago, handlePaymentDeletion } = await import('../src/db/db_utilsAdv.mjs'));
+    ({ pushAdvance, pushPago, handlePaymentDeletion, sustituirPago } = await import('../src/db/db_utilsAdv.mjs'));
     ({ completarFechasAnio, getRecibos, pushRecibo } = await import('../src/db/db_utils.mjs'));
     ({ getAdvances } = await import('../src/db/db_utilsAdv.mjs'));
 });
@@ -338,3 +338,110 @@ describe('Lectura por la API (solo id, sin username)', () => {
         assert.ok(Object.hasOwn(anticipo, 'modificado_por'));
     });
 });
+
+describe('Escrituras de edición y de recibo existente (DC-74)', () => {
+    test('la edición de un movimiento guarda el autor de la edición', async () => {
+        const autorA = await crearUsuario('f53_edit_mov_a');
+        const autorB = await crearUsuario('f53_edit_mov_b');
+
+        await pushSaving(undefined, 'f53-edit-mov', null, 0, null, null, 0, 1, 2, null, autorA);
+        const ahorroId = await idPorConcepto('ahorros', 'concepto', 'f53-edit-mov');
+        await pushMovimiento(undefined, ahorroId, 5, '2026-01-01', 'regular', null, autorA);
+        const [[movimiento]] = await db.query('SELECT id FROM ahorros_movimientos WHERE ahorro_id = ?', [ahorroId]);
+
+        await pushMovimiento(movimiento.id, ahorroId, 7, '2026-01-02', 'regular', 'editado', autorB);
+
+        const [[fila]] = await db.query('SELECT importe, modificado_por FROM ahorros_movimientos WHERE id = ?', [movimiento.id]);
+        assert.equal(Number(fila.importe), 7);
+        assert.equal(Number(fila.modificado_por), autorB);
+    });
+
+    test('la edición de un pago guarda el autor de la edición', async () => {
+        const autorA = await crearUsuario('f53_edit_pago_a');
+        const autorB = await crearUsuario('f53_edit_pago_b');
+
+        await pushAdvance(undefined, 'f53-edit-pago', 50, null, '2026-01-01', null, null, 'activo', 1, null, 2, null, autorA);
+        const anticipoId = await idPorConcepto('anticipos', 'concepto', 'f53-edit-pago');
+        const pagoId = await pushPago(undefined, anticipoId, 5, '2026-01-01', 'regular', null, 'pendiente', 1, autorA);
+
+        // Misma fecha para no disparar el reparto entre pendientes posteriores (DC-40)
+        await pushPago(pagoId, anticipoId, 6, '2026-01-01', 'regular', 'editado', 'pendiente', 1, autorB);
+
+        const [[fila]] = await db.query('SELECT importe, modificado_por FROM anticipos_pagos WHERE id = ?', [pagoId]);
+        assert.equal(Number(fila.importe), 6);
+        assert.equal(Number(fila.modificado_por), autorB);
+    });
+
+    test('el pago sustituto guarda el autor de la sustitución', async () => {
+        const autorA = await crearUsuario('f53_sust_a');
+        const autorB = await crearUsuario('f53_sust_b');
+
+        await pushAdvance(undefined, 'f53-sustitucion', 50, null, '2026-01-01', null, null, 'activo', 1, null, 2, null, autorA);
+        const anticipoId = await idPorConcepto('anticipos', 'concepto', 'f53-sustitucion');
+        const viejo = await pushPago(undefined, anticipoId, 5, '2026-01-01', 'regular', null, 'pendiente', 1, autorA);
+
+        const { pagoNuevoId } = await sustituirPago(viejo, { importe: 7, fecha: '2026-02-01', tipo: 'regular', descripcion: 'nuevo', cuenta_destino_id: 1 }, autorB);
+
+        const [[nuevo]] = await db.query('SELECT modificado_por FROM anticipos_pagos WHERE id = ?', [pagoNuevoId]);
+        assert.equal(Number(nuevo.modificado_por), autorB);
+        const [[borrado]] = await db.query('SELECT COUNT(*) AS n FROM anticipos_pagos WHERE id = ?', [viejo]);
+        assert.equal(Number(borrado.n), 0);
+    });
+
+    test('pushRecibo auto sobre un recibo existente reescribe las fechas con el autor de la edición', async () => {
+        const autorA = await crearUsuario('f53_rec_auto_a');
+        const autorB = await crearUsuario('f53_rec_auto_b');
+
+        await pushRecibo(undefined, 'f53-rec-auto', 'mensual', 10, 'general', [], 2, 1, '2026-01-15', 'auto', false, null, autorA);
+        const reciboId = await idPorConcepto('recibos', 'concepto', 'f53-rec-auto');
+
+        await pushRecibo(reciboId, 'f53-rec-auto', 'mensual', 10, 'general', [], 2, 1, '2026-01-20', 'auto', false, null, autorB);
+
+        const [[filas]] = await db.query('SELECT COUNT(*) AS total, SUM(modificado_por = ?) AS conAutor FROM fechas_cargo WHERE recibo_id = ?', [autorB, reciboId]);
+        assert.ok(Number(filas.total) >= 12);
+        assert.equal(Number(filas.conAutor), Number(filas.total));
+    });
+
+    test('pushRecibo auto sobre un recibo existente sin fechas las crea con el autor', async () => {
+        const autor = await crearUsuario('f53_rec_vacio');
+
+        const [alta] = await db.execute(
+            "INSERT INTO recibos (concepto, periodicidad, importe, categoria_id, propietario_id, cuenta_id, fecha_inicial) VALUES ('f53-rec-vacio', 'mensual', 10, 1, 2, 1, '2026-01-15')"
+        );
+        await pushRecibo(alta.insertId, 'f53-rec-vacio', 'mensual', 10, 'general', [], 2, 1, '2026-01-15', 'auto', false, null, autor);
+
+        const [[filas]] = await db.query('SELECT COUNT(*) AS total, SUM(modificado_por = ?) AS conAutor FROM fechas_cargo WHERE recibo_id = ?', [autor, alta.insertId]);
+        assert.ok(Number(filas.total) >= 12);
+        assert.equal(Number(filas.conAutor), Number(filas.total));
+    });
+
+    test('pushRecibo manual sobre un recibo existente: estado, fecha y cargo nuevo guardan el autor', async () => {
+        const autorA = await crearUsuario('f53_rec_man_a');
+        const autorB = await crearUsuario('f53_rec_man_b');
+        const autorC = await crearUsuario('f53_rec_man_c');
+
+        await pushRecibo(undefined, 'f53-rec-man', 'mensual', 10, 'general', [{ fecha: '2026-01-10', estado: 'pendiente', comentario: '', activo: 1 }], 2, 1, '2026-01-10', 'manual', false, null, autorA);
+        const reciboId = await idPorConcepto('recibos', 'concepto', 'f53-rec-man');
+        const [[cargo]] = await db.query('SELECT id FROM fechas_cargo WHERE recibo_id = ?', [reciboId]);
+
+        // 464 + 516: el primer cargo va sin activo para que no se ejecute el UPDATE masivo (523);
+        // el segundo es nuevo y lo inserta la rama 516.
+        await pushRecibo(reciboId, 'f53-rec-man', 'mensual', 10, 'general', [
+            { id: cargo.id, estado: 'cargado', comentario: 'edicion estado' },
+            { fecha: '2026-03-10', estado: 'pendiente', comentario: 'nuevo', activo: 1 }
+        ], 2, 1, undefined, 'manual', false, null, autorB);
+
+        const [[editado]] = await db.query('SELECT modificado_por FROM fechas_cargo WHERE id = ?', [cargo.id]);
+        assert.equal(Number(editado.modificado_por), autorB);
+        const [[nuevo]] = await db.query("SELECT modificado_por FROM fechas_cargo WHERE recibo_id = ? AND DATE_FORMAT(fecha, '%Y-%m-%d') = '2026-03-10'", [reciboId]);
+        assert.equal(Number(nuevo.modificado_por), autorB);
+
+        // 503: estado, comentario y fecha; el activo del primer cargo activa además el UPDATE masivo (523)
+        await pushRecibo(reciboId, 'f53-rec-man', 'mensual', 10, 'general', [{ id: cargo.id, fecha: '2026-02-10', estado: 'pendiente', comentario: 'edicion fecha', activo: 1 }], 2, 1, undefined, 'manual', false, null, autorC);
+
+        const [[fila]] = await db.query("SELECT modificado_por, DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha FROM fechas_cargo WHERE id = ?", [cargo.id]);
+        assert.equal(fila.fecha, '2026-02-10');
+        assert.equal(Number(fila.modificado_por), autorC);
+    });
+});
+
