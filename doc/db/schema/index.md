@@ -146,6 +146,6 @@ Revierte dejando el esquema vacío. **Pierde todos los datos.**
 - Las fechas utilizan `DATE` para días específicos y `TIMESTAMP` para auditoría
 - Los importes monetarios usan `DECIMAL(10,2)` o `DECIMAL(12,2)`
 - Se usan enumeraciones (`ENUM`) para estados y tipos predefinidos
-- Los campos de auditoría incluyen created_at y updated_at; desde la migración 0006, recibos, ahorros, anticipos y presupuestos tienen modificado_por (FK a users con ON DELETE SET NULL)
+- Los campos de auditoría incluyen created_at y updated_at; desde la migración 0006, recibos, ahorros, anticipos y presupuestos tienen modificado_por (FK a users con ON DELETE SET NULL); desde la 0010, también lo tienen anticipos_pagos, ahorros_movimientos, fechas_cargo, categorias y cuentas (F-53, DC-74)
 - El sistema de permisos utiliza el campo `propietario_id` y `es_privado` en las tablas principales para control de visibilidad
 - Los permisos a nivel de módulo funcional se definen en la tabla `users` mediante campos `perm_[modulo]`

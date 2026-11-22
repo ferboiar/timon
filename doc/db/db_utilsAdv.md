@@ -151,9 +151,9 @@ Cada paso deja trazas en el log del backend con el formato «módulo - acción: 
 
 `errorHttp(estado, mensaje, codigo)` devuelve un `ErrorDeNegocio`: los errores de negocio (400, 404 y 409) conservan estado, mensaje y código, y la ruta los devuelve tal cual. El propietario ausente al crear un anticipo pasa a **401** `SESION_NO_IDENTIFICADA` (antes 400). Los errores del motor no se envuelven: la ruta los compone con el [catálogo de causas](../utils/catalogoErrores.md) y el detalle va al log (DC-09).
 
-## Trazabilidad y borrado (F-50, F-10)
+## Trazabilidad y borrado (F-50, F-10, F-53, DC-74)
 
-pushAdvance, pushPago, handlePaymentDeletion, sustituirPago y recalculatePaymentPlan actualizan anticipos.modificado_por y updated_at dentro de la transacción que bloquea el anticipo. deleteAdvances traduce defensivamente una referencia FK a 409 EN_USO; hoy anticipos_pagos tiene ON DELETE CASCADE.
+pushAdvance, pushPago, handlePaymentDeletion, sustituirPago y recalculatePaymentPlan actualizan anticipos.modificado_por y updated_at dentro de la transacción que bloquea el anticipo. Desde la migración 0010, anticipos_pagos.modificado_por guarda el autor de la fila: pushPago y sustituirPago lo escriben en el alta y en la edición directa. Por DC-74, las filas derivadas quedan a NULL: las que crea generarPlanDePagos y las que ajustan recalculatePostEditPayments, completarPlanTrasBorrado y recalculatePendingPayments, que lo fijan explícitamente a NULL porque la fila pudo tener antes otro autor. Las filas anteriores a la 0010 quedan a NULL. deleteAdvances traduce defensivamente una referencia FK a 409 EN_USO; hoy anticipos_pagos tiene ON DELETE CASCADE.
 
 ## Referencias
 

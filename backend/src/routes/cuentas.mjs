@@ -29,7 +29,7 @@ router.get('/', autorizar('cuentas', 'lectura'), async (req, res) => {
 router.post('/', autorizar('cuentas', 'escritura'), async (req, res) => {
     const { id, nombre, tipo, iban, saldo_actual, descripcion, activa } = req.body;
     try {
-        await pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa, req.user.id);
+        await pushAccount(id, nombre, tipo, iban, saldo_actual, descripcion, activa, req.user.id, req.user.id);
         res.status(201).json({ message: 'Cuenta insertada o actualizada correctamente' });
     } catch (error) {
         if (error.codigo === 'IBAN_DUPLICADO') {

@@ -10,7 +10,10 @@ solo si cambia una decisión vigente o el mapa. El histórico está en el
   aplicada según el esquema observado en el PR #53, sin evidencia documental de los bytes aplicados ni
   de la copia previa), 0006 (trazabilidad e índice único de categorías), 0007 (objetos reproducibles y
   `DEFINER`), 0008 (`users.token_version`) y 0009 (`fechas_cargo.estado` admite `rechazado`; no exige
-  re-login). La 0008 exige iniciar sesión de nuevo: los tokens anteriores no llevan `ver`.
+  re-login). La 0010 (trazabilidad por fila en cinco tablas) se aplicó el 2026-11-22 sobre el esquema
+  actual (36 s, exit 0), con copia previa `conta_hogar_pre_0010_20261122T101717Z.sql` (58 212 B,
+  SHA-256 `7ce6fced…28d2`) y ensayo en una base `_test`; no se aplicó desde cero, eso lo cubre la suite.
+  La 0008 exige iniciar sesión de nuevo: los tokens anteriores no llevan `ver`.
 - Siguiente trabajo y bloqueos: los issues del Project.
 - Identificadores: `npm run iter:ids` da el último de cada familia antes de asignar uno nuevo.
 
@@ -46,6 +49,7 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-71 | Estabilidad de la E2E: calentamiento en `globalSetup` con `retries` en 0; `eliminarCuenta` espera la fila; `e2e/` formateado con Prettier y `--fix` de `lint:frontend` documentado como idempotente. |
 | DC-72 | Vocabulario de interfaz (`Guardar`/`Cancelar`/`Sí`/`No`, `Confirmar`, resúmenes `Éxito`/`Aviso`/`Error`) e importes de tabla con `Intl.NumberFormat('es-ES', …, EUR)` tolerando `null`; «Ahorro sugerido» en Ahorros; `Reset` suelto se conserva en inglés. |
 | DC-73 | El código que depende de una migración no se fusiona antes de que esté aplicada, o se escribe para tolerar el esquema anterior. Acordado el 2026-11-21. |
+| DC-74 | Autor por fila en subrecursos y catálogos (migración 0010, F-53): escritura directa con usuario, filas derivadas a NULL, salvo el activo masivo de `fechas_cargo`; sin backfill y con el id en la API. |
 
 
 ## 2. Entorno y mapa

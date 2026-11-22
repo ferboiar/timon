@@ -125,9 +125,9 @@ Cada operación deja trazas en el log del backend con el formato «módulo - acc
 | `pushSaving - Concepto normalizado a minúsculas: …` | Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 | `deleteSavings - Rechazado: …` | Si el borrado falla por una clave foránea (defensivo, F-10) |
 
-## Trazabilidad y campos opcionales (F-50, F-52)
+## Trazabilidad y campos opcionales (F-50, F-52, F-53, DC-74)
 
-pushSaving normaliza a NULL descripcion, fecha_objetivo, periodicidad e importe_periodico cuando el cliente los omite. Las altas y ediciones guardan modificado_por; pushMovimiento y deleteMovimiento actualizan ahorros.modificado_por y ahorros.updated_at en la misma transacción que ahorrado.
+pushSaving normaliza a NULL descripcion, fecha_objetivo, periodicidad e importe_periodico cuando el cliente los omite. Las altas y ediciones guardan modificado_por; pushMovimiento y deleteMovimiento actualizan ahorros.modificado_por y ahorros.updated_at en la misma transacción que ahorrado. Desde la migración 0010, ahorros_movimientos.modificado_por guarda el autor del alta y de la edición del movimiento con pushMovimiento. No hay escritura de sistema sobre esa tabla: el único NULL es el de las filas anteriores a la migración o el que deja el borrado del usuario (ON DELETE SET NULL).
 
 ## Referencias
 

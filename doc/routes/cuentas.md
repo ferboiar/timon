@@ -17,7 +17,7 @@ Este módulo implementa las rutas de la API REST para la gestión de cuentas ban
 
 ### Obtener todas las cuentas (GET /api/cuentas)
 
-Esta ruta devuelve un array con todas las cuentas registradas en el sistema. Los datos son obtenidos directamente desde la función `getAccounts()` del módulo de utilidades de base de datos.
+Esta ruta devuelve un array con todas las cuentas registradas en el sistema. Los datos son obtenidos directamente desde la función `getAccounts()` del módulo de utilidades de base de datos. Desde la migración 0010, cada objeto incluye además `modificado_por` (id del autor de la última escritura directa), porque `getAccounts` usa `SELECT *`; no se muestra en la pantalla (F-53, DC-74).
 
 ### Crear o actualizar una cuenta (POST /api/cuentas)
 
