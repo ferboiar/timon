@@ -10,8 +10,10 @@ solo si cambia una decisión vigente o el mapa. El histórico está en el
   aplicada según el esquema observado en el PR #53, sin evidencia documental de los bytes aplicados ni
   de la copia previa), 0006 (trazabilidad e índice único de categorías), 0007 (objetos reproducibles y
   `DEFINER`), 0008 (`users.token_version`) y 0009 (`fechas_cargo.estado` admite `rechazado`; no exige
-  re-login). La 0010 (trazabilidad por fila en cinco tablas) está versionada en la rama de F-53 y
-  **pendiente de aplicar** (DC-73). La 0008 exige iniciar sesión de nuevo: los tokens anteriores no llevan `ver`.
+  re-login). La 0010 (trazabilidad por fila en cinco tablas) se aplicó el 2026-11-22 sobre el esquema
+  actual (36 s, exit 0), con copia previa `conta_hogar_pre_0010_20261122T101717Z.sql` (58 212 B,
+  SHA-256 `7ce6fced…28d2`) y ensayo en una base `_test`; no se aplicó desde cero, eso lo cubre la suite.
+  La 0008 exige iniciar sesión de nuevo: los tokens anteriores no llevan `ver`.
 - Siguiente trabajo y bloqueos: los issues del Project.
 - Identificadores: `npm run iter:ids` da el último de cada familia antes de asignar uno nuevo.
 
