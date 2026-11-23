@@ -536,7 +536,12 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             // La tarjeta «Inactivos» no tiene buscador: el concepto es único y la lista, corta.
             await conCandado('Inactivos', nombres.inactivo, false);
 
-            const fila = page.locator('.card').filter({ has: page.getByText('Trimestrales', { exact: true }) }).locator('table tbody tr').filter({ hasText: nombres.trimestral }).first();
+            const fila = page
+                .locator('.card')
+                .filter({ has: page.getByText('Trimestrales', { exact: true }) })
+                .locator('table tbody tr')
+                .filter({ hasText: nombres.trimestral })
+                .first();
             await fila.locator('button:has(.pi-pencil)').click();
 
             const dialogo = page.getByRole('dialog', { name: 'Detalle del recibo' });
@@ -588,8 +593,6 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
         });
     });
 });
-
-
 
 /** Abre el diálogo de un anticipo desde su lápiz. */
 async function abrirDialogoAnticipo(page, nombre) {
