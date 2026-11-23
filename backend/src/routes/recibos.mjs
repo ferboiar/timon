@@ -14,7 +14,7 @@ import { completarFechasAnio, deleteRecibo, getRecibos, pushRecibo } from '#back
 import { autorizar } from '#backend/middleware/auth.mjs';
 import { leerEsPrivado } from '#backend/utils/parametros.mjs';
 import { filtrarVisibles } from '../utils/autorizacion.mjs';
-import { asegurarBorrado, asegurarCambioPrivacidad, asegurarEdicion, registroDeRecibo } from '../utils/propiedad.mjs';
+import { asegurarBorrado, asegurarCambioPrivacidad, asegurarEdicion, privacidadParaGuardar, registroDeRecibo } from '../utils/propiedad.mjs';
 import { detalleParaLog, responderError } from '../utils/errorDeNegocio.mjs';
 import { Router } from 'express';
 
@@ -86,12 +86,19 @@ router.post('/', autorizar('recibos', 'escritura'), async (req, res) => {
         const propietarioId = req.usuario.id; // Obtenemos el ID del usuario del token JWT
 
         const fueraDeAnioPermitido = permitirFueraDeAnio === true && req.usuario.rol === 'admin'; // DC-29: solo un administrador puede saltarse la regla del año del recibo
+
+        // DC-75: en el alta el creador es el propietario y el valor va tal cual. Al editar, solo
+        // escribe la privacidad quien puede cambiarla: la decisión usa el rol y `propietario_id`
+        // (estables), no el valor leído, así que un cambio del propietario entre la lectura y el
+        // bloqueo no permite a un tercero escribirla.
+        let privacidadEfectiva = privacidad;
         if (id) {
             const registro = asegurarEdicion(req.usuario, await registroDeRecibo(id), 'recibos');
             asegurarCambioPrivacidad(req.usuario, registro, 'recibos', privacidad);
+            privacidadEfectiva = privacidadParaGuardar(req.usuario, registro, 'recibos', privacidad);
         }
 
-        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido, privacidad, req.usuario.id);
+        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido, privacidadEfectiva, req.usuario.id);
         console.log('recibos - pushRecibo completado con éxito para ID:', id);
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente', ...resultado });
     } catch (error) {

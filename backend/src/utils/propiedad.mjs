@@ -69,10 +69,14 @@ export function privacidadSolicitada(valor) {
 /**
  * Lanza 403 si el usuario pretende cambiar la privacidad y no puede (DC-75).
  *
- * - Valor omitido: no hay cambio, no se exige nada nuevo (COALESCE conserva).
- * - Valor igual al actual: se tolera aunque el usuario no sea el propietario, para que editar
- *   un campo cualquiera de un registro ajeno con el valor incluido siga funcionando (DC-48).
- * - Valor distinto: solo el propietario con escritura o un administrador.
+ * Es la puerta que devuelve el error de negocio: compara el valor pedido con el registro que leyó
+ * la ruta. El valor omitido y el valor igual al actual se toleran para que editar un registro ajeno
+ * con el campo incluido siga funcionando (DC-48).
+ *
+ * La tolerancia **no** autoriza a escribir el campo: eso lo decide `privacidadParaGuardar`, que usa
+ * datos estables (rol y `propietario_id`) en lugar del valor leído. Sin esa segunda decisión, un
+ * cambio del propietario entre esta lectura y el bloqueo dejaría que un no propietario escribiera
+ * la privacidad «tolerada».
  */
 export function asegurarCambioPrivacidad(usuario, registro, modulo, valorSolicitado) {
     const pedido = privacidadSolicitada(valorSolicitado);
@@ -84,4 +88,18 @@ export function asegurarCambioPrivacidad(usuario, registro, modulo, valorSolicit
     }
 
     return registro;
+}
+
+/**
+ * Valor de `es_privado` que la operación puede escribir (DC-75).
+ *
+ * Devuelve el valor pedido solo si el usuario puede cambiar la privacidad del registro, y `null` en
+ * cualquier otro caso (los `push*` lo traducen a «conservar» con `COALESCE`). Así una edición ajena
+ * no escribe la privacidad ni siquiera cuando el valor pedido coincide con el que leyó la ruta: la
+ * decisión depende del rol y de `propietario_id`, que no cambian al editar, nunca del valor leído.
+ */
+export function privacidadParaGuardar(usuario, registro, modulo, valorSolicitado) {
+    if (!registro) return null;
+
+    return puedeCambiarPrivacidad(usuario, registro, modulo) ? valorSolicitado : null;
 }

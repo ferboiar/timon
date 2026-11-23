@@ -83,10 +83,11 @@ export function puedeBorrarRegistro(usuario, registro, modulo) {
 /**
  * ¿Puede el usuario cambiar la privacidad del registro? (DC-75)
  *
- * No decide si el valor cambia, solo quién puede hacerlo: admin siempre; el propietario con
- * `perm_<módulo> = escritura`; nadie más (un reader nunca). Cuentas y categorías quedan fuera
- * (DC-49). La ruta tolera antes el valor omitido y el valor igual al actual, así que esta
- * función solo se consulta cuando hay un cambio real.
+ * No decide si el valor cambia, solo quién puede escribir ese campo: admin siempre; el propietario
+ * con `perm_<módulo> = escritura`; nadie más (un reader nunca). Cuentas y categorías quedan fuera
+ * (DC-49). Depende solo del rol y de `propietario_id`, que no cambian al editar; nunca del valor
+ * leído. Las rutas la usan para decidir qué valor pueden enviar (`privacidadParaGuardar`), no solo
+ * para autorizar un cambio.
  */
 export function puedeCambiarPrivacidad(usuario, registro, modulo) {
     if (!usuario || !registro) return false;

@@ -57,6 +57,8 @@ let getSavings;
 let registroDeRecibo;
 let registroDeAhorro;
 let registroDeAnticipo;
+let asegurarCambioPrivacidad;
+let privacidadParaGuardar;
 
 /** Usuario para las funciones puras de la matriz: solo rol, id y escritura en todo. */
 const usuarioDe = (id, rol) => ({
@@ -165,7 +167,7 @@ before(async () => {
     ({ pushRecibo, getRecibos } = await import('../src/db/db_utils.mjs'));
     ({ pushAdvance, getAdvances } = await import('../src/db/db_utilsAdv.mjs'));
     ({ pushSaving, getSavings } = await import('../src/db/db_utilsSav.mjs'));
-    ({ registroDeRecibo, registroDeAhorro, registroDeAnticipo } = await import('../src/utils/propiedad.mjs'));
+    ({ registroDeRecibo, registroDeAhorro, registroDeAnticipo, asegurarCambioPrivacidad, privacidadParaGuardar } = await import('../src/utils/propiedad.mjs'));
 });
 
 after(async () => {
@@ -364,5 +366,105 @@ describe('Cascada anual de recibos (DC-75)', () => {
         assert.equal(Number((await fila('recibos', a)).es_privado), 0, 'eslabón anterior con el valor pedido');
         assert.equal(Number((await fila('recibos', b)).es_privado), 0, 'recibo abierto con el valor pedido');
         assert.equal(Number((await fila('recibos', c)).es_privado), 0, 'eslabón posterior con el valor pedido');
+    });
+});
+
+describe('Carrera de autorización (DC-75)', () => {
+    // Reproduce lo que hace la ruta, en su orden: lectura sin bloqueo, tolerancia del valor igual y
+    // valor efectivo. Entre la lectura y el bloqueo, el propietario deja el registro en privado.
+    const noPropietario = usuarioDe(OTRO, 'user');
+
+    test('recibos: un no propietario que envía el valor que creía actual no escribe la privacidad ni cascadea', async () => {
+        const a = await insertarRecibo({ concepto: 'f49_carrera_auth', propietarioId: PROPIETARIO, anio: 2030, esPrivado: 1 });
+        const b = await insertarRecibo({ concepto: 'f49_carrera_auth', propietarioId: PROPIETARIO, anio: 2031, origen: a, esPrivado: 0 });
+        const c = await insertarRecibo({ concepto: 'f49_carrera_auth', propietarioId: PROPIETARIO, anio: 2032, origen: b, esPrivado: 1 });
+
+        const otra = await mysql.createConnection({ ...conexion, database: dbName });
+
+        try {
+            await otra.beginTransaction();
+            await otra.execute('UPDATE recibos SET es_privado = 1 WHERE id = ?', [b]);
+
+            const registro = await registroDeRecibo(b);
+            assert.equal(Number(registro.es_privado), 0, 'la ruta lee el valor anterior');
+
+            asegurarCambioPrivacidad(noPropietario, registro, 'recibos', 0); // el valor igual se tolera
+            const efectiva = privacidadParaGuardar(noPropietario, registro, 'recibos', 0);
+            assert.equal(efectiva, null, 'un no propietario no escribe la privacidad');
+
+            const promesa = pushRecibo(b, 'f49_carrera_auth', 'anual', 10, 'f49-general', [], OTRO, 1, '2031-06-30', 'auto', false, efectiva, OTRO);
+            const carrera = await Promise.race([promesa.then(() => 'resuelta', (error) => 'error: ' + error.message), espera(1000).then(() => 'pendiente')]);
+
+            assert.equal(carrera, 'pendiente', 'la escritura debe esperar al bloqueo de la otra transacción');
+
+            await otra.commit();
+            await promesa;
+        } finally {
+            await otra.end();
+        }
+
+        assert.equal(Number((await fila('recibos', a)).es_privado), 1, 'eslabón anterior intacto');
+        assert.equal(Number((await fila('recibos', b)).es_privado), 1, 'la decisión del propietario se conserva');
+        assert.equal(Number((await fila('recibos', c)).es_privado), 1, 'eslabón posterior intacto');
+    });
+
+    test('anticipos: un no propietario que envía el valor que creía actual no escribe la privacidad', async () => {
+        const id = await pushAdvance(null, 'f49_carrera_auth_ant', 100, 0, '2030-01-01', null, null, 'activo', 1, null, PROPIETARIO, 0, PROPIETARIO);
+        const otra = await mysql.createConnection({ ...conexion, database: dbName });
+
+        try {
+            await otra.beginTransaction();
+            await otra.execute('UPDATE anticipos SET es_privado = 1 WHERE id = ?', [id]);
+
+            const registro = await registroDeAnticipo(id);
+            assert.equal(Number(registro.es_privado), 0, 'la ruta lee el valor anterior');
+
+            asegurarCambioPrivacidad(noPropietario, registro, 'anticipos', 0);
+            const efectiva = privacidadParaGuardar(noPropietario, registro, 'anticipos', 0);
+            assert.equal(efectiva, null);
+
+            const promesa = pushAdvance(id, 'f49_carrera_auth_ant', 100, 0, '2030-01-01', null, null, 'activo', 1, null, OTRO, efectiva, OTRO);
+            const carrera = await Promise.race([promesa.then(() => 'resuelta', (error) => 'error: ' + error.message), espera(1000).then(() => 'pendiente')]);
+
+            assert.equal(carrera, 'pendiente');
+
+            await otra.commit();
+            await promesa;
+        } finally {
+            await otra.end();
+        }
+
+        assert.equal(Number((await fila('anticipos', id)).es_privado), 1, 'la decisión del propietario se conserva');
+    });
+
+    test('ahorros: un no propietario que envía el valor que creía actual no escribe la privacidad', async () => {
+        const concepto = 'f49_carrera_auth_ahorro';
+        await pushSaving(null, concepto, null, 0, null, null, null, 1, PROPIETARIO, 0, PROPIETARIO);
+        const id = await idPorConcepto('ahorros', concepto);
+        const otra = await mysql.createConnection({ ...conexion, database: dbName });
+
+        try {
+            await otra.beginTransaction();
+            await otra.execute('UPDATE ahorros SET es_privado = 1 WHERE id = ?', [id]);
+
+            const registro = await registroDeAhorro(id);
+            assert.equal(Number(registro.es_privado), 0, 'la ruta lee el valor anterior');
+
+            asegurarCambioPrivacidad(noPropietario, registro, 'ahorros', 0);
+            const efectiva = privacidadParaGuardar(noPropietario, registro, 'ahorros', 0);
+            assert.equal(efectiva, null);
+
+            const promesa = pushSaving(id, concepto, null, 0, null, null, null, 1, OTRO, efectiva, OTRO);
+            const carrera = await Promise.race([promesa.then(() => 'resuelta', (error) => 'error: ' + error.message), espera(1000).then(() => 'pendiente')]);
+
+            assert.equal(carrera, 'pendiente');
+
+            await otra.commit();
+            await promesa;
+        } finally {
+            await otra.end();
+        }
+
+        assert.equal(Number((await fila('ahorros', id)).es_privado), 1, 'la decisión del propietario se conserva');
     });
 });

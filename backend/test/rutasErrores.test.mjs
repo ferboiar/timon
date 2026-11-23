@@ -182,6 +182,7 @@ describe('DC-75: guarda estática de la regla de privacidad', () => {
 
             assert.equal(texto.includes('leerEsPrivado'), true, `${nombre}.mjs no usa leerEsPrivado`);
             assert.equal(texto.includes('asegurarCambioPrivacidad'), true, `${nombre}.mjs no aplica asegurarCambioPrivacidad`);
+            assert.equal(texto.includes('privacidadParaGuardar'), true, `${nombre}.mjs no calcula el valor efectivo (DC-75)`);
             assert.equal(texto.includes('es_privado debe ser 0 o 1.'), false, `${nombre}.mjs conserva la validación duplicada`);
         }
     });

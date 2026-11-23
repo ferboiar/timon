@@ -13,7 +13,7 @@ import { deleteMovimiento, deleteSavings, getMovimientos, getPeriodicidades, get
 import { Router } from 'express';
 import { autorizar } from '#backend/middleware/auth.mjs';
 import { filtrarVisibles, puedeVerRegistro } from '../utils/autorizacion.mjs';
-import { asegurarBorrado, asegurarCambioPrivacidad, asegurarEdicion, registroDeAhorro, registroDeMovimiento } from '../utils/propiedad.mjs';
+import { asegurarBorrado, asegurarCambioPrivacidad, asegurarEdicion, privacidadParaGuardar, registroDeAhorro, registroDeMovimiento } from '../utils/propiedad.mjs';
 import { ErrorDeNegocio, responderError } from '../utils/errorDeNegocio.mjs';
 import { leerEnteroPositivo, leerEsPrivado, leerListaEnterosPositivos } from '../utils/parametros.mjs';
 
@@ -34,12 +34,17 @@ router.post('/', autorizar('ahorros', 'escritura'), async (req, res) => {
         // DC-75: 0/1, o null si el campo no viaja (entonces se conserva el valor guardado)
         const privacidad = leerEsPrivado(es_privado);
         const ahorroId = id ? leerEnteroPositivo(id, 'id') : null;
+
+        // DC-75: en el alta el creador es el propietario y el valor va tal cual. Al editar, solo
+        // escribe la privacidad quien puede cambiarla (rol y propietario_id, no el valor leído).
+        let privacidadEfectiva = privacidad;
         if (ahorroId) {
             const registro = asegurarEdicion(req.usuario, await registroDeAhorro(ahorroId), 'ahorros');
             asegurarCambioPrivacidad(req.usuario, registro, 'ahorros', privacidad);
+            privacidadEfectiva = privacidadParaGuardar(req.usuario, registro, 'ahorros', privacidad);
         }
 
-        await pushSaving(ahorroId, concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, req.usuario.id, privacidad, req.usuario.id);
+        await pushSaving(ahorroId, concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, req.usuario.id, privacidadEfectiva, req.usuario.id);
         res.status(201).json({ message: 'Ahorro insertado o actualizado correctamente' });
     } catch (error) {
         responderError(res, error, 'No se pudo guardar el ahorro.', { contexto: 'ahorros - POST' });

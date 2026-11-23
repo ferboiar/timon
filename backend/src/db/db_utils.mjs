@@ -428,18 +428,21 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
             }
 
             if (existingRecibo.length > 0) {
-                // DC-75: si se envía privacidad se bloquea la cadena completa ANTES de escribir, y
-                // después se relee el recibo abierto con FOR UPDATE. La lectura de arriba (sin bloqueo)
-                // no ve lo que otra transacción haya confirmado después de abrir la nuestra: si se
-                // decidiera con ella, una edición podría escribir el valor pedido en este recibo y
-                // dejar el resto de años con otro. Esa relectura es la única que decide si hay cambio.
+                // DC-75: si se envía privacidad se bloquea la cadena completa ANTES de escribir. Los
+                // bloqueos se piden en orden ascendente de id (ver bloquearCadenaDeRecibos), así que
+                // dos cascadas simultáneas no se interbloquean.
                 const cadena = valorPrivado === null ? [] : await bloquearCadenaDeRecibos(connection, id);
-                let propietarioGuardado = null;
+
+                // Relectura con bloqueo del recibo abierto. Es la lectura autoritativa de DC-75 (la de
+                // arriba no ve lo que otra transacción haya confirmado después de abrir la nuestra) y,
+                // además, refresca la versión de la fila antes del UPDATE: sin ella, una modificación
+                // concurrente ya confirmada hacía que el UPDATE fallara con ER_CHECKREAD («Record has
+                // changed since last read»).
+                const [[actual]] = await connection.execute('SELECT es_privado, propietario_id FROM recibos WHERE id = ? FOR UPDATE', [id]);
+                const propietarioGuardado = actual?.propietario_id ?? null;
                 let cambiaPrivacidad = false;
                 if (valorPrivado !== null) {
-                    const [[actual]] = await connection.execute('SELECT es_privado, propietario_id FROM recibos WHERE id = ? FOR UPDATE', [id]);
                     const privacidadGuardada = Number(actual?.es_privado) === 1 ? 1 : 0;
-                    propietarioGuardado = actual?.propietario_id ?? null;
                     cambiaPrivacidad = valorPrivado !== privacidadGuardada;
                 }
 

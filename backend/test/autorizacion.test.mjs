@@ -14,7 +14,7 @@ import {
     puedeEditarRegistro,
     puedeVerRegistro
 } from '#backend/utils/autorizacion.mjs';
-import { asegurarCambioPrivacidad, privacidadSolicitada } from '#backend/utils/propiedad.mjs';
+import { asegurarCambioPrivacidad, privacidadParaGuardar, privacidadSolicitada } from '#backend/utils/propiedad.mjs';
 
 /** Usuario con todos los permisos en el valor indicado. */
 function usuario(rol, permiso = 'escritura') {
@@ -199,6 +199,26 @@ test('DC-75: el valor omitido y el valor igual se toleran aunque el usuario no s
         status: 403,
         codigo: 'PRIVACIDAD_NO_PERMITIDA'
     });
+});
+
+test('DC-75: un no propietario no escribe la privacidad aunque el valor pedido sea el actual', () => {
+    const ajeno = { id: 10, propietario_id: 99, es_privado: 0 };
+    const otroUser = usuario('user', 'escritura'); // id 7, no es el propietario
+
+    // `asegurarCambioPrivacidad` tolera el valor igual, pero el valor efectivo es null:
+    // la escritura no depende del valor leído, sino del rol y del propietario (estables).
+    assert.equal(asegurarCambioPrivacidad(otroUser, ajeno, 'recibos', 0), ajeno);
+    assert.equal(privacidadParaGuardar(otroUser, ajeno, 'recibos', 0), null);
+    assert.equal(privacidadParaGuardar(usuario('reader', 'escritura'), PRIVADO_PROPIO, 'recibos', 1), null);
+
+    // El propietario con escritura y el admin sí escriben el valor
+    assert.equal(privacidadParaGuardar(usuario('user', 'escritura'), PRIVADO_PROPIO, 'recibos', 0), 0);
+    assert.equal(privacidadParaGuardar(usuario('limited_user', 'escritura'), PRIVADO_PROPIO, 'ahorros', 1), 1);
+    assert.equal(privacidadParaGuardar(usuario('admin', 'no'), ajeno, 'recibos', 1), 1);
+
+    // Omitido sigue siendo null, y un registro inexistente no escribe nada
+    assert.equal(privacidadParaGuardar(usuario('user', 'escritura'), PRIVADO_PROPIO, 'recibos', null), null);
+    assert.equal(privacidadParaGuardar(otroUser, null, 'recibos', 1), null);
 });
 
 test('DC-75: normalización de es_privado en la ruta y en los push*', () => {
