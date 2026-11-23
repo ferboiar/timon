@@ -148,9 +148,23 @@ function filaRecibo(page, nombre) {
     return page.locator('table tbody tr').filter({ hasText: nombre }).first();
 }
 
+/**
+ * Filtra la tabla anual por el concepto.
+ *
+ * La tarjeta «Anuales» pagina de 8 en 8 y ordena por fecha, así que un recibo con fecha de
+ * diciembre puede quedar en la página 2. El buscador global de la tabla lo deja en la primera.
+ */
+async function filtrarRecibos(page, nombre) {
+    const buscador = page.locator('input[placeholder="Buscar..."]').first();
+    await expect(buscador).toBeVisible({ timeout: 20_000 });
+    await buscador.fill(nombre);
+}
+
 /** Abre el diálogo de edición del recibo anual desde su lápiz. */
 async function abrirDialogoRecibo(page, nombre) {
     await page.goto(urlDe('/pages/bills'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await filtrarRecibos(page, nombre);
+
     const fila = filaRecibo(page, nombre);
     await expect(fila).toBeVisible({ timeout: 20_000 });
     await fila.locator('button:has(.pi-pencil)').click();
@@ -216,13 +230,14 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             await control.click();
             await expect(control).toBeChecked();
 
-            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.request().method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
+            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
             expect(peticion.postDataJSON().es_privado, 'el payload lleva la privacidad').toBe(1);
 
             await expect(dialogo).toBeHidden({ timeout: 20_000 });
 
             // Persistencia tras recargar y candado en la fila
             await page.reload({ waitUntil: 'domcontentloaded' });
+            await filtrarRecibos(page, nombre);
             const fila = filaRecibo(page, nombre);
             await expect(fila).toBeVisible({ timeout: 20_000 });
             await expect(fila.locator('.pi-lock')).toHaveCount(1);
@@ -243,6 +258,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             conRol(conexion, usuario, async (page) => {
                 await page.goto(urlDe('/pages/bills'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
                 await expect(page.getByRole('table').first()).toBeVisible({ timeout: 20_000 });
+                await filtrarRecibos(page, nombre);
                 await expect(filaRecibo(page, nombre)).toHaveCount(0);
             });
 
@@ -258,13 +274,14 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             await expect(dialogo.getByText('Privado: solo su propietario y los administradores lo veis')).toBeVisible();
 
             await control.click();
-            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.request().method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
+            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
             expect(peticion.postDataJSON().es_privado).toBe(0);
         });
 
         // El otro user lo ve después de que el admin lo desmarque
         await conRol(conexion, ROLES.otro, async (page) => {
             await page.goto(urlDe('/pages/bills'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+            await filtrarRecibos(page, nombre);
             await expect(filaRecibo(page, nombre)).toBeVisible({ timeout: 20_000 });
         });
     });
@@ -283,7 +300,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
 
             // Editar el concepto sigue funcionando y la privacidad no viaja
             await dialogo.locator('#concepto').fill(`${nombre} b`);
-            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.request().method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
+            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
             expect('es_privado' in peticion.postDataJSON(), 'la privacidad no viaja sin control').toBe(false);
         });
 
@@ -325,7 +342,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             const dialogo = await abrirDialogoRecibo(page, nombre);
             await dialogo.locator('#es_privado').click();
 
-            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.request().method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
+            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
 
             expect(peticion.postDataJSON().es_privado).toBe(1);
             await expect(page.locator('.p-toast-detail').filter({ hasText: 'No se ha cambiado nada.' })).toHaveCount(0);
@@ -345,7 +362,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             await expect(control, 'el propietario ve el control').toHaveCount(1);
             await control.click();
 
-            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/anticipos') && r.request().method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
+            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/anticipos') && r.method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
             expect(peticion.postDataJSON().es_privado).toBe(1);
             await expect(dialogo).toBeHidden({ timeout: 20_000 });
 
@@ -383,7 +400,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             await expect(control, 'el propietario ve el control').toHaveCount(1);
             await control.click();
 
-            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/ahorros') && r.request().method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
+            const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/ahorros') && r.method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
             expect(peticion.postDataJSON().es_privado).toBe(1);
             await expect(dialogo).toBeHidden({ timeout: 20_000 });
 
@@ -424,6 +441,8 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             async (page) => {
                 const comprobar = async (ruta, nombre, titulo) => {
                     await page.goto(urlDe(ruta), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+                    if (ruta === '/pages/bills') await filtrarRecibos(page, nombre);
+
                     const fila = page.locator('table tbody tr').filter({ hasText: nombre }).first();
                     await expect(fila).toBeVisible({ timeout: 20_000 });
                     await fila.locator('button:has(.pi-pencil)').click();
