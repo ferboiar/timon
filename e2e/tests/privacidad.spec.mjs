@@ -116,28 +116,60 @@ async function datosDeAlta(page) {
     return { categoria: categorias.datos[0].nombre, cuenta_id: cuentas.datos[0].id };
 }
 
-/** Crea un recibo anual (diálogo `billDialog`, input `es_privado`). */
-async function crearRecibo(page, etiqueta, esPrivado = false) {
+/** Crea un recibo (anual por defecto) del usuario que hace la petición. */
+async function crearRecibo(page, etiqueta, esPrivado = false, periodicidad = 'anual') {
     const nombre = concepto(`rec_${etiqueta}`);
     const { categoria, cuenta_id } = await datosDeAlta(page);
 
     const respuesta = await peticion(page, {
         metodo: 'POST',
         ruta: '/api/recibos',
-        cuerpo: { concepto: nombre, periodicidad: 'anual', importe: 10, categoria, cuenta_id, fecha_inicial: `${ANIO}-12-31`, modoFechas: 'auto', cargo: [], es_privado: esPrivado ? 1 : 0 }
+        cuerpo: { concepto: nombre, periodicidad, importe: 10, categoria, cuenta_id, fecha_inicial: `${ANIO}-12-31`, modoFechas: 'auto', cargo: [], es_privado: esPrivado ? 1 : 0 }
     });
 
     expect(respuesta.status, `alta de ${nombre}: ${respuesta.texto}`).toBe(201);
 
-    const filas = await filasDeRecibo(page, nombre);
+    const filas = await filasDeRecibo(page, nombre, periodicidad);
     expect(filas.length, `el recibo ${nombre} debe existir`).toBeGreaterThan(0);
-    estado.idsRecibos.push(filas[0].id);
+    estado.idsRecibos.push({ id: filas[0].id, periodicidad });
 
     return nombre;
 }
 
-async function filasDeRecibo(page, nombre) {
-    const respuesta = await peticion(page, { metodo: 'GET', ruta: `/api/recibos?periodicidad=anual&a%C3%B1o=${ANIO}` });
+/**
+ * Crea un recibo con su único cargo inactivo: la pantalla lo muestra en la tarjeta «Inactivos»,
+ * que no tiene buscador, así que el concepto debe ser único (lo es).
+ */
+async function crearReciboInactivo(page, etiqueta) {
+    const nombre = concepto(`ina_${etiqueta}`);
+    const { categoria, cuenta_id } = await datosDeAlta(page);
+
+    const respuesta = await peticion(page, {
+        metodo: 'POST',
+        ruta: '/api/recibos',
+        cuerpo: {
+            concepto: nombre,
+            periodicidad: 'anual',
+            importe: 10,
+            categoria,
+            cuenta_id,
+            modoFechas: 'manual',
+            cargo: [{ fecha: `${ANIO}-12-31`, estado: 'pendiente', comentario: '', activo: 0 }],
+            es_privado: 1
+        }
+    });
+
+    expect(respuesta.status, `alta de ${nombre}: ${respuesta.texto}`).toBe(201);
+
+    const filas = await filasDeRecibo(page, nombre, 'anual');
+    expect(filas.length, `el recibo ${nombre} debe existir`).toBeGreaterThan(0);
+    estado.idsRecibos.push({ id: filas[0].id, periodicidad: 'anual' });
+
+    return nombre;
+}
+
+async function filasDeRecibo(page, nombre, periodicidad = 'anual') {
+    const respuesta = await peticion(page, { metodo: 'GET', ruta: `/api/recibos?periodicidad=${periodicidad}&a%C3%B1o=${ANIO}` });
     expect(respuesta.status).toBe(200);
 
     return (respuesta.datos ?? []).filter((fila) => fila.concepto === nombre);
@@ -454,7 +486,90 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             { viewport }
         );
     });
+
+    test('el candado aparece en las tarjetas agrupadas y en inactivos, y el diálogo agrupado usa es_privado_tb', async ({ conexion }) => {
+        const nombres = {};
+
+        await conRol(conexion, ROLES.propietario, async (page) => {
+            nombres.trimestral = await crearRecibo(page, 'tri', true, 'trimestral');
+            nombres.bimestral = await crearRecibo(page, 'bi', true, 'bimestral');
+            nombres.mensual = await crearRecibo(page, 'men', true, 'mensual');
+            nombres.inactivo = await crearReciboInactivo(page, 'ina');
+        });
+
+        await conRol(conexion, ROLES.propietario, async (page) => {
+            await page.goto(urlDe('/pages/bills'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+
+            const conCandado = async (titulo, nombre, conBuscador = true) => {
+                const tarjetaDeLaPeriodicidad = page.locator('.card').filter({ has: page.getByText(titulo, { exact: true }) });
+
+                if (conBuscador) await filtrarPorBuscador(tarjetaDeLaPeriodicidad, nombre);
+
+                const fila = tarjetaDeLaPeriodicidad.locator('table tbody tr').filter({ hasText: nombre }).first();
+                await expect(fila, `${titulo}: fila del recibo`).toBeVisible({ timeout: 20_000 });
+                await expect(fila.locator('.pi-lock'), `${titulo}: candado`).toHaveCount(1);
+            };
+
+            await conCandado('Trimestrales', nombres.trimestral);
+            await conCandado('Bimestrales', nombres.bimestral);
+            await conCandado('Mensuales', nombres.mensual);
+            // La tarjeta «Inactivos» no tiene buscador: el concepto es único y la lista, corta.
+            await conCandado('Inactivos', nombres.inactivo, false);
+
+            const fila = page.locator('.card').filter({ has: page.getByText('Trimestrales', { exact: true }) }).locator('table tbody tr').filter({ hasText: nombres.trimestral }).first();
+            await fila.locator('button:has(.pi-pencil)').click();
+
+            const dialogo = page.getByRole('dialog', { name: 'Detalle del recibo' });
+            await expect(dialogo).toBeVisible({ timeout: 20_000 });
+            await expect(dialogo.locator('#es_privado_tb'), 'el diálogo agrupado usa es_privado_tb').toHaveCount(1);
+            await expect(dialogo.locator('#es_privado_tb')).toBeChecked();
+            await expect(dialogo.locator('#es_privado'), 'no usa el id del diálogo anual').toHaveCount(0);
+        });
+    });
+
+    test('la ayuda se ve con ratón, teclado y clic, con un solo tooltip y el mismo texto en aria-label', async ({ conexion }) => {
+        let nombre = null;
+        await conRol(conexion, ROLES.propietario, async (page) => {
+            nombre = await crearRecibo(page, 'ayuda');
+        });
+
+        await conRol(conexion, ROLES.propietario, async (page) => {
+            const dialogo = await abrirDialogoRecibo(page, nombre);
+            const TEXTO = 'Se aplica a todos los años de este recibo, también a los que se generen después.';
+            const ayuda = dialogo.locator('[role="img"][aria-label]').first();
+            const UNO = { timeout: 10_000 };
+
+            await expect(ayuda).toHaveAttribute('aria-label', TEXTO);
+            await expect(ayuda).toHaveAttribute('tabindex', '0');
+
+            // Los tooltips de PrimeVue son nodos con role="tooltip" que se añaden a body.
+            const tooltips = page.getByRole('tooltip').filter({ hasText: TEXTO });
+
+            // 1) ratón: tooltip del icono
+            await ayuda.locator('i').hover();
+            await expect(tooltips, 'hover: un solo tooltip').toHaveCount(1, UNO);
+
+            await page.mouse.move(5, 5);
+            await expect(tooltips, 'hover: se retira').toHaveCount(0, UNO);
+
+            // 2) teclado: tooltip del contenedor enfocable
+            await ayuda.focus();
+            await expect(tooltips, 'foco: un solo tooltip').toHaveCount(1, UNO);
+            await expect(tooltips.first()).toBeVisible();
+
+            // 3) clic: el icono retira el suyo y queda el del foco
+            await ayuda.evaluate((elemento) => elemento.blur());
+            await page.mouse.move(5, 5);
+            await expect(tooltips).toHaveCount(0, UNO);
+
+            await ayuda.click();
+            await expect(tooltips, 'clic: un solo tooltip').toHaveCount(1, UNO);
+            await expect(tooltips.first()).toBeVisible();
+        });
+    });
 });
+
+
 
 /** Abre el diálogo de un anticipo desde su lápiz. */
 async function abrirDialogoAnticipo(page, nombre) {
@@ -535,8 +650,12 @@ async function crearAhorro(page, etiqueta, esPrivado = false) {
 
 /** Borra todo lo creado por la ejecución, por id (el concepto puede haber cambiado en un test). */
 async function borrarDatosDeLaEjecucion(page) {
-    for (const id of [...new Set(estado.idsRecibos)]) {
-        await peticion(page, { metodo: 'DELETE', ruta: `/api/recibos/${id}?periodicidad=anual` }).catch(() => {});
+    const vistos = new Set();
+
+    for (const { id, periodicidad } of estado.idsRecibos) {
+        if (vistos.has(id)) continue;
+        vistos.add(id);
+        await peticion(page, { metodo: 'DELETE', ruta: `/api/recibos/${id}?periodicidad=${periodicidad}` }).catch(() => {});
     }
 
     if (estado.idsAnticipos.length > 0) {
