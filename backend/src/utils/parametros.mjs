@@ -57,4 +57,15 @@ function leerListaEnterosPositivos(valor, nombre) {
     return valor.map((elemento) => leerEnteroPositivo(elemento, nombre));
 }
 
-export { leerBooleano, leerEnteroPositivo, leerListaEnterosPositivos };
+/**
+ * Lee `es_privado` del cuerpo (DC-75): 0, 1, «0» o «1»; ausente o vacío, `null` (conservar el valor).
+ * Cualquier otro valor —incluido el booleano— lanza un 400: el cliente envía 0/1, nunca true/false.
+ */
+function leerEsPrivado(valor) {
+    if (valor === undefined || valor === null || valor === '') return null;
+    if (valor === 0 || valor === '0') return 0;
+    if (valor === 1 || valor === '1') return 1;
+    throw errorParametro('El campo es_privado debe ser 0 o 1');
+}
+
+export { leerBooleano, leerEnteroPositivo, leerEsPrivado, leerListaEnterosPositivos };

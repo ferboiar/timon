@@ -15,6 +15,8 @@
  * - reader: solo lectura.
  * - es_privado = 1: solo lo ven su propietario y admin. Un registro no visible tampoco se
  *   edita ni se borra (admin sí).
+ * - Cambiar es_privado (DC-75): solo el propietario con escritura o admin; un reader nunca.
+ *   El resto de la edición de un registro visible no cambia respecto a DC-48.
  * - propietario_id no cambia nunca al editar.
  * - Subrecursos (pagos, movimientos, fechas): heredan visibilidad y permisos del padre.
  * - Cuentas y categorías: compartidas, sin privacidad ni comprobación de propiedad.
@@ -76,6 +78,23 @@ export function puedeBorrarRegistro(usuario, registro, modulo) {
     if (!puedeVerRegistro(usuario, registro, modulo)) return false;
 
     return usuario.rol === 'user';
+}
+
+/**
+ * ¿Puede el usuario cambiar la privacidad del registro? (DC-75)
+ *
+ * No decide si el valor cambia, solo quién puede hacerlo: admin siempre; el propietario con
+ * `perm_<módulo> = escritura`; nadie más (un reader nunca). Cuentas y categorías quedan fuera
+ * (DC-49). La ruta tolera antes el valor omitido y el valor igual al actual, así que esta
+ * función solo se consulta cuando hay un cambio real.
+ */
+export function puedeCambiarPrivacidad(usuario, registro, modulo) {
+    if (!usuario || !registro) return false;
+    if (MODULOS_COMPARTIDOS.includes(modulo)) return false;
+    if (usuario.rol === 'admin') return true;
+    if (!puedeAcceder(usuario, modulo, 'escritura')) return false;
+
+    return Number(registro.propietario_id) === Number(usuario.id);
 }
 
 /** Filtra un listado por visibilidad. Admin y módulos compartidos lo reciben completo. */

@@ -12,8 +12,9 @@
 // Importamos Router de express para crear rutas
 import { completarFechasAnio, deleteRecibo, getRecibos, pushRecibo } from '#backend/db/db_utils.mjs';
 import { autorizar } from '#backend/middleware/auth.mjs';
+import { leerEsPrivado } from '#backend/utils/parametros.mjs';
 import { filtrarVisibles } from '../utils/autorizacion.mjs';
-import { asegurarBorrado, asegurarEdicion, registroDeRecibo } from '../utils/propiedad.mjs';
+import { asegurarBorrado, asegurarCambioPrivacidad, asegurarEdicion, registroDeRecibo } from '../utils/propiedad.mjs';
 import { detalleParaLog, responderError } from '../utils/errorDeNegocio.mjs';
 import { Router } from 'express';
 
@@ -73,24 +74,24 @@ router.post('/', autorizar('recibos', 'escritura'), async (req, res) => {
         return res.status(400).json({ error: 'El campo cuenta_id es obligatorio.' });
     }
 
-    if (es_privado !== undefined && ![0, 1, '0', '1'].includes(es_privado)) {
-        return res.status(400).json({ error: 'es_privado debe ser 0 o 1.' });
-    }
-
     try {
         // Verificar que req.user y req.user.id existen
         if (!req.user || !req.user.id) {
             return res.status(401).json({ error: 'No se pudo identificar al usuario. Posible error de autenticación.' });
         }
 
+        // DC-75: 0/1, o null si el campo no viaja (entonces se conserva el valor guardado)
+        const privacidad = leerEsPrivado(es_privado);
+
         const propietarioId = req.usuario.id; // Obtenemos el ID del usuario del token JWT
 
         const fueraDeAnioPermitido = permitirFueraDeAnio === true && req.usuario.rol === 'admin'; // DC-29: solo un administrador puede saltarse la regla del año del recibo
         if (id) {
-            asegurarEdicion(req.usuario, await registroDeRecibo(id), 'recibos');
+            const registro = asegurarEdicion(req.usuario, await registroDeRecibo(id), 'recibos');
+            asegurarCambioPrivacidad(req.usuario, registro, 'recibos', privacidad);
         }
 
-        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido, es_privado, req.usuario.id);
+        const resultado = await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, fueraDeAnioPermitido, privacidad, req.usuario.id);
         console.log('recibos - pushRecibo completado con éxito para ID:', id);
         res.status(201).json({ message: 'Recibo insertado o actualizado correctamente', ...resultado });
     } catch (error) {

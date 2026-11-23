@@ -11,7 +11,7 @@
  * Cuentas y categorías son compartidas y no pasan por estas comprobaciones.
  */
 import { getConnection } from '#backend/db/db_connection.mjs';
-import { puedeBorrarRegistro, puedeEditarRegistro } from '#backend/utils/autorizacion.mjs';
+import { puedeBorrarRegistro, puedeCambiarPrivacidad, puedeEditarRegistro } from '#backend/utils/autorizacion.mjs';
 import { ErrorDeNegocio } from '#backend/utils/errorDeNegocio.mjs';
 
 /** Ejecuta una consulta de una sola fila y libera la conexión. */
@@ -53,5 +53,35 @@ export function asegurarBorrado(usuario, registro, modulo) {
     if (!puedeBorrarRegistro(usuario, registro, modulo)) {
         throw new ErrorDeNegocio('No tienes permisos para borrar este registro.', 403, 'SIN_PERMISO');
     }
+    return registro;
+}
+
+/**
+ * Traduce `es_privado` recibido del cliente a 0, 1 o null (DC-75).
+ *
+ * `null` significa «no se ha enviado el campo»: conservar el valor actual. Es el mismo criterio
+ * que aplican `pushRecibo`, `pushAdvance` y `pushSaving` con `COALESCE(?, es_privado)`.
+ */
+export function privacidadSolicitada(valor) {
+    return valor === undefined || valor === null || valor === '' ? null : Number(valor) === 1 ? 1 : 0;
+}
+
+/**
+ * Lanza 403 si el usuario pretende cambiar la privacidad y no puede (DC-75).
+ *
+ * - Valor omitido: no hay cambio, no se exige nada nuevo (COALESCE conserva).
+ * - Valor igual al actual: se tolera aunque el usuario no sea el propietario, para que editar
+ *   un campo cualquiera de un registro ajeno con el valor incluido siga funcionando (DC-48).
+ * - Valor distinto: solo el propietario con escritura o un administrador.
+ */
+export function asegurarCambioPrivacidad(usuario, registro, modulo, valorSolicitado) {
+    const pedido = privacidadSolicitada(valorSolicitado);
+
+    if (!registro || pedido === null || Number(registro.es_privado) === pedido) return registro;
+
+    if (!puedeCambiarPrivacidad(usuario, registro, modulo)) {
+        throw new ErrorDeNegocio('Solo el propietario del registro o un administrador pueden cambiar su privacidad.', 403, 'PRIVACIDAD_NO_PERMITIDA');
+    }
+
     return registro;
 }

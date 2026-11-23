@@ -210,6 +210,64 @@ function importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo) {
 }
 
 /**
+ * Bloquea en orden ascendente de id todos los eslabones de la cadena de un recibo (DC-75).
+ *
+ * `recibo_origen_id` es UNIQUE (migración 0002), así que la cadena es una lista enlazada: como mucho
+ * un sucesor y un predecesor por eslabón. Se recorren los dos sentidos con dos CTE recursivos y
+ * `UNION` (no `UNION ALL`) para que unos datos con ciclo no dejen la consulta en bucle.
+ *
+ * Los bloqueos se piden después de leer los ids y en orden ascendente: dos cascadas simultáneas sobre
+ * la misma cadena los adquieren en el mismo orden y no se interbloquean.
+ *
+ * @returns {Promise<number[]>} Ids de la cadena, ascendentes y sin repetir.
+ */
+async function bloquearCadenaDeRecibos(connection, reciboId) {
+    const [filas] = await connection.execute(
+        `WITH RECURSIVE anteriores (id, recibo_origen_id) AS (
+             SELECT id, recibo_origen_id FROM recibos WHERE id = ?
+             UNION
+             SELECT r.id, r.recibo_origen_id FROM recibos r JOIN anteriores a ON r.id = a.recibo_origen_id
+         ), posteriores (id, recibo_origen_id) AS (
+             SELECT id, recibo_origen_id FROM recibos WHERE id = ?
+             UNION
+             SELECT r.id, r.recibo_origen_id FROM recibos r JOIN posteriores p ON r.recibo_origen_id = p.id
+         )
+         SELECT id FROM anteriores UNION SELECT id FROM posteriores`,
+        [reciboId, reciboId]
+    );
+
+    const ids = [...new Set(filas.map((fila) => Number(fila.id)))].sort((a, b) => a - b);
+    const marcas = ids.map(() => '?').join(',');
+    await connection.execute(`SELECT id FROM recibos WHERE id IN (${marcas}) ORDER BY id FOR UPDATE`, ids);
+
+    return ids;
+}
+
+/**
+ * Aplica `es_privado` al resto de eslabones de la cadena (DC-75).
+ *
+ * Solo los del **mismo propietario** que el recibo abierto y solo los que cambian de valor: así no se
+ * toca `modificado_por` ni `updated_at` de los que ya estaban en el valor pedido. Los recibos con el
+ * mismo concepto pero sin enlace (`recibo_origen_id`) no forman parte de la lista y no se tocan.
+ *
+ * @returns {Promise<number>} Eslabones actualizados, sin contar el recibo abierto.
+ */
+async function aplicarPrivacidadEnCadena(connection, ids, reciboId, propietarioId, valor, usuarioId) {
+    const otros = ids.filter((id) => Number(id) !== Number(reciboId));
+
+    if (otros.length === 0) return 0;
+
+    const marcas = otros.map(() => '?').join(',');
+    const [resultado] = await connection.execute(
+        `UPDATE recibos SET es_privado = ?, modificado_por = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id IN (${marcas}) AND propietario_id = ? AND es_privado <> ?`,
+        [valor, usuarioId, ...otros, propietarioId, valor]
+    );
+
+    return resultado.affectedRows;
+}
+
+/**
  * Inserta o actualiza un recibo en la base de datos con soporte para generación automática de fechas
  *
  * @param {number} id - El ID del recibo.
@@ -370,6 +428,21 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
             }
 
             if (existingRecibo.length > 0) {
+                // DC-75: si se envía privacidad se bloquea la cadena completa ANTES de escribir, y
+                // después se relee el recibo abierto con FOR UPDATE. La lectura de arriba (sin bloqueo)
+                // no ve lo que otra transacción haya confirmado después de abrir la nuestra: si se
+                // decidiera con ella, una edición podría escribir el valor pedido en este recibo y
+                // dejar el resto de años con otro. Esa relectura es la única que decide si hay cambio.
+                const cadena = valorPrivado === null ? [] : await bloquearCadenaDeRecibos(connection, id);
+                let propietarioGuardado = null;
+                let cambiaPrivacidad = false;
+                if (valorPrivado !== null) {
+                    const [[actual]] = await connection.execute('SELECT es_privado, propietario_id FROM recibos WHERE id = ? FOR UPDATE', [id]);
+                    const privacidadGuardada = Number(actual?.es_privado) === 1 ? 1 : 0;
+                    propietarioGuardado = actual?.propietario_id ?? null;
+                    cambiaPrivacidad = valorPrivado !== privacidadGuardada;
+                }
+
                 // Si se proporcionó una nueva fecha_inicial, actualizarla
                 if (fecha_inicial) {
                     // Actualizar recibo existente con la nueva fecha_inicial
@@ -396,6 +469,12 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                         usuarioId,
                         id
                     ]);
+                }
+
+                // DC-75: el resto de eslabones de la cadena con el mismo propietario toman el valor pedido
+                if (cambiaPrivacidad) {
+                    const eslabones = await aplicarPrivacidadEnCadena(connection, cadena, id, propietarioGuardado, valorPrivado, usuarioId);
+                    console.log(`recibos - privacidad en cascada: recibo ${id} a ${valorPrivado}, ${eslabones} eslabón(es) actualizados`);
                 }
 
                 // Si estamos en modo automático y tenemos ID de recibo y fecha_inicial, manejamos de forma especial
