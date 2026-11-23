@@ -1,6 +1,6 @@
 # Sistema de Permisos - Documentación Técnica
 
-> Estado de implementación al 2026-10-23: Diseño, no implementación de autorización en endpoints: desde el 2026-11-10 el servidor aplica la matriz DC-48, comprueba la propiedad y filtra por visibilidad; cuentas y categorías son compartidas y, desde DC-49, su lectura no depende de `perm_*` (escritura y borrado sí). La UI de `es_privado` queda en F-49 y la trazabilidad en F-50. Las consultas propuestas aquí no son las consultas actuales de los módulos db_utils.
+> Estado de implementación al 2026-10-23: Diseño, no implementación de autorización en endpoints: desde el 2026-11-10 el servidor aplica la matriz DC-48, comprueba la propiedad y filtra por visibilidad; cuentas y categorías son compartidas y, desde DC-49, su lectura no depende de `perm_*` (escritura y borrado sí). La UI de `es_privado` está implementada (F-49, DC-75) y la trazabilidad quedó en F-50 (DC-50). Las consultas propuestas aquí no son las consultas actuales de los módulos db_utils.
 
 > F-50/DC-50: la migración 0006 añade modificado_por (FK a users con ON DELETE SET NULL), created_at y updated_at en recibos y modificado_por en ahorros, anticipos y presupuestos. No forma parte de la matriz de permisos; es trazabilidad de autor. La decisión está en el registro (DC-50).
 
@@ -88,7 +88,7 @@ Es importante destacar que el permiso de `escritura` implica automáticamente la
 Para permitir la visibilidad a nivel de registro individual, cada tabla principal incluye dos campos:
 
 - `propietario_id`: Identifica al usuario propietario del registro
-- `es_privado`: Bandera booleana que indica si el registro solo es visible para su propietario
+- `es_privado`: Bandera booleana que indica si el registro solo es visible para su propietario y los administradores. Solo su propietario o un administrador pueden cambiarla (DC-75); en Recibos el cambio se aplica a todos los años del recibo
 
 #### Estructura en tablas principales
 

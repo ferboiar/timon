@@ -50,6 +50,7 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-72 | Vocabulario de interfaz (`Guardar`/`Cancelar`/`Sí`/`No`, `Confirmar`, resúmenes `Éxito`/`Aviso`/`Error`) e importes de tabla con `Intl.NumberFormat('es-ES', …, EUR)` tolerando `null`; «Ahorro sugerido» en Ahorros; `Reset` suelto se conserva en inglés. |
 | DC-73 | El código que depende de una migración no se fusiona antes de que esté aplicada, o se escribe para tolerar el esquema anterior. Acordado el 2026-11-21. |
 | DC-74 | Autor por fila en subrecursos y catálogos (migración 0010, F-53): escritura directa con usuario, filas derivadas a NULL, salvo el activo masivo de `fechas_cargo`; sin backfill y con el id en la API. |
+| DC-75 | Privacidad de recibos, anticipos y ahorros: solo el propietario con escritura o un administrador; el control no se renderiza para quien no cumple y el servidor responde 403; en Recibos el cambio se aplica a todos los años del mismo recibo. |
 
 
 ## 2. Entorno y mapa

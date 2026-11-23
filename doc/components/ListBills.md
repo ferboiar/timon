@@ -133,13 +133,35 @@ Si en modo automático se ha conservado alguna fecha pagada, el aviso de guardad
 
 Cada cargo se marca con un desplegable de tres valores: `Pendiente`, `Cargado` y `Rechazado`. Está en el diálogo del recibo (un control por fecha de cargo) y en el diálogo de una fecha individual; antes era una casilla binaria pagado/pendiente. En las tablas, la columna «Estado» pinta un icono por valor: check verde (`Cargado`), reloj naranja (`Pendiente`) y aspa roja (`Rechazado`). Cambiar solo el estado cuenta como cambio: el diálogo envía la petición y no muestra «Sin cambios» (DC-30). Un rechazado puede volver a `Pendiente` y sigue apareciendo en los atrasados.
 
+## Privacidad del recibo (DC-75, F-49)
+
+Los diálogos que editan el recibo (el anual y el agrupado de trimestrales, bimestrales y mensuales)
+muestran el control [PrivacidadToggle](./PrivacidadToggle.md) al final de los campos propios: antes
+de las rejillas de fechas de cargo en el anual y tras la periodicidad en el agrupado. El diálogo de
+una sola fecha de cargo no lo tiene. El `inputId` es `es_privado` en el anual y `es_privado_tb` en el
+agrupado, para no duplicar `id` en el DOM.
+
+- **Quién lo ve:** el propietario del recibo y un administrador; un `user` con un recibo ajeno y un
+  `reader` no lo ven ([usePrivacidad](../composables/usePrivacidad.md)). El control no se renderiza:
+  no aparece deshabilitado ni oculto.
+- **Qué envía:** `es_privado` (0/1) solo cuando el control se ha renderizado; si no, la clave no
+  viaja y el servidor conserva el valor. `propietario_id` no se envía nunca.
+- **DC-30:** la copia de edición incluye `es_privado`, así que activar solo la privacidad cuenta como
+  cambio y se guarda; no avisa de «Sin cambios».
+- **Alcance del cambio:** el servidor lo aplica a todos los años del mismo recibo (cadena
+  `recibo_origen_id`), también a los que genere después el procedimiento anual. El tooltip de la
+  ayuda lo avisa.
+- **Indicador:** un `pi-lock` delante del concepto en las cinco tablas de la pantalla (Anuales,
+  Trimestrales, Bimestrales, Mensuales e Inactivos). Solo lo ven el propietario y el administrador,
+  que son los únicos que reciben registros privados.
+
 ## Gestión de Propiedad de Recibos
 
 La propiedad de los recibos se maneja automáticamente a través del sistema de autenticación:
 
 1. **Asignación automática**: El campo `propietario_id` no se maneja explícitamente en el frontend, sino que se asigna automáticamente en el backend basándose en el token JWT del usuario autenticado.
 
-2. **Autorización en servidor**: los endpoints aplican la matriz DC-48. Un `admin` ve y edita todo; `user` ve lo que permiten sus `perm_*` y edita lo visible con escritura; `limited_user` edita solo sus registros y no borra; `reader` solo lee. `es_privado = 1` queda para su propietario y el admin (S-01 y S-12 corregidas el 2026-11-10).
+2. **Autorización en servidor**: los endpoints aplican la matriz DC-48. Un `admin` ve y edita todo; `user` ve lo que permiten sus `perm_*` y edita lo visible con escritura; `limited_user` edita solo sus registros y no borra; `reader` solo lee. `es_privado = 1` queda para su propietario y el admin (S-01 y S-12 corregidas el 2026-11-10). El **cambio** de `es_privado` tiene su propia regla (DC-75): solo el propietario del recibo o un administrador, y el servidor no escribe la privacidad de un registro ajeno ni siquiera cuando el valor pedido coincide con el leído.
 
 3. **Propietario intacto**: editar un recibo no reasigna `propietario_id` a quien lo guarda; los dos `UPDATE` de `pushRecibo` conservan el propietario original.
 

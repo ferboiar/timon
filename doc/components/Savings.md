@@ -41,6 +41,18 @@ El requisito del usuario permite ahorros diarios, semanales, otras cadencias o p
 
 `exportCSV` genera `savings.csv` con la utilidad común ([utils/csv](../utils/csv.md)): UTF-8 con BOM, separador `;`, coma decimal, escape de `;`, comillas y saltos de línea, y neutralización de fórmulas (F-19). Produce una fila por movimiento, repitiendo los datos del ahorro, o una fila de seis campos si no hay movimientos.
 
+## Privacidad del ahorro (DC-75, F-49)
+
+El diálogo de ahorro muestra el control [PrivacidadToggle](./PrivacidadToggle.md) en la fila siguiente
+a «Ahorro activo». Solo lo ven el propietario del ahorro y un administrador; un `user` con un ahorro
+ajeno y un `reader` no lo ven ([usePrivacidad](../composables/usePrivacidad.md)). Cuando no se
+renderiza, `es_privado` no viaja en el payload y el servidor conserva el valor; `propietario_id` no se
+envía nunca. `snapshotSaving` incluye `es_privado`, así que activar solo la privacidad cuenta como
+cambio (DC-30). El servidor responde 403 `PRIVACIDAD_NO_PERMITIDA` si un no propietario intenta
+cambiarla. El indicador es un `pi-lock` delante del concepto, con un tooltip que recuerda que el resto
+de usuarios, salvo los administradores, deja de verlo en su lista. Los movimientos heredan la
+visibilidad del ahorro.
+
 ## Limitaciones pendientes
 
 - F-07 y F-08 corregidos el 2026-10-29 (PR #41).

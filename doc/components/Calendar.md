@@ -13,6 +13,10 @@ Archivo: `src/views/pages/Calendar.vue`. Vista anual de los cargos de recibos y 
 
 Al montar carga la zona horaria y pide los recibos del año con `BillService.getBillsByYear(año)`. El resultado se guarda en una caché en memoria por año, que se reinicia al recargar la página. Las fechas de las columnas DATE se normalizan con `fechaDeCalendario`.
 
+El listado llega ya filtrado por el servidor (DC-48): un recibo privado de otro usuario no se recibe, así
+que sus eventos y los totales de la tabla son los de lo que ese rol puede ver (DC-75). Dos usuarios con
+roles distintos pueden ver, por tanto, totales distintos; no es un error de cálculo.
+
 ## Referencias
 
 - [BillService](../services/BillService.md)

@@ -116,6 +116,7 @@ El sistema de ahorros sigue la misma arquitectura de tres capas:
 #### Interfaz de Usuario
 
 - [Componente Savings](./components/Savings.md) - Gestión completa de ahorros y movimientos
+- [Componente PrivacidadToggle](./components/PrivacidadToggle.md) - Control de privacidad (`es_privado`) de recibos, anticipos y ahorros
 
 #### Servicios Cliente
 
@@ -207,6 +208,7 @@ Este sistema sigue una arquitectura multicapa:
 
 #### Gestión de Estado y Autorización
 - [Composable useAuth](./composables/useAuth.md) - Hook para gestión del estado de autenticación
+- [Composable usePrivacidad](./composables/usePrivacidad.md) - Quién puede marcar la privacidad de un registro y cuándo se renderiza el control (DC-75)
 - [Directiva vRole](./directives/vRole.md) - Control de acceso declarativo en plantillas
 - [Composable useTheme](./composables/useTheme.md) y [useLayout](./composables/useLayout.md) - Temas y apariencia general
 

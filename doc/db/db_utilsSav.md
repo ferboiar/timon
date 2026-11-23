@@ -27,7 +27,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `importe_periodico` | DECIMAL | Cantidad sugerida a ahorrar por periodo |
 | `activo` | TINYINT | Estado del ahorro (1 activo, 0 inactivo) |
 | `propietario_id` | INT | Usuario que creó el ahorro; obligatorio al crear |
-| `es_privado` | TINYINT | 1 = solo lo ven su propietario y el admin; los movimientos heredan la visibilidad del ahorro. El listado filtra con `filtrarVisibles` (S-01, DC-48) |
+| `es_privado` | TINYINT | 1 = solo lo ven su propietario y el admin; los movimientos heredan la visibilidad del ahorro. El listado filtra con `filtrarVisibles` (S-01, DC-48). `pushSaving` solo lo escribe si la ruta le pasa un valor (con `null` conserva el guardado) y el cambio lo autoriza DC-75 |
 
 ### Tabla `ahorros_movimientos`
 

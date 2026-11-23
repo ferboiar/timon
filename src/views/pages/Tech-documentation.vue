@@ -83,6 +83,7 @@ const docNavigation = [
                 title: 'Sistema de Ahorros',
                 children: [
                     { title: 'Componente Savings', path: 'components/Savings' },
+                    { title: 'Componente PrivacidadToggle', path: 'components/PrivacidadToggle' },
                     { title: 'SavService', path: 'services/SavService' },
                     { title: 'API de Ahorros', path: 'routes/ahorros' },
                     { title: 'DB Utils Ahorros', path: 'db/db_utilsSav' }
@@ -125,6 +126,7 @@ const docNavigation = [
                 title: 'Autenticación y Autorización',
                 children: [
                     { title: 'Composable useAuth', path: 'composables/useAuth' },
+                    { title: 'Composable usePrivacidad', path: 'composables/usePrivacidad' },
                     { title: 'Composable useZonaHoraria', path: 'composables/useZonaHoraria' },
                     { title: 'Composable useAjustesSesion', path: 'composables/useAjustesSesion' },
                     { title: 'Composable useTheme', path: 'composables/useTheme' },
