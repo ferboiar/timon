@@ -28,7 +28,7 @@ const saving = ref({
 });
 
 // DC-75: el control de privacidad se renderiza solo para el propietario del registro o un admin
-const { puedeCambiarPrivacidad, esPropio, esAdministrador } = usePrivacidad();
+const { puedeCambiarPrivacidad, esPropio } = usePrivacidad();
 const mostrarPrivacidad = computed(() => puedeCambiarPrivacidad(saving.value, { esAlta: !saving.value.id }));
 const privacidadPropia = computed(() => (saving.value.id ? esPropio(saving.value) : true));
 
@@ -584,7 +584,6 @@ onMounted(async () => {
                 v-model="saving.es_privado"
                 input-id="es_privado"
                 :es-propio="privacidadPropia"
-                :es-admin="esAdministrador"
                 modulo="ahorros"
             />
         </div>

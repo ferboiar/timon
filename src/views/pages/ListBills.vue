@@ -41,7 +41,7 @@ const bill = ref({
 });
 
 // DC-75: el control de privacidad se renderiza solo para el propietario del recibo o un admin
-const { puedeCambiarPrivacidad, esPropio, esAdministrador } = usePrivacidad();
+const { puedeCambiarPrivacidad, esPropio } = usePrivacidad();
 const mostrarPrivacidad = computed(() => puedeCambiarPrivacidad(bill.value, { esAlta: !bill.value.id }));
 const privacidadPropia = computed(() => (bill.value.id ? esPropio(bill.value) : true));
 
@@ -1608,7 +1608,6 @@ const inactiveBillsCount = (periodicity) => {
                     v-model="bill.es_privado"
                     input-id="es_privado"
                     :es-propio="privacidadPropia"
-                    :es-admin="esAdministrador"
                     modulo="recibos"
                 />
 
@@ -1820,7 +1819,6 @@ const inactiveBillsCount = (periodicity) => {
                     v-model="bill.es_privado"
                     input-id="es_privado_tb"
                     :es-propio="privacidadPropia"
-                    :es-admin="esAdministrador"
                     modulo="recibos"
                 />
             </div>
