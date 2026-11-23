@@ -97,6 +97,22 @@ export const MAPA_FUENTES = {
         'backend/src/routes/cuentas.mjs',
         'backend/src/routes/users.mjs'
     ],
+    'tests/privacidad.spec.mjs': [
+        'src/composables/usePrivacidad.js',
+        'src/components/PrivacidadToggle.vue',
+        'src/views/pages/ListBills.vue',
+        'src/views/pages/Advances.vue',
+        'src/views/pages/Savings.vue',
+        'src/composables/useAuth.js',
+        'src/router/index.js',
+        'backend/src/utils/autorizacion.mjs',
+        'backend/src/utils/propiedad.mjs',
+        'backend/src/utils/parametros.mjs',
+        'backend/src/routes/recibos.mjs',
+        'backend/src/routes/anticipos.mjs',
+        'backend/src/routes/ahorros.mjs',
+        'backend/src/db/db_utils.mjs'
+    ],
     'tests/autorizacionSubrecursos.spec.mjs': [
         'src/views/pages/ListBills.vue',
         'src/router/index.js',
