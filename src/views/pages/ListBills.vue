@@ -1048,7 +1048,15 @@ const inactiveBillsCount = (periodicity) => {
                         <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                             <template #body="anualSlotProps">
                                 <i
-                                    :class="anualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : anualSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : anualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                    :class="
+                                        anualSlotProps.data.estado === 'cargado'
+                                            ? 'pi pi-fw pi-check-circle text-green-500'
+                                            : anualSlotProps.data.estado === 'rechazado'
+                                              ? 'pi pi-fw pi-times-circle text-red-500'
+                                              : anualSlotProps.data.estado === 'pendiente'
+                                                ? 'pi pi-fw pi-clock text-orange-500'
+                                                : ''
+                                    "
                                     v-tooltip="anualSlotProps.data.estado === 'cargado' ? 'Cargado' : anualSlotProps.data.estado === 'rechazado' ? 'Rechazado' : anualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                 />
                             </template>
@@ -1179,7 +1187,15 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="trimestralSlotProps">
                                         <i
-                                            :class="trimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : trimestralSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : trimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            :class="
+                                                trimestralSlotProps.data.estado === 'cargado'
+                                                    ? 'pi pi-fw pi-check-circle text-green-500'
+                                                    : trimestralSlotProps.data.estado === 'rechazado'
+                                                      ? 'pi pi-fw pi-times-circle text-red-500'
+                                                      : trimestralSlotProps.data.estado === 'pendiente'
+                                                        ? 'pi pi-fw pi-clock text-orange-500'
+                                                        : ''
+                                            "
                                             v-tooltip="trimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : trimestralSlotProps.data.estado === 'rechazado' ? 'Rechazado' : trimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
@@ -1315,7 +1331,15 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="bimestralSlotProps">
                                         <i
-                                            :class="bimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : bimestralSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : bimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            :class="
+                                                bimestralSlotProps.data.estado === 'cargado'
+                                                    ? 'pi pi-fw pi-check-circle text-green-500'
+                                                    : bimestralSlotProps.data.estado === 'rechazado'
+                                                      ? 'pi pi-fw pi-times-circle text-red-500'
+                                                      : bimestralSlotProps.data.estado === 'pendiente'
+                                                        ? 'pi pi-fw pi-clock text-orange-500'
+                                                        : ''
+                                            "
                                             v-tooltip="bimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : bimestralSlotProps.data.estado === 'rechazado' ? 'Rechazado' : bimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
@@ -1450,7 +1474,15 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="mensualSlotProps">
                                         <i
-                                            :class="mensualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : mensualSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : mensualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            :class="
+                                                mensualSlotProps.data.estado === 'cargado'
+                                                    ? 'pi pi-fw pi-check-circle text-green-500'
+                                                    : mensualSlotProps.data.estado === 'rechazado'
+                                                      ? 'pi pi-fw pi-times-circle text-red-500'
+                                                      : mensualSlotProps.data.estado === 'pendiente'
+                                                        ? 'pi pi-fw pi-clock text-orange-500'
+                                                        : ''
+                                            "
                                             v-tooltip="mensualSlotProps.data.estado === 'cargado' ? 'Cargado' : mensualSlotProps.data.estado === 'rechazado' ? 'Rechazado' : mensualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
@@ -1606,12 +1638,7 @@ const inactiveBillsCount = (periodicity) => {
                     <label for="activo" class="font-bold">{{ (bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo' }}</label>
                 </div>
 
-                <PrivacidadToggle
-                    v-if="mostrarPrivacidad"
-                    v-model="bill.es_privado"
-                    input-id="es_privado"
-                    modulo="recibos"
-                />
+                <PrivacidadToggle v-if="mostrarPrivacidad" v-model="bill.es_privado" input-id="es_privado" modulo="recibos" />
 
                 <div v-if="modoFechas === 'manual'" class="grid grid-cols-12 gap-2">
                     <div v-if="showFields.fechaCargo" class="col-span-4">
@@ -1820,12 +1847,7 @@ const inactiveBillsCount = (periodicity) => {
                     <label for="activo" class="font-bold">{{ (bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo' }}</label>
                 </div>
 
-                <PrivacidadToggle
-                    v-if="mostrarPrivacidad"
-                    v-model="bill.es_privado"
-                    input-id="es_privado_tb"
-                    modulo="recibos"
-                />
+                <PrivacidadToggle v-if="mostrarPrivacidad" v-model="bill.es_privado" input-id="es_privado_tb" modulo="recibos" />
             </div>
 
             <template #footer>

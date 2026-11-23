@@ -578,12 +578,7 @@ onMounted(async () => {
                 <ToggleSwitch inputId="activo" :modelValue="saving.activo === 1" @update:modelValue="(value) => (saving.activo = value ? 1 : 0)" />
                 <label for="activo" class="font-bold">{{ saving.activo === 1 ? 'Ahorro activo' : 'Ahorro inactivo' }}</label>
             </div>
-            <PrivacidadToggle
-                v-if="mostrarPrivacidad"
-                v-model="saving.es_privado"
-                input-id="es_privado"
-                modulo="ahorros"
-            />
+            <PrivacidadToggle v-if="mostrarPrivacidad" v-model="saving.es_privado" input-id="es_privado" modulo="ahorros" />
         </div>
 
         <template #footer>

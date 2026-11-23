@@ -650,9 +650,7 @@ async function handleCreatePaymentPlan() {
                 </template>
                 <Column expander style="width: 5rem" />
                 <Column field="concepto" header="Concepto" sortable style="min-width: 4rem">
-                    <template #body="slotProps">
-                        <i v-if="slotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ slotProps.data.concepto }}
-                    </template>
+                    <template #body="slotProps"> <i v-if="slotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ slotProps.data.concepto }} </template>
                 </Column>
                 <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem" />
                 <Column field="importe_original" header="Importe" sortable style="min-width: 4rem">
@@ -829,12 +827,7 @@ async function handleCreatePaymentPlan() {
                         />
                     </div>
                 </div>
-                <PrivacidadToggle
-                    v-if="mostrarPrivacidad"
-                    v-model="advance.es_privado"
-                    input-id="es_privado"
-                    modulo="anticipos"
-                />
+                <PrivacidadToggle v-if="mostrarPrivacidad" v-model="advance.es_privado" input-id="es_privado" modulo="anticipos" />
             </div>
             <template #footer>
                 <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
