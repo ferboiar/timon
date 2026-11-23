@@ -136,10 +136,13 @@ Cada cargo se marca con un desplegable de tres valores: `Pendiente`, `Cargado` y
 ## Privacidad del recibo (DC-75, F-49)
 
 Los diálogos que editan el recibo (el anual y el agrupado de trimestrales, bimestrales y mensuales)
-muestran el control [PrivacidadToggle](./PrivacidadToggle.md) al final de los campos propios: antes
-de las rejillas de fechas de cargo en el anual y tras la periodicidad en el agrupado. El diálogo de
-una sola fecha de cargo no lo tiene. El `inputId` es `es_privado` en el anual y `es_privado_tb` en el
-agrupado, para no duplicar `id` en el DOM.
+muestran, al final de los campos propios y antes de las rejillas de fechas de cargo, dos
+interruptores apilados: primero el de **activo** («Recibo activo» / «Recibo inactivo», con el mismo
+patrón que en Ahorros) y debajo el de privacidad. Hasta F-49 el de activo estaba en la cabecera de la
+columna «Cuenta», que ahora solo lleva su etiqueta, alineada con «Concepto». El diálogo de una sola
+fecha de cargo no tiene ninguno de los dos. El `inputId` de privacidad es `es_privado` en el anual y
+`es_privado_tb` en el agrupado, para no duplicar `id` en el DOM; el de activo sigue siendo `activo`,
+con la misma conversión 1/0 y la misma propagación a las fechas.
 
 - **Quién lo ve:** el propietario del recibo y un administrador; un `user` con un recibo ajeno y un
   `reader` no lo ven ([usePrivacidad](../composables/usePrivacidad.md)). El control no se renderiza:

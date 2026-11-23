@@ -291,7 +291,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
 
             await expect(control, 'el admin ve el control en un registro ajeno').toHaveCount(1);
             await expect(control).toBeChecked();
-            await expect(dialogo.getByText('Privado: solo su propietario y los administradores lo veis')).toBeVisible();
+            await expect(dialogo.getByText('Privado: solo visible para admin y propietario')).toBeVisible();
 
             await control.click();
             const [peticion] = await Promise.all([page.waitForRequest((r) => r.url().includes('/api/recibos') && r.method() === 'POST'), dialogo.getByRole('button', { name: 'Guardar' }).click()]);
@@ -445,46 +445,66 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
         });
     });
 
-    test('el diálogo con el control se ve completo en 1366x768 y Guardar queda accesible', async ({ conexion }) => {
-        const viewport = { width: 1366, height: 768 };
+    test('los dos interruptores de Recibos quedan apilados y Guardar se ve sin desplazarse (1366x768 y estrecho)', async ({ conexion }) => {
+        const viewports = [
+            { width: 1366, height: 768 },
+            { width: 1024, height: 700 }
+        ];
         let recibo = null;
         let anticipo = null;
         let ahorro = null;
 
-        await conRol(conexion, ROLES.propietario, async (page) => (recibo = await crearRecibo(page, 'vw')), { viewport });
-        await conRol(conexion, ROLES.propietario, async (page) => (anticipo = await crearAnticipo(page, 'vw')), { viewport });
-        await conRol(conexion, ROLES.propietario, async (page) => (ahorro = await crearAhorro(page, 'vw')), { viewport });
+        await conRol(conexion, ROLES.propietario, async (page) => (recibo = await crearRecibo(page, 'vw')), { viewport: viewports[0] });
+        await conRol(conexion, ROLES.propietario, async (page) => (anticipo = await crearAnticipo(page, 'vw')), { viewport: viewports[0] });
+        await conRol(conexion, ROLES.propietario, async (page) => (ahorro = await crearAhorro(page, 'vw')), { viewport: viewports[0] });
 
-        await conRol(
-            conexion,
-            ROLES.propietario,
-            async (page) => {
-                const comprobar = async (ruta, nombre, titulo) => {
-                    await page.goto(urlDe(ruta), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-                    if (ruta === '/pages/bills') await filtrarPorBuscador(page, nombre);
+        for (const viewport of viewports) {
+            await conRol(
+                conexion,
+                ROLES.propietario,
+                async (page) => {
+                    const tamano = `${viewport.width}x${viewport.height}`;
+                    const comprobar = async (ruta, nombre, titulo, conActivo) => {
+                        await page.goto(urlDe(ruta), { waitUntil: 'domcontentloaded', timeout: 45_000 });
+                        if (ruta === '/pages/bills') await filtrarPorBuscador(page, nombre);
 
-                    const fila = page.locator('table tbody tr').filter({ hasText: nombre }).first();
-                    await expect(fila).toBeVisible({ timeout: 20_000 });
-                    await fila.locator('button:has(.pi-pencil)').click();
+                        const fila = page.locator('table tbody tr').filter({ hasText: nombre }).first();
+                        await expect(fila).toBeVisible({ timeout: 20_000 });
+                        await fila.locator('button:has(.pi-pencil)').click();
 
-                    const dialogo = page.getByRole('dialog', { name: titulo });
-                    await expect(dialogo).toBeVisible({ timeout: 20_000 });
-                    await expect(dialogo.locator('#es_privado'), `${titulo}: control visible en 1366x768`).toBeVisible();
+                        const dialogo = page.getByRole('dialog', { name: titulo });
+                        await expect(dialogo).toBeVisible({ timeout: 20_000 });
+                        await expect(dialogo.locator('#es_privado'), `${titulo} (${tamano}): control de privacidad`).toBeVisible();
 
-                    const guardar = dialogo.getByRole('button', { name: 'Guardar' });
-                    await expect(guardar).toBeVisible();
-                    await expect(guardar).toBeInViewport();
+                        const guardar = dialogo.getByRole('button', { name: 'Guardar' });
+                        await expect(guardar).toBeVisible();
+                        await expect(guardar, `${titulo} (${tamano}): Guardar sin desplazarse`).toBeInViewport();
 
-                    await dialogo.getByRole('button', { name: 'Cancelar' }).click();
-                    await expect(dialogo).toBeHidden({ timeout: 20_000 });
-                };
+                        if (conActivo) {
+                            // Los dos interruptores van apilados: activo encima y privacidad debajo.
+                            const activo = dialogo.locator('#activo');
+                            await expect(activo, `Recibos (${tamano}): interruptor de activo`).toBeVisible();
+                            await expect(dialogo.getByText('Recibo activo')).toBeVisible();
 
-                await comprobar('/pages/bills', recibo, 'Detalle del recibo');
-                await comprobar('/pages/advances', anticipo, 'Detalle del anticipo');
-                await comprobar('/pages/savings', ahorro, 'Detalle del ahorro');
-            },
-            { viewport }
-        );
+                            const cajaActivo = await activo.boundingBox();
+                            const cajaPrivacidad = await dialogo.locator('#es_privado').boundingBox();
+                            expect(cajaActivo, `Recibos (${tamano}): caja de activo`).not.toBeNull();
+                            expect(cajaPrivacidad, `Recibos (${tamano}): caja de privacidad`).not.toBeNull();
+                            expect(cajaActivo.y, `Recibos (${tamano}): activo encima de privacidad`).toBeLessThan(cajaPrivacidad.y);
+                            expect(cajaPrivacidad.y - (cajaActivo.y + cajaActivo.height), `Recibos (${tamano}): separación entre interruptores`).toBeGreaterThanOrEqual(0);
+                        }
+
+                        await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+                        await expect(dialogo).toBeHidden({ timeout: 20_000 });
+                    };
+
+                    await comprobar('/pages/bills', recibo, 'Detalle del recibo', true);
+                    await comprobar('/pages/advances', anticipo, 'Detalle del anticipo', false);
+                    await comprobar('/pages/savings', ahorro, 'Detalle del ahorro', false);
+                },
+                { viewport }
+            );
+        }
     });
 
     test('el candado aparece en las tarjetas agrupadas y en inactivos, y el diálogo agrupado usa es_privado_tb', async ({ conexion }) => {

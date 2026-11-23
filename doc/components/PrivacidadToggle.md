@@ -16,7 +16,6 @@ deshabilitado ni oculto).
 |---|---|---|---|
 | `modelValue` | `Number` | `0` | Estado: `0` compartido, `1` privado |
 | `inputId` | `String` | obligatoria | `id` del `input` del interruptor y destino del `<label for>`. Distinto en cada diálogo (`es_privado` en el anual de Recibos, `es_privado_tb` en el agrupado) para no duplicar `id` en el DOM |
-| `esPropio` | `Boolean` | `true` | El registro es del usuario: la etiqueta habla en segunda persona |
 | `modulo` | `String` | obligatoria | `recibos`, `anticipos`, `ahorros` o `presupuestos`: elige el texto de la ayuda |
 
 Emite `update:modelValue` con **0 o 1**, nunca un booleano: las rutas rechazan `true`/`false` con 400.
@@ -26,8 +25,7 @@ Emite `update:modelValue` con **0 o 1**, nunca un booleano: las rutas rechazan `
 | Estado | Texto |
 |---|---|
 | Compartido | «Compartido con los usuarios con acceso» |
-| Privado y propio | «Privado: solo tú y los administradores lo veis» |
-| Privado de otro (administrador) | «Privado: solo su propietario y los administradores lo veis» |
+| Privado | «Privado: solo visible para admin y propietario» (el mismo texto para el propietario y para un administrador que edita un registro ajeno) |
 
 ## Ayuda
 

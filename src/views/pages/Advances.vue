@@ -47,9 +47,8 @@ const advance = ref({
 });
 
 // DC-75: el control de privacidad se renderiza solo para el propietario del registro o un admin
-const { puedeCambiarPrivacidad, esPropio } = usePrivacidad();
+const { puedeCambiarPrivacidad } = usePrivacidad();
 const mostrarPrivacidad = computed(() => puedeCambiarPrivacidad(advance.value, { esAlta: !advance.value.id }));
-const privacidadPropia = computed(() => (advance.value.id ? esPropio(advance.value) : true));
 
 const advanceDialog = ref(false);
 
@@ -834,7 +833,6 @@ async function handleCreatePaymentPlan() {
                     v-if="mostrarPrivacidad"
                     v-model="advance.es_privado"
                     input-id="es_privado"
-                    :es-propio="privacidadPropia"
                     modulo="anticipos"
                 />
             </div>

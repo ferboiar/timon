@@ -26,7 +26,6 @@ Es una limitación conocida y aceptada en DC-75.
 | Función | Qué devuelve |
 |---|---|
 | `puedeCambiarPrivacidad(registro, { esAlta })` | `true` si hay que renderizar el control |
-| `esPropio(registro)` | `true` si `propietario_id` es el usuario actual; solo cambia el texto de la etiqueta |
 
 ## Dónde se usa
 

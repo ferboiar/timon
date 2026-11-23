@@ -41,9 +41,8 @@ const bill = ref({
 });
 
 // DC-75: el control de privacidad se renderiza solo para el propietario del recibo o un admin
-const { puedeCambiarPrivacidad, esPropio } = usePrivacidad();
+const { puedeCambiarPrivacidad } = usePrivacidad();
 const mostrarPrivacidad = computed(() => puedeCambiarPrivacidad(bill.value, { esAlta: !bill.value.id }));
-const privacidadPropia = computed(() => (bill.value.id ? esPropio(bill.value) : true));
 
 const billDialog = ref(false);
 const billDialogTB = ref(false);
@@ -1547,13 +1546,6 @@ const inactiveBillsCount = (periodicity) => {
                     <div class="col-span-5">
                         <div class="flex justify-between items-center mb-3">
                             <label for="cuenta" class="font-bold">Cuenta</label>
-                            <ToggleSwitch
-                                id="activo"
-                                :modelValue="(bill.cargo[0].activo || 0) === 1"
-                                @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
-                                :binary="true"
-                                v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
-                            />
                         </div>
                         <Select id="cuenta" v-model="bill.cuenta_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
                         <small v-if="submitted && !bill.cuenta_id" class="text-red-500">La cuenta es obligatoria.</small>
@@ -1603,11 +1595,21 @@ const inactiveBillsCount = (periodicity) => {
                     </div>
                 </div>
 
+                <div class="flex items-center gap-3">
+                    <ToggleSwitch
+                        id="activo"
+                        :modelValue="(bill.cargo[0].activo || 0) === 1"
+                        @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
+                        :binary="true"
+                        v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
+                    />
+                    <label for="activo" class="font-bold">{{ (bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo' }}</label>
+                </div>
+
                 <PrivacidadToggle
                     v-if="mostrarPrivacidad"
                     v-model="bill.es_privado"
                     input-id="es_privado"
-                    :es-propio="privacidadPropia"
                     modulo="recibos"
                 />
 
@@ -1762,13 +1764,6 @@ const inactiveBillsCount = (periodicity) => {
                     <div class="col-span-5">
                         <div class="flex justify-between items-center mb-3">
                             <label for="cuenta" class="font-bold">Cuenta</label>
-                            <ToggleSwitch
-                                id="activo"
-                                :modelValue="(bill.cargo[0].activo || 0) === 1"
-                                @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
-                                :binary="true"
-                                v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
-                            />
                         </div>
                         <Select id="cuenta" v-model="bill.cuenta_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
                         <small v-if="submitted && !bill.cuenta_id" class="text-red-500">La cuenta es obligatoria.</small>
@@ -1814,11 +1809,21 @@ const inactiveBillsCount = (periodicity) => {
                     </div>
                 </div>
 
+                <div class="flex items-center gap-3">
+                    <ToggleSwitch
+                        id="activo"
+                        :modelValue="(bill.cargo[0].activo || 0) === 1"
+                        @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
+                        :binary="true"
+                        v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
+                    />
+                    <label for="activo" class="font-bold">{{ (bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo' }}</label>
+                </div>
+
                 <PrivacidadToggle
                     v-if="mostrarPrivacidad"
                     v-model="bill.es_privado"
                     input-id="es_privado_tb"
-                    :es-propio="privacidadPropia"
                     modulo="recibos"
                 />
             </div>

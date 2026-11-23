@@ -35,8 +35,5 @@ export function usePrivacidad() {
         return Number(registro?.propietario_id) === idUsuario.value;
     };
 
-    /** ¿El registro es del usuario actual? Sirve para adaptar la etiqueta del control. */
-    const esPropio = (registro) => Number(registro?.propietario_id) === idUsuario.value;
-
-    return { puedeCambiarPrivacidad, esPropio };
+    return { puedeCambiarPrivacidad };
 }
