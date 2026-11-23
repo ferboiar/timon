@@ -19,7 +19,7 @@
  */
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
-import { iniciarSesion, urlDe } from './helpers/timon.mjs';
+import { filtrarPorBuscador, iniciarSesion, urlDe } from './helpers/timon.mjs';
 import { baseUrl } from '../scripts/entorno.mjs';
 
 const dos = (n) => String(n).padStart(2, '0');
@@ -148,22 +148,10 @@ function filaRecibo(page, nombre) {
     return page.locator('table tbody tr').filter({ hasText: nombre }).first();
 }
 
-/**
- * Filtra la tabla anual por el concepto.
- *
- * La tarjeta «Anuales» pagina de 8 en 8 y ordena por fecha, así que un recibo con fecha de
- * diciembre puede quedar en la página 2. El buscador global de la tabla lo deja en la primera.
- */
-async function filtrarRecibos(page, nombre) {
-    const buscador = page.locator('input[placeholder="Buscar..."]').first();
-    await expect(buscador).toBeVisible({ timeout: 20_000 });
-    await buscador.fill(nombre);
-}
-
 /** Abre el diálogo de edición del recibo anual desde su lápiz. */
 async function abrirDialogoRecibo(page, nombre) {
     await page.goto(urlDe('/pages/bills'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await filtrarRecibos(page, nombre);
+    await filtrarPorBuscador(page, nombre);
 
     const fila = filaRecibo(page, nombre);
     await expect(fila).toBeVisible({ timeout: 20_000 });
@@ -237,7 +225,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
 
             // Persistencia tras recargar y candado en la fila
             await page.reload({ waitUntil: 'domcontentloaded' });
-            await filtrarRecibos(page, nombre);
+            await filtrarPorBuscador(page, nombre);
             const fila = filaRecibo(page, nombre);
             await expect(fila).toBeVisible({ timeout: 20_000 });
             await expect(fila.locator('.pi-lock')).toHaveCount(1);
@@ -258,7 +246,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             conRol(conexion, usuario, async (page) => {
                 await page.goto(urlDe('/pages/bills'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
                 await expect(page.getByRole('table').first()).toBeVisible({ timeout: 20_000 });
-                await filtrarRecibos(page, nombre);
+                await filtrarPorBuscador(page, nombre);
                 await expect(filaRecibo(page, nombre)).toHaveCount(0);
             });
 
@@ -281,7 +269,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
         // El otro user lo ve después de que el admin lo desmarque
         await conRol(conexion, ROLES.otro, async (page) => {
             await page.goto(urlDe('/pages/bills'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-            await filtrarRecibos(page, nombre);
+            await filtrarPorBuscador(page, nombre);
             await expect(filaRecibo(page, nombre)).toBeVisible({ timeout: 20_000 });
         });
     });
@@ -441,7 +429,7 @@ test.describe.serial('Privacidad y regla de propiedad (F-49, DC-75)', () => {
             async (page) => {
                 const comprobar = async (ruta, nombre, titulo) => {
                     await page.goto(urlDe(ruta), { waitUntil: 'domcontentloaded', timeout: 45_000 });
-                    if (ruta === '/pages/bills') await filtrarRecibos(page, nombre);
+                    if (ruta === '/pages/bills') await filtrarPorBuscador(page, nombre);
 
                     const fila = page.locator('table tbody tr').filter({ hasText: nombre }).first();
                     await expect(fila).toBeVisible({ timeout: 20_000 });
