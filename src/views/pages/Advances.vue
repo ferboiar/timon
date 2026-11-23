@@ -1,6 +1,7 @@
 <script setup>
 import { AccService } from '@/service/AccService'; // Importar AccService
 import { AdvService } from '@/service/AdvService';
+import { usePrivacidad } from '@/composables/usePrivacidad';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { construirCsv } from '@/utils/csv';
 import { fechaIsoDeCalendario } from '@/utils/fechasFormulario';
@@ -40,8 +41,15 @@ const advance = ref({
     descripcion: '',
     estado: 'activo',
     cuenta_origen_id: null,
-    periodicidad: ''
+    periodicidad: '',
+    es_privado: 0,
+    propietario_id: null
 });
+
+// DC-75: el control de privacidad se renderiza solo para el propietario del registro o un admin
+const { puedeCambiarPrivacidad, esPropio, esAdministrador } = usePrivacidad();
+const mostrarPrivacidad = computed(() => puedeCambiarPrivacidad(advance.value, { esAlta: !advance.value.id }));
+const privacidadPropia = computed(() => (advance.value.id ? esPropio(advance.value) : true));
 
 const advanceDialog = ref(false);
 
@@ -113,7 +121,9 @@ function openNewAdvance() {
         descripcion: '',
         estado: 'activo',
         cuenta_origen_id: null,
-        periodicidad: ''
+        periodicidad: '',
+        es_privado: 0,
+        propietario_id: null
     };
     advanceOriginal.value = null;
     advanceDialog.value = true;
@@ -140,6 +150,10 @@ async function saveAdvance() {
             fecha_fin_prevista: fechaIsoDeCalendario(advance.value.fecha_fin_prevista),
             periodicidad: advance.value.periodicidad || null
         };
+
+        // DC-75: sin control renderizado, la privacidad no viaja (ni 0 por defecto): el servidor conserva.
+        delete payload.propietario_id;
+        if (!mostrarPrivacidad.value) delete payload.es_privado;
 
         await AdvService.saveAdvance(payload);
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Anticipo guardado!', life: 5000 });
@@ -636,7 +650,11 @@ async function handleCreatePaymentPlan() {
                     <div class="text-center p-4">No hay anticipos a mostrar.</div>
                 </template>
                 <Column expander style="width: 5rem" />
-                <Column field="concepto" header="Concepto" sortable style="min-width: 4rem" />
+                <Column field="concepto" header="Concepto" sortable style="min-width: 4rem">
+                    <template #body="slotProps">
+                        <i v-if="slotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ slotProps.data.concepto }}
+                    </template>
+                </Column>
                 <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem" />
                 <Column field="importe_original" header="Importe" sortable style="min-width: 4rem">
                     <template #body="slotProps">
@@ -812,6 +830,14 @@ async function handleCreatePaymentPlan() {
                         />
                     </div>
                 </div>
+                <PrivacidadToggle
+                    v-if="mostrarPrivacidad"
+                    v-model="advance.es_privado"
+                    input-id="es_privado"
+                    :es-propio="privacidadPropia"
+                    :es-admin="esAdministrador"
+                    modulo="anticipos"
+                />
             </div>
             <template #footer>
                 <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
