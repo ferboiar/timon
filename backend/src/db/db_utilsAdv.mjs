@@ -137,7 +137,7 @@ async function pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_
                 }
 
                 // Actualizar anticipo existente
-                const [result] = await connection.execute(
+                await connection.execute(
                     'UPDATE anticipos SET concepto = ?, importe_original = ?, pago_sugerido = ?, fecha_inicio = ?, fecha_fin_prevista = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_origen_id = ?, periodicidad = ?, es_privado = COALESCE(?, es_privado), modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
                     [concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, valorPrivado, usuarioId, id]
                 );
@@ -319,7 +319,7 @@ async function deleteAdvances(advances) {
             await connection.execute('SELECT id FROM anticipos WHERE id IN (' + placeholders + ') FOR UPDATE', advances);
 
             // Eliminar pagos asociados (la clave foránea también los borraría en cascada, pero así queda traza)
-            const [deletePagosResult] = await connection.execute('DELETE FROM anticipos_pagos WHERE anticipo_id IN (' + placeholders + ')', advances);
+            await connection.execute('DELETE FROM anticipos_pagos WHERE anticipo_id IN (' + placeholders + ')', advances);
 
             // Eliminar anticipos
             const [deleteAnticiposResult] = await connection.execute('DELETE FROM anticipos WHERE id IN (' + placeholders + ')', advances);
@@ -410,7 +410,7 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                 const planCuadrabaAntes = await planCuadra(connection, anticipoDelPago);
 
                 // Actualizar el pago existente. DC-38: el importe pendiente se deriva de los pagos pagados, así que no hay nada que ajustar
-                const [result] = await connection.execute('UPDATE anticipos_pagos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_destino_id = ?, modificado_por = ? WHERE id = ?', [
+                await connection.execute('UPDATE anticipos_pagos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_destino_id = ?, modificado_por = ? WHERE id = ?', [
                     importe,
                     fecha,
                     tipo,
@@ -647,9 +647,6 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
         }
 
         // Verificación final
-        const [finalPendingPayments] = await connection.execute("SELECT importe FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente'", [anticipo_id]);
-
-        const totalFinal = finalPendingPayments.reduce((sum, p) => sum + parseFloat(p.importe), 0);
         console.log(`recalculatePostEditPayments - Recálculo completado para anticipo ${anticipo_id}`);
     } catch (error) {
         console.error('Error en recalculatePostEditPayments:', error.status ? error.message : error);
@@ -748,7 +745,7 @@ async function handlePaymentDeletion(pagoId, redistribuir = false, usuarioId = n
 
             // Eliminar el pago
             console.log('handlePaymentDeletion - Eliminando el pago ID: ' + pagoId + ' (anticipo ' + anticipo_id + ', importe ' + importe + ', estado ' + estado + ', redistribuir: ' + (redistribuir ? 'sí' : 'no') + ')');
-            const [result] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [pagoId]);
+            await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [pagoId]);
 
             // DC-38: el importe pendiente se deriva de los pagos pagados y sube solo al borrar un pagado
             const pendiente = await leerPendiente(connection, anticipo_id);

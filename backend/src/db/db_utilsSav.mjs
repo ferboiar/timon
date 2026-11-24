@@ -76,7 +76,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
             }
 
             const ahorradoFinal = numMovimientos > 0 ? ahorradoActual : ahorrado;
-            const [updateResult] = await connection.execute('UPDATE ahorros SET concepto = ?, descripcion = COALESCE(?, descripcion), ahorrado = ?, fecha_objetivo = ?, periodicidad = ?, importe_periodico = ?, activo = ?, es_privado = COALESCE(?, es_privado), modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [
+            await connection.execute('UPDATE ahorros SET concepto = ?, descripcion = COALESCE(?, descripcion), ahorrado = ?, fecha_objetivo = ?, periodicidad = ?, importe_periodico = ?, activo = ?, es_privado = COALESCE(?, es_privado), modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [
                 concepto,
                 descripcion,
                 ahorradoFinal,
@@ -96,7 +96,7 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
             // Insertar nuevo ahorro
             if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear el ahorro');
             console.log(`pushSaving - Nuevo ahorro: ${concepto}, valor inicial de ahorrado ${ahorrado}`);
-            const [insertResult] = await connection.execute('INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id, es_privado, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0), ?)', [
+            await connection.execute('INSERT INTO ahorros (concepto, descripcion, ahorrado, fecha_objetivo, periodicidad, importe_periodico, activo, propietario_id, es_privado, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0), ?)', [
                 concepto,
                 descripcion,
                 ahorrado,
@@ -133,7 +133,7 @@ async function deleteSavings(savings) {
             savings = [savings];
         }
         const placeholders = savings.map(() => '?').join(',');
-        const [deleteResult] = await connection.execute(`DELETE FROM ahorros WHERE id IN (${placeholders})`, savings);
+        await connection.execute(`DELETE FROM ahorros WHERE id IN (${placeholders})`, savings);
     } catch (error) {
         console.error('Error al eliminar los ahorros:', error);
         if (esErrorDeReferencia(error)) {
@@ -208,10 +208,10 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
             diferencia = Math.round((Number(importe) - Number(importeAnterior)) * 100) / 100;
             console.log(`pushMovimiento - Editando el movimiento ID ${id} del ahorro ${ahorroId}: importe ${importeAnterior} -> ${importe} (diferencia ${diferencia.toFixed(2)}), autor ${usuarioId ?? 'sistema'}`);
 
-            const [updateResult] = await connection.execute('UPDATE ahorros_movimientos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), modificado_por = ? WHERE id = ?', [importe, fecha, tipo, descripcion, usuarioId, id]);
+            await connection.execute('UPDATE ahorros_movimientos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), modificado_por = ? WHERE id = ?', [importe, fecha, tipo, descripcion, usuarioId, id]);
         } else {
             console.log(`pushMovimiento - Nuevo movimiento del ahorro ${ahorroId}: importe ${importe}, fecha ${fecha}, tipo ${tipo}, autor ${usuarioId ?? 'sistema'}`);
-            const [insertResult] = await connection.execute('INSERT INTO ahorros_movimientos (ahorro_id, importe, fecha, tipo, descripcion, modificado_por) VALUES (?, ?, ?, ?, ?, ?)', [ahorro_id, importe, fecha, tipo, descripcion, usuarioId]);
+            await connection.execute('INSERT INTO ahorros_movimientos (ahorro_id, importe, fecha, tipo, descripcion, modificado_por) VALUES (?, ?, ?, ?, ?, ?)', [ahorro_id, importe, fecha, tipo, descripcion, usuarioId]);
         }
 
         // Actualizar ahorrado solo con la diferencia que aporta este movimiento
@@ -258,11 +258,10 @@ async function deleteMovimiento(id, usuarioId = null) {
         console.log(`deleteMovimiento - Eliminando el movimiento ID ${id} del ahorro ${ahorro_id} (importe ${importe})`);
 
         // Eliminar el movimiento
-        const [deleteResult] = await connection.execute('DELETE FROM ahorros_movimientos WHERE id = ?', [id]);
+        await connection.execute('DELETE FROM ahorros_movimientos WHERE id = ?', [id]);
 
         // Actualizar el valor de ahorrado en la tabla ahorros
-        const [updateAhorroResult] = await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) - ?, modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [importe, usuarioId, ahorro_id]);
-        const variacion = -Number(importe);
+        await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) - ?, modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [importe, usuarioId, ahorro_id]);
 
         await connection.commit();
         enTransaccion = false;
