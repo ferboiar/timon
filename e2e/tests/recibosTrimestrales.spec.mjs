@@ -20,12 +20,12 @@
  *   importe, periodicidad y, en modo automático, `fecha_inicial`; el concepto admite 30
  *   caracteres y se guarda en minúsculas (DC-31).
  *
- * Datos: el spec crea un recibo `e2e_trimestral_AAAAMMDD_HHMMSS` (30 caracteres) y, solo si el
- * año no tiene ningún recibo bimestral con el que contrastar la selección, un
- * `e2e_bimestral_AAAAMMDD_HHMMSS` (29 caracteres). Los dos se crean desde la propia página con
- * el token de la sesión y la red del navegador (la misma que usa la aplicación), se borran por
- * la interfaz en el flujo normal y, como red de seguridad, por API en `afterEach`. No se toca
- * ningún otro dato.
+ * Datos: el spec crea un recibo `e2e_trimestral_AAAAMMDD_HHMMSS` (30 caracteres) y siempre un
+ * `e2e_bimestral_AAAAMMDD_HHMMSS` (29 caracteres) de apoyo, para que la independencia de las
+ * selecciones (F-30) se demuestre sin depender de que el año tenga bimestrales reales. Los dos se
+ * crean desde la propia página con el token de la sesión y la red del navegador (la misma que usa
+ * la aplicación), se borran por la interfaz en el flujo normal y, como red de seguridad, por API en
+ * `afterEach`. No se toca ningún otro dato.
  */
 import { test, expect } from './fixtures.mjs';
 import { filtrarPorBuscador } from './helpers/timon.mjs';
@@ -348,29 +348,21 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
 
         await expect(filaTrimestral).toBeVisible({ timeout: 20_000 });
 
-        // ¿Hay algún recibo bimestral con el que contrastar la selección?
+        // F-30 se demuestra siempre con un recibo bimestral propio: no depende de que el año tenga
+        // bimestrales reales. Se filtra por su concepto para que la paginación de la tarjeta no influya.
+        estado.bimestral = await conceptoUnico('e2e_bimestral');
+        expect(estado.bimestral).toMatch(PATRON_BIMESTRAL);
+
+        await crearRecibo(page, { ...estado, concepto: estado.bimestral, periodicidad: 'bimestral' });
+        await recargarRecibos(page);
+
+        await filtrarPorBuscador(tablaTrimestral, estado.trimestral);
+        filaTrimestral = filasConBorrado(tablaTrimestral).filter({ hasText: estado.trimestral }).first();
+        await expect(filaTrimestral).toBeVisible({ timeout: 20_000 });
+
         await activarMultiseleccion(page, 'Bimestrales');
-
-        let filaBimestral = filasConBorrado(tarjeta(page, 'Bimestrales')).first();
-        const hayBimestrales = (await filaBimestral.count()) > 0;
-
-        if (!hayBimestrales) {
-            // F-30: sin una fila bimestral no se puede demostrar la independencia. Se crea una
-            // de apoyo con el patrón exacto y se borra también al terminar.
-            estado.bimestral = await conceptoUnico('e2e_bimestral');
-            expect(estado.bimestral).toMatch(PATRON_BIMESTRAL);
-
-            await crearRecibo(page, { ...estado, concepto: estado.bimestral, periodicidad: 'bimestral' });
-            await recargarRecibos(page);
-
-            filaTrimestral = filasConBorrado(tarjeta(page, 'Trimestrales')).filter({ hasText: estado.trimestral }).first();
-            await expect(filaTrimestral).toBeVisible({ timeout: 20_000 });
-
-            await activarMultiseleccion(page, 'Bimestrales');
-            filaBimestral = filasConBorrado(tarjeta(page, 'Bimestrales')).filter({ hasText: estado.bimestral }).first();
-        }
-
-        await expect(filaBimestral, 'F-30 no se puede demostrar sin una fila bimestral').toBeVisible({ timeout: 20_000 });
+        const filaBimestral = filasConBorrado(tarjeta(page, 'Bimestrales')).filter({ hasText: estado.bimestral }).first();
+        await expect(filaBimestral, 'el recibo bimestral de apoyo no aparece en su tarjeta').toBeVisible({ timeout: 20_000 });
 
         // F-30: la columna de selección se activa desde el menú de la tarjeta
         await activarMultiseleccion(page, 'Trimestrales');
@@ -420,6 +412,7 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
 
         // El recibo bimestral de apoyo se borra también en el flujo normal
         if (estado.bimestral) {
+            await filtrarPorBuscador(tarjeta(page, 'Bimestrales'), estado.bimestral);
             const filaBimestralPropia = filasConBorrado(tarjeta(page, 'Bimestrales')).filter({ hasText: estado.bimestral }).first();
 
             await expect(filaBimestralPropia).toBeVisible({ timeout: 20_000 });

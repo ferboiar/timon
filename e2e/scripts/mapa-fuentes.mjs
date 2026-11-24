@@ -85,7 +85,7 @@ export const MAPA_FUENTES = {
         'backend/src/db/db_utilsSav.mjs',
         'backend/src/utils/catalogoErrores.mjs'
     ],
-    'tests/recibosBorrado.spec.mjs': ['src/views/pages/ListBills.vue', 'src/service/BillService.js', 'src/router/index.js', 'backend/src/routes/recibos.mjs'],
+    'tests/recibosBorrado.spec.mjs': ['src/views/pages/ListBills.vue', 'src/service/BillService.js', 'src/router/index.js', 'backend/src/routes/recibos.mjs', 'backend/src/db/db_utils.mjs'],
     'tests/recibosTrimestrales.spec.mjs': ['src/views/pages/ListBills.vue', 'src/service/BillService.js', 'src/router/index.js', 'backend/src/routes/recibos.mjs', 'backend/src/db/db_utils.mjs'],
     'tests/autorizacion.spec.mjs': [
         'src/views/pages/ListBills.vue',
