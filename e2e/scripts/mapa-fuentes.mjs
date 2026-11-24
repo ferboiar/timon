@@ -97,6 +97,24 @@ export const MAPA_FUENTES = {
         'backend/src/db/db_utils.mjs',
         'backend/src/db/db_utilsSav.mjs'
     ],
+    'tests/verificacionesPendientesO10.spec.mjs': [
+        'src/views/pages/ListBills.vue',
+        'src/views/pages/Savings.vue',
+        'src/views/pages/Advances.vue',
+        'src/views/pages/ProfileSettings.vue',
+        'src/service/BillService.js',
+        'src/service/SavService.js',
+        'src/service/AdvService.js',
+        'src/service/AjustesService.js',
+        'backend/src/routes/recibos.mjs',
+        'backend/src/routes/ahorros.mjs',
+        'backend/src/routes/anticipos.mjs',
+        'backend/src/routes/ajustes.mjs',
+        'backend/src/db/db_utils.mjs',
+        'backend/src/db/db_utilsSav.mjs',
+        'backend/src/db/db_utilsAdv.mjs',
+        'backend/src/utils/generacionAnual.mjs'
+    ],
     'tests/autorizacion.spec.mjs': [
         'src/views/pages/ListBills.vue',
         'src/router/index.js',
