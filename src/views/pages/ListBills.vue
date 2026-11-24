@@ -2,6 +2,7 @@
 import { AccService } from '@/service/AccService'; // Importar el servicio de cuentas
 import { BillService } from '@/service/BillService';
 import { CatsService } from '@/service/CatsService'; // Importar CatsService
+import { usePrivacidad } from '@/composables/usePrivacidad';
 import { permitirEditarPagados, permitirFechasFueraDeAnio } from '@/composables/useAjustesSesion';
 import { anioEnCurso, cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
 import { getApiErrorMessage } from '@/utils/apiError';
@@ -34,8 +35,14 @@ const bill = ref({
             estado: 'pendiente',
             comentario: '',
             activo: 1
-        }))
+        })),
+    es_privado: 0,
+    propietario_id: null
 });
+
+// DC-75: el control de privacidad se renderiza solo para el propietario del recibo o un admin
+const { puedeCambiarPrivacidad } = usePrivacidad();
+const mostrarPrivacidad = computed(() => puedeCambiarPrivacidad(bill.value, { esAlta: !bill.value.id }));
 
 const billDialog = ref(false);
 const billDialogTB = ref(false);
@@ -465,7 +472,9 @@ function openNew(periodicity) {
                 estado: 'pendiente',
                 comentario: '',
                 activo: 1 // Inicializar activo a 1 dentro de cargo
-            }))
+            })),
+        es_privado: 0,
+        propietario_id: null
     };
     submitted.value = false;
     modoFechas.value = 'manual'; // F-18: cada alta empieza en modo manual y sin fecha inicial
@@ -527,7 +536,9 @@ async function guardarRecibo() {
             comentario: c.comentario ?? '',
             activo: c.activo ?? 1,
             importe: billDialogTB_FC.value ? (c.importe ?? null) : null
-        }))
+        })),
+        es_privado: Number(bill.value.es_privado) === 1 ? 1 : 0,
+        propietario_id: bill.value.propietario_id ?? null
     };
 
     // 3. AJUSTE DE ZONA HORARIA - Esto debe hacerse siempre que haya fechas
@@ -628,6 +639,11 @@ async function guardarRecibo() {
             }
             // Para todos los demás casos, usamos el objeto completo sin modificaciones
 
+            // DC-75: sin control renderizado (o en el diálogo de una sola fecha de cargo) la privacidad
+            // no viaja y el servidor conserva el valor guardado. `propietario_id` no viaja nunca.
+            delete billToSave.propietario_id;
+            if (!mostrarPrivacidad.value || billDialogTB_FC.value) delete billToSave.es_privado;
+
             // 8. GUARDAR Y PROCESAR RESPUESTA
             console.log('ListBills. Enviando recibo para guardar:', billToSave);
             const respuesta = await BillService.saveBill(billToSave);
@@ -711,7 +727,9 @@ function editBill(prod, openFCDialog = false) {
                     estado: 'pendiente',
                     comentario: ''
                 }))
-        ]
+        ],
+        es_privado: Number(prod.es_privado) === 1 ? 1 : 0,
+        propietario_id: prod.propietario_id ?? null
     };
     billOriginal.value = JSON.parse(JSON.stringify(bill.value));
 
@@ -869,7 +887,19 @@ function agruparPorRecibo(bills) {
     const grouped = {};
     bills.forEach((bill) => {
         if (!grouped[bill.id]) {
-            grouped[bill.id] = { id: bill.id, concepto: bill.concepto, importe: bill.importe, categoria: bill.categoria, cuenta_id: bill.cuenta_id, periodicidad: bill.periodicidad, activo: bill.activo, fecha_inicial: bill.fecha_inicial, bills: [] };
+            grouped[bill.id] = {
+                id: bill.id,
+                concepto: bill.concepto,
+                importe: bill.importe,
+                categoria: bill.categoria,
+                cuenta_id: bill.cuenta_id,
+                periodicidad: bill.periodicidad,
+                activo: bill.activo,
+                fecha_inicial: bill.fecha_inicial,
+                es_privado: bill.es_privado,
+                propietario_id: bill.propietario_id,
+                bills: []
+            };
         }
         grouped[bill.id].bills.push(bill);
     });
@@ -999,7 +1029,11 @@ const inactiveBillsCount = (periodicity) => {
                             <div class="text-center p-4">No hay recibos anuales a mostrar.</div>
                         </template>
                         <Column v-if="showSelectionColumn.anual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
-                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
+                            <template #body="anualSlotProps">
+                                <i v-if="anualSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ anualSlotProps.data.concepto }}
+                            </template>
+                        </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="anualSlotProps">
                                 {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(anualSlotProps.data.importe_cargo ?? anualSlotProps.data.importe) }}
@@ -1014,7 +1048,15 @@ const inactiveBillsCount = (periodicity) => {
                         <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                             <template #body="anualSlotProps">
                                 <i
-                                    :class="anualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : anualSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : anualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                    :class="
+                                        anualSlotProps.data.estado === 'cargado'
+                                            ? 'pi pi-fw pi-check-circle text-green-500'
+                                            : anualSlotProps.data.estado === 'rechazado'
+                                              ? 'pi pi-fw pi-times-circle text-red-500'
+                                              : anualSlotProps.data.estado === 'pendiente'
+                                                ? 'pi pi-fw pi-clock text-orange-500'
+                                                : ''
+                                    "
                                     v-tooltip="anualSlotProps.data.estado === 'cargado' ? 'Cargado' : anualSlotProps.data.estado === 'rechazado' ? 'Rechazado' : anualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                 />
                             </template>
@@ -1090,7 +1132,11 @@ const inactiveBillsCount = (periodicity) => {
                         </template>
                         <Column v-if="showSelectionColumn.trimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
-                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
+                            <template #body="trimestralSlotProps">
+                                <i v-if="trimestralSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ trimestralSlotProps.data.concepto }}
+                            </template>
+                        </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="trimestralSlotProps">
                                 {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(trimestralSlotProps.data.importe) }}
@@ -1141,7 +1187,15 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="trimestralSlotProps">
                                         <i
-                                            :class="trimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : trimestralSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : trimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            :class="
+                                                trimestralSlotProps.data.estado === 'cargado'
+                                                    ? 'pi pi-fw pi-check-circle text-green-500'
+                                                    : trimestralSlotProps.data.estado === 'rechazado'
+                                                      ? 'pi pi-fw pi-times-circle text-red-500'
+                                                      : trimestralSlotProps.data.estado === 'pendiente'
+                                                        ? 'pi pi-fw pi-clock text-orange-500'
+                                                        : ''
+                                            "
                                             v-tooltip="trimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : trimestralSlotProps.data.estado === 'rechazado' ? 'Rechazado' : trimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
@@ -1222,7 +1276,11 @@ const inactiveBillsCount = (periodicity) => {
                         </template>
                         <Column v-if="showSelectionColumn.bimestral" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column expander style="width: 5rem" />
-                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
+                            <template #body="bimestralSlotProps">
+                                <i v-if="bimestralSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ bimestralSlotProps.data.concepto }}
+                            </template>
+                        </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="bimestralSlotProps">
                                 {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(bimestralSlotProps.data.importe) }}
@@ -1273,7 +1331,15 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="bimestralSlotProps">
                                         <i
-                                            :class="bimestralSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : bimestralSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : bimestralSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            :class="
+                                                bimestralSlotProps.data.estado === 'cargado'
+                                                    ? 'pi pi-fw pi-check-circle text-green-500'
+                                                    : bimestralSlotProps.data.estado === 'rechazado'
+                                                      ? 'pi pi-fw pi-times-circle text-red-500'
+                                                      : bimestralSlotProps.data.estado === 'pendiente'
+                                                        ? 'pi pi-fw pi-clock text-orange-500'
+                                                        : ''
+                                            "
                                             v-tooltip="bimestralSlotProps.data.estado === 'cargado' ? 'Cargado' : bimestralSlotProps.data.estado === 'rechazado' ? 'Rechazado' : bimestralSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
@@ -1355,7 +1421,7 @@ const inactiveBillsCount = (periodicity) => {
                         <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
                             <template #body="mensualSlotProps">
-                                {{ mensualSlotProps.data.concepto }}
+                                <i v-if="mensualSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ mensualSlotProps.data.concepto }}
                                 <Tag v-if="mensualSlotProps.data.bills.some((b) => b.atrasado)" value="Atrasado" severity="warn" style="font-size: calc(0.875rem - 1pt)" class="ml-2" v-tooltip="'Tiene cargos pendientes de años anteriores'" />
                             </template>
                         </Column>
@@ -1408,7 +1474,15 @@ const inactiveBillsCount = (periodicity) => {
                                 <Column field="estado" header="Estado" sortable style="min-width: 2rem">
                                     <template #body="mensualSlotProps">
                                         <i
-                                            :class="mensualSlotProps.data.estado === 'cargado' ? 'pi pi-fw pi-check-circle text-green-500' : mensualSlotProps.data.estado === 'rechazado' ? 'pi pi-fw pi-times-circle text-red-500' : mensualSlotProps.data.estado === 'pendiente' ? 'pi pi-fw pi-clock text-orange-500' : ''"
+                                            :class="
+                                                mensualSlotProps.data.estado === 'cargado'
+                                                    ? 'pi pi-fw pi-check-circle text-green-500'
+                                                    : mensualSlotProps.data.estado === 'rechazado'
+                                                      ? 'pi pi-fw pi-times-circle text-red-500'
+                                                      : mensualSlotProps.data.estado === 'pendiente'
+                                                        ? 'pi pi-fw pi-clock text-orange-500'
+                                                        : ''
+                                            "
                                             v-tooltip="mensualSlotProps.data.estado === 'cargado' ? 'Cargado' : mensualSlotProps.data.estado === 'rechazado' ? 'Rechazado' : mensualSlotProps.data.estado === 'pendiente' ? 'Pendiente' : ''"
                                         />
                                     </template>
@@ -1469,7 +1543,11 @@ const inactiveBillsCount = (periodicity) => {
                         <template #empty>
                             <div class="text-center p-4">No hay recibos inactivos a mostrar.</div>
                         </template>
-                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem"></Column>
+                        <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
+                            <template #body="inactiveSlotProps">
+                                <i v-if="inactiveSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ inactiveSlotProps.data.concepto }}
+                            </template>
+                        </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
                             <template #body="inactiveSlotProps">
                                 {{ new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(inactiveSlotProps.data.importe) }}
@@ -1500,13 +1578,6 @@ const inactiveBillsCount = (periodicity) => {
                     <div class="col-span-5">
                         <div class="flex justify-between items-center mb-3">
                             <label for="cuenta" class="font-bold">Cuenta</label>
-                            <ToggleSwitch
-                                id="activo"
-                                :modelValue="(bill.cargo[0].activo || 0) === 1"
-                                @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
-                                :binary="true"
-                                v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
-                            />
                         </div>
                         <Select id="cuenta" v-model="bill.cuenta_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
                         <small v-if="submitted && !bill.cuenta_id" class="text-red-500">La cuenta es obligatoria.</small>
@@ -1555,6 +1626,19 @@ const inactiveBillsCount = (periodicity) => {
                         <Select id="periodicidad" v-model="bill.periodicidad" :options="periodicidad" optionValue="value" optionLabel="label" fluid />
                     </div>
                 </div>
+
+                <div class="flex items-center gap-3">
+                    <ToggleSwitch
+                        id="activo"
+                        :modelValue="(bill.cargo[0].activo || 0) === 1"
+                        @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
+                        :binary="true"
+                        v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
+                    />
+                    <label for="activo" class="font-bold">{{ (bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo' }}</label>
+                </div>
+
+                <PrivacidadToggle v-if="mostrarPrivacidad" v-model="bill.es_privado" input-id="es_privado" modulo="recibos" />
 
                 <div v-if="modoFechas === 'manual'" class="grid grid-cols-12 gap-2">
                     <div v-if="showFields.fechaCargo" class="col-span-4">
@@ -1707,13 +1791,6 @@ const inactiveBillsCount = (periodicity) => {
                     <div class="col-span-5">
                         <div class="flex justify-between items-center mb-3">
                             <label for="cuenta" class="font-bold">Cuenta</label>
-                            <ToggleSwitch
-                                id="activo"
-                                :modelValue="(bill.cargo[0].activo || 0) === 1"
-                                @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
-                                :binary="true"
-                                v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
-                            />
                         </div>
                         <Select id="cuenta" v-model="bill.cuenta_id" :options="cuentas" optionValue="value" optionLabel="label" fluid />
                         <small v-if="submitted && !bill.cuenta_id" class="text-red-500">La cuenta es obligatoria.</small>
@@ -1758,6 +1835,19 @@ const inactiveBillsCount = (periodicity) => {
                         <Select id="periodicidad" v-model="bill.periodicidad" :options="periodicidad" optionValue="value" optionLabel="label" fluid />
                     </div>
                 </div>
+
+                <div class="flex items-center gap-3">
+                    <ToggleSwitch
+                        id="activo"
+                        :modelValue="(bill.cargo[0].activo || 0) === 1"
+                        @update:modelValue="(value) => (bill.cargo[0].activo = value ? 1 : 0)"
+                        :binary="true"
+                        v-tooltip="(bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo'"
+                    />
+                    <label for="activo" class="font-bold">{{ (bill.cargo[0].activo || 0) === 1 ? 'Recibo activo' : 'Recibo inactivo' }}</label>
+                </div>
+
+                <PrivacidadToggle v-if="mostrarPrivacidad" v-model="bill.es_privado" input-id="es_privado_tb" modulo="recibos" />
             </div>
 
             <template #footer>

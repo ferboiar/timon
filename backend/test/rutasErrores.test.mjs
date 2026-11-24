@@ -174,3 +174,37 @@ describe('mensajes visibles (F-48)', () => {
         assert.equal(texto.includes("error.message.includes('username_UNIQUE')"), false, 'sigue clasificando por subcadena');
     });
 });
+
+describe('DC-75: guarda estática de la regla de privacidad', () => {
+    test('las tres rutas leen es_privado con la utilidad común y aplican asegurarCambioPrivacidad', () => {
+        for (const nombre of ['recibos', 'anticipos', 'ahorros']) {
+            const texto = leerRuta(nombre);
+
+            assert.equal(texto.includes('leerEsPrivado'), true, `${nombre}.mjs no usa leerEsPrivado`);
+            assert.equal(texto.includes('asegurarCambioPrivacidad'), true, `${nombre}.mjs no aplica asegurarCambioPrivacidad`);
+            assert.equal(texto.includes('privacidadParaGuardar'), true, `${nombre}.mjs no calcula el valor efectivo (DC-75)`);
+            assert.equal(texto.includes('es_privado debe ser 0 o 1.'), false, `${nombre}.mjs conserva la validación duplicada`);
+        }
+    });
+
+    test('la regla vive en autorizacion.mjs y se traduce a error de negocio en propiedad.mjs', () => {
+        const regla = leer('backend/src/utils/autorizacion.mjs');
+        assert.equal(regla.includes('export function puedeCambiarPrivacidad'), true);
+
+        const guarda = leer('backend/src/utils/propiedad.mjs');
+        assert.equal(guarda.includes('export function asegurarCambioPrivacidad'), true);
+        assert.equal(guarda.includes('PRIVACIDAD_NO_PERMITIDA'), true);
+        assert.equal(guarda.includes('403'), true);
+    });
+
+    test('la cascada anual usa un CTE recursivo, bloquea en orden y relee con FOR UPDATE', () => {
+        const texto = leer('backend/src/db/db_utils.mjs');
+
+        assert.equal(texto.includes('async function bloquearCadenaDeRecibos'), true);
+        assert.equal(texto.includes('WITH RECURSIVE anteriores'), true);
+        assert.equal(texto.includes('posteriores (id, recibo_origen_id)'), true);
+        assert.equal(/ORDER BY id FOR UPDATE/.test(texto), true, 'no bloquea en orden ascendente de id');
+        assert.equal(texto.includes('SELECT es_privado, propietario_id FROM recibos WHERE id = ? FOR UPDATE'), true, 'no relee la privacidad con bloqueo');
+        assert.equal(texto.includes('async function aplicarPrivacidadEnCadena'), true);
+    });
+});

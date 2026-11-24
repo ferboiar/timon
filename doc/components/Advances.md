@@ -52,6 +52,16 @@ U-11: `showInactive` alterna entre ver solo los anticipos con `estado = 'activo'
 
 `exportCSV` genera `anticipos.csv` con la utilidad común ([utils/csv](../utils/csv.md)): BOM UTF-8, separador `;`, coma decimal, escape RFC 4180 (entrecomilla solo lo que lo necesita, antes entrecomillaba todos los campos) y neutralización de fórmulas (F-19). No incluye filas de pagos.
 
+## Privacidad del anticipo (DC-75, F-49)
+
+El diálogo de anticipo muestra el control [PrivacidadToggle](./PrivacidadToggle.md) después de la fila
+de periodicidad y estado. Solo lo ven el propietario del anticipo y un administrador; un `user` con un
+anticipo ajeno y un `reader` no lo ven ([usePrivacidad](../composables/usePrivacidad.md)). Cuando no se
+renderiza, `es_privado` no viaja en el payload y el servidor conserva el valor; `propietario_id` no se
+envía nunca. El servidor responde 403 `PRIVACIDAD_NO_PERMITIDA` si un no propietario intenta cambiarla.
+El indicador es un `pi-lock` delante del concepto, con un tooltip que recuerda que el resto de usuarios,
+salvo los administradores, deja de verlo en su lista. Los pagos heredan la visibilidad del anticipo.
+
 ## Vocabulario de interfaz (DC-72)
 
 Los pies de diálogo usan «Cancelar»/«Guardar» y «No»/«Sí», el título de confirmación es «Confirmar» y los avisos resumen con «Éxito», «Aviso» o «Error». Las etiquetas de importes no cambian: «Importe» y «Pendiente» en la tabla (DC-38) y «Pago sugerido» en el formulario.

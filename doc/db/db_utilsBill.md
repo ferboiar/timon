@@ -27,7 +27,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | `categoria_id` | INT | Referencia a la categoría asociada |
 | `cuenta_id` | INT | ID de la cuenta bancaria asociada al recibo |
 | `propietario_id` | INT | ID del usuario propietario del recibo |
-| `es_privado` | TINYINT | 1 = solo lo ven su propietario y el admin; 0 = visible según permisos. La ruta de listado filtra con `filtrarVisibles` (S-01, DC-48) |
+| `es_privado` | TINYINT | 1 = solo lo ven su propietario y el admin; 0 = visible según permisos. La ruta de listado filtra con `filtrarVisibles` (S-01, DC-48). `pushRecibo` solo lo escribe cuando la ruta le pasa un valor: con `null` conserva el guardado (`COALESCE`), y al cambiarlo lo aplica a todos los años de la cadena `recibo_origen_id` del mismo propietario (DC-75) |
 | `fecha_inicial` | DATE | Fecha desde la que se generan las fechas en modo automático; en modo manual se guarda la primera fecha de cargo. En un recibo creado por la migración 0003 o por el evento anual es la primera fecha de la secuencia en su año (DC-16, DC-23) |
 | `recibo_origen_id` | INT | Recibo del año anterior del que procede; único, así que cada recibo tiene como mucho un sucesor (DC-14). `deleteRecibo` impide borrar un recibo con sucesor y lo usa para marcar `replicar = 0` en su origen |
 | `replicar` | TINYINT | 1 por defecto; con 0 no se crea el recibo del año siguiente (DC-17). `deleteRecibo` lo pone a 0 en el origen del recibo que borra (DC-18) |
@@ -170,6 +170,7 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 
 - `getRecibos` no filtra en SQL; la ruta aplica `filtrarVisibles(req.usuario, filas, 'recibos')` antes de responder
 - `es_privado = 1` solo llega a su propietario y al admin
+- El valor de `es_privado` solo se escribe si la ruta lo envía: `pushRecibo` decide con la relectura `FOR UPDATE` y, cuando cambia, recorre la cadena en los dos sentidos y actualiza los eslabones del mismo propietario (DC-75)
 - Un registro no visible tampoco se edita ni se borra (403)
 
 ## Validaciones y Manejo de Errores

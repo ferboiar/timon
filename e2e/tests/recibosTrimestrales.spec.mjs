@@ -28,6 +28,7 @@
  * ningún otro dato.
  */
 import { test, expect } from './fixtures.mjs';
+import { filtrarPorBuscador } from './helpers/timon.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
 import { urlDe } from './helpers/timon.mjs';
 
@@ -75,6 +76,19 @@ function tarjeta(page, titulo) {
 /** Filas de datos de una tarjeta (las únicas que tienen papelera). */
 function filasConBorrado(contenedor) {
     return contenedor.locator('table tbody tr:has(button .pi-trash)');
+}
+
+/**
+ * Fila del recibo en la tarjeta «Anuales», filtrando antes por el concepto.
+ *
+ * La tarjeta pagina de 8 en 8 y ordena por fecha, así que un recibo con fecha de diciembre puede
+ * caer en la segunda página y no estar en el DOM. Se filtra siempre, porque cada recarga de la
+ * página vuelve a dejar el buscador vacío.
+ */
+async function filaAnual(page, concepto) {
+    await filtrarPorBuscador(tarjeta(page, 'Anuales'), concepto);
+
+    return filasConBorrado(tarjeta(page, 'Anuales')).filter({ hasText: concepto }).first();
 }
 
 /** Activa la columna de selección desde el menú de la tarjeta. */
@@ -430,7 +444,9 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
         await crearRecibo(page, { ...estado, concepto: estado.rechazado, periodicidad: 'anual' });
         await recargarRecibos(page);
 
-        const fila = filasConBorrado(tarjeta(page, 'Anuales')).filter({ hasText: estado.rechazado }).first();
+        // La tarjeta «Anuales» pagina de 8 en 8 y ordena por fecha: el recibo recién creado puede
+        // caer en la segunda página, así que se filtra por el concepto antes de localizar la fila.
+        const fila = await filaAnual(page, estado.rechazado);
 
         await expect(fila).toBeVisible({ timeout: 20_000 });
 
@@ -473,7 +489,7 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
         // La tabla lo refleja: aspa roja y tooltip «Rechazado» (DC-01)
         await recargarRecibos(page);
 
-        const filaRechazada = filasConBorrado(tarjeta(page, 'Anuales')).filter({ hasText: estado.rechazado }).first();
+        const filaRechazada = await filaAnual(page, estado.rechazado);
         await expect(filaRechazada).toBeVisible({ timeout: 20_000 });
         await comprobarIconoEstado(page, filaRechazada, 'pi-times-circle', 'Rechazado');
 
@@ -496,7 +512,7 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
         // Y la tabla vuelve al reloj con tooltip «Pendiente»
         await recargarRecibos(page);
 
-        const filaPendiente = filasConBorrado(tarjeta(page, 'Anuales')).filter({ hasText: estado.rechazado }).first();
+        const filaPendiente = await filaAnual(page, estado.rechazado);
         await expect(filaPendiente).toBeVisible({ timeout: 20_000 });
         await comprobarIconoEstado(page, filaPendiente, 'pi-clock', 'Pendiente');
     });

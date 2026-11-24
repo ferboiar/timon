@@ -55,6 +55,7 @@ Esta ruta permite crear un nuevo recibo o actualizar uno existente si se proporc
 | `fecha_inicial` | String | Fecha desde la que se generan las fechas de cargo en modo automático (YYYY-MM-DD). Obligatoria con `modoFechas` = `auto` | No |
 | `modoFechas` | String | `manual` o `auto`. Con `auto` el servidor genera las fechas; sin este campo solo las genera si no llega `cargo` | No |
 | `permitirFueraDeAnio` | Boolean | `true` para no rechazar fechas fuera del año del recibo (DC-14). Solo se respeta si quien guarda es administrador; de otro usuario se ignora y se deja una traza (DC-29) | No |
+| `es_privado` | Number | `0` compartido, `1` privado (DC-48, DC-75). **Omitido**: se conserva el valor guardado (`COALESCE`). Un valor distinto del actual solo lo escribe el propietario del recibo o un administrador: si no, 403 con `codigo: PRIVACIDAD_NO_PERMITIDA`. En Recibos el valor se aplica a todos los años del mismo recibo (cadena `recibo_origen_id`) | No |
 
 Cada elemento del array `cargo` debe contener:
 
@@ -118,6 +119,13 @@ await pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propieta
 ### Autorización
 
 Las rutas usan `autorizar('recibos', …)` con la matriz DC-48. `GET /` filtra con `filtrarVisibles`; editar y borrar exigen visibilidad y permiso (`propiedad.mjs`). `permitirPagados=1` (`forzar`) y `permitirFueraDeAnio` solo se admiten si el rol vigente del usuario es `admin` (`req.usuario`, no el rol congelado en el JWT; F-51).
+
+La privacidad tiene su propia comprobación (DC-75): `asegurarCambioPrivacidad` devuelve 403
+`PRIVACIDAD_NO_PERMITIDA` si llega un valor distinto del actual de quien no puede cambiarla, y
+`privacidadParaGuardar` decide con el rol y `propietario_id` qué valor se escribe: `null` si el usuario
+no puede cambiarla, para que la privacidad de un registro ajeno no se escriba ni siquiera cuando el
+valor pedido coincide con el leído. `pushRecibo` bloquea entonces la cadena completa de años, relee el
+recibo con `FOR UPDATE` y cascada el valor a los eslabones del mismo propietario.
 
 ### Validación de Cuenta Bancaria
 

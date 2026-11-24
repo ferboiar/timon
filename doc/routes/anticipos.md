@@ -105,9 +105,14 @@ Recibe `anticipoId` (obligatorio, 400 si falta). Si el pago sugerido no es váli
   "descripcion": "Reparación del motor del coche",
   "estado": "activo",
   "cuenta_origen_id": 1,
-  "periodicidad": "mensual"
+  "periodicidad": "mensual",
+  "es_privado": 0
 }
 ```
+
+`es_privado` (DC-75): `0` compartido, `1` privado. Omitido conserva el valor guardado (`COALESCE`). Un
+valor distinto del actual solo lo escribe el propietario del anticipo o un administrador; si no, 403 con
+`codigo: PRIVACIDAD_NO_PERMITIDA`. Los pagos heredan la visibilidad del anticipo.
 
 ## Trazas en el log
 
@@ -149,3 +154,5 @@ Las escrituras de anticipos y pagos actualizan anticipos.modificado_por y update
 ## Autorización implementada
 
 Las rutas usan `autorizar('anticipos', …)` con la matriz DC-48: `reader` solo lee; `limited_user` crea y edita lo propio, pero no borra; `user` edita y borra lo visible con escritura; `admin` todo. Los listados filtran por visibilidad y `GET /:anticipoId/pagos` comprueba además la visibilidad del anticipo. En `POST /pagos`, si llega `id`, el padre se resuelve del propio pago y debe coincidir con `anticipo_id`; si no, 400 `PADRE_INCORRECTO` (S-18).
+
+El cambio de `es_privado` sigue DC-75: `asegurarCambioPrivacidad` responde 403 `PRIVACIDAD_NO_PERMITIDA` si llega un valor distinto del actual de quien no puede cambiarla, y `privacidadParaGuardar` deja el valor en `null` cuando el usuario no puede cambiarla, así que no se escribe la privacidad de un anticipo ajeno ni siquiera con el valor igual.

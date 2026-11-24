@@ -23,9 +23,9 @@
 import { deleteAdvances, getAdvances, getPagos, getPeriodicidades, handlePaymentDeletion, pushAdvance, pushPago, recalculatePaymentPlan, sustituirPago } from '#backend/db/db_utilsAdv.mjs';
 import { autorizar } from '#backend/middleware/auth.mjs';
 import { filtrarVisibles, puedeVerRegistro } from '../utils/autorizacion.mjs';
-import { asegurarBorrado, asegurarEdicion, registroDeAnticipo, registroDePago } from '../utils/propiedad.mjs';
+import { asegurarBorrado, asegurarCambioPrivacidad, asegurarEdicion, privacidadParaGuardar, registroDeAnticipo, registroDePago } from '../utils/propiedad.mjs';
 import { ErrorDeNegocio, responderError } from '#backend/utils/errorDeNegocio.mjs';
-import { leerBooleano, leerEnteroPositivo, leerListaEnterosPositivos } from '#backend/utils/parametros.mjs';
+import { leerBooleano, leerEnteroPositivo, leerEsPrivado, leerListaEnterosPositivos } from '#backend/utils/parametros.mjs';
 import { Router } from 'express';
 
 const router = Router();
@@ -44,14 +44,19 @@ router.get('/', autorizar('anticipos', 'lectura'), async (req, res) => {
 router.post('/', autorizar('anticipos', 'escritura'), async (req, res) => {
     const { id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, es_privado } = req.body;
     try {
-        if (es_privado !== undefined && ![0, 1, '0', '1'].includes(es_privado)) {
-            return res.status(400).json({ error: 'es_privado debe ser 0 o 1.' });
-        }
+        // DC-75: 0/1, o null si el campo no viaja (entonces se conserva el valor guardado)
+        const privacidad = leerEsPrivado(es_privado);
+
+        // DC-75: en el alta el creador es el propietario y el valor va tal cual. Al editar, solo
+        // escribe la privacidad quien puede cambiarla (rol y propietario_id, no el valor leído).
+        let privacidadEfectiva = privacidad;
         if (id) {
-            asegurarEdicion(req.usuario, await registroDeAnticipo(id), 'anticipos');
+            const registro = asegurarEdicion(req.usuario, await registroDeAnticipo(id), 'anticipos');
+            asegurarCambioPrivacidad(req.usuario, registro, 'anticipos', privacidad);
+            privacidadEfectiva = privacidadParaGuardar(req.usuario, registro, 'anticipos', privacidad);
         }
 
-        await pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.usuario.id, es_privado, req.usuario.id);
+        await pushAdvance(id, concepto, importe_original, pago_sugerido, fecha_inicio, fecha_fin_prevista, descripcion, estado, cuenta_origen_id, periodicidad, req.usuario.id, privacidadEfectiva, req.usuario.id);
         console.log('anticipos - guardado: anticipo ' + (id || 'nuevo'));
         res.status(201).json({ message: 'Anticipo insertado o actualizado correctamente' });
     } catch (error) {

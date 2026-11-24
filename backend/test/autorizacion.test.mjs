@@ -1,4 +1,5 @@
-// S-01, S-12 y DC-48: matriz de autorización, visibilidad y propiedad. No necesita base de datos.
+// S-01, S-12, DC-48 y DC-75: matriz de autorización, visibilidad, propiedad y privacidad editable.
+// No necesita base de datos: `propiedad.mjs` importa el pool pero no lo crea hasta la primera consulta.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
@@ -9,9 +10,11 @@ import {
     filtrarVisibles,
     puedeAcceder,
     puedeBorrarRegistro,
+    puedeCambiarPrivacidad,
     puedeEditarRegistro,
     puedeVerRegistro
 } from '#backend/utils/autorizacion.mjs';
+import { asegurarCambioPrivacidad, privacidadParaGuardar, privacidadSolicitada } from '#backend/utils/propiedad.mjs';
 
 /** Usuario con todos los permisos en el valor indicado. */
 function usuario(rol, permiso = 'escritura') {
@@ -139,4 +142,93 @@ test('sin usuario no se autoriza nada', () => {
     assert.equal(puedeVerRegistro(null, PUBLICO, 'recibos'), false);
     assert.equal(puedeEditarRegistro(null, PUBLICO, 'recibos'), false);
     assert.equal(puedeBorrarRegistro(null, PUBLICO, 'recibos'), false);
+});
+
+test('DC-75: cambiar la privacidad es del propietario con escritura o del admin; un reader nunca', () => {
+    // admin: cualquier registro, propio o ajeno
+    assert.equal(puedeCambiarPrivacidad(usuario('admin', 'no'), PUBLICO, 'recibos'), true);
+    assert.equal(puedeCambiarPrivacidad(usuario('admin', 'no'), PRIVADO_AJENO, 'ahorros'), true);
+
+    // user: solo lo suyo, y solo con escritura
+    assert.equal(puedeCambiarPrivacidad(usuario('user', 'escritura'), PRIVADO_PROPIO, 'recibos'), true);
+    assert.equal(puedeCambiarPrivacidad(usuario('user', 'escritura'), PUBLICO, 'recibos'), false);
+    assert.equal(puedeCambiarPrivacidad(usuario('user', 'escritura'), PRIVADO_AJENO, 'recibos'), false);
+    assert.equal(puedeCambiarPrivacidad(usuario('user', 'lectura'), PRIVADO_PROPIO, 'recibos'), false);
+    assert.equal(puedeCambiarPrivacidad(usuario('user', 'no'), PRIVADO_PROPIO, 'recibos'), false);
+
+    // limited_user: igual que user en esta regla (no borra, pero edita lo suyo)
+    assert.equal(puedeCambiarPrivacidad(usuario('limited_user', 'escritura'), PRIVADO_PROPIO, 'anticipos'), true);
+    assert.equal(puedeCambiarPrivacidad(usuario('limited_user', 'escritura'), PUBLICO, 'anticipos'), false);
+
+    // reader: nunca, ni siquiera lo propio
+    assert.equal(puedeCambiarPrivacidad(usuario('reader', 'escritura'), PRIVADO_PROPIO, 'recibos'), false);
+
+    // cuentas y categorías quedan fuera (DC-49)
+    assert.equal(puedeCambiarPrivacidad(usuario('user', 'escritura'), PRIVADO_PROPIO, 'cuentas'), false);
+    assert.equal(puedeCambiarPrivacidad(usuario('user', 'escritura'), PRIVADO_PROPIO, 'categorias'), false);
+
+    // sin usuario o sin registro
+    assert.equal(puedeCambiarPrivacidad(null, PUBLICO, 'recibos'), false);
+    assert.equal(puedeCambiarPrivacidad(usuario('admin'), null, 'recibos'), false);
+});
+
+test('DC-75: el valor omitido y el valor igual se toleran aunque el usuario no sea el propietario', () => {
+    const ajeno = { id: 10, propietario_id: 99, es_privado: 0 };
+    const otroUser = usuario('user', 'escritura'); // id 7, no es el propietario
+
+    // omitido: no hay cambio que autorizar (COALESCE conserva)
+    assert.equal(asegurarCambioPrivacidad(otroUser, ajeno, 'recibos', undefined), ajeno);
+    assert.equal(asegurarCambioPrivacidad(otroUser, ajeno, 'recibos', null), ajeno);
+
+    // igual al actual: se tolera, para que editar otro campo de un registro ajeno siga funcionando
+    assert.equal(asegurarCambioPrivacidad(otroUser, ajeno, 'recibos', 0), ajeno);
+    assert.equal(asegurarCambioPrivacidad(otroUser, ajeno, 'recibos', '0'), ajeno);
+
+    // distinto: 403 con código de negocio
+    assert.throws(() => asegurarCambioPrivacidad(otroUser, ajeno, 'recibos', 1), {
+        status: 403,
+        codigo: 'PRIVACIDAD_NO_PERMITIDA'
+    });
+
+    // el propietario y el admin sí pueden cambiarlo
+    assert.equal(asegurarCambioPrivacidad(usuario('user', 'escritura'), PRIVADO_PROPIO, 'recibos', 0), PRIVADO_PROPIO);
+    assert.equal(asegurarCambioPrivacidad(usuario('admin', 'no'), ajeno, 'recibos', 1), ajeno);
+
+    // un reader no puede cambiarlo ni en lo suyo
+    assert.throws(() => asegurarCambioPrivacidad(usuario('reader', 'escritura'), PRIVADO_PROPIO, 'recibos', 0), {
+        status: 403,
+        codigo: 'PRIVACIDAD_NO_PERMITIDA'
+    });
+});
+
+test('DC-75: un no propietario no escribe la privacidad aunque el valor pedido sea el actual', () => {
+    const ajeno = { id: 10, propietario_id: 99, es_privado: 0 };
+    const otroUser = usuario('user', 'escritura'); // id 7, no es el propietario
+
+    // `asegurarCambioPrivacidad` tolera el valor igual, pero el valor efectivo es null:
+    // la escritura no depende del valor leído, sino del rol y del propietario (estables).
+    assert.equal(asegurarCambioPrivacidad(otroUser, ajeno, 'recibos', 0), ajeno);
+    assert.equal(privacidadParaGuardar(otroUser, ajeno, 'recibos', 0), null);
+    assert.equal(privacidadParaGuardar(usuario('reader', 'escritura'), PRIVADO_PROPIO, 'recibos', 1), null);
+
+    // El propietario con escritura y el admin sí escriben el valor
+    assert.equal(privacidadParaGuardar(usuario('user', 'escritura'), PRIVADO_PROPIO, 'recibos', 0), 0);
+    assert.equal(privacidadParaGuardar(usuario('limited_user', 'escritura'), PRIVADO_PROPIO, 'ahorros', 1), 1);
+    assert.equal(privacidadParaGuardar(usuario('admin', 'no'), ajeno, 'recibos', 1), 1);
+
+    // Omitido sigue siendo null, y un registro inexistente no escribe nada
+    assert.equal(privacidadParaGuardar(usuario('user', 'escritura'), PRIVADO_PROPIO, 'recibos', null), null);
+    assert.equal(privacidadParaGuardar(otroUser, null, 'recibos', 1), null);
+});
+
+test('DC-75: normalización de es_privado en la ruta y en los push*', () => {
+    assert.equal(privacidadSolicitada(undefined), null);
+    assert.equal(privacidadSolicitada(null), null);
+    assert.equal(privacidadSolicitada(''), null);
+    assert.equal(privacidadSolicitada(1), 1);
+    assert.equal(privacidadSolicitada('1'), 1);
+    assert.equal(privacidadSolicitada(0), 0);
+    assert.equal(privacidadSolicitada('0'), 0);
+    // Un valor fuera de 0/1 no llega aquí: `leerEsPrivado` responde 400 antes.
+    assert.equal(privacidadSolicitada('2'), 0);
 });

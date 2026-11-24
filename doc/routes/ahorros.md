@@ -46,6 +46,7 @@ Esta ruta permite crear un nuevo ahorro o actualizar uno existente si se proporc
 | `periodicidad` | String | Frecuencia de ahorro (diaria, mensual, etc.) | No |
 | `importe_periodico` | Number | Cantidad sugerida a ahorrar por periodo | Sí |
 | `activo` | Number | Estado del ahorro (1=activo, 0=inactivo) | No |
+| `es_privado` | Number | `0` compartido, `1` privado (DC-75). Omitido conserva el valor guardado (`COALESCE`). Un valor distinto del actual solo lo escribe el propietario del ahorro o un administrador; si no, 403 con `codigo: PRIVACIDAD_NO_PERMITIDA`. Los movimientos heredan la visibilidad del ahorro | No |
 
 #### Propietario y valor de `ahorrado`
 
@@ -100,3 +101,5 @@ El borrado de ahorros valida la lista savings antes de la base y responde 400 si
 ## Autorización implementada
 
 Las rutas usan `autorizar('ahorros', …)` con la matriz DC-48: `reader` solo lee; `limited_user` crea y edita lo propio, pero no borra; `user` edita y borra lo visible con escritura; `admin` todo. Los listados filtran por visibilidad y `GET /:ahorroId/movimientos` comprueba además la visibilidad del ahorro. En `POST /movimientos`, si llega `id`, el padre se resuelve del propio movimiento y debe coincidir con `ahorro_id`; si no, 400 `PADRE_INCORRECTO` (S-18).
+
+El cambio de `es_privado` sigue DC-75: `asegurarCambioPrivacidad` responde 403 `PRIVACIDAD_NO_PERMITIDA` si llega un valor distinto del actual de quien no puede cambiarla, y `privacidadParaGuardar` deja el valor en `null` cuando el usuario no puede cambiarla, así que no se escribe la privacidad de un ahorro ajeno ni siquiera con el valor igual.

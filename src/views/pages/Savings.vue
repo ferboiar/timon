@@ -1,5 +1,6 @@
 <script setup>
 import { SavService } from '@/service/SavService';
+import { usePrivacidad } from '@/composables/usePrivacidad';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { construirCsv } from '@/utils/csv';
 import { fechaIsoDeCalendario } from '@/utils/fechasFormulario';
@@ -21,8 +22,14 @@ const saving = ref({
     fecha_objetivo: null,
     periodicidad: '',
     importe_periodico: 0,
-    activo: 1
+    activo: 1,
+    es_privado: 0,
+    propietario_id: null
 });
+
+// DC-75: el control de privacidad se renderiza solo para el propietario del registro o un admin
+const { puedeCambiarPrivacidad } = usePrivacidad();
+const mostrarPrivacidad = computed(() => puedeCambiarPrivacidad(saving.value, { esAlta: !saving.value.id }));
 
 const savingDialog = ref(false);
 
@@ -35,7 +42,8 @@ const snapshotSaving = (s) => ({
     fecha_objetivo: s.fecha_objetivo ? new Date(s.fecha_objetivo).getTime() : null,
     periodicidad: s.periodicidad || null,
     importe_periodico: Number(s.importe_periodico ?? 0),
-    activo: s.activo
+    activo: s.activo,
+    es_privado: Number(s.es_privado ?? 0)
 });
 const deleteSavingDialog = ref(false);
 const deleteSelectedSavingsDialog = ref(false);
@@ -107,7 +115,9 @@ function openNewSaving() {
         fecha_objetivo: null,
         periodicidad: '',
         importe_periodico: 0,
-        activo: 1
+        activo: 1,
+        es_privado: 0,
+        propietario_id: null
     };
     savingOriginal.value = null;
     savingDialog.value = true;
@@ -134,6 +144,10 @@ async function saveSaving() {
             periodicidad: saving.value.periodicidad || null
         };
 
+        // DC-75: sin control renderizado, la privacidad no viaja (ni 0 por defecto): el servidor conserva.
+        delete payload.propietario_id;
+        if (!mostrarPrivacidad.value) delete payload.es_privado;
+
         await SavService.saveSaving(payload);
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Ahorro guardado!', life: 5000 });
         fetchSavings();
@@ -153,7 +167,9 @@ function editSaving(sav) {
         fecha_objetivo: sav.fecha_objetivo ? new Date(sav.fecha_objetivo) : null, // Convertir fecha_objetivo a objeto Date
         periodicidad: sav.periodicidad,
         importe_periodico: sav.importe_periodico,
-        activo: sav.activo
+        activo: sav.activo,
+        es_privado: Number(sav.es_privado) === 1 ? 1 : 0,
+        propietario_id: sav.propietario_id
     };
     savingOriginal.value = snapshotSaving(saving.value);
     savingDialog.value = true;
@@ -421,7 +437,11 @@ onMounted(async () => {
                     <div class="text-center p-4">No hay ahorros a mostrar.</div>
                 </template>
                 <Column expander style="width: 5rem" />
-                <Column field="concepto" header="Concepto" sortable style="min-width: 4rem"> </Column>
+                <Column field="concepto" header="Concepto" sortable style="min-width: 4rem">
+                    <template #body="savingsSlotProps">
+                        <i v-if="savingsSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ savingsSlotProps.data.concepto }}
+                    </template>
+                </Column>
                 <Column field="descripcion" header="Descripción" sortable style="min-width: 12rem"> </Column>
                 <Column field="ahorrado" header="Ahorrado" sortable style="min-width: 4rem">
                     <template #body="savingsSlotProps">
@@ -558,6 +578,7 @@ onMounted(async () => {
                 <ToggleSwitch inputId="activo" :modelValue="saving.activo === 1" @update:modelValue="(value) => (saving.activo = value ? 1 : 0)" />
                 <label for="activo" class="font-bold">{{ saving.activo === 1 ? 'Ahorro activo' : 'Ahorro inactivo' }}</label>
             </div>
+            <PrivacidadToggle v-if="mostrarPrivacidad" v-model="saving.es_privado" input-id="es_privado" modulo="ahorros" />
         </div>
 
         <template #footer>

@@ -401,6 +401,19 @@ export async function eliminarUsuario(page, nombre) {
     return respuesta;
 }
 
+/**
+ * Filtra por el concepto la tabla de una tarjeta de Recibos usando su buscador global.
+ *
+ * Las tarjetas de Recibos paginan de 8 en 8 y ordenan por fecha, así que un recibo con fecha de
+ * diciembre puede caer en la segunda página y no estar en el DOM. El buscador de la tarjeta lo
+ * deja en la primera. `contenedor` puede ser la página (primera tarjeta) o una tarjeta concreta.
+ */
+export async function filtrarPorBuscador(contenedor, concepto) {
+    const buscador = contenedor.locator('input[placeholder="Buscar..."]').first();
+    await expect(buscador).toBeVisible({ timeout: 20_000 });
+    await buscador.fill(concepto);
+}
+
 /** Abre /pages/accounts y espera la tabla de cuentas. */
 export async function abrirCuentas(page) {
     await page.goto(urlDe('/pages/accounts'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
