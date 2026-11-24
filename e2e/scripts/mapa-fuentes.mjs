@@ -87,6 +87,16 @@ export const MAPA_FUENTES = {
     ],
     'tests/recibosBorrado.spec.mjs': ['src/views/pages/ListBills.vue', 'src/service/BillService.js', 'src/router/index.js', 'backend/src/routes/recibos.mjs', 'backend/src/db/db_utils.mjs'],
     'tests/recibosTrimestrales.spec.mjs': ['src/views/pages/ListBills.vue', 'src/service/BillService.js', 'src/router/index.js', 'backend/src/routes/recibos.mjs', 'backend/src/db/db_utils.mjs'],
+    'tests/guardadoYNormalizacion.spec.mjs': [
+        'src/views/pages/ListBills.vue',
+        'src/views/pages/Savings.vue',
+        'src/service/BillService.js',
+        'src/service/SavService.js',
+        'backend/src/routes/recibos.mjs',
+        'backend/src/routes/ahorros.mjs',
+        'backend/src/db/db_utils.mjs',
+        'backend/src/db/db_utilsSav.mjs'
+    ],
     'tests/autorizacion.spec.mjs': [
         'src/views/pages/ListBills.vue',
         'src/router/index.js',
