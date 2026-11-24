@@ -506,7 +506,7 @@ test.describe('Ahorros: guardar sin cambios y normalización (U-21)', () => {
 
         await expect(fila).toBeVisible({ timeout: 20_000 });
 
-        const textoPantalla = (await fila.locator('td').first().innerText()).trim().toLowerCase();
+        const textoPantalla = (await fila.innerText()).trim().toLowerCase();
 
         expect(textoPantalla).toContain(estado.ahorro);
     });

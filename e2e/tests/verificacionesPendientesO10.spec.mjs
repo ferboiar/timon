@@ -164,15 +164,39 @@ async function catalogos(page, api) {
     return { categoria: categorias[0].nombre, cuenta_id: cuentas[0].id };
 }
 
-/** Ids de un recibo anual por concepto y año. */
-async function idsDelRecibo(page, { api, anio, concepto }) {
+/** Ids de un recibo por concepto y año. */
+async function idsDelRecibo(page, { api, anio, concepto, periodicidad = 'anual' }) {
     const url = new URL(`${api}/api/recibos`);
-    url.searchParams.set('periodicidad', 'anual');
+    url.searchParams.set('periodicidad', periodicidad);
     url.searchParams.set('año', String(anio));
 
     const filas = await listado(page, url.toString());
 
     return [...new Set(filas.filter((fila) => fila.concepto === concepto).map((fila) => fila.id))];
+}
+
+/** Crea un recibo mensual con un cargo pagado de enero y otro pendiente de febrero. */
+async function crearReciboMensualConPagado(page, { api, anio, concepto }) {
+    const { categoria, cuenta_id } = await catalogos(page, api);
+    const cuerpo = {
+        concepto,
+        periodicidad: 'mensual',
+        importe: 10,
+        categoria,
+        cuenta_id,
+        fecha_inicial: `${anio}-01-15`,
+        modoFechas: 'manual',
+        cargo: [
+            { fecha: `${anio}-01-15`, estado: 'cargado', comentario: '', activo: 1, importe: 10 },
+            { fecha: `${anio}-02-15`, estado: 'pendiente', comentario: '', activo: 1 }
+        ]
+    };
+
+    const respuesta = await peticionApi(page, { metodo: 'POST', url: `${api}/api/recibos`, cuerpo });
+
+    if (respuesta.status !== 201) {
+        throw new Error(`POST /api/recibos (mensual) respondió ${respuesta.status}: ${respuesta.texto}`);
+    }
 }
 
 /** Crea un recibo anual con un cargo en el estado indicado (manual). */
@@ -239,12 +263,13 @@ async function limpiarPorApi(page) {
 
     if (estado.recibo) {
         const anio = Number(estado.anio ?? new Date().getFullYear());
+        const periodicidad = estado.periodicidad ?? 'anual';
 
         // El caso de U-13 crea sucesores en años posteriores: se borran del más nuevo al más antiguo
         // (un recibo con sucesor responde 409 hasta que se borra el sucesor)
         for (let ejercicio = anio + 2; ejercicio >= anio - 2; ejercicio--) {
             for (const id of await idsDelRecibo(page, { ...estado, anio: ejercicio, concepto: estado.recibo })) {
-                await peticionApi(page, { metodo: 'DELETE', url: `${estado.api}/api/recibos/${id}?periodicidad=anual&permitirPagados=1` });
+                await peticionApi(page, { metodo: 'DELETE', url: `${estado.api}/api/recibos/${id}?periodicidad=${periodicidad}&permitirPagados=1` });
             }
 
             restos += (await idsDelRecibo(page, { ...estado, anio: ejercicio, concepto: estado.recibo })).length;
@@ -300,7 +325,7 @@ test.describe('O-10 / F-16: el reintento tras un rechazo conserva el formulario'
         estado.api = await abrirAhorros(page);
         estado.ahorro = await conceptoUnico('e2e_f16_aho');
 
-        await crearAhorro(page, { ...estado });
+        await crearAhorro(page, { api: estado.api, concepto: estado.ahorro });
 
         await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 });
         await expect(page.getByRole('button', { name: 'Nuevo' })).toBeVisible();
@@ -344,7 +369,7 @@ test.describe('O-10 / F-16: el reintento tras un rechazo conserva el formulario'
             await expect(dialogo).toBeVisible();
 
             // F-16: el formulario no se mutó; la fecha sigue en el control
-            await expect(dialogo.locator('#fecha_objetivo')).toHaveValue('31/01/2027');
+            await expect(dialogo.locator('#fecha_objetivo input')).toHaveValue('31/01/2027');
 
             const exito = page.waitForResponse((r) => r.request().method() === 'POST' && /\/api\/ahorros$/.test(r.url()), { timeout: 30_000 });
 
@@ -366,7 +391,7 @@ test.describe('O-10 / F-16: el reintento tras un rechazo conserva el formulario'
         estado.api = await abrirAnticipos(page);
         estado.anticipo = await conceptoUnico('e2e_f16_ant');
 
-        await crearAnticipo(page, { ...estado });
+        await crearAnticipo(page, { api: estado.api, concepto: estado.anticipo });
 
         await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 });
         await expect(page.getByRole('button', { name: 'Nuevo' })).toBeVisible();
@@ -410,7 +435,7 @@ test.describe('O-10 / F-16: el reintento tras un rechazo conserva el formulario'
             await expect(dialogo).toBeVisible();
 
             // F-16: el formulario no se mutó; las fechas siguen en sus controles
-            await expect(dialogo.locator('#fecha_inicio')).toHaveValue('31/01/2027');
+            await expect(dialogo.locator('#fecha_inicio input')).toHaveValue('31/01/2027');
 
             const exito = page.waitForResponse((r) => r.request().method() === 'POST' && /\/api\/anticipos$/.test(r.url()), { timeout: 30_000 });
 
@@ -450,18 +475,19 @@ test.describe('O-10: borrado de un recibo con cargos pagados en pantalla', () =>
     test('el 409 del servidor se muestra y el recibo no se borra', async ({ paginaSesion: page }) => {
         const ubicacion = await abrirRecibos(page);
 
-        estado = { api: ubicacion.api, anio: ubicacion.anio, recibo: await conceptoUnico('e2e_pag_rec'), ahorro: null, anticipo: null };
+        estado = { api: ubicacion.api, anio: ubicacion.anio, recibo: await conceptoUnico('e2e_pag_rec'), ahorro: null, anticipo: null, periodicidad: 'mensual' };
 
-        await crearReciboAnual(page, { ...estado, estadoCargo: 'cargado' });
+        // Recibo mensual agrupado: su fila no lleva fecha, así que el borrado comprueba el recibo completo
+        await crearReciboMensualConPagado(page, { ...estado, concepto: estado.recibo });
 
         await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 });
         await expect(page.getByRole('button', { name: 'Nuevo' })).toBeVisible();
 
-        const tarjetaAnual = tarjeta(page, 'Anuales');
+        const tarjetaMensual = tarjeta(page, 'Mensuales');
 
-        await filtrarPorBuscador(tarjetaAnual, estado.recibo);
+        await filtrarPorBuscador(tarjetaMensual, estado.recibo);
 
-        const fila = filasConBorrado(tarjetaAnual).filter({ hasText: estado.recibo }).first();
+        const fila = filasConBorrado(tarjetaMensual).filter({ hasText: estado.recibo }).first();
 
         await expect(fila).toBeVisible({ timeout: 20_000 });
         await fila.locator('button:has(.pi-trash)').first().click();
@@ -475,9 +501,10 @@ test.describe('O-10: borrado de un recibo con cargos pagados en pantalla', () =>
         await dialogo.getByRole('button', { name: 'Sí' }).click();
 
         expect((await borrado).status()).toBe(409);
-        // La fila anual lleva la fecha de su cargo: el servidor responde con el mensaje de la fecha
-        // cerrada, no con el del recibo completo con cargos pagados
-        await expect(page.getByText(/Error al eliminar el recibo: No se puede borrar un (recibo con cargos pagados|cargo pagado de un mes anterior)/)).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByText(/Error al eliminar el recibo: No se puede borrar un recibo con cargos pagados\./)).toBeVisible({ timeout: 10_000 });
+        // Ante el error la pantalla no cierra el diálogo: se comprueba y se cancela
+        await expect(dialogo).toBeVisible();
+        await dialogo.getByRole('button', { name: 'No' }).click();
         await expect(dialogo).toBeHidden();
         await expect(fila).toBeVisible();
 
@@ -494,7 +521,7 @@ test.describe('O-10 / U-13: ejecución real desde Ajustes', () => {
         estado = { api: ubicacion.api, anio: ubicacion.anio, recibo: await conceptoUnico('e2e_gen_rec'), ahorro: null, anticipo: null };
 
         // Un recibo de hace dos años garantiza un candidato para la vista previa de hoy
-        await crearReciboAnual(page, { ...estado, fechaInicial: `${Number(estado.anio) - 2}-01-15` });
+        await crearReciboAnual(page, { ...estado, concepto: estado.recibo, fechaInicial: `${Number(estado.anio) - 2}-01-15` });
 
         try {
             await page.goto(urlDe('/settings'), { waitUntil: 'domcontentloaded', timeout: 45_000 });
