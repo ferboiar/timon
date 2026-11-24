@@ -475,7 +475,9 @@ test.describe('O-10: borrado de un recibo con cargos pagados en pantalla', () =>
         await dialogo.getByRole('button', { name: 'Sí' }).click();
 
         expect((await borrado).status()).toBe(409);
-        await expect(page.getByText(/Error al eliminar el recibo: No se puede borrar un recibo con cargos pagados\./)).toBeVisible({ timeout: 10_000 });
+        // La fila anual lleva la fecha de su cargo: el servidor responde con el mensaje de la fecha
+        // cerrada, no con el del recibo completo con cargos pagados
+        await expect(page.getByText(/Error al eliminar el recibo: No se puede borrar un (recibo con cargos pagados|cargo pagado de un mes anterior)/)).toBeVisible({ timeout: 10_000 });
         await expect(dialogo).toBeHidden();
         await expect(fila).toBeVisible();
 

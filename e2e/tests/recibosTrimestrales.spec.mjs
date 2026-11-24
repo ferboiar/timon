@@ -361,6 +361,7 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
         await expect(filaTrimestral).toBeVisible({ timeout: 20_000 });
 
         await activarMultiseleccion(page, 'Bimestrales');
+        await filtrarPorBuscador(tarjeta(page, 'Bimestrales'), estado.bimestral);
         const filaBimestral = filasConBorrado(tarjeta(page, 'Bimestrales')).filter({ hasText: estado.bimestral }).first();
         await expect(filaBimestral, 'el recibo bimestral de apoyo no aparece en su tarjeta').toBeVisible({ timeout: 20_000 });
 
