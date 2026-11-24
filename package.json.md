@@ -21,7 +21,11 @@ Estado actualizado por D-13, 2026-10-24. Este documento sustituye el ejemplo ant
 | `npm run dev:frontend` | `vite` |
 | `npm run build:frontend` | `vite build` |
 | `npm run preview:frontend` | `vite preview` |
-| `npm run lint:frontend` | `eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore` |
+| `npm run lint:frontend` | `eslint src --ext .vue,.js,.jsx,.cjs,.mjs` |
+| `npm run lint:e2e` | `eslint e2e --ext .mjs,.js,.cjs` |
+| `npm run lint:backend` | `eslint backend scripts dev --ext .mjs,.js,.cjs` |
+| `npm run lint` | `npm run lint:frontend && npm run lint:e2e && npm run lint:backend` |
+| `npm run format:frontend` | `eslint src e2e --ext .vue,.js,.jsx,.cjs,.mjs --fix` |
 | `npm run dev` | `concurrently "npm run dev:backend" "npm run dev:frontend"` |
 | `npm run nas` | `concurrently "npm run dev:backend" "npm run dev:frontend -- --host"` |
 | `npm run build` | `npm run build:frontend` |
@@ -32,7 +36,7 @@ Estado actualizado por D-13, 2026-10-24. Este documento sustituye el ejemplo ant
 | `npm run iter:cierre` | `node scripts/iteracion.mjs cierre` |
 | `npm run iter:ids` | `node scripts/iteracion.mjs ids` |
 
-lint:frontend incluye correcciones automáticas: no es un análisis de solo lectura. build construye el frontend; start inicia el backend y no demuestra por sí mismo que se estén sirviendo los archivos compilados.
+Los `lint:*` son de solo lectura: no escriben en el árbol. El autoformato está en `npm run format:frontend`, que aplica `--fix` solo a `src` y `e2e` (DC-76); `lint:backend` no impone Prettier a `backend` ni a `scripts`, y `_adjuntos/` queda excluido. `build` construye el frontend; `start` inicia el backend y no demuestra por sí mismo que se estén sirviendo los archivos compilados.
 
 Los scripts `iter:*` son mecánicos: no hacen commit, push ni PR. `npm run iter:cierre -- <tema> --ficheros a,b` necesita el `--` para pasar las opciones. `iter:pruebas -- --ejecuta` sin `--incluye-entorno` omite la E2E y las pruebas con base `_test`: esa ejecución **no** es verde.
 

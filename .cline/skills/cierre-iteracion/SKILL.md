@@ -62,9 +62,11 @@ operaciones y espera.
   avisos de formato; `-- --completo` para la salida íntegra).
 - `git branch --show-current; git status --short; git log --oneline -3`.
 - `git diff --stat` y lectura del diff real, no solo del resumen.
-- ESLint de `src/` y de `e2e/`, que hace `npm run iter:previa` (los `e2e/` con `--no-ignore` como
-  guarda; `npx eslint e2e --ext .mjs,.js,.cjs` cubre los 30 ficheros, DC-70); `--fix` **solo si el
-  usuario lo pide en el prompt**; si se usa, se cita en `## Qué hace` con los ficheros que tocó. Si
+- ESLint de `src/`, de `e2e/` y de los `.mjs` de `backend`, `scripts` y `dev`, sin `--fix`, que hace
+  `npm run iter:previa` (los `e2e/` con `--no-ignore` como guarda; `npx eslint e2e --ext .mjs,.js,.cjs`
+  cubre la suite, DC-70; `lint:frontend`, `lint:e2e` y `lint:backend` son de solo lectura, DC-76). El
+  `--fix` **solo si el usuario lo pide en el prompt**; si se usa, se cita en `## Qué hace` con los
+  ficheros que tocó. Para formatear, `npm run format:frontend` actúa solo sobre `src` y `e2e`. Si
   ESLint responde «File ignored» con exit 0, no ha analizado nada y no es verde.
   `node --check` de los `.mjs` tocados.
 - Pruebas que correspondan (regla `30-tests`), con código de salida y `# tests/# pass/# fail`. Si se
