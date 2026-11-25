@@ -16,6 +16,8 @@ e2e/package-lock.json
 backup.sql
 nohup.out
 tmp/
+# Material de referencia local no versionado (DC-76)
+_adjuntos/
 # Datos de ejemplo de la plantilla (miles de líneas sin lógica del proyecto)
 src/service/CustomerService.js
 src/service/ProductService.js
