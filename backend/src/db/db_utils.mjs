@@ -539,11 +539,10 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                                     const estado = c.estado !== undefined ? c.estado : existingCargo[0].estado;
                                     const comentario = c.comentario !== undefined ? c.comentario : existingCargo[0].comentario;
                                     const activo = c.activo !== undefined ? c.activo : existingCargo[0].activo;
-                                    const fecha = existingCargo[0].fecha; // Preservar la fecha existente
-
 
                                     const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
-                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ?, importe = ?, modificado_por = ? WHERE id = ?', [estado, comentario, activo, importeCargo, usuarioId, c.id]);
+                                    // La fecha no se toca: el UPDATE no la incluye y se conserva la guardada
+                                    await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ?, importe = ?, modificado_por = ? WHERE id = ?', [estado, comentario, activo, importeCargo, usuarioId, c.id]);
                                 }
                             } catch (error) {
                                 console.error('API: ERROR en actualización parcial:', error.message);

@@ -113,10 +113,13 @@ function previa() {
     const lint = cambiados.filter((f) => /^src\/.*\.(vue|js|mjs|cjs)$/.test(f));
     // `e2e/**` ya no está en `ignorePatterns` (O-12); `--no-ignore` queda como guarda ante un ignore que reaparezca.
     const lintE2e = cambiados.filter((f) => /^e2e\/.*\.(js|mjs|cjs)$/.test(f));
+    // DC-76: backend, scripts y dev se comprueban sin --fix sobre los ficheros tocados
+    const lintServidor = cambiados.filter((f) => /^(backend|scripts|dev)\/.*\.(js|mjs|cjs)$/.test(f));
     const arreglo = bandera('--fix') ? ['--fix'] : [];
 
     if (lint.length) fallos += ejecutar('npx', ['eslint', ...arreglo, ...lint]) ? 1 : 0;
     if (lintE2e.length) fallos += ejecutar('npx', ['eslint', '--no-ignore', ...arreglo, ...lintE2e]) ? 1 : 0;
+    if (lintServidor.length) fallos += ejecutar('npx', ['eslint', ...arreglo, ...lintServidor]) ? 1 : 0;
 
     avisosDeFormato(cambiados);
 

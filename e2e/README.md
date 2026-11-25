@@ -75,8 +75,10 @@ El lanzador (`lanzador.mjs`):
 | `tests/smoke.spec.mjs` | Timón carga en el Edge del portátil |
 | `tests/erroresConexion.spec.mjs` | Base de Datos: mensaje de usuario ante una conexión inalcanzable, sin guardar nada |
 | `tests/usuarios.spec.mjs` | Usuarios: alta `e2e_` y duplicado con el mensaje completo del servidor |
-| `tests/recibosBorrado.spec.mjs` | Recibos: el diálogo de borrado muestra el concepto del recibo (no crea ni borra datos) |
-| `tests/recibosTrimestrales.spec.mjs` | Recibos: selección propia de trimestrales frente a bimestrales (F-30) y concepto en el diálogo (F-31); crea y borra sus recibos `e2e_…` |
+| `tests/recibosBorrado.spec.mjs` | Recibos: el diálogo de borrado muestra el concepto del recibo (no crea ni borra datos) y la selección independiente de anuales y mensuales con el borrado múltiple desde la barra (U-22); crea y borra sus recibos `e2e_anual_…` y `e2e_mensual_…` |
+| `tests/recibosTrimestrales.spec.mjs` | Recibos: selección propia de trimestrales frente a bimestrales (F-30) y concepto en el diálogo (F-31); crea un `e2e_trimestral_…` y siempre un `e2e_bimestral_…` de apoyo, y los borra |
+| `tests/guardadoYNormalizacion.spec.mjs` | Guardar sin cambios y normalización (U-21): sin petición al guardar sin tocar nada (DC-30) y con una al pasar a modo de fechas automático (F-45); concepto en mayúsculas guardado en minúsculas, con la API en minúsculas exactas y la pantalla comparada sin distinguir mayúsculas (F-44); datos `e2e_f45_rec_…`, `e2e_f44_rec_…`, `e2e_dc30_aho_…` y `e2e_f44_aho_…` |
+| `tests/verificacionesPendientesO10.spec.mjs` | Verificaciones pendientes (O-10): reintento tras un 500 sin mutar el formulario en Ahorros y Anticipos (F-16), 409 al borrar un recibo con cargos pagados (DC-18, DC-21) y ejecución real desde Ajustes solo con `E2E_DB_CONFIG` sobre la réplica (U-13, DC-59); datos `e2e_f16_aho_…`, `e2e_f16_ant_…`, `e2e_pag_rec_…` y `e2e_gen_rec_…` |
 | `tests/autorizacion.spec.mjs` | Autorización: matriz de roles, propiedad, privacidad y rutas de documentación (S-01, S-06, S-12); crea y borra usuarios, cuentas y recibos `e2e_` |
 | `tests/autorizacionSubrecursos.spec.mjs` | Subrecursos: un `limited_user` no edita pagos ni movimientos ajenos usando su propio padre (S-18); permisos mixtos: catálogos legibles y recibo creado (U-18, DC-49); crea y borra datos `e2e_sub_*` |
 | `tests/privacidad.spec.mjs` | Privacidad (`es_privado`, F-49, DC-75): el propietario marca y desmarca desde el diálogo en Recibos, Anticipos y Ahorros; el otro user y el reader no ven el registro y el control no existe en el DOM para ellos; el admin sí lo ve y lo cambia en registros ajenos; la API responde 403 `PRIVACIDAD_NO_PERMITIDA`; el candado aparece en las cinco tarjetas de Recibos y en las tablas de Anticipos y Ahorros; DC-30 al activar solo la privacidad; la ayuda se ve con ratón, teclado y clic con un solo tooltip; diálogo completo en 1366×768. Crea y borra datos `e2e_priv_*` |
@@ -117,6 +119,7 @@ Comandos: npm run e2e:trazabilidad, npm run e2e:validacionUsuarios y npm run e2e
   en `afterAll` solo el usuario creado por la ejecución; los huérfanos con ese formato **solo se
   informan**, nunca se borran automáticamente (son cuentas, no categorías).
 - Los recibos de prueba de U-15 siguen el formato exacto `e2e_trimestral_AAAAMMDD_HHMMSS` (30 caracteres, el máximo de `recibos.concepto`) y `e2e_bimestral_AAAAMMDD_HHMMSS` (29). Se crean desde la propia página, se borran por la interfaz y, si el test falla antes, se borran por API en `afterEach`.
+- Los datos de U-22, U-21 y O-10 usan prefijos cortos por el límite de 30 caracteres (`e2e_anual_`, `e2e_mensual_`, `e2e_f45_rec_`, `e2e_f44_rec_`, `e2e_f16_aho_`, `e2e_f16_ant_`, `e2e_dc30_aho_`, `e2e_f44_aho_`, `e2e_pag_rec_` y `e2e_gen_rec_`), seguidos de `AAAAMMDD_HHMMSS`. Se crean por API o por la interfaz y se borran por API en `afterEach`; los sucesores anuales de U-13 se borran del año más nuevo al más antiguo.
 
 ## Servidores
 
@@ -176,6 +179,14 @@ que **no pueden ejecutarse contra la base de desarrollo**. El procedimiento es:
    sirve para el código de la rama y el backend responde 500 `ER_BAD_FIELD_ERROR`. En ese caso,
    usa el script sin `E2E_CLONAR`, que aplica todas las migraciones.
 
+   **`E2E_CLONAR=1` tampoco copia rutinas ni eventos**, así que la réplica no tiene
+   `generar_recibos_anio` y los casos que la ejecutan (la ejecución real de U-13 desde Ajustes)
+   responden 500 hasta aplicar esa migración. Para verificar U-13 en pantalla sobre la réplica,
+   aplica la migración `0007` (recrea los procedimientos sin `DEFINER` y es idempotente) con los
+   servidores parados; después arranca la aplicación y ejecuta la suite como siempre. La réplica se
+   destruye al terminar.
+
+
 2. Arranca la aplicación apuntando a ese fichero, nunca al real:
    `DB_CONFIG_PATH=<ruta> npm run nas`.
 3. Ejecuta la suite con `E2E_DB_CONFIG=<ruta>` (para el caso que siembra y borra una CA) y, si
@@ -201,11 +212,11 @@ está definida, la aplicación lee y escribe ahí su configuración. Así las E2
 
 ## Lint
 
-`npx eslint e2e --ext .mjs,.js,.cjs` analiza los 30 ficheros versionados de `e2e/` con la configuración
+`npx eslint e2e --ext .mjs,.js,.cjs` analiza los ficheros versionados de `e2e/` con la configuración
 raíz: 0 errores y 0 avisos `prettier/prettier`, porque la suite está formateada con `.prettierrc.json`
-(DC-71). `npm run iter:previa` analiza los `e2e/` que cambian. `npm run lint:frontend` conserva `--fix`
-y también reescribe `e2e/`: se mantiene porque, con la suite formateada, el autofix es idempotente; para
-comprobar sin tocar, usa el comando de arriba (sin `--fix`) o `npx prettier --check "e2e/**/*.mjs"`.
+(DC-71). `npm run lint:e2e` es el comando de solo lectura. `npm run iter:previa` analiza los `e2e/` que
+cambian. El autoformato está en `npm run format:frontend`, que aplica `--fix` solo a `src` y `e2e`
+(DC-76); `npm run lint:frontend` ya no recorre el árbol ni reescribe ficheros.
 
 ## Triage de fallos
 

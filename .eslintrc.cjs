@@ -3,7 +3,7 @@ require('@rushstack/eslint-patch/modern-module-resolution');
 
 module.exports = {
     root: true,
-    ignorePatterns: ['dist/**', 'coverage/**', 'doc/**'],
+    ignorePatterns: ['dist/**', 'coverage/**', 'doc/**', '_adjuntos/**'],
     env: {
         node: true
     },
@@ -20,5 +20,14 @@ module.exports = {
                 order: ['script', 'template', 'style']
             }
         ]
-    }
+    },
+    // DC-76: backend y scripts se escriben con otro estilo; el lint no les impone el formato del frontend
+    overrides: [
+        {
+            files: ['backend/**/*.{js,mjs,cjs}', 'scripts/**/*.{js,mjs,cjs}'],
+            rules: {
+                'prettier/prettier': 'off'
+            }
+        }
+    ]
 };

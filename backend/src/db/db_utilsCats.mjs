@@ -58,12 +58,12 @@ async function pushCategoria(id, nombre, descripcion = null, propietario_id, usu
             }
             // Actualizar categoría existente por ID
             console.log(`pushCategoria - Categoría ${id}: nombre ${existe[0].nombre} -> ${nombre}, autor ${usuarioId ?? 'sistema'}`);
-            const [updateResult] = await connection.execute('UPDATE categorias SET nombre = ?, descripcion = COALESCE(?, descripcion), modificado_por = ? WHERE id = ?', [nombre, descripcion, usuarioId, id]);
+            await connection.execute('UPDATE categorias SET nombre = ?, descripcion = COALESCE(?, descripcion), modificado_por = ? WHERE id = ?', [nombre, descripcion, usuarioId, id]);
         } else {
             // Insertar nueva categoría
             if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear la categoría');
             console.log(`pushCategoria - Nueva categoría: ${nombre || 'Sin nombre'}, autor ${usuarioId ?? 'sistema'}`);
-            const [insertResult] = await connection.execute('INSERT INTO categorias (nombre, descripcion, propietario_id, modificado_por) VALUES (?, ?, ?, ?)', [nombre || 'Sin nombre', descripcion, propietario_id, usuarioId]);
+            await connection.execute('INSERT INTO categorias (nombre, descripcion, propietario_id, modificado_por) VALUES (?, ?, ?, ?)', [nombre || 'Sin nombre', descripcion, propietario_id, usuarioId]);
         }
     } catch (error) {
         console.error('Error al insertar o actualizar la categoría:', error);
@@ -93,7 +93,7 @@ async function deleteCategorias(categoriaIds) {
         }
         categoriaIds = categoriaIds.map(Number); // Asegurarse de que todos los IDs sean números
         const placeholders = categoriaIds.map(() => '?').join(','); // Crear placeholders para cada ID
-        const [deleteResult] = await connection.execute(`DELETE FROM categorias WHERE id IN (${placeholders})`, categoriaIds); // Pasar los IDs como una lista
+        await connection.execute(`DELETE FROM categorias WHERE id IN (${placeholders})`, categoriaIds); // Pasar los IDs como una lista
     } catch (error) {
         console.error('API. Error al eliminar las categorías:', error);
         if (esErrorDeReferencia(error)) {

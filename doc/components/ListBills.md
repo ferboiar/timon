@@ -204,6 +204,8 @@ Cada tabla de periodicidad mantiene **su propia** selección: `selectedAnualBill
 
 El diálogo de confirmación muestra el **concepto** del recibo (`bill.concepto`). Hasta F-31 usaba `bill.name`, un campo que no existe en los datos, así que el nombre salía vacío. Lo cubren la guarda estática `backend/test/plantillasRecibos.test.mjs` y el spec `e2e/tests/recibosBorrado.spec.mjs`, que abre el diálogo de un recibo real y cancela sin borrar nada.
 
+U-22 amplía la cobertura del mismo spec: crea un `e2e_anual_…` y un `e2e_mensual_…`, activa la multiselección de las dos tarjetas, comprueba que las selecciones son independientes (`selectedAnualBills` frente a `selectedMonthlyBills`), que cancelar el borrado múltiple no envía ninguna petición y que confirmarlo borra los dos recibos. `e2e/tests/recibosTrimestrales.spec.mjs` crea siempre su `e2e_bimestral_…` de apoyo y filtra las tarjetas por el buscador. El guardado sin cambios y el paso a modo de fechas automático (F-45, DC-30) y la normalización a minúsculas (F-44) se cubren en `e2e/tests/guardadoYNormalizacion.spec.mjs`, que cuenta las peticiones con `page.route`.
+
 ## Referencias
 
 - [BillService](../services/BillService.md) - Servicio que gestiona la comunicación con la API de recibos

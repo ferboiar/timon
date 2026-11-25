@@ -45,12 +45,14 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-67 | CORS restringido por `CORS_ALLOWED_ORIGINS` (nombres) y `CORS_ALLOWED_NETWORKS` (CIDR, IPs literales); validado al arrancar y cerrado por defecto. |
 | DC-68 | Actualización de dependencias solo de lo gobernado por `package.json` y `package-lock.json`; Node, npm e imagen no se actualizan desde el repositorio. |
 | DC-69 | Proceso ligero: relevo mínimo sin PR, SHA ni ramas; registro por ID y no entero; niveles ligero y completo con modo autónomo; edición con la herramienta normal; umbral de reglas 12 000 B. |
-| DC-70 | Lint y formato: `e2e/` se analiza con la configuración raíz de ESLint y sus 33 avisos `prettier/prettier` se aceptan; `dev/utils/` se formatea con `.prettierrc.json` y no se exceptúa. *(Completada por DC-71: `e2e/` está formateado y el `--fix` de `lint:frontend` queda documentado como idempotente.)* |
-| DC-71 | Estabilidad de la E2E: calentamiento en `globalSetup` con `retries` en 0; `eliminarCuenta` espera la fila; `e2e/` formateado con Prettier y `--fix` de `lint:frontend` documentado como idempotente. |
+| DC-70 | Lint y formato: `e2e/` se analiza con la configuración raíz de ESLint y sus 33 avisos `prettier/prettier` se aceptan; `dev/utils/` se formatea con `.prettierrc.json` y no se exceptúa. *(Completada por DC-71 y matizada por DC-76: `e2e/` está formateado y `lint:frontend` ya no usa `--fix`.)* |
+| DC-71 | Estabilidad de la E2E: calentamiento en `globalSetup` con `retries` en 0; `eliminarCuenta` espera la fila; `e2e/` formateado con Prettier; el `--fix` de `lint:frontend` lo sustituye `format:frontend` (DC-76). |
 | DC-72 | Vocabulario de interfaz (`Guardar`/`Cancelar`/`Sí`/`No`, `Confirmar`, resúmenes `Éxito`/`Aviso`/`Error`) e importes de tabla con `Intl.NumberFormat('es-ES', …, EUR)` tolerando `null`; «Ahorro sugerido» en Ahorros; `Reset` suelto se conserva en inglés. |
 | DC-73 | El código que depende de una migración no se fusiona antes de que esté aplicada, o se escribe para tolerar el esquema anterior. Acordado el 2026-11-21. |
 | DC-74 | Autor por fila en subrecursos y catálogos (migración 0010, F-53): escritura directa con usuario, filas derivadas a NULL, salvo el activo masivo de `fechas_cargo`; sin backfill y con el id en la API. |
 | DC-75 | Privacidad de recibos, anticipos y ahorros: solo el propietario con escritura o un administrador; el control no se renderiza para quien no cumple y el servidor responde 403; en Recibos el cambio se aplica a todos los años del mismo recibo. |
+| DC-76 | Lint por capas y autoformato explícito: `lint:frontend` (`src`), `lint:e2e` (`e2e`) y `lint:backend` (`backend`, `scripts` y `dev`) son de solo lectura y `lint` los encadena; `format:frontend` aplica `--fix` solo a `src` y `e2e`; `prettier/prettier` se desactiva en `backend/**` y `scripts/**` y `_adjuntos/**` queda fuera del lint y de Prettier. Sustituye el alcance de `lint:frontend` descrito en DC-70 y DC-71. |
+
 
 
 ## 2. Entorno y mapa

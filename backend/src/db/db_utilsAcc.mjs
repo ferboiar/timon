@@ -51,7 +51,7 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
         if (id) {
             // Actualizar cuenta existente
             console.log(`pushAccount - Actualizando la cuenta ${id}: ${nombre} (${tipo}), IBAN: ${iban ?? 'sin IBAN'}, autor ${usuarioId ?? 'sistema'}`);
-            const [updateResult] = await connection.execute('UPDATE cuentas SET nombre = ?, tipo = ?, iban = ?, saldo_actual = ?, descripcion = COALESCE(?, descripcion), activa = ?, modificado_por = ? WHERE id = ?', [
+            await connection.execute('UPDATE cuentas SET nombre = ?, tipo = ?, iban = ?, saldo_actual = ?, descripcion = COALESCE(?, descripcion), activa = ?, modificado_por = ? WHERE id = ?', [
                 nombre,
                 tipo,
                 iban,
@@ -65,7 +65,7 @@ async function pushAccount(id, nombre, tipo, iban = null, saldo_actual = 0, desc
             // Insertar nueva cuenta
             if (!propietario_id) throw new ErrorDeNegocio('Falta el propietario para crear la cuenta');
             console.log(`pushAccount - Nueva cuenta: ${nombre} (${tipo}), IBAN: ${iban ?? 'sin IBAN'}, autor ${usuarioId ?? 'sistema'}`);
-            const [insertResult] = await connection.execute('INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id, usuarioId]);
+            await connection.execute('INSERT INTO cuentas (nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id, modificado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [nombre, tipo, iban, saldo_actual, descripcion, activa, propietario_id, usuarioId]);
         }
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
@@ -98,7 +98,7 @@ async function deleteAccounts(accounts) {
             accounts = [accounts];
         }
         const placeholders = accounts.map(() => '?').join(',');
-        const [deleteResult] = await connection.execute(`DELETE FROM cuentas WHERE id IN (${placeholders})`, accounts);
+        await connection.execute(`DELETE FROM cuentas WHERE id IN (${placeholders})`, accounts);
     } catch (error) {
         console.error('Error al eliminar las cuentas:', error);
         if (esErrorDeReferencia(error)) {
