@@ -510,7 +510,8 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                                 console.log(`pushRecibo - Recibo ${id}: fecha ${nuevasFechas[i].fecha} (fechas_cargo ${actual.id}) sin cambios`);
                                 continue;
                             }
-                            await connection.execute('UPDATE fechas_cargo SET fecha = ?, modificado_por = ? WHERE id = ?', [nuevasFechas[i].fecha, usuarioId, actual.id]);
+                            // S-25: la fila se leyó con `recibo_id = ?`; el UPDATE lo repite como defensa en profundidad
+                            await connection.execute('UPDATE fechas_cargo SET fecha = ?, modificado_por = ? WHERE id = ? AND recibo_id = ?', [nuevasFechas[i].fecha, usuarioId, actual.id, id]);
                             reescritas++;
                             console.log(`pushRecibo - Recibo ${id}: fecha ${formatear(actual.fecha)} -> ${nuevasFechas[i].fecha} (fechas_cargo ${actual.id})`);
                         }
@@ -530,22 +531,25 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
                         // Si tiene ID pero no fecha, podría ser una actualización de solo comentario o estado
                         if (!c.fecha && c.id) {
                             try {
-                                // Obtener los datos actuales para preservar la fecha
-                                const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
+                                // Obtener los datos actuales para preservar la fecha. S-25: acotada al recibo que se guarda
+                                const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ? AND recibo_id = ?', [c.id, id]);
 
-                                if (existingCargo.length > 0) {
-
-                                    // Usar los valores existentes para los campos no proporcionados
-                                    const estado = c.estado !== undefined ? c.estado : existingCargo[0].estado;
-                                    const comentario = c.comentario !== undefined ? c.comentario : existingCargo[0].comentario;
-                                    const activo = c.activo !== undefined ? c.activo : existingCargo[0].activo;
-
-                                    const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
-                                    // La fecha no se toca: el UPDATE no la incluye y se conserva la guardada
-                                    await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ?, importe = ?, modificado_por = ? WHERE id = ?', [estado, comentario, activo, importeCargo, usuarioId, c.id]);
+                                if (existingCargo.length === 0) {
+                                    // S-25: el id llega en el cuerpo; un cargo de otro recibo no se lee ni se escribe
+                                    console.log(`pushRecibo - Recibo ${id}: cargo ${c.id} rechazado por no pertenecer al recibo`);
+                                    throw new ErrorDeNegocio('El cargo indicado no pertenece a este recibo.');
                                 }
+
+                                // Usar los valores existentes para los campos no proporcionados
+                                const estado = c.estado !== undefined ? c.estado : existingCargo[0].estado;
+                                const comentario = c.comentario !== undefined ? c.comentario : existingCargo[0].comentario;
+                                const activo = c.activo !== undefined ? c.activo : existingCargo[0].activo;
+
+                                const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
+                                // La fecha no se toca: el UPDATE no la incluye y se conserva la guardada. S-25: acotado al recibo
+                                await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, activo = ?, importe = ?, modificado_por = ? WHERE id = ? AND recibo_id = ?', [estado, comentario, activo, importeCargo, usuarioId, c.id, id]);
                             } catch (error) {
-                                console.error('API: ERROR en actualización parcial:', error.message);
+                                if (!(error instanceof ErrorDeNegocio)) console.error('API: ERROR en actualización parcial:', error.message);
                                 throw error;
                             }
                             continue;
@@ -570,26 +574,30 @@ async function pushRecibo(id, concepto, periodicidad, importe, categoria, cargo,
 
                         if (c.id) {
                             try {
-                                // Actualizar si existe, incluyendo activo
-                                const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ?', [c.id]);
+                                // Actualizar si existe, incluyendo activo. S-25: acotada al recibo que se guarda
+                                const [existingCargo] = await connection.execute('SELECT * FROM fechas_cargo WHERE id = ? AND recibo_id = ?', [c.id, id]);
 
-                                if (existingCargo.length > 0) {
-                                    // Realizar la actualización
+                                if (existingCargo.length === 0) {
+                                    // S-25: el id llega en el cuerpo; un cargo de otro recibo no se lee ni se escribe
+                                    console.log(`pushRecibo - Recibo ${id}: cargo ${c.id} rechazado por no pertenecer al recibo`);
+                                    throw new ErrorDeNegocio('El cargo indicado no pertenece a este recibo.');
+                                }
 
-                                    // Asegurar que el comentario nunca sea undefined
-                                    const comentarioFinal = c.comentario !== undefined ? c.comentario : '';
+                                // Realizar la actualización
 
-                                    // DC-15: al pagar se fija el importe del cargo; al volver a pendiente se vacía
-                                    const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
-                                    const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ?, importe = ?, modificado_por = ? WHERE id = ?', [estado, comentarioFinal, fecha, c.activo, importeCargo, usuarioId, c.id]);
+                                // Asegurar que el comentario nunca sea undefined
+                                const comentarioFinal = c.comentario !== undefined ? c.comentario : '';
 
-                                    // Verificar que la actualización fue efectiva
-                                    if (updateResult.affectedRows === 0) {
-                                        console.error('API: ¡ADVERTENCIA! La actualización no afectó ninguna fila');
-                                    }
+                                // DC-15: al pagar se fija el importe del cargo; al volver a pendiente se vacía
+                                const importeCargo = importeDelCargo(estado, existingCargo[0], c, importe);
+                                const [updateResult] = await connection.execute('UPDATE fechas_cargo SET estado = ?, comentario = ?, fecha = ?, activo = ?, importe = ?, modificado_por = ? WHERE id = ? AND recibo_id = ?', [estado, comentarioFinal, fecha, c.activo, importeCargo, usuarioId, c.id, id]);
+
+                                // Verificar que la actualización fue efectiva
+                                if (updateResult.affectedRows === 0) {
+                                    console.error('API: ¡ADVERTENCIA! La actualización no afectó ninguna fila');
                                 }
                             } catch (error) {
-                                console.error('API: ERROR en actualización de fecha_cargo:', error.message);
+                                if (!(error instanceof ErrorDeNegocio)) console.error('API: ERROR en actualización de fecha_cargo:', error.message);
                                 throw error; // Re-lanzar para manejo en nivel superior
                             }
                         } else {

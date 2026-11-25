@@ -70,7 +70,7 @@ Cada elemento del array `cargo` debe contener:
 
 #### Modo de fechas (`modoFechas`)
 
-- `manual`: se guardan las fechas recibidas. Las que traen `id` se actualizan, las demás se insertan y las entradas sin fecha se ignoran.
+- `manual`: se guardan las fechas recibidas. Las que traen `id` se actualizan solo si pertenecen al recibo que se guarda; un identificador de otro recibo (o inexistente) responde 400 con «El cargo indicado no pertenece a este recibo.» y no se escribe nada (S-25). Las demás se insertan y las entradas sin fecha se ignoran.
 - `auto` en un recibo nuevo: el servidor genera las fechas desde `fecha_inicial` hasta el 31 de diciembre de ese año (DC-16); en un año completo son 12 mensuales, 6 bimestrales, 4 trimestrales o 1 anual.
 - `auto` al actualizar un recibo con fechas: se reescriben solo las fechas en estado `pendiente`, siguiendo la secuencia generada desde `fecha_inicial`. Las fechas con cualquier otro estado (incluido `rechazado`, DC-01) no se tocan (DC-11) y el log registra cada cambio.
 
@@ -149,6 +149,7 @@ La API implementa las siguientes validaciones:
 - El campo `propietario_id` se obtiene automáticamente del token JWT del usuario autenticado
 - Validaciones adicionales de tipos y formatos se realizan en las funciones de base de datos
 - Todas las fechas deben caer en el año natural del recibo (DC-14): si no, 400 con el mensaje que nombra las fechas fuera de año; un administrador puede omitirlo con `permitirFueraDeAnio` (DC-29)
+- Los cargos con `id` deben pertenecer al recibo que se guarda (S-25): la lectura y el `UPDATE` se acotan con `recibo_id` y un identificador ajeno responde 400 sin modificar el cargo ni el recibo
 
 ## Manejo de Errores
 

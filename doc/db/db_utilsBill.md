@@ -73,7 +73,7 @@ En el modo automático solo se reescriben las fechas `pendiente`; las `cargado` 
 | Función | Descripción |
 |---------|-------------|
 | `getRecibos(filters)` | Obtiene recibos aplicando filtros opcionales (periodicidad, fecha, año, etc.). Cada fila incluye `importe` (el del recibo) e `importe_cargo` (el real del cargo, vacío si está pendiente) |
-| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio = false)` | Crea o actualiza un recibo con sus fechas de cargo. En modo `auto` genera las fechas desde `fecha_inicial` hasta el 31 de diciembre de ese año (DC-16); al actualizar solo reescribe las pendientes. Al pasar un cargo a «cargado» guarda su importe (DC-15). Rechaza las fechas que no sean del año natural del recibo, salvo con `permitirFueraDeAnio` (DC-14, DC-29). Guarda el concepto sin espacios sobrantes y en minúsculas (DC-31, F-44). Devuelve `{ fechasReescritas, fechasConservadas }` |
+| `pushRecibo(id, concepto, periodicidad, importe, categoria, cargo, propietarioId, cuenta_id, fecha_inicial, modoFechas, permitirFueraDeAnio = false)` | Crea o actualiza un recibo con sus fechas de cargo. En modo `auto` genera las fechas desde `fecha_inicial` hasta el 31 de diciembre de ese año (DC-16); al actualizar solo reescribe las pendientes. Al pasar un cargo a «cargado» guarda su importe (DC-15). Rechaza las fechas que no sean del año natural del recibo, salvo con `permitirFueraDeAnio` (DC-14, DC-29). Comprueba que cada cargo con `id` pertenece al recibo que se guarda (`AND recibo_id = ?` en la lectura y en el `UPDATE`) y rechaza con 400 el ajeno sin escribir nada (S-25). Guarda el concepto sin espacios sobrantes y en minúsculas (DC-31, F-44). Devuelve `{ fechasReescritas, fechasConservadas }` |
 | `deleteRecibo(id, fecha, periodicidad, hoy, forzar)` | Elimina un recibo completo o solo una fecha de cargo específica. Si el recibo tiene cargos pagados, o la fecha indicada está pagada y es de un mes anterior al actual, o el recibo tiene sucesor, lanza un error con `status` 409 y no borra nada; una fecha pagada del mes en curso sí puede borrarse (para rectificar). Con `forzar` (la ruta lo activa solo para el administrador con `permitirPagados=1`, DC-21) se omite la comprobación de cargos pagados. Al borrar un recibo con origen, marca `replicar = 0` en el origen (DC-18) |
 | `generarFechasDelAnio(fechaInicial, periodicidad)` | Devuelve las fechas de la secuencia anclada en `fechaInicial` que caen en su mismo año natural (DC-16). Si el día no existe en un mes, usa el último día |
 | `fechasFaltantes(fechaInicial, periodicidad, fechasExistentes, anioActual, hoy)` | Devuelve los meses de la secuencia anclada en `fechaInicial` que no tienen cargo en el año en curso, nunca antes de `fechaInicial` ni en un ejercicio cerrado. Cada fecha lleva `generable`: verdadero si es posterior al último cargo o un hueco cuya fecha aún no ha llegado (DC-22) |
@@ -180,6 +180,7 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 - Comprobación de valores permitidos (categorías existentes, periodicidades válidas)
 - Verificación de formato de fechas
 - Verificación de que las fechas caen en el año natural del recibo (DC-14), salvo `permitirFueraDeAnio` (DC-29)
+- Pertenencia del cargo al recibo (S-25): un cargo con `id` se lee y se actualiza con `AND recibo_id = ?`; si no pertenece al recibo que se guarda (o no existe), la operación responde 400 con «El cargo indicado no pertenece a este recibo.», revierte la transacción y no escribe nada
 - Manejo detallado de errores con mensajes descriptivos para facilitar la depuración
 
 ## Consideraciones de Rendimiento
@@ -201,6 +202,7 @@ Las operaciones de eliminación utilizan transacciones para garantizar que:
 | `pushRecibo - Recibo …: modo automático, N fechas reescritas y M conservadas` | Resumen al terminar |
 | `pushRecibo - Recibo …: fechas fuera del año …` | Se rechazan fechas fuera del año del recibo (DC-14) |
 | `pushRecibo - Recibo …: fechas fuera del año … admitidas por permitirFueraDeAnio` | Un administrador las admitió con el interruptor de sesión (DC-29) |
+| `pushRecibo - Recibo …: cargo … rechazado por no pertenecer al recibo` | El `id` del cargo no pertenece al recibo que se guarda; se rechaza con 400 y no se escribe nada (S-25) |
 | `pushRecibo - Concepto normalizado a minúsculas: …` | Cuando el concepto llega con mayúsculas o espacios; se guarda en minúsculas y sin espacios sobrantes (F-44, DC-31) |
 
 ## Trazabilidad y borrado (F-50, F-10, F-53, DC-74)
