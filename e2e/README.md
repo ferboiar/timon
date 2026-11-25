@@ -179,6 +179,14 @@ que **no pueden ejecutarse contra la base de desarrollo**. El procedimiento es:
    sirve para el código de la rama y el backend responde 500 `ER_BAD_FIELD_ERROR`. En ese caso,
    usa el script sin `E2E_CLONAR`, que aplica todas las migraciones.
 
+   **`E2E_CLONAR=1` tampoco copia rutinas ni eventos**, así que la réplica no tiene
+   `generar_recibos_anio` y los casos que la ejecutan (la ejecución real de U-13 desde Ajustes)
+   responden 500 hasta aplicar esa migración. Para verificar U-13 en pantalla sobre la réplica,
+   aplica la migración `0007` (recrea los procedimientos sin `DEFINER` y es idempotente) con los
+   servidores parados; después arranca la aplicación y ejecuta la suite como siempre. La réplica se
+   destruye al terminar.
+
+
 2. Arranca la aplicación apuntando a ese fichero, nunca al real:
    `DB_CONFIG_PATH=<ruta> npm run nas`.
 3. Ejecuta la suite con `E2E_DB_CONFIG=<ruta>` (para el caso que siembra y borra una CA) y, si
