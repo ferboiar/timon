@@ -43,18 +43,16 @@ en una sola secuencia sin separar claramente qué skill gobierna cada paso.
 
 ## 3. Credenciales sin exponer secretos
 
-- No abras `.db_connection` ni `.backup`, no uses `.env.test` como credencial administrativa y no
-  pidas contraseñas por chat, argumentos, logs o ficheros del repositorio.
-- Preferido: el usuario crea en su terminal un fichero temporal fuera del repo, modo `600`, con
-  `[client]`, host, puerto, usuario y contraseña. Solo comunica su ruta `CNF`, nunca su contenido.
-- Cline únicamente comprueba que es un archivo regular, no symlink, propiedad del UID efectivo y
-  con modo `600`, usando `test` y `stat -c '%a %F %u' "$CNF"`. Nunca ejecuta `cat`, `less`,
-  `source`, editores, hashes ni otra lectura de su contenido.
-- Los clientes reciben `--defaults-extra-file="$CNF"` como primera opción. La contraseña no viaja
-  en argumentos. Borra ese fichero al terminar, también tras error, sin incluirlo en ningún diff.
-- Alternativa: el usuario ejecuta los comandos en su terminal con `read -r -s`, exporta
-  `MYSQL_PWD`, hace `unset MYSQL_PWD` al final y devuelve salidas saneadas. Cline no simula ese
-  prompt no interactivo.
+- Ruta permanente del operador: `~/.timon/timon-admin.cnf`, fuera del repositorio. Contiene `[client]`
+  con `host`, `port`, `user=timon_admin` y `password` (y lo que exija TLS). Nunca en claro en el
+  repositorio, el chat, un log, un argumento ni un `diff`, y no entra en Git.
+- No abras `.db_connection` ni `.backup`; `.env.test` no es credencial administrativa y no se piden
+  contraseñas por chat. La contraseña nunca pasa por variable de entorno ni por la línea de comandos.
+- Antes de usarlo: `test -f "$CNF" && test ! -L "$CNF" && test -O "$CNF"` y
+  `stat -c '%a %F %u' "$CNF"` (`600 regular <uid>`). Nunca `cat`, `less`, `source`, hashes ni otra
+  lectura de su contenido.
+- Los clientes lo reciben como primera opción: `--defaults-extra-file="$CNF"`. El fichero es
+  persistente entre iteraciones: no se borra al terminar salvo que el prompt lo pida.
 - `command -v mariadb mariadb-dump`. Para `conta_hogar`, verifica `DATABASE()` y `CURRENT_USER()`.
   El hash de `.db_connection` antes y después es una guarda de no modificación, no lectura.
 
@@ -105,8 +103,9 @@ en una sola secuencia sin separar claramente qué skill gobierna cada paso.
     --routines --events --triggers --no-tablespaces conta_hogar > "$COPIA.parcial"
   ```
 
-- Puerta: `DUMP_EXIT=0`, fichero no vacío, marca `-- Dump completed` y renombre a nombre UTC final.
-  Si falla, no apliques; el parcial no es copia válida. Registra ruta, bytes y SHA-256.
+- Puerta: `DUMP_EXIT=0`, fichero no vacío, marca `-- Dump completed` y renombre a
+  `conta_hogar_pre_<migracion>_<UTC>.sql`. Si falla, no apliques; el parcial no es copia válida.
+  Registra ruta, bytes y SHA-256.
 
 ## 6. Restauración ensayada y retención
 

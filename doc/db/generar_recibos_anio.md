@@ -39,6 +39,10 @@ La clave `crear_recibos_automaticamente` de `ajustes_sistema` (1 por defecto) ac
 
 Desde O-06, `mysqldump` se ejecuta con `--routines --events`: la copia incluye `generar_recibos_anio` y `generar_recibos_anio_evento`, con su estado y su `DEFINER`. La restauración reproduce el `DEFINER` tal cual. La migración 0007 recrea ambos sin cláusula `DEFINER`, así que las copias nuevas quedan a nombre de `timon_admin` y se restauran con esa cuenta sin `SET USER`; las copias anteriores con `DEFINER=root@%` siguen necesitando `SET USER`.
 
+## Despliegue
+
+La definición vigente del procedimiento entra siempre con una migración (la `0011`, para el bloqueo compartido de F-63). Se aplica en `conta_hogar` con `mariadb --defaults-extra-file="$CNF" conta_hogar < <fichero>.sql`, usando el fichero de opciones administrativo `~/.timon/timon-admin.cnf`, que vive fuera del repositorio y nunca se copia ni se muestra. Según DC-73, la migración se aplica antes de fusionar el código que dependa de ella. La copia previa, la restauración ensayada y el resto del procedimiento están en la skill `migraciones-bd`.
+
 ## Referencias
 
 - [Utilidades de Base de Datos para Recibos](db_utilsBill.md)
