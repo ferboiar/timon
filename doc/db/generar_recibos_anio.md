@@ -23,6 +23,7 @@ Las horas se guardan en UTC. El ajuste `zona_horaria` de `ajustes_sistema` (por 
 - **Contenido:** copia concepto, categoría, cuenta, propietario, periodicidad y privacidad. El importe es el del último cargo pagado, o el del recibo si no hay ninguno. `recibo_origen_id` apunta al origen.
 - **Cadencia:** los meses salen de la secuencia anclada en la fecha inicial del origen; el día del mes es el del último cargo pagado (si no hay ninguno, el de la fecha inicial), ajustado al último día del mes cuando no existe. La fecha inicial del recibo nuevo es la primera de las fechas del año nuevo, con lo que la cadencia se conserva año tras año.
 - **Estado:** los cargos nacen pendientes y con el mismo `activo` que el último cargo del origen.
+- **Concurrencia:** antes de copiar el origen, el procedimiento lo lee con `SELECT id, es_privado FROM recibos WHERE id = … LOCK IN SHARE MODE` (migración 0011, F-63). Si en ese momento se está propagando un cambio de privacidad a la cadena anual de ese recibo (DC-75), la lectura espera a que la otra transacción confirme y el recibo nuevo copia el `es_privado` ya guardado. Sin ese bloqueo el `INSERT … SELECT` también esperaba, pero en `READ COMMITTED` abortaba con `ER_CHECKREAD` (1020) y la serie se quedaba sin crear hasta la pasada siguiente, con «N con error» en el rastro. MariaDB no admite `FOR SHARE` (sintaxis de MySQL 8), así que la forma portable es `LOCK IN SHARE MODE`.
 - **Seguridad:** un recibo tiene como mucho un sucesor (restricción única), un bloqueo (`GET_LOCK`) evita ejecuciones simultáneas y cada serie va en su propia transacción.
 - **Rastro:** solo se registra una ejecución real, no simulada, si crea recibos, cuenta errores o se ejecuta con forzar=1.
 
@@ -37,6 +38,10 @@ La clave `crear_recibos_automaticamente` de `ajustes_sistema` (1 por defecto) ac
 ## Copias de seguridad
 
 Desde O-06, `mysqldump` se ejecuta con `--routines --events`: la copia incluye `generar_recibos_anio` y `generar_recibos_anio_evento`, con su estado y su `DEFINER`. La restauración reproduce el `DEFINER` tal cual. La migración 0007 recrea ambos sin cláusula `DEFINER`, así que las copias nuevas quedan a nombre de `timon_admin` y se restauran con esa cuenta sin `SET USER`; las copias anteriores con `DEFINER=root@%` siguen necesitando `SET USER`.
+
+## Despliegue
+
+La definición vigente del procedimiento entra siempre con una migración (la `0011`, para el bloqueo compartido de F-63). Se aplica en `conta_hogar` con `mariadb --defaults-extra-file="$CNF" conta_hogar < <fichero>.sql`, usando el fichero de opciones administrativo `~/.timon/timon-admin.cnf`, que vive fuera del repositorio y nunca se copia ni se muestra. Según DC-73, la migración se aplica antes de fusionar el código que dependa de ella. La copia previa, la restauración ensayada y el resto del procedimiento están en la skill `migraciones-bd`.
 
 ## Referencias
 

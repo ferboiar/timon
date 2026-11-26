@@ -52,16 +52,17 @@ operación.
 
 | Dato | Valor |
 |---|---|
-| Ruta estándar del operador | `/home/node/.timon/admin.cnf` |
+| Ruta permanente del operador | `~/.timon/timon-admin.cnf` (`/home/node/.timon/timon-admin.cnf`) |
 | Permisos | directorio `700`, fichero `600` |
-| Contenido | sección `[client]` con `host`, `port`, `user` y `password` (y lo que exija TLS) |
+| Contenido | sección `[client]` con `host`, `port`, `user=timon_admin` y `password` (y lo que exija TLS) |
+| Persistencia | se mantiene entre iteraciones: no se borra al terminar |
 | Versionado | **No**: nunca entra en Git, ni en `doc/`, ni en un chat, un log o un PR |
 
 Cómo se genera (terminal del operador):
 
 ```bash
-install -d -m 700 /home/node/.timon
-install -m 600 /dev/null /home/node/.timon/admin.cnf
+install -d -m 700 ~/.timon
+install -m 600 /dev/null ~/.timon/timon-admin.cnf
 # editar y escribir:
 # [client]
 # host=mariadb01
@@ -78,11 +79,12 @@ stat -c 'modo=%a tipo=%F uid=%u' "$CNF"   # esperado: 600 regular <uid efectivo>
 ```
 
 Los clientes lo reciben como primera opción (`--defaults-extra-file="$CNF"`); la contraseña no viaja
-en argumentos y no se ejecuta `cat`, `head` ni `source` sobre él.
+en argumentos, no pasa por variables de entorno y no se ejecuta `cat`, `head` ni `source` sobre él.
 
 Cuándo regenerarlo: al rotar la contraseña, al cambiar host, puerto o cuenta, si se pierde o se
-corrompe, y ante cualquier sospecha de exposición. Se borra al terminar la operación si así se acuerda;
-mientras exista, cada conexión —también de solo lectura— requiere autorización expresa en el prompt.
+corrompe, y ante cualquier sospecha de exposición. Es persistente entre iteraciones: no se borra al
+terminar la operación. Mientras exista, cada conexión —también de solo lectura— requiere autorización
+expresa en el prompt.
 
 ## Cómo se ejecuta
 

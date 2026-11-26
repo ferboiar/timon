@@ -16,7 +16,12 @@
 //   confirmar y el llamante pide 0 creyendo que sigue en 0;
 // - la carrera de F-61 con el recibo del año siguiente, con dos conexiones reales en READ COMMITTED
 //   (el aislamiento del servidor) y en REPEATABLE READ: la relectura con bloqueo incorpora el
-//   eslabón creado en el hueco y el INSERT ... SELECT de generar_recibos_anio espera al COMMIT.
+//   eslabón creado en el hueco;
+// - la ventana B de F-63 con el procedimiento real: desde la migración 0011, que lee el origen con
+//   LOCK IN SHARE MODE, la llamada espera al COMMIT del padre y crea el hijo con el es_privado ya
+//   confirmado, sin ER_CHECKREAD, en los tres aislamientos;
+// - la transición de la migración 0011: el procedimiento anterior no leía el origen con bloqueo, la
+//   0011 lo redefine y aplicarla dos veces no cambia la definición ni duplica objetos.
 //
 // La carrera no se observa con `information_schema.innodb_trx` porque `timon_test` no tiene el
 // privilegio PROCESS (comprobado: ER_SPECIFIC_ACCESS_DENIED_ERROR); se comprueba que la promesa
@@ -33,6 +38,8 @@ import { filtrarVisibles } from '../src/utils/autorizacion.mjs';
 const base = (process.env.TEST_DB_NAME ?? 'conta_hogar_test').replace(/_test$/, '');
 const dbName = base + '_f49_test';
 if (!/_test$/.test(dbName)) throw new Error(`La base de pruebas debe terminar en _test: ${dbName}`);
+
+const MIGRACION_0011 = '0011_recibos_anio_bloqueo_origen.sql';
 
 const conexion = {
     host: process.env.TEST_DB_HOST ?? 'mariadb-test',
@@ -77,6 +84,32 @@ const usuarioDe = (id, rol) => ({
 });
 
 const espera = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
+
+/** Definición de `generar_recibos_anio` antes de la 0011, tras aplicarla y tras aplicarla dos veces. */
+const definiciones0011 = {};
+
+/** Definición y DEFINER de `generar_recibos_anio` en la base de la prueba (F-63). */
+async function definicionDelProcedimiento() {
+    const [[fila]] = await db.query(
+        `SELECT ROUTINE_DEFINITION AS definicion, DEFINER AS definer
+           FROM information_schema.ROUTINES
+          WHERE ROUTINE_SCHEMA = ? AND ROUTINE_NAME = 'generar_recibos_anio'`,
+        [dbName]
+    );
+
+    return fila;
+}
+
+/** Rutinas y eventos de la base: la 0011 redefine un procedimiento, no crea ni borra objetos. */
+async function contarObjetos() {
+    const [[fila]] = await db.query(
+        `SELECT (SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = ?) AS rutinas,
+                (SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA = ?) AS eventos`,
+        [dbName, dbName]
+    );
+
+    return { rutinas: Number(fila.rutinas), eventos: Number(fila.eventos) };
+}
 
 async function crearBase(nombre) {
     assert.match(nombre, /_test$/, 'la base debe terminar en _test');
@@ -149,10 +182,21 @@ before(async () => {
 
     db = await mysql.createConnection({ ...conexion, database: dbName });
 
-    const migraciones = (await readdir(new URL('../src/db/migrations/', import.meta.url))).filter((f) => f.endsWith('.sql')).sort();
+    // Esquema anterior a la 0011: se aplica todo lo demás y después se ensaya la transición (F-63).
+    const migraciones = (await readdir(new URL('../src/db/migrations/', import.meta.url))).filter((f) => f.endsWith('.sql') && f !== MIGRACION_0011).sort();
     for (const fichero of migraciones) {
         await ejecutarMigracion(db, await readFile(new URL(`../src/db/migrations/${fichero}`, import.meta.url), 'utf8'));
     }
+
+    definiciones0011.antes = await definicionDelProcedimiento();
+
+    const sql0011 = await readFile(new URL(`../src/db/migrations/${MIGRACION_0011}`, import.meta.url), 'utf8');
+
+    await ejecutarMigracion(db, sql0011);
+    definiciones0011.primera = await definicionDelProcedimiento();
+    await ejecutarMigracion(db, sql0011);
+    definiciones0011.segunda = await definicionDelProcedimiento();
+    definiciones0011.usuario = (await db.query('SELECT CURRENT_USER() AS usuario'))[0][0].usuario;
 
     await db.query(
         "INSERT INTO users (id, username, email, password, rol) VALUES (1, 'f49_admin', 'f49_admin@example.test', 'x', 'admin'), (2, 'f49_prop', 'f49_prop@example.test', 'x', 'user'), (3, 'f49_otro', 'f49_otro@example.test', 'x', 'user'), (4, 'f49_reader', 'f49_reader@example.test', 'x', 'reader'), (5, 'f49_marca', 'f49_marca@example.test', 'x', 'user')"
@@ -474,6 +518,43 @@ describe('Carrera de autorización (DC-75)', () => {
     });
 });
 
+// F-63 (DC-75, DC-73): la 0011 redefine `generar_recibos_anio` para leer con bloqueo compartido el
+// recibo del que copia. Sin ese bloqueo, con la cascada sosteniendo el `FOR UPDATE` del origen, el
+// `INSERT ... SELECT` esperaba al COMMIT por la clave foránea y abortaba con ER_CHECKREAD (1020) en
+// READ COMMITTED: la serie no se creaba en esa pasada y se reintentaba en la ejecución siguiente.
+describe('Migración 0011: el recibo anual lee su origen con bloqueo compartido (F-63)', () => {
+    test('el procedimiento anterior copiaba el origen sin pedir bloqueo', () => {
+        assert.match(definiciones0011.antes.definicion, /INSERT INTO `recibos`/);
+        assert.match(definiciones0011.antes.definicion, /FROM `recibos` WHERE `id` = v_actual/);
+        assert.equal(/LOCK IN SHARE MODE/i.test(definiciones0011.antes.definicion), false, 'la definición anterior no bloqueaba el origen');
+    });
+
+    test('redefine la lectura del origen con LOCK IN SHARE MODE y conserva el resto del cuerpo', () => {
+        const { definicion } = definiciones0011.primera;
+
+        assert.match(definicion, /INTO v_origen_id, v_origen_privado/);
+        assert.match(definicion, /LOCK IN SHARE MODE/i);
+        // MariaDB 11.8 no admite FOR SHARE (sintaxis de MySQL 8): ER_PARSE_ERROR.
+        assert.equal(/FOR SHARE/i.test(definicion), false, 'la forma portable es LOCK IN SHARE MODE');
+
+        // El resto del cuerpo de la 0007 sigue: candidatos, cadencia, cargos, rastro y resultado final.
+        for (const fragmento of ['tmp_gra_candidatos', "`estado` = 'cargado'", 'INSERT INTO `fechas_cargo`', "'Generar recibos del anio'", 'RELEASE_LOCK', 'ORDER BY `origen_id`, `anio_nuevo`']) {
+            assert.ok(definicion.includes(fragmento), `conserva el cuerpo: ${fragmento}`);
+        }
+    });
+
+    test('queda a nombre de la cuenta que la aplica, sin DEFINER de root (DC-60)', () => {
+        assert.equal(definiciones0011.primera.definer, definiciones0011.usuario);
+        assert.equal(/root@/.test(definiciones0011.primera.definer), false, 'sin DEFINER de root');
+    });
+
+    test('es repetible: dos aplicaciones no cambian la definición ni duplican objetos', async () => {
+        assert.equal(definiciones0011.segunda.definicion, definiciones0011.primera.definicion);
+        assert.equal(definiciones0011.segunda.definer, definiciones0011.primera.definer);
+        assert.deepEqual(await contarObjetos(), { rutinas: 2, eventos: 2 });
+    });
+});
+
 // F-61 (DC-75): la cascada anual de `es_privado` frente al recibo que crea el procedimiento
 // `generar_recibos_anio`. Se reproduce con dos conexiones reales sobre esta base `*_test`, en el
 // aislamiento por defecto del servidor y en READ COMMITTED, que es el que puede tener producción:
@@ -510,10 +591,26 @@ describe('Carrera con el recibo del año siguiente (F-61)', () => {
             ['f61_cadena', 'anual', PROPIETARIO, esPrivado, `${anio}-12-31`, padre]
         );
 
-    /** La sentencia exacta de `generar_recibos_anio` para la tabla `recibos` (migración 0007). */
-    const INSERT_ANUAL =
-        'INSERT INTO recibos (concepto, importe, periodicidad, categoria_id, cuenta_id, propietario_id, es_privado, fecha_inicial, recibo_origen_id, replicar) ' +
-        'SELECT concepto, ?, periodicidad, categoria_id, cuenta_id, propietario_id, es_privado, ?, id, 1 FROM recibos WHERE id = ?';
+    // El procedimiento se invoca tal cual (`CALL generar_recibos_anio`), no una copia de su INSERT:
+    // así se prueba la definición que deja la migración 0011 y no una sentencia equivalente.
+    const AHORA = '2031-12-01 02:00:00'; // 03:00 en Madrid (UTC+1): el límite pasa a 2032
+
+    /** es_privado de los sucesores que crea el procedimiento, recorriendo la cadena desde el padre. */
+    const cadenaCreada = async (id) => {
+        const salida = [];
+        let actual = id;
+
+        for (let pasos = 0; pasos < 5; pasos++) {
+            const [[sucesor]] = await db.query('SELECT id, es_privado FROM recibos WHERE recibo_origen_id = ?', [actual]);
+
+            if (!sucesor) break;
+
+            salida.push(Number(sucesor.es_privado));
+            actual = Number(sucesor.id);
+        }
+
+        return salida;
+    };
 
     test('ventana A: el sucesor confirmado entre el CTE y el bloqueo acaba con el valor nuevo', async () => {
         for (const aislamiento of AISLAMIENTOS) {
@@ -628,66 +725,62 @@ describe('Carrera con el recibo del año siguiente (F-61)', () => {
         assert.equal(Number((await fila('recibos', sucesor)).es_privado), 1, 'eslabón creado en el hueco');
     });
 
-    test('ventana B: el INSERT ... SELECT del procedimiento anual espera al bloqueo del padre', async () => {
-        const observaciones = [];
-
+    test('ventana B: el procedimiento anual espera al bloqueo del padre y copia su es_privado confirmado', async () => {
         for (const aislamiento of AISLAMIENTOS) {
+            const contexto = `[${aislamiento.nombre}] `;
             const padre = await insertarRecibo({ concepto: 'f61_cadena', propietarioId: PROPIETARIO, anio: 2030, esPrivado: 0 });
+
+            // El procedimiento recorre todas las series candidatas de la base: durante la prueba solo
+            // el padre de esta pasada puede replicarse y después se devuelve `replicar` a las demás.
+            const [ajenas] = await db.query('SELECT id FROM recibos WHERE replicar = 1 AND id <> ?', [padre]);
+            await db.execute('UPDATE recibos SET replicar = 0 WHERE replicar = 1 AND id <> ?', [padre]);
 
             const c1 = await abrir(aislamiento.sql);
             const c2 = await abrir(aislamiento.sql);
 
             try {
-                // La cascada: bloquea la cadena y deja el valor nuevo sin confirmar.
+                // La cascada: bloquea el padre y deja el valor nuevo sin confirmar.
                 await c1.beginTransaction();
                 const [[{ iso }]] = await c1.query('SELECT @@transaction_isolation AS iso');
                 await c1.execute('SELECT id FROM recibos WHERE id = ? FOR UPDATE', [padre]);
                 await c1.execute('UPDATE recibos SET es_privado = 1 WHERE id = ?', [padre]);
 
-                // El procedimiento copia el padre con la sentencia de la migración 0007.
-                const insert = c2.execute(INSERT_ANUAL, [10, '2031-12-31', padre]);
-                const estado = await Promise.race([insert.then(() => 'hecho', (error) => 'error: ' + error.code), espera(1000).then(() => 'pendiente')]);
+                // El procedimiento real, con la lectura LOCK IN SHARE MODE de la migración 0011.
+                const llamada = c2.query('CALL generar_recibos_anio(0, 1, ?)', [AHORA]);
+                const estado = await Promise.race([llamada.then(() => 'hecho', (error) => 'error: ' + (error.code || error.message)), espera(1000).then(() => 'pendiente')]);
 
-                let privacidadHijo = null;
+                let filas = [];
+                let privacidades = [];
+                let detalle = null;
 
                 if (estado === 'pendiente') {
                     await c1.commit();
 
                     try {
-                        const [resultado] = await insert;
-                        const [filaHijo] = await c2.execute('SELECT id, es_privado FROM recibos WHERE id = ?', [Number(resultado.insertId)]);
-                        privacidadHijo = Number(filaHijo[0].es_privado);
+                        const [resultado] = await llamada;
+                        filas = Array.isArray(resultado[0]) ? resultado[0] : [];
+                        privacidades = await cadenaCreada(padre);
+                        const [[log]] = await db.query("SELECT detalles FROM mantenimiento_logs WHERE operacion = 'Generar recibos del anio' ORDER BY id DESC LIMIT 1");
+                        detalle = log ? log.detalles : null;
                     } catch (error) {
-                        privacidadHijo = 'error ' + (error.code || error.message);
+                        privacidades = ['error ' + (error.code || error.message)];
                     }
                 }
 
-                console.log(`F-61 - ventana B [${aislamiento.nombre} / ${iso}]: bloqueo=${estado}, hijo con es_privado=${privacidadHijo}`);
-                observaciones.push({ nombre: aislamiento.nombre, iso, bloqueo: estado, hijo: privacidadHijo });
+                console.log(`F-63 - ventana B [${aislamiento.nombre} / ${iso}]: bloqueo=${estado}, hijos=${JSON.stringify(privacidades)}, log=${detalle}`);
+
+                assert.equal(estado, 'pendiente', contexto + 'el procedimiento espera al bloqueo del padre antes de copiarlo');
+                assert.equal(filas.some((f) => Number(f.origen_id) === padre), true, contexto + 'el procedimiento crea la serie del padre');
+                assert.deepEqual(privacidades, [1, 1], contexto + 'los dos años creados copian el es_privado ya confirmado');
+                assert.match(String(detalle), /2 recibos y 2 fechas creados hasta 2032/, contexto + 'el rastro cuenta las dos altas');
+                assert.equal(/con error/.test(String(detalle)), false, contexto + 'sin ER_CHECKREAD: el rastro no anota errores');
             } finally {
                 await c1.end().catch(() => {});
                 await c2.end().catch(() => {});
-            }
-        }
 
-        console.log('F-61 - ventana B (resumen): ' + observaciones.map((o) => `${o.nombre} / ${o.iso}: bloqueo=${o.bloqueo}, hijo=${o.hijo}`).join(' | '));
-
-        // Comportamiento observado y asumido en F-61 mientras el procedimiento no lea el origen con
-        // bloqueo compartido (issue abierta para el SQL): el INSERT espera al COMMIT de la cascada y
-        // - en READ COMMITTED, el aislamiento del servidor, aborta con ER_CHECKREAD (1020): la serie
-        //   no se crea en esa pasada, su transacción revierte en generar_recibos_anio y la reintenta
-        //   la ejecución siguiente. Falla cerrada: no guarda el es_privado anterior.
-        // - en REPEATABLE READ converge, porque el propio INSERT ... SELECT toma bloqueos
-        //   compartidos sobre las filas de origen y copia el valor ya confirmado.
-        for (const observacion of observaciones) {
-            const contexto = `[${observacion.nombre} / ${observacion.iso}] `;
-
-            assert.equal(observacion.bloqueo, 'pendiente', contexto + 'el INSERT del año siguiente espera al bloqueo del padre');
-
-            if (/READ-COMMITTED/.test(observacion.iso)) {
-                assert.equal(observacion.hijo, 'error ER_CHECKREAD', contexto + 'en READ COMMITTED el INSERT aborta y no guarda el valor anterior');
-            } else {
-                assert.equal(observacion.hijo, 1, contexto + 'en REPEATABLE READ copia el valor ya confirmado');
+                if (ajenas.length) {
+                    await db.query(`UPDATE recibos SET replicar = 1 WHERE id IN (${ajenas.map(() => '?').join(',')})`, ajenas.map((f) => f.id));
+                }
             }
         }
     });
