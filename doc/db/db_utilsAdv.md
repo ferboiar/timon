@@ -190,3 +190,26 @@ pushAdvance, pushPago, handlePaymentDeletion, sustituirPago y recalculatePayment
 - `recalculatePostEditPayments` excluye el propio pago editado de los «posteriores» y del ajuste residual final (`AND id <> ?` en la consulta de pendientes posteriores y en la selección del último pendiente), con el id recibido como parámetro obligatorio validado al entrar; sin esa exclusión, cambiar fecha e importe en la misma petición metía el pago en su propio reparto y el ajuste final podía devolverle el pendiente total del anticipo. Corregido el 2026-11-26 (F-62, [#200](https://github.com/ferboiar/timon/issues/200)) con la prueba de regresión `backend/test/repartoPagoEditado.test.mjs`.
 
 Las trazas arriba descritas existen en pushAdvance, recalculatePaymentPlan, recalculatePostEditPayments, handlePaymentDeletion y completarPlanTrasBorrado, incluidos los caminos sin generación o sin importe por colocar. Son registro de ejecución, no garantía de atomicidad. No se han ejecutado nuevas pruebas funcionales en esta auditoría.
+
+## Invariantes del plan de pagos comprobadas (F-58)
+
+`backend/test/invariantesAnticipos.test.mjs` (base `conta_hogar_f58_test`, 14 pruebas, 14 en verde el 2026-11-26 sobre MariaDB 11.8.8) fija por la vía pública (`pushAdvance`, `recalculatePaymentPlan`, `pushPago` y `handlePaymentDeletion`) lo que hace hoy el algoritmo. No cambia código, exportaciones ni datos reales.
+
+| Caso | Resultado observado |
+|---|---|
+| 100,00 € con pago sugerido 33,33 € | 33,33 + 33,33 + 33,33 + 0,01, en las fechas ancladas 2026-01-01 a 2026-04-01; la suma iguala el importe pendiente y ninguna cuota queda a 0,00 (F-36) |
+| 100,00 € con pago sugerido 33,34 € | 33,34 + 33,34 + 33,32; suma 100,00 |
+| Borrado sin reparto y `recalculatePaymentPlan` | vuelve a crear la cuota de 10,00 que falta en la fecha anclada siguiente y la suma vuelve al importe pendiente |
+| Edición a la baja, escalón | las cuotas por debajo del sugerido suben hasta el sugerido (5,00 → 9,00 con 4,00 de diferencia); las demás no se tocan |
+| Edición a la baja, escalón y resto | el escalón consume 5,00 y los 3,00 restantes se reparten a partes iguales con el resto de 1,00 a la primera por fecha; la última queda por encima del sugerido (16,00) y la suma sigue cuadrando |
+| Edición al alza, cuotas en el sugerido | la reducción se reparte a partes iguales (3,00 a cada posterior) |
+| Edición al alza, cuota por encima del sugerido | la reducción sale primero de la cuota alta (15,00 → 11,00); la de 5,00 no se toca |
+| Ajuste final con 0,05 € de diferencia | reparte un céntimo a cada posterior y coloca los 0,03 restantes en el último pendiente por fecha (10,04), no en el pago editado (F-62) |
+| Residuo exacto de 0,01 | no se corrige: el ajuste final exige una discrepancia mayor que un céntimo (`Math.abs(diferenciaTotales) > 0.01`) y la suma queda en 33,99 frente a 34,00 |
+| Reducción que no cabe en el plan | cada cuota posterior baja hasta el mínimo de 0,01 y el ajuste final tampoco concilia: 20,02 frente a 10,00 |
+| Pago que queda pagado con el plan cuadrado (DC-40) | reparte la diferencia entre los pendientes (10,00 y 10,00 → 7,00 y 8,00) y la suma iguala el nuevo importe pendiente |
+| Pago que queda pagado con el plan descuadrado (DC-40) | no toca los pendientes: quedan 10,00 planificados frente a 15,00 pendientes |
+| Borrado con `redistribuir` (DC-12) | sube la cuota de 5,00 a 10,00 y crea la de 10,00 en la fecha anclada siguiente: 1 ajustada y 1 nueva, suma igual al pendiente |
+| Borrado con `redistribuir` y pendientes que ya cubren el pendiente | no ajusta ni crea nada y `redistribuido` queda en falso; las cuotas que sobran no se reducen |
+
+Dos límites medidos, ya descritos arriba y **no corregidos** en F-58: el ajuste final no corrige un residuo de exactamente un céntimo y el mínimo de 0,01 por cuota impide conciliar cuando la reducción pedida no cabe en los pendientes. La prueba los afirma como comportamiento observado, no como una conciliación garantizada.

@@ -108,6 +108,10 @@ La prueba fija `process.env.DB_*` y `DB_CONFIG_PATH` sobre un fichero temporal: 
 - `recibosFueraDeAnio.test.mjs` (S-20) monta la ruta real `POST /api/recibos` en un Express propio y, por HTTP con JWT real, comprueba que un usuario no administrador con `permitirFueraDeAnio: true` recibe el 400 de DC-14 y que un administrador recibe 201 (control).
 - Ambas necesitan la base `*_test`; cada una crea y destruye la suya.
 
+## Invariantes del plan de pagos (F-58)
+
+`invariantesAnticipos.test.mjs` (base `conta_hogar_f58_test`) usa las funciones reales `pushAdvance`, `recalculatePaymentPlan`, `pushPago` y `handlePaymentDeletion` para comprobar que la suma de los pagos pendientes iguala el importe pendiente al generar el plan y al editar o borrar pagos, cómo se reparten enteros y céntimos, el escalón hasta el pago sugerido y el ajuste final sobre el último pendiente. Los dos límites del algoritmo —un residuo de exactamente un céntimo no se corrige y el mínimo de 0,01 por cuota impide conciliar cuando la reducción no cabe— se afirman como comportamiento observado y están documentados en `doc/db/db_utilsAdv.md`. No repite el caso de fecha e importe nuevos de F-62.
+
 ## Reparto al editar un pago (F-62)
 
 `repartoPagoEditado.test.mjs` (base `conta_hogar_f62_test`) comprueba que editar fecha e importe de un pago pendiente en la misma petición conserva el importe pedido y reparte solo entre las demás cuotas. No fija importes a mano: siembra dos anticipos idénticos, edita el de referencia conservando la fecha original y usa el resultado real del algoritmo como referencia. Las invariantes generales de suma y redondeo son de F-58 (#116).
