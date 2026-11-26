@@ -140,6 +140,17 @@ Cada fecha de cargo puede tener su importe en `fechas_cargo.importe` (por ejempl
 
 No se puede borrar un recibo con cargos pagados ni uno que tenga sucesor. Un cargo pagado suelto solo se puede borrar durante el mes en que vence (para rectificar). La pantalla aplica la misma regla para editar: un cargo pagado solo se edita durante su mes. Los recibos de un año anterior al actual son un ejercicio cerrado: no se les añaden ni generan fechas. La opción de sesión de Ajustes › Administrar recibos «Permitir editar/borrar recibos pagados» permite al administrador saltarse esta regla: el servidor solo la acepta de un administrador (`permitirPagados=1`) y, con ella, `deleteRecibo` omite la comprobación de cargos pagados (cargos sueltos de meses cerrados y recibos completos); el 409 por recibos de años posteriores se mantiene (DC-21, DC-25).
 
+### Cascada de privacidad y carrera con el recibo anual (DC-75, F-61)
+
+`bloquearCadenaDeRecibos` recorre la cadena de `recibo_origen_id` en los dos sentidos con dos CTE recursivos unidos por `UNION`, bloquea los eslabones en orden ascendente de `id` —dos cascadas simultáneas los piden en el mismo orden y no se interbloquean— y devuelve los ids para que `aplicarPrivacidadEnCadena` cambie solo los del mismo propietario y solo los que cambian de valor.
+
+Entre esa lectura sin bloqueo y el `FOR UPDATE` cabe un eslabón nuevo: el recibo del año siguiente que inserta `generar_recibos_anio`. Por eso, después de bloquear, se releen con bloqueo los sucesores de lo último bloqueado (`SELECT id FROM recibos WHERE recibo_origen_id IN (…) ORDER BY id FOR UPDATE`), como mucho en **tres pasadas** (`MAX_PASADAS = 3`). La relectura tiene que ser con bloqueo: en snapshot una lectura normal no ve lo confirmado después de abrir la transacción y, ante un `INSERT` sin confirmar, el bloqueo compartido que `fk_recibos_origen` pide sobre el padre detiene al que lee hasta su `COMMIT`. Cada pasada que añade eslabones deja traza (`recibos - privacidad en cascada: la relectura con bloqueo añadió N eslabón(es)…`); al agotar el tope se deja otra traza y no se sigue iterando. Medido con dos conexiones sobre una base `_test`: el eslabón creado en el hueco entra en la cascada en dos pasadas y termina con el valor pedido.
+
+Dos límites conocidos, medidos el 2026-11-26 en MariaDB 11.8.8 con el servidor en `READ COMMITTED`:
+
+- El `INSERT … SELECT` de `generar_recibos_anio` espera al `COMMIT` de la cascada y después **aborta con `ER_CHECKREAD` (1020)** en `READ COMMITTED`: la serie no se crea en esa pasada —falla cerrada, nunca guarda el valor anterior— y la reintenta la ejecución siguiente. Cerrarlo exige que el procedimiento lea el origen con bloqueo compartido (`LOCK IN SHARE MODE`; `FOR SHARE` no es sintaxis de MariaDB), trabajo derivado en la issue [#204](https://github.com/ferboiar/timon/issues/204).
+- En `REPEATABLE READ` la propia relectura con bloqueo de una fila confirmada después del snapshot termina en `ER_CHECKREAD` y la cascada revierte. El aislamiento del servidor es `READ COMMITTED`.
+
 ## Características Especiales
 
 ### Validación Contextual

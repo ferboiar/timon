@@ -13,7 +13,10 @@
 //   mismo concepto y sin enlace, solo actúa cuando el valor pedido difiere y revierte entera si
 //   la operación falla después;
 // - la carrera de la relectura con bloqueo: otra transacción deja el recibo abierto en 1 sin
-//   confirmar y el llamante pide 0 creyendo que sigue en 0.
+//   confirmar y el llamante pide 0 creyendo que sigue en 0;
+// - la carrera de F-61 con el recibo del año siguiente, con dos conexiones reales en READ COMMITTED
+//   (el aislamiento del servidor) y en REPEATABLE READ: la relectura con bloqueo incorpora el
+//   eslabón creado en el hueco y el INSERT ... SELECT de generar_recibos_anio espera al COMMIT.
 //
 // La carrera no se observa con `information_schema.innodb_trx` porque `timon_test` no tiene el
 // privilegio PROCESS (comprobado: ER_SPECIFIC_ACCESS_DENIED_ERROR); se comprueba que la promesa
@@ -59,6 +62,8 @@ let registroDeAhorro;
 let registroDeAnticipo;
 let asegurarCambioPrivacidad;
 let privacidadParaGuardar;
+let bloquearCadenaDeRecibos;
+let aplicarPrivacidadEnCadena;
 
 /** Usuario para las funciones puras de la matriz: solo rol, id y escritura en todo. */
 const usuarioDe = (id, rol) => ({
@@ -164,7 +169,7 @@ before(async () => {
     });
 
     ({ closePool: cerrarPool } = await import('../src/db/db_connection.mjs'));
-    ({ pushRecibo, getRecibos } = await import('../src/db/db_utils.mjs'));
+    ({ pushRecibo, getRecibos, bloquearCadenaDeRecibos, aplicarPrivacidadEnCadena } = await import('../src/db/db_utils.mjs'));
     ({ pushAdvance, getAdvances } = await import('../src/db/db_utilsAdv.mjs'));
     ({ pushSaving, getSavings } = await import('../src/db/db_utilsSav.mjs'));
     ({ registroDeRecibo, registroDeAhorro, registroDeAnticipo, asegurarCambioPrivacidad, privacidadParaGuardar } = await import('../src/utils/propiedad.mjs'));
@@ -466,5 +471,224 @@ describe('Carrera de autorización (DC-75)', () => {
         }
 
         assert.equal(Number((await fila('ahorros', id)).es_privado), 1, 'la decisión del propietario se conserva');
+    });
+});
+
+// F-61 (DC-75): la cascada anual de `es_privado` frente al recibo que crea el procedimiento
+// `generar_recibos_anio`. Se reproduce con dos conexiones reales sobre esta base `*_test`, en el
+// aislamiento por defecto del servidor y en READ COMMITTED, que es el que puede tener producción:
+//
+// - Ventana A: el sucesor entra entre el CTE recursivo (lectura sin bloqueo) y el `FOR UPDATE`.
+//   La relectura posterior tiene que ser con bloqueo, porque en snapshot una lectura normal no ve
+//   lo confirmado después de abrir la transacción, y ante un INSERT sin confirmar el bloqueo de la
+//   FK detiene al que lee. Con la relectura acotada a MAX_PASADAS = 3 el eslabón nuevo termina con
+//   el valor pedido.
+// - Ventana B: el `INSERT INTO recibos (...) SELECT ... FROM recibos WHERE id = ?` del
+//   procedimiento, lanzado mientras la cascada sostiene el `FOR UPDATE` del padre. Se comprueba que
+//   espera al COMMIT y qué queda en el hijo: en READ COMMITTED aborta con ER_CHECKREAD (fallo
+//   cerrado, nunca con el valor anterior) y en REPEATABLE READ copia el valor ya confirmado.
+describe('Carrera con el recibo del año siguiente (F-61)', () => {
+    // El servidor de desarrollo y pruebas está en READ COMMITTED por defecto; se prueba además
+    // REPEATABLE READ para dejar constancia de lo que ve el snapshot y del aislamiento del servidor.
+    const AISLAMIENTOS = [
+        { nombre: 'por defecto', sql: null },
+        { nombre: 'READ COMMITTED', sql: 'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED' },
+        { nombre: 'REPEATABLE READ', sql: 'SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ' }
+    ];
+
+    /** Conexión propia con el aislamiento pedido, para no depender del que tenga el pool. */
+    const abrir = async (sql) => {
+        const propia = await mysql.createConnection({ ...conexion, database: dbName });
+        if (sql) await propia.query(sql);
+        return propia;
+    };
+
+    /** Fila mínima que el procedimiento anual copia del padre (`recibo_origen_id` y `replicar` fijos). */
+    const insertarSucesor = (destino, padre, esPrivado, anio) =>
+        destino.execute(
+            'INSERT INTO recibos (concepto, importe, periodicidad, categoria_id, cuenta_id, propietario_id, es_privado, fecha_inicial, recibo_origen_id) VALUES (?, 10, ?, 1, 1, ?, ?, ?, ?)',
+            ['f61_cadena', 'anual', PROPIETARIO, esPrivado, `${anio}-12-31`, padre]
+        );
+
+    /** La sentencia exacta de `generar_recibos_anio` para la tabla `recibos` (migración 0007). */
+    const INSERT_ANUAL =
+        'INSERT INTO recibos (concepto, importe, periodicidad, categoria_id, cuenta_id, propietario_id, es_privado, fecha_inicial, recibo_origen_id, replicar) ' +
+        'SELECT concepto, ?, periodicidad, categoria_id, cuenta_id, propietario_id, es_privado, ?, id, 1 FROM recibos WHERE id = ?';
+
+    test('ventana A: el sucesor confirmado entre el CTE y el bloqueo acaba con el valor nuevo', async () => {
+        for (const aislamiento of AISLAMIENTOS) {
+            const contexto = `[${aislamiento.nombre}] `;
+            const a = await insertarRecibo({ concepto: 'f61_cadena', propietarioId: PROPIETARIO, anio: 2030, esPrivado: 0 });
+            const b = await insertarRecibo({ concepto: 'f61_cadena', propietarioId: PROPIETARIO, anio: 2031, origen: a, esPrivado: 0 });
+
+            const c1 = await abrir(aislamiento.sql);
+            const c2 = await abrir(aislamiento.sql);
+            let sucesor = 0;
+            let leidoSinBloqueo = 0;
+            let pasadas = 0;
+            let cadena = null;
+            let errorRelectura = null;
+
+            try {
+                await c1.beginTransaction();
+
+                // Conexión 1 tal cual, salvo que justo después del CTE recursivo (lectura sin
+                // bloqueo) Conexión 2 inserta y confirma —autocommit— el eslabón del año siguiente.
+                const envuelta = {
+                    execute: async (sql, params) => {
+                        const resultado = await c1.execute(sql, params);
+
+                        if (/WITH RECURSIVE anteriores/.test(String(sql))) {
+                            const [creado] = await insertarSucesor(c2, b, 0, 2032);
+                            sucesor = Number(creado.insertId);
+
+                            // Lectura normal desde Conexión 1, la que no bloquea: sirve para dejar
+                            // constancia de lo que alcanza el snapshot y por qué no basta.
+                            const [visibles] = await c1.execute('SELECT id FROM recibos WHERE id = ?', [sucesor]);
+                            leidoSinBloqueo = visibles.length;
+                        }
+
+                        if (/recibo_origen_id IN/.test(String(sql))) pasadas++;
+
+                        return resultado;
+                    }
+                };
+
+                const [[{ iso }]] = await c1.query('SELECT @@transaction_isolation AS iso');
+
+                // Lo que hace pushRecibo tras bloquear: bloquear la cadena, fijar el valor en el
+                // recibo abierto y aplicarlo al resto de eslabones del mismo propietario.
+                try {
+                    cadena = await bloquearCadenaDeRecibos(envuelta, b);
+                    await c1.execute('UPDATE recibos SET es_privado = 1 WHERE id = ?', [b]);
+                    await aplicarPrivacidadEnCadena(envuelta, cadena, b, PROPIETARIO, 1, PROPIETARIO);
+                    await c1.commit();
+                } catch (error) {
+                    errorRelectura = error.code || error.message;
+                    await c1.rollback().catch(() => {});
+                }
+
+                const privacidadSucesor = Number((await fila('recibos', sucesor)).es_privado);
+
+                console.log(`F-61 - ventana A [${aislamiento.nombre} / ${iso}]: lectura normal ve ${leidoSinBloqueo}, pasadas=${pasadas}, relectura=${errorRelectura ?? 'correcta'}, sucesor con es_privado=${privacidadSucesor}`);
+
+                // Lo que ve una lectura normal depende del aislamiento y se mide, no se impone: en
+                // READ COMMITTED cada sentencia abre su snapshot y sí ve lo confirmado después de
+                // empezar; en REPEATABLE READ el snapshot se abrió con el CTE y no lo ve.
+                assert.equal(leidoSinBloqueo, /READ-COMMITTED/.test(iso) ? 1 : 0, contexto + `lectura normal en ${iso}`);
+
+                if (/REPEATABLE-READ/.test(iso)) {
+                    // Límite conocido de F-61: en REPEATABLE READ, una fila confirmada después del
+                    // snapshot no se puede releer con bloqueo —ER_CHECKREAD (1020)— y la cascada
+                    // revierte. No deja el eslabón con el valor anterior: falla cerrada. Se anota en
+                    // DC-75 al cerrar la iteración.
+                    assert.equal(errorRelectura, 'ER_CHECKREAD', contexto + 'en REPEATABLE READ la relectura con bloqueo no puede ver el eslabón nuevo');
+                    assert.equal(privacidadSucesor, 0, contexto + 'la cascada revierte y el eslabón conserva su valor');
+                } else {
+                    assert.equal(errorRelectura, null, contexto + 'sin error en la relectura con bloqueo');
+                    assert.equal(cadena.includes(sucesor), true, contexto + 'la relectura con bloqueo incorpora el sucesor creado en el hueco');
+                    assert.ok(pasadas >= 1 && pasadas <= 3, contexto + `pasadas de relectura dentro del tope: ${pasadas}`);
+                    assert.equal(Number((await fila('recibos', a)).es_privado), 1, contexto + 'eslabón anterior');
+                    assert.equal(Number((await fila('recibos', b)).es_privado), 1, contexto + 'recibo abierto');
+                    assert.equal(privacidadSucesor, 1, contexto + 'el eslabón creado en el hueco queda con el valor pedido');
+                }
+            } finally {
+                await c1.end().catch(() => {});
+                await c2.end().catch(() => {});
+            }
+        }
+    });
+
+    test('ventana A de extremo a extremo: el sucesor insertado sin confirmar en el hueco entra en la cascada', async () => {
+        const a = await insertarRecibo({ concepto: 'f61_cadena', propietarioId: PROPIETARIO, anio: 2030, esPrivado: 0 });
+        const b = await insertarRecibo({ concepto: 'f61_cadena', propietarioId: PROPIETARIO, anio: 2031, origen: a, esPrivado: 0 });
+        const otra = await abrir(null);
+        let sucesor = 0;
+
+        try {
+            // El INSERT sin confirmar deja el bloqueo compartido de la FK sobre `b`, así que el
+            // `FOR UPDATE` de la cascada espera: la ventana aparece sola, sin ganchos en pushRecibo.
+            await otra.beginTransaction();
+            const [creado] = await insertarSucesor(otra, b, 0, 2032);
+            sucesor = Number(creado.insertId);
+
+            const promesa = pushRecibo(b, 'f61_cadena', 'anual', 10, 'f49-general', [], PROPIETARIO, 1, '2031-06-30', 'auto', false, 1, PROPIETARIO);
+            const carrera = await Promise.race([promesa.then(() => 'resuelta', (error) => 'error: ' + error.message), espera(1000).then(() => 'pendiente')]);
+
+            assert.equal(carrera, 'pendiente', 'la cascada debe esperar al eslabón del año siguiente sin confirmar');
+
+            await otra.commit();
+            await promesa;
+        } finally {
+            await otra.end().catch(() => {});
+        }
+
+        assert.equal(Number((await fila('recibos', a)).es_privado), 1, 'eslabón anterior');
+        assert.equal(Number((await fila('recibos', b)).es_privado), 1, 'recibo abierto');
+        assert.equal(Number((await fila('recibos', sucesor)).es_privado), 1, 'eslabón creado en el hueco');
+    });
+
+    test('ventana B: el INSERT ... SELECT del procedimiento anual espera al bloqueo del padre', async () => {
+        const observaciones = [];
+
+        for (const aislamiento of AISLAMIENTOS) {
+            const padre = await insertarRecibo({ concepto: 'f61_cadena', propietarioId: PROPIETARIO, anio: 2030, esPrivado: 0 });
+
+            const c1 = await abrir(aislamiento.sql);
+            const c2 = await abrir(aislamiento.sql);
+
+            try {
+                // La cascada: bloquea la cadena y deja el valor nuevo sin confirmar.
+                await c1.beginTransaction();
+                const [[{ iso }]] = await c1.query('SELECT @@transaction_isolation AS iso');
+                await c1.execute('SELECT id FROM recibos WHERE id = ? FOR UPDATE', [padre]);
+                await c1.execute('UPDATE recibos SET es_privado = 1 WHERE id = ?', [padre]);
+
+                // El procedimiento copia el padre con la sentencia de la migración 0007.
+                const insert = c2.execute(INSERT_ANUAL, [10, '2031-12-31', padre]);
+                const estado = await Promise.race([insert.then(() => 'hecho', (error) => 'error: ' + error.code), espera(1000).then(() => 'pendiente')]);
+
+                let privacidadHijo = null;
+
+                if (estado === 'pendiente') {
+                    await c1.commit();
+
+                    try {
+                        const [resultado] = await insert;
+                        const [filaHijo] = await c2.execute('SELECT id, es_privado FROM recibos WHERE id = ?', [Number(resultado.insertId)]);
+                        privacidadHijo = Number(filaHijo[0].es_privado);
+                    } catch (error) {
+                        privacidadHijo = 'error ' + (error.code || error.message);
+                    }
+                }
+
+                console.log(`F-61 - ventana B [${aislamiento.nombre} / ${iso}]: bloqueo=${estado}, hijo con es_privado=${privacidadHijo}`);
+                observaciones.push({ nombre: aislamiento.nombre, iso, bloqueo: estado, hijo: privacidadHijo });
+            } finally {
+                await c1.end().catch(() => {});
+                await c2.end().catch(() => {});
+            }
+        }
+
+        console.log('F-61 - ventana B (resumen): ' + observaciones.map((o) => `${o.nombre} / ${o.iso}: bloqueo=${o.bloqueo}, hijo=${o.hijo}`).join(' | '));
+
+        // Comportamiento observado y asumido en F-61 mientras el procedimiento no lea el origen con
+        // bloqueo compartido (issue abierta para el SQL): el INSERT espera al COMMIT de la cascada y
+        // - en READ COMMITTED, el aislamiento del servidor, aborta con ER_CHECKREAD (1020): la serie
+        //   no se crea en esa pasada, su transacción revierte en generar_recibos_anio y la reintenta
+        //   la ejecución siguiente. Falla cerrada: no guarda el es_privado anterior.
+        // - en REPEATABLE READ converge, porque el propio INSERT ... SELECT toma bloqueos
+        //   compartidos sobre las filas de origen y copia el valor ya confirmado.
+        for (const observacion of observaciones) {
+            const contexto = `[${observacion.nombre} / ${observacion.iso}] `;
+
+            assert.equal(observacion.bloqueo, 'pendiente', contexto + 'el INSERT del año siguiente espera al bloqueo del padre');
+
+            if (/READ-COMMITTED/.test(observacion.iso)) {
+                assert.equal(observacion.hijo, 'error ER_CHECKREAD', contexto + 'en READ COMMITTED el INSERT aborta y no guarda el valor anterior');
+            } else {
+                assert.equal(observacion.hijo, 1, contexto + 'en REPEATABLE READ copia el valor ya confirmado');
+            }
+        }
     });
 });
