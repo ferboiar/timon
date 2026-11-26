@@ -17,6 +17,12 @@ import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
 const validFilters = ['periodicidad', 'fecha', 'año', 'concepto', 'categoria', 'estado', 'activo'];
 
 /**
+ * Tope de pasadas de la relectura con bloqueo de `bloquearCadenaDeRecibos` (F-61).
+ * Nunca es un bucle sin cota: agotado el tope, la cascada termina y deja traza.
+ */
+const MAX_PASADAS = 3;
+
+/**
  * Obtiene los recibos de la base de datos según los filtros proporcionados.
  * Si no se proporcionan filtros, devuelve todos los recibos.
  * Si se proporciona un filtro no válido, lanza un error.
@@ -219,6 +225,13 @@ function importeDelCargo(estado, cargoActual, cargoPeticion, importeRecibo) {
  * Los bloqueos se piden después de leer los ids y en orden ascendente: dos cascadas simultáneas sobre
  * la misma cadena los adquieren en el mismo orden y no se interbloquean.
  *
+ * F-61: entre el CTE (lectura sin bloqueo) y el `FOR UPDATE` cabe un eslabón nuevo, el que inserta
+ * `generar_recibos_anio` para el año siguiente. Por eso, tras bloquear, se releen con bloqueo los
+ * hijos de lo último bloqueado (`WHERE recibo_origen_id IN (...) ORDER BY id FOR UPDATE`), como mucho
+ * MAX_PASADAS veces: en snapshot una lectura normal no ve lo confirmado después de abrir la
+ * transacción y ante un INSERT sin confirmar el bloqueo de `fk_recibos_origen` detiene al que lee
+ * hasta su COMMIT, con lo que la relectura ve el eslabón y lo incorpora a la cascada.
+ *
  * @returns {Promise<number[]>} Ids de la cadena, ascendentes y sin repetir.
  */
 async function bloquearCadenaDeRecibos(connection, reciboId) {
@@ -236,9 +249,35 @@ async function bloquearCadenaDeRecibos(connection, reciboId) {
         [reciboId, reciboId]
     );
 
-    const ids = [...new Set(filas.map((fila) => Number(fila.id)))].sort((a, b) => a - b);
+    let ids = [...new Set(filas.map((fila) => Number(fila.id)))].sort((a, b) => a - b);
     const marcas = ids.map(() => '?').join(',');
     await connection.execute(`SELECT id FROM recibos WHERE id IN (${marcas}) ORDER BY id FOR UPDATE`, ids);
+
+    // F-61: relectura con bloqueo de los sucesores que hayan entrado en el hueco, acotada al tope.
+    let frontera = ids;
+    for (let pasada = 1; pasada <= MAX_PASADAS && frontera.length > 0; pasada++) {
+        const marcasFrontera = frontera.map(() => '?').join(',');
+        const [sucesores] = await connection.execute(
+            `SELECT id FROM recibos WHERE recibo_origen_id IN (${marcasFrontera}) ORDER BY id FOR UPDATE`,
+            frontera
+        );
+
+        const nuevos = [...new Set(sucesores.map((fila) => Number(fila.id)))]
+            .filter((id) => !ids.includes(id))
+            .sort((a, b) => a - b);
+
+        if (nuevos.length === 0) break;
+
+        console.log(`recibos - privacidad en cascada: la relectura con bloqueo añadió ${nuevos.length} eslabón(es) a la cadena del recibo ${reciboId} (pasada ${pasada} de ${MAX_PASADAS})`);
+
+        ids = [...ids, ...nuevos].sort((a, b) => a - b);
+        frontera = nuevos;
+
+        // Nunca se pasa del tope: si la cadena sigue creciendo, se deja traza y se termina aquí.
+        if (pasada === MAX_PASADAS) {
+            console.log(`recibos - privacidad en cascada: tope de ${MAX_PASADAS} pasadas alcanzado en la cadena del recibo ${reciboId}; quedan eslabones sin bloquear`);
+        }
+    }
 
     return ids;
 }
@@ -889,4 +928,7 @@ async function generarRecibosAnio(simular = true, fechaSimulada = null) {
     }
 }
 
-export { completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, generarFechasFuturas, generarRecibosAnio, getRecibos, importeDelCargo, pushRecibo };
+// `bloquearCadenaDeRecibos` y `aplicarPrivacidadEnCadena` se exportan para las pruebas de la carrera
+// de F-61, que necesitan abrir la ventana entre la lectura de la cadena y su bloqueo (mismo criterio
+// que `generarFechasFuturas` en `backend/test/fechas.test.mjs`).
+export { aplicarPrivacidadEnCadena, bloquearCadenaDeRecibos, completarFechasAnio, deleteRecibo, fechasFaltantes, generarFechasDelAnio, generarFechasFuturas, generarRecibosAnio, getRecibos, importeDelCargo, pushRecibo };
