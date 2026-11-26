@@ -449,7 +449,7 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                 const importeCambia = Math.abs(Number(previousImporte) - Number(importe)) >= 0.01;
                 if (importeCambia && (estado === 'pendiente' || (estado === 'pagado' && planCuadrabaAntes))) {
                     console.log('pushPago - Recalculando pagos pendientes para el anticipo ' + anticipoDelPago + ' debido a cambio en el importe.');
-                    await recalculatePostEditPayments(connection, anticipoDelPago, previousImporte, importe, previousFecha);
+                    await recalculatePostEditPayments(connection, anticipoDelPago, previousImporte, importe, previousFecha, id);
                 } else if (importeCambia && estado === 'pagado') {
                     console.log('pushPago - Anticipo ' + anticipoDelPago + ': el plan no cuadraba con el importe pendiente antes de editar el pago; los pagos pendientes no se recalculan.');
                 }
@@ -488,9 +488,18 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
 /**
  * Reparte la diferencia de importe de un pago pendiente editado entre los pagos pendientes posteriores (DC-08).
  * Función interna: usa la conexión, y por tanto la transacción y el bloqueo del anticipo, de pushPago.
+ *
+ * F-62: el pago editado se excluye siempre de los «posteriores» y del ajuste residual final. `pushPago` ya ha escrito
+ * su fecha nueva antes de llamar aquí, así que sin excluirlo entraría en su propio reparto y el ajuste final podría
+ * devolverle el pendiente total del anticipo. `pagoEditadoId` es obligatorio y se valida al entrar: en SQL
+ * `id <> NULL` no filtra nada y vaciaría las consultas.
  */
-async function recalculatePostEditPayments(connection, anticipo_id, previousImporte, newImporte, previousFecha) {
+async function recalculatePostEditPayments(connection, anticipo_id, previousImporte, newImporte, previousFecha, pagoEditadoId) {
     try {
+        const idExcluido = Number(pagoEditadoId);
+        if (!Number.isSafeInteger(idExcluido) || idExcluido <= 0) {
+            throw new Error('recalculatePostEditPayments necesita el identificador del pago editado (entero positivo)');
+        }
 
         // Convertir importes a números para asegurar operaciones numéricas correctas
         const prevImporte = parseFloat(previousImporte);
@@ -512,8 +521,8 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
         const pagoSugerido = parseFloat(anticipo[0].pago_sugerido);
 
 
-        // Obtener pagos pendientes posteriores a la fecha del pago editado
-        const [pendingPayments] = await connection.execute("SELECT id, importe, fecha FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' AND fecha > ? ORDER BY fecha ASC", [anticipo_id, previousFecha]);
+        // Obtener pagos pendientes posteriores a la fecha del pago editado, sin el propio pago editado (F-62)
+        const [pendingPayments] = await connection.execute("SELECT id, importe, fecha FROM anticipos_pagos WHERE anticipo_id = ? AND id <> ? AND estado = 'pendiente' AND fecha > ? ORDER BY fecha ASC", [anticipo_id, idExcluido, previousFecha]);
 
         if (pendingPayments.length === 0) {
             return;
@@ -651,11 +660,12 @@ async function recalculatePostEditPayments(connection, anticipo_id, previousImpo
 
         const totalActual = allPendingPayments.reduce((sum, p) => sum + parseFloat(p.importe), 0);
 
-        // Ajustar el último pago si hay alguna discrepancia
+        // Ajustar el último pago si hay alguna discrepancia. El pago editado se excluye también aquí (F-62): si su fecha
+        // nueva lo deja como el último pendiente, el residuo no puede devolverle otro importe del que pidió el usuario.
         const diferenciaTotales = Math.round((importeTotal - totalActual) * 100) / 100;
         if (Math.abs(diferenciaTotales) > 0.01) {
 
-            const [lastPayments] = await connection.execute("SELECT id, importe FROM anticipos_pagos WHERE anticipo_id = ? AND estado = 'pendiente' ORDER BY fecha DESC LIMIT 1", [anticipo_id]);
+            const [lastPayments] = await connection.execute("SELECT id, importe FROM anticipos_pagos WHERE anticipo_id = ? AND id <> ? AND estado = 'pendiente' ORDER BY fecha DESC LIMIT 1", [anticipo_id, idExcluido]);
 
             if (lastPayments.length > 0) {
                 const lastPago = lastPayments[0];

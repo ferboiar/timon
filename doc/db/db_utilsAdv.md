@@ -72,7 +72,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `recalculatePaymentPlan(anticipoId, ...)` | Genera o actualiza un plan de pagos para un anticipo. Abre su transacción y bloquea el anticipo, o se une a la de quien la llame si recibe una conexión (DC-39) |
-| `recalculatePostEditPayments(anticipo_id, ...)` | Recalcula los pagos pendientes después de editar un pago. Interna: recibe la conexión de pushPago |
+| `recalculatePostEditPayments(anticipo_id, ...)` | Recalcula los pagos pendientes después de editar un pago. Interna: recibe la conexión de pushPago y el id del pago editado, que excluye siempre del reparto y del ajuste final (F-62) |
 | `recalculatePendingPayments(anticipoId)` | Redistribuye importes entre pagos pendientes a partes iguales. No la usa ninguna ruta |
 
 ## Algoritmos Clave
@@ -92,7 +92,7 @@ El algoritmo para `recalculatePaymentPlan` implementa la siguiente lógica:
 
 La función `recalculatePostEditPayments` implementa un sofisticado algoritmo para redistribuir la diferencia de importe cuando un pago es modificado:
 
-1. Calcula la diferencia y consulta solo pendientes con fecha estrictamente posterior a la fecha anterior del pago editado; sin posteriores o con diferencia menor de 0,01, termina
+1. Calcula la diferencia y consulta solo pendientes con fecha estrictamente posterior a la fecha anterior del pago editado, excluyendo el propio pago editado por su `id` (F-62); sin posteriores o con diferencia menor de 0,01, termina
 2. Si la diferencia es positiva (reducción del pago):
    - Primero, intenta llevar los pagos por debajo del importe sugerido hasta ese valor
    - Luego, distribuye equitativamente cualquier cantidad restante
@@ -187,6 +187,6 @@ pushAdvance, pushPago, handlePaymentDeletion, sustituirPago y recalculatePayment
 - completarPlanTrasBorrado es interna y completa todo el importe pendiente no cubierto por los pagos pendientes, no solo el importe del último pago borrado. recalculatePendingPayments está exportada pero no la usa ninguna ruta.
 - handlePaymentDeletion devuelve el importe pendiente derivado y los contadores documentados (deletePago se retiró en DC-39). Borrar un pagado sube el importe pendiente y el anticipo deja de estar completado por sí solo, porque ese estado se deduce (F-14, DC-38).
 - deleteAdvances bloquea los anticipos, borra primero sus pagos y después los anticipos en una sola transacción; el resto de operaciones compuestas también son transaccionales y recalculatePendingPayments (exportada, sin ruta) se une a la transacción que se le pase (F-27, DC-39).
-- `recalculatePostEditPayments` no excluye el propio pago editado de los «posteriores»: si en una misma edición cambian fecha e importe, el pago entra en el conjunto porque la consulta se hace después del `UPDATE` y el ajuste final puede igualarlo al pendiente del anticipo. Registrado como F-62 ([#200](https://github.com/ferboiar/timon/issues/200)); S-26 no lo corrige porque su alcance prohíbe tocar el algoritmo.
+- `recalculatePostEditPayments` excluye el propio pago editado de los «posteriores» y del ajuste residual final (`AND id <> ?` en la consulta de pendientes posteriores y en la selección del último pendiente), con el id recibido como parámetro obligatorio validado al entrar; sin esa exclusión, cambiar fecha e importe en la misma petición metía el pago en su propio reparto y el ajuste final podía devolverle el pendiente total del anticipo. Corregido el 2026-11-26 (F-62, [#200](https://github.com/ferboiar/timon/issues/200)) con la prueba de regresión `backend/test/repartoPagoEditado.test.mjs`.
 
 Las trazas arriba descritas existen en pushAdvance, recalculatePaymentPlan, recalculatePostEditPayments, handlePaymentDeletion y completarPlanTrasBorrado, incluidos los caminos sin generación o sin importe por colocar. Son registro de ejecución, no garantía de atomicidad. No se han ejecutado nuevas pruebas funcionales en esta auditoría.
