@@ -11,6 +11,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 - Recálculo dinámico de pagos pendientes tras modificaciones
 - Manejo de diferentes periodicidades (mensual, bimestral, trimestral, anual)
 - Las operaciones que escriben en varias filas se ejecutan en una transacción con el anticipo bloqueado: o se aplican enteras o no se aplica nada (F-27, DC-39)
+- La capa de base de datos no actúa sobre un pago que no pertenezca al anticipo recibido: `pushPago` rechaza con 400 `PADRE_INCORRECTO` y las lecturas y escrituras de pagos se acotan con `anticipo_id` (S-26)
 - Validación de datos y manejo de errores robusto
 
 ## Estructura de Datos
@@ -54,7 +55,7 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 |---------|-------------|
 | `getAdvances()` | Obtiene todos los anticipos ordenados por fecha de inicio, con `importe_original`, el `pendiente` calculado y el `estado` efectivo (DC-38) |
 | `pushAdvance(id, concepto, ...)` | Crea o actualiza un anticipo; el importe es el principal (`importe_original`, no negativo) y un estado `completado` recibido se guarda como `activo` (DC-38). Al crear exige el propietario. Genera o recalcula el plan solo si hay periodicidad y un pago sugerido mayor que 0; si no, lo anota en el log con el motivo. Todo en una transacción: si falla el plan, el anticipo no se crea ni se modifica (F-27, DC-39). Guarda el concepto sin espacios sobrantes y en minúsculas (DC-31, F-44) |
-| `deleteAdvances(advances)` | Elimina uno o más anticipos y sus pagos asociados, en una transacción (F-27, DC-39) |
+| `deleteAdvances(advances)` | Elimina uno o más anticipos y sus pagos asociados, en una transacción (F-27, DC-39). Acota el borrado de los pagos con la misma lista validada de identificadores (`anticipo_id IN (…)`) y rechaza con 400 la lista vacía o con identificadores que no sean enteros positivos, sin construir un `IN ()` inválido (S-26) |
 | `getPeriodicidades()` | Obtiene las periodicidades definidas en el esquema |
 
 ### Gestión de Pagos
@@ -62,9 +63,9 @@ Este módulo contiene todas las funciones de acceso a la base de datos relaciona
 | Función | Descripción |
 |---------|-------------|
 | `getPagos(anticipoId)` | Obtiene los pagos asociados a un anticipo |
-| `pushPago(id, anticipo_id, ...)` | Crea o actualiza un pago con todos sus atributos. No guarda ningún importe pendiente (se deriva de los pagos pagados) y rechaza pasar de pagado a cancelado (DC-38). En una transacción con el anticipo bloqueado; al editar usa el anticipo del propio pago y devuelve el id del pago (F-27, DC-39) |
-| `sustituirPago(pagoId, datos)` | Crea un pago nuevo (pendiente) y borra el antiguo, sin repartir, en una sola transacción; devuelve `pagoNuevoId`, `anticipoId` y `pendiente` (F-25, F-27, DC-39) |
-| `handlePaymentDeletion(pagoId, redistribuir)` | Elimina un pago y devuelve `pendiente`, `anticipoId`, `redistribuido`, `pagosAjustados` y `pagosCreados`. Con `redistribuir` verdadero completa el plan con su importe según DC-12 y exige pago sugerido y periodicidad. Todo en una transacción: si el reparto falla, el pago no se borra (F-27, DC-39) |
+| `pushPago(id, anticipo_id, ...)` | Crea o actualiza un pago con todos sus atributos. No guarda ningún importe pendiente (se deriva de los pagos pagados) y rechaza pasar de pagado a cancelado (DC-38). En una transacción con el anticipo bloqueado; al editar usa el anticipo del propio pago, rechaza con 400 `PADRE_INCORRECTO` si la petición indica otro y acota la relectura y el `UPDATE` con `AND anticipo_id = ?`; devuelve el id del pago (F-27, DC-39, S-26) |
+| `sustituirPago(pagoId, datos)` | Crea un pago nuevo (pendiente) y borra el antiguo, sin repartir, en una sola transacción; relee el pago con el anticipo bloqueado, borra con `AND anticipo_id = ?` y devuelve `pagoNuevoId`, `anticipoId` y `pendiente` (F-25, F-27, DC-39, S-26) |
+| `handlePaymentDeletion(pagoId, redistribuir)` | Elimina un pago y devuelve `pendiente`, `anticipoId`, `redistribuido`, `pagosAjustados` y `pagosCreados`. La segunda lectura del pago y el `DELETE` se acotan con `AND anticipo_id = ?` (S-26). Con `redistribuir` verdadero completa el plan con su importe según DC-12 y exige pago sugerido y periodicidad. Todo en una transacción: si el reparto falla, el pago no se borra (F-27, DC-39) |
 
 ### Planes de Pago
 
@@ -109,6 +110,21 @@ La edición de un pago (`recalculatePostEditPayments`) sigue repartiendo la dife
 
 La sustitución («Añadirlo en uno nuevo») es una operación de la base de datos, sustituirPago: crea el pago nuevo y borra el antiguo, sin repartir, en una sola transacción (F-25, F-27, DC-39).
 
+## Pertenencia padre-hijo de los pagos (S-26)
+
+La ruta comprueba que el `anticipo_id` recibido coincide con el del pago (S-18), pero la capa de base de datos no se apoya solo en esa comprobación: cada consulta de un pago por su `id` se acota con el anticipo al que pertenece. El rechazo es un `ErrorDeNegocio` 400 con código `PADRE_INCORRECTO` que revierte la transacción entera, deja traza en el log (DC-09) y no escribe ni la fila ajena ni la propia.
+
+| Función | Cómo acota cada consulta |
+|---|---|
+| `pushPago` | Edición: lee el `anticipo_id` del pago; si la petición trae otro, rechaza con 400 antes de bloquear o escribir. La relectura bajo el bloqueo y el `UPDATE` llevan `AND anticipo_id = ?`. Alta: inserta con el `anticipo_id` recibido y bloquea ese anticipo (404 si no existe). |
+| `sustituirPago` | Localiza el anticipo del pago y lo bloquea; relee el pago con `AND anticipo_id = ?` antes de crear el sustituto y borra con `AND anticipo_id = ?`, comprobando que la baja alcanza una fila. Si no, 404 y no se crea el pago nuevo. |
+| `handlePaymentDeletion` | Localiza el anticipo del pago y lo bloquea; la segunda lectura (importe y estado) y el `DELETE` llevan `AND anticipo_id = ?`. El reparto posterior ya filtraba por `anticipo_id`. |
+| `deleteAdvances` | No recibe ids de pagos: borra con `anticipo_id IN (…)` usando la misma lista validada de anticipos que bloquea y elimina. Rechaza con 400 la lista vacía o con identificadores que no sean enteros positivos (la ruta ya la valida con `leerListaEnterosPositivos`). |
+| `getPagos` | Filtra por `anticipo_id` desde el principio; el `id` del pago no se usa para localizarlo. |
+| `generarPlanDePagos`, `recalculatePostEditPayments`, `completarPlanTrasBorrado`, `recalculatePaymentPlan`, `recalculatePendingPayments` | Todas sus consultas y escrituras de pagos filtran por `anticipo_id`; no reciben ids de pago sueltos. Sin cambios en S-26. |
+
+Límites de la verificación: la prueba nueva reproduce el cruce con dos anticipos y comprueba el 400 y la ausencia de escrituras, y ejercita las operaciones válidas y las listas de borrado. La ventana de concurrencia entre la primera lectura y el bloqueo no se ha reproducido con dos sesiones simultáneas: el acotado de la segunda lectura y del `DELETE` es la garantía de que la operación no alcanza otra fila.
+
 ## Transacciones y bloqueo (F-27, DC-39)
 
 Las operaciones que escriben en más de una fila se ejecutan con `enTransaccion` (en `db_connection.mjs`): o se aplican enteras (commit) o no se aplica nada (rollback). Antes, un fallo intermedio dejaba un plan a medias o un pago ya borrado sin su reparto.
@@ -127,7 +143,7 @@ Cómo funciona:
 - `enTransaccion(conexionExterna, operacion)` abre una conexión, inicia la transacción, ejecuta la operación y confirma; si la operación lanza un error, deshace todo y relanza ese mismo error. Si recibe una conexión ya abierta, la operación se une a la transacción de quien la llama y no confirma ni deshace nada por su cuenta. Por eso las funciones internas (`generarPlanDePagos`, `completarPlanTrasBorrado` y `recalculatePostEditPayments`) reciben la conexión y no abren otra, y `recalculatePaymentPlan` y `recalculatePendingPayments` aceptan una conexión opcional para usarse sueltas o dentro de otra operación.
 - Cada operación empieza con `bloquearAnticipo`: `SELECT id FROM anticipos WHERE id = ? FOR UPDATE`. El bloqueo dura hasta el final de la transacción y hace que dos peticiones sobre el mismo anticipo se ejecuten una detrás de otra, de modo que la segunda ve ya el resultado de la primera. Sin él, dos regeneraciones simultáneas del plan insertarían los mismos pagos dos veces.
 - Orden de bloqueo: primero el anticipo y después sus pagos, siempre. Con un orden fijo, dos transacciones no pueden bloquearse entre sí (interbloqueo).
-- Los pagos se leen otra vez ya con el anticipo bloqueado, porque mientras se esperaba otra petición pudo modificarlos o borrarlos. La base usa READ-COMMITTED, así que tras esperar el bloqueo se ve lo que la otra transacción confirmó.
+- Los pagos se leen otra vez ya con el anticipo bloqueado y acotados a él (`AND anticipo_id = ?`, S-26), porque mientras se esperaba otra petición pudo modificarlos o borrarlos. La base usa READ-COMMITTED, así que tras esperar el bloqueo se ve lo que la otra transacción confirmó.
 - Errores con código: las funciones lanzan `errorHttp(404, …)` si el anticipo o el pago no existe y `errorHttp(400, …)` si los datos no son válidos (pago sugerido, límite de 1200 pagos, datos del pago nuevo, importe del anticipo). Las rutas los devuelven con su código; un error de clave foránea (por ejemplo, una cuenta inexistente) se traduce a 400 con `La cuenta indicada no existe`; los demás errores son fallos internos (500).
 - Cada transacción deja una traza: `enTransaccion - Transacción confirmada` o `enTransaccion - Transacción deshecha: motivo`. Si el rollback falla, se registra `enTransaccion - Error al deshacer la transacción: …` y se conserva el error original.
 
@@ -140,7 +156,8 @@ Cada paso deja trazas en el log del backend con el formato «módulo - acción: 
 - `handlePaymentDeletion - Eliminando el pago ID: … (anticipo …, importe …, estado …, redistribuir: …)` al borrar un pago.
 - `completarPlanTrasBorrado - Anticipo …: pendiente …, pagos pendientes …, por colocar …` con el importe que falta por colocar, `… Pago ID … de A a B (+C)` por cada pago ajustado y un resumen `… N pagos ajustados y M pagos nuevos`. Los pagos nuevos dejan además las trazas habituales de `recalculatePaymentPlan`.
 - `recalculatePaymentPlan - Plan de pagos recalculado exitosamente para el anticipo …` y `recalculatePostEditPayments - Recálculo completado para anticipo …` resumen el resultado del recálculo; los pasos intermedios (importes y fechas calculados) ya no se registran (S-05).
-- `sustituirPago - Pago … sustituido por el pago … en el anticipo … (filas borradas: …)` al sustituir un pago; `pushPago - Pago … del anticipo …: estado A -> B, importe A -> B, fecha A -> B` al editar un pago, para comprobar en el log qué cambió; `enTransaccion - Transacción confirmada` o `enTransaccion - Transacción deshecha: motivo` al terminar cada operación, y `enTransaccion - Error al deshacer la transacción: …` si falla un rollback. Los errores con código (400 y 404) se registran solo con su mensaje, sin la pila; los fallos internos, con la traza completa.
+- `sustituirPago - Pago … sustituido por el pago … en el anticipo … (filas borradas: …)` al sustituir un pago y `sustituirPago - Pago … del anticipo …: importe …, estado …, autor …` con los datos releídos bajo el bloqueo; `pushPago - Pago … del anticipo …: estado A -> B, importe A -> B, fecha A -> B` al editar un pago, para comprobar en el log qué cambió; `enTransaccion - Transacción confirmada` o `enTransaccion - Transacción deshecha: motivo` al terminar cada operación, y `enTransaccion - Error al deshacer la transacción: …` si falla un rollback. Los errores con código (400 y 404) se registran solo con su mensaje, sin la pila; los fallos internos, con la traza completa.
+- `pushPago - Rechazado: el pago … pertenece al anticipo …, no al …` cuando la petición indica un anticipo distinto del dueño del pago (S-26); el rechazo revierte la transacción y no deja ninguna escritura.
 
 ## Consideraciones de Rendimiento
 
@@ -170,5 +187,6 @@ pushAdvance, pushPago, handlePaymentDeletion, sustituirPago y recalculatePayment
 - completarPlanTrasBorrado es interna y completa todo el importe pendiente no cubierto por los pagos pendientes, no solo el importe del último pago borrado. recalculatePendingPayments está exportada pero no la usa ninguna ruta.
 - handlePaymentDeletion devuelve el importe pendiente derivado y los contadores documentados (deletePago se retiró en DC-39). Borrar un pagado sube el importe pendiente y el anticipo deja de estar completado por sí solo, porque ese estado se deduce (F-14, DC-38).
 - deleteAdvances bloquea los anticipos, borra primero sus pagos y después los anticipos en una sola transacción; el resto de operaciones compuestas también son transaccionales y recalculatePendingPayments (exportada, sin ruta) se une a la transacción que se le pase (F-27, DC-39).
+- `recalculatePostEditPayments` no excluye el propio pago editado de los «posteriores»: si en una misma edición cambian fecha e importe, el pago entra en el conjunto porque la consulta se hace después del `UPDATE` y el ajuste final puede igualarlo al pendiente del anticipo. Registrado como F-62 ([#200](https://github.com/ferboiar/timon/issues/200)); S-26 no lo corrige porque su alcance prohíbe tocar el algoritmo.
 
 Las trazas arriba descritas existen en pushAdvance, recalculatePaymentPlan, recalculatePostEditPayments, handlePaymentDeletion y completarPlanTrasBorrado, incluidos los caminos sin generación o sin importe por colocar. Son registro de ejecución, no garantía de atomicidad. No se han ejecutado nuevas pruebas funcionales en esta auditoría.

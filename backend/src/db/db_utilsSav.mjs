@@ -13,6 +13,16 @@ import { getConnection } from './db_connection.mjs';
 import { ErrorDeNegocio } from '../utils/errorDeNegocio.mjs';
 import { esErrorDeReferencia } from '../utils/catalogoErrores.mjs';
 
+/**
+ * Bloquea la fila del ahorro hasta el final de la transacción (SELECT … FOR UPDATE, DC-39) y devuelve true si existe.
+ * Las operaciones que modifican un movimiento empiezan por aquí: se bloquea primero el padre y después se lee el hijo,
+ * en ese orden, para que dos transacciones no puedan bloquearse mutuamente (S-26).
+ */
+async function bloquearAhorro(connection, ahorroId) {
+    const [filas] = await connection.execute('SELECT id FROM ahorros WHERE id = ? FOR UPDATE', [ahorroId]);
+    return filas.length > 0;
+}
+
 async function getSavings() {
     let connection;
     try {
@@ -127,17 +137,24 @@ async function pushSaving(id, concepto, descripcion = null, ahorrado = 0, fecha_
 
 async function deleteSavings(savings) {
     let connection;
+    if (!Array.isArray(savings)) {
+        savings = [savings];
+    }
+    // S-26: la lista llega validada de la ruta (leerListaEnterosPositivos); aquí se vuelve a comprobar para no
+    // construir un IN () inválido ni aceptar identificadores que no sean enteros positivos. El borrado se acota con
+    // esos mismos identificadores y los movimientos caen por la clave foránea en cascada (0001).
+    const ids = savings.map((valor) => Number(valor));
+    if (ids.length === 0 || ids.some((valor) => !Number.isSafeInteger(valor) || valor <= 0)) {
+        throw new ErrorDeNegocio('La lista de ahorros a eliminar debe traer al menos un identificador válido', 400);
+    }
     try {
         connection = await getConnection();
-        if (!Array.isArray(savings)) {
-            savings = [savings];
-        }
-        const placeholders = savings.map(() => '?').join(',');
-        await connection.execute(`DELETE FROM ahorros WHERE id IN (${placeholders})`, savings);
+        const placeholders = ids.map(() => '?').join(',');
+        await connection.execute(`DELETE FROM ahorros WHERE id IN (${placeholders})`, ids);
     } catch (error) {
         console.error('Error al eliminar los ahorros:', error);
         if (esErrorDeReferencia(error)) {
-            console.log('deleteSavings - Rechazado: el ahorro tiene registros asociados: ' + String(savings));
+            console.log('deleteSavings - Rechazado: el ahorro tiene registros asociados: ' + String(ids));
             throw new ErrorDeNegocio('No se puede eliminar el ahorro porque tiene registros asociados', 409);
         }
         throw error;
@@ -198,17 +215,34 @@ async function pushMovimiento(id, ahorro_id, importe, fecha, tipo, descripcion =
         let diferencia = Number(importe);
 
         if (id) {
-            // Bloquear el movimiento y tomar de la base de datos su ahorro y su importe anterior
-            const [anterior] = await connection.execute('SELECT ahorro_id, importe FROM ahorros_movimientos WHERE id = ? FOR UPDATE', [id]);
+            // Primera lectura: a qué ahorro pertenece el movimiento
+            const [duenio] = await connection.execute('SELECT ahorro_id FROM ahorros_movimientos WHERE id = ?', [id]);
+            if (duenio.length === 0) {
+                throw new ErrorDeNegocio('Movimiento no encontrado', 404);
+            }
+            ahorroId = duenio[0].ahorro_id;
+
+            // S-26: si la petición indica un ahorro, tiene que ser el del movimiento. La comprobación no depende solo
+            // del chequeo de la ruta (S-18): la capa de base de datos no actúa sobre un ahorro distinto.
+            if (ahorro_id !== undefined && ahorro_id !== null && ahorro_id !== '' && Number(ahorro_id) !== Number(ahorroId)) {
+                console.log(`pushMovimiento - Rechazado: el movimiento ${id} pertenece al ahorro ${ahorroId}, no al ${ahorro_id}`);
+                throw new ErrorDeNegocio('El movimiento no pertenece al ahorro indicado.', 400, 'PADRE_INCORRECTO');
+            }
+
+            // DC-39: se bloquea primero el ahorro y después se lee el movimiento acotado a él, que puede haber cambiado
+            // mientras se esperaba el bloqueo
+            if (!(await bloquearAhorro(connection, ahorroId))) {
+                throw new ErrorDeNegocio(`Ahorro con ID ${ahorroId} no encontrado`, 404);
+            }
+            const [anterior] = await connection.execute('SELECT importe FROM ahorros_movimientos WHERE id = ? AND ahorro_id = ? FOR UPDATE', [id, ahorroId]);
             if (anterior.length === 0) {
                 throw new ErrorDeNegocio('Movimiento no encontrado', 404);
             }
-            ahorroId = anterior[0].ahorro_id;
             const importeAnterior = anterior[0].importe;
             diferencia = Math.round((Number(importe) - Number(importeAnterior)) * 100) / 100;
             console.log(`pushMovimiento - Editando el movimiento ID ${id} del ahorro ${ahorroId}: importe ${importeAnterior} -> ${importe} (diferencia ${diferencia.toFixed(2)}), autor ${usuarioId ?? 'sistema'}`);
 
-            await connection.execute('UPDATE ahorros_movimientos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), modificado_por = ? WHERE id = ?', [importe, fecha, tipo, descripcion, usuarioId, id]);
+            await connection.execute('UPDATE ahorros_movimientos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), modificado_por = ? WHERE id = ? AND ahorro_id = ?', [importe, fecha, tipo, descripcion, usuarioId, id, ahorroId]);
         } else {
             console.log(`pushMovimiento - Nuevo movimiento del ahorro ${ahorroId}: importe ${importe}, fecha ${fecha}, tipo ${tipo}, autor ${usuarioId ?? 'sistema'}`);
             await connection.execute('INSERT INTO ahorros_movimientos (ahorro_id, importe, fecha, tipo, descripcion, modificado_por) VALUES (?, ?, ?, ?, ?, ?)', [ahorro_id, importe, fecha, tipo, descripcion, usuarioId]);
@@ -248,24 +282,38 @@ async function deleteMovimiento(id, usuarioId = null) {
         await connection.beginTransaction();
         enTransaccion = true;
 
-        // Obtener el importe del movimiento antes de eliminarlo
-        const [movimiento] = await connection.execute('SELECT ahorro_id, importe FROM ahorros_movimientos WHERE id = ? FOR UPDATE', [id]);
+        // Primera lectura: a qué ahorro pertenece el movimiento
+        const [duenio] = await connection.execute('SELECT ahorro_id FROM ahorros_movimientos WHERE id = ?', [id]);
+        if (duenio.length === 0) {
+            throw new ErrorDeNegocio('Movimiento no encontrado', 404);
+        }
+        const ahorroId = duenio[0].ahorro_id;
+
+        // DC-39: se bloquea el ahorro y después se lee el movimiento acotado a él (S-26); el importe sale de esa
+        // segunda lectura, ya con el padre bloqueado
+        if (!(await bloquearAhorro(connection, ahorroId))) {
+            throw new ErrorDeNegocio(`Ahorro con ID ${ahorroId} no encontrado`, 404);
+        }
+        const [movimiento] = await connection.execute('SELECT importe FROM ahorros_movimientos WHERE id = ? AND ahorro_id = ? FOR UPDATE', [id, ahorroId]);
         if (movimiento.length === 0) {
             throw new ErrorDeNegocio('Movimiento no encontrado', 404);
         }
 
-        const { ahorro_id, importe } = movimiento[0];
-        console.log(`deleteMovimiento - Eliminando el movimiento ID ${id} del ahorro ${ahorro_id} (importe ${importe})`);
+        const { importe } = movimiento[0];
+        console.log(`deleteMovimiento - Eliminando el movimiento ID ${id} del ahorro ${ahorroId} (importe ${importe})`);
 
-        // Eliminar el movimiento
-        await connection.execute('DELETE FROM ahorros_movimientos WHERE id = ?', [id]);
+        // Eliminar el movimiento, acotado al ahorro del que se han leído sus datos
+        const [resultadoBaja] = await connection.execute('DELETE FROM ahorros_movimientos WHERE id = ? AND ahorro_id = ?', [id, ahorroId]);
+        if (resultadoBaja.affectedRows !== 1) {
+            throw new ErrorDeNegocio('Movimiento no encontrado', 404);
+        }
 
         // Actualizar el valor de ahorrado en la tabla ahorros
-        await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) - ?, modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [importe, usuarioId, ahorro_id]);
+        await connection.execute('UPDATE ahorros SET ahorrado = COALESCE(ahorrado, 0) - ?, modificado_por = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [importe, usuarioId, ahorroId]);
 
         await connection.commit();
         enTransaccion = false;
-        console.log(`deleteMovimiento - Transacción confirmada para el ahorro ${ahorro_id}`);
+        console.log(`deleteMovimiento - Transacción confirmada para el ahorro ${ahorroId}`);
     } catch (error) {
         if (connection && enTransaccion) {
             try {

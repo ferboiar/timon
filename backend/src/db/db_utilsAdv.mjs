@@ -308,21 +308,30 @@ function getMonthsFromPeriodicidad(periodicidad) {
  *
  * Transacción (F-27, DC-39): se bloquean los anticipos y se borran primero sus pagos y después los anticipos; si algo
  * falla no se borra nada. Devuelve cuántos anticipos se han eliminado.
+ *
+ * S-26: el borrado de los pagos se acota con la misma lista de identificadores validados que se usa para los
+ * anticipos (`anticipo_id IN (…)`), así que nunca alcanza pagos de un anticipo que no esté en la lista. La lista llega
+ * validada de la ruta (`leerListaEnterosPositivos`); aquí se vuelve a comprobar para no construir un `IN ()` inválido ni
+ * aceptar identificadores que no sean enteros positivos.
  */
 async function deleteAdvances(advances) {
     if (!Array.isArray(advances)) advances = [advances];
+    const ids = advances.map((valor) => Number(valor));
+    if (ids.length === 0 || ids.some((valor) => !Number.isSafeInteger(valor) || valor <= 0)) {
+        throw errorHttp(400, 'La lista de anticipos a eliminar debe traer al menos un identificador válido');
+    }
     try {
         return await enTransaccion(null, async (connection) => {
-            const placeholders = advances.map(() => '?').join(',');
+            const placeholders = ids.map(() => '?').join(',');
 
             // Bloqueo de todos los anticipos a borrar antes de tocar sus pagos
-            await connection.execute('SELECT id FROM anticipos WHERE id IN (' + placeholders + ') FOR UPDATE', advances);
+            await connection.execute('SELECT id FROM anticipos WHERE id IN (' + placeholders + ') FOR UPDATE', ids);
 
             // Eliminar pagos asociados (la clave foránea también los borraría en cascada, pero así queda traza)
-            await connection.execute('DELETE FROM anticipos_pagos WHERE anticipo_id IN (' + placeholders + ')', advances);
+            await connection.execute('DELETE FROM anticipos_pagos WHERE anticipo_id IN (' + placeholders + ')', ids);
 
             // Eliminar anticipos
-            const [deleteAnticiposResult] = await connection.execute('DELETE FROM anticipos WHERE id IN (' + placeholders + ')', advances);
+            const [deleteAnticiposResult] = await connection.execute('DELETE FROM anticipos WHERE id IN (' + placeholders + ')', ids);
             return deleteAnticiposResult.affectedRows;
         });
     } catch (error) {
@@ -390,10 +399,19 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                     throw errorHttp(404, 'Pago con ID ' + id + ' no encontrado');
                 }
                 const anticipoDelPago = duenio[0].anticipo_id;
+
+                // S-26: si la petición indica un anticipo, tiene que ser el del pago. La comprobación no depende solo
+                // del chequeo de la ruta (S-18): la capa de base de datos no actúa sobre un anticipo distinto.
+                if (anticipo_id !== undefined && anticipo_id !== null && anticipo_id !== '' && Number(anticipo_id) !== Number(anticipoDelPago)) {
+                    console.log('pushPago - Rechazado: el pago ' + id + ' pertenece al anticipo ' + anticipoDelPago + ', no al ' + anticipo_id);
+                    throw errorHttp(400, 'El pago no pertenece al anticipo indicado.', 'PADRE_INCORRECTO');
+                }
+
                 await bloquearAnticipo(connection, anticipoDelPago);
 
-                // El pago se lee de nuevo ya con el anticipo bloqueado: mientras se esperaba el bloqueo otra petición pudo modificarlo o borrarlo
-                const [existingPago] = await connection.execute('SELECT estado, importe, fecha FROM anticipos_pagos WHERE id = ?', [id]);
+                // El pago se lee de nuevo ya con el anticipo bloqueado y acotado a él (S-26): mientras se esperaba el
+                // bloqueo otra petición pudo modificarlo, borrarlo o moverlo de anticipo
+                const [existingPago] = await connection.execute('SELECT estado, importe, fecha FROM anticipos_pagos WHERE id = ? AND anticipo_id = ?', [id, anticipoDelPago]);
                 if (existingPago.length === 0) {
                     throw errorHttp(404, 'Pago con ID ' + id + ' no encontrado');
                 }
@@ -409,8 +427,8 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                 // DC-40: se anota si el plan cuadraba antes de la edición (suma de pendientes igual al importe pendiente)
                 const planCuadrabaAntes = await planCuadra(connection, anticipoDelPago);
 
-                // Actualizar el pago existente. DC-38: el importe pendiente se deriva de los pagos pagados, así que no hay nada que ajustar
-                await connection.execute('UPDATE anticipos_pagos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_destino_id = ?, modificado_por = ? WHERE id = ?', [
+                // Actualizar el pago existente, acotado al anticipo al que pertenece (S-26). DC-38: el importe pendiente se deriva de los pagos pagados, así que no hay nada que ajustar
+                await connection.execute('UPDATE anticipos_pagos SET importe = ?, fecha = ?, tipo = ?, descripcion = COALESCE(?, descripcion), estado = ?, cuenta_destino_id = ?, modificado_por = ? WHERE id = ? AND anticipo_id = ?', [
                     importe,
                     fecha,
                     tipo,
@@ -418,7 +436,8 @@ async function pushPago(id, anticipo_id, importe, fecha, tipo, descripcion = nul
                     estado,
                     cuenta_destino_id,
                     usuarioId,
-                    id
+                    id,
+                    anticipoDelPago
                 ]);
                 console.log('pushPago - Pago ' + id + ' del anticipo ' + anticipoDelPago + ': estado ' + previousEstado + ' -> ' + estado + ', importe ' + previousImporte + ' -> ' + importe + ', fecha ' + previousFecha + ' -> ' + fecha + ', autor ' + (usuarioId ?? 'sistema'));
 
@@ -728,8 +747,9 @@ async function handlePaymentDeletion(pagoId, redistribuir = false, usuarioId = n
             const anticipo_id = duenio[0].anticipo_id;
             await bloquearAnticipo(connection, anticipo_id);
 
-            // Detalles del pago a eliminar, ya con el anticipo bloqueado (otra petición pudo borrarlo mientras se esperaba)
-            const [pago] = await connection.execute('SELECT importe, estado FROM anticipos_pagos WHERE id = ?', [pagoId]);
+            // Detalles del pago a eliminar, ya con el anticipo bloqueado y acotado a él (S-26): otra petición pudo
+            // borrarlo mientras se esperaba el bloqueo
+            const [pago] = await connection.execute('SELECT importe, estado FROM anticipos_pagos WHERE id = ? AND anticipo_id = ?', [pagoId, anticipo_id]);
             if (pago.length === 0) {
                 throw errorHttp(404, 'Pago con ID ' + pagoId + ' no encontrado');
             }
@@ -743,9 +763,12 @@ async function handlePaymentDeletion(pagoId, redistribuir = false, usuarioId = n
                 }
             }
 
-            // Eliminar el pago
+            // Eliminar el pago, acotado al anticipo del que se han leído sus datos (S-26)
             console.log('handlePaymentDeletion - Eliminando el pago ID: ' + pagoId + ' (anticipo ' + anticipo_id + ', importe ' + importe + ', estado ' + estado + ', redistribuir: ' + (redistribuir ? 'sí' : 'no') + ')');
-            await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [pagoId]);
+            const [resultadoBaja] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ? AND anticipo_id = ?', [pagoId, anticipo_id]);
+            if (resultadoBaja.affectedRows !== 1) {
+                throw errorHttp(404, 'Pago con ID ' + pagoId + ' no encontrado');
+            }
 
             // DC-38: el importe pendiente se deriva de los pagos pagados y sube solo al borrar un pagado
             const pendiente = await leerPendiente(connection, anticipo_id);
@@ -811,6 +834,14 @@ async function sustituirPago(pagoId, datos, usuarioId = null) {
             const anticipo_id = duenio[0].anticipo_id;
             await bloquearAnticipo(connection, anticipo_id);
 
+            // S-26: el pago se vuelve a leer ya con el anticipo bloqueado y acotado a él. Si mientras se esperaba el
+            // bloqueo otra petición lo borró o lo cambió de anticipo, no se crea el pago nuevo.
+            const [pagoAntiguo] = await connection.execute('SELECT importe, estado FROM anticipos_pagos WHERE id = ? AND anticipo_id = ?', [pagoId, anticipo_id]);
+            if (pagoAntiguo.length === 0) {
+                throw errorHttp(404, 'Pago con ID ' + pagoId + ' no encontrado');
+            }
+            console.log('sustituirPago - Pago ' + pagoId + ' del anticipo ' + anticipo_id + ': importe ' + pagoAntiguo[0].importe + ', estado ' + pagoAntiguo[0].estado + ', autor ' + (usuarioId ?? 'sistema'));
+
             // Primero se crea el pago nuevo: si falla (por ejemplo, cuenta inexistente) no se ha borrado nada
             let resultadoAlta;
             try {
@@ -831,8 +862,11 @@ async function sustituirPago(pagoId, datos, usuarioId = null) {
                 throw error;
             }
 
-            // Después se borra el pago antiguo, sin repartir su importe
-            const [resultadoBaja] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ?', [pagoId]);
+            // Después se borra el pago antiguo, acotado al anticipo, sin repartir su importe (S-26)
+            const [resultadoBaja] = await connection.execute('DELETE FROM anticipos_pagos WHERE id = ? AND anticipo_id = ?', [pagoId, anticipo_id]);
+            if (resultadoBaja.affectedRows !== 1) {
+                throw errorHttp(404, 'Pago con ID ' + pagoId + ' no encontrado');
+            }
             console.log('sustituirPago - Pago ' + pagoId + ' sustituido por el pago ' + resultadoAlta.insertId + ' en el anticipo ' + anticipo_id + ' (filas borradas: ' + resultadoBaja.affectedRows + '), autor ' + (usuarioId ?? 'sistema'));
 
             const pendiente = await leerPendiente(connection, anticipo_id);
