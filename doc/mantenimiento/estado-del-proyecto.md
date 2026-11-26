@@ -14,6 +14,9 @@ solo si cambia una decisión vigente o el mapa. El histórico está en el
   actual (36 s, exit 0), con copia previa `conta_hogar_pre_0010_20261122T101717Z.sql` (58 212 B,
   SHA-256 `7ce6fced…28d2`) y ensayo en una base `_test`; no se aplicó desde cero, eso lo cubre la suite.
   La 0008 exige iniciar sesión de nuevo: los tokens anteriores no llevan `ver`.
+  La 0011 (bloqueo compartido del recibo de origen en `generar_recibos_anio`, F-63) está versionada y
+  probada sobre bases `_test`, pero **no se ha aplicado** en `conta_hogar`: según DC-73, su PR no se
+  fusiona hasta aplicarla.
 - Siguiente trabajo y bloqueos: los issues del Project (hoja de ruta activa: [#197](https://github.com/ferboiar/timon/issues/197), DC-77).
 - Identificadores: `npm run iter:ids` da el último de cada familia antes de asignar uno nuevo.
 
@@ -50,7 +53,7 @@ Texto completo en el registro §2; aquí solo el resumen.
 | DC-72 | Vocabulario de interfaz (`Guardar`/`Cancelar`/`Sí`/`No`, `Confirmar`, resúmenes `Éxito`/`Aviso`/`Error`) e importes de tabla con `Intl.NumberFormat('es-ES', …, EUR)` tolerando `null`; «Ahorro sugerido» en Ahorros; `Reset` suelto se conserva en inglés. |
 | DC-73 | El código que depende de una migración no se fusiona antes de que esté aplicada, o se escribe para tolerar el esquema anterior. Acordado el 2026-11-21. |
 | DC-74 | Autor por fila en subrecursos y catálogos (migración 0010, F-53): escritura directa con usuario, filas derivadas a NULL, salvo el activo masivo de `fechas_cargo`; sin backfill y con el id en la API. |
-| DC-75 | Privacidad de recibos, anticipos y ahorros: solo el propietario con escritura o un administrador; el control no se renderiza para quien no cumple y el servidor responde 403; en Recibos el cambio se aplica a todos los años del mismo recibo y, tras bloquear la cadena, se releen con bloqueo los sucesores nuevos en hasta tres pasadas (F-61); el bloqueo compartido del procedimiento anual queda pendiente (F-63). |
+| DC-75 | Privacidad de recibos, anticipos y ahorros: solo el propietario con escritura o un administrador; el control no se renderiza para quien no cumple y el servidor responde 403; en Recibos el cambio se aplica a todos los años del mismo recibo y, tras bloquear la cadena, se releen con bloqueo los sucesores nuevos en hasta tres pasadas (F-61); el procedimiento anual lee el origen con bloqueo compartido antes de copiarlo (migración 0011, F-63). |
 | DC-76 | Lint por capas y autoformato explícito: `lint:frontend` (`src`), `lint:e2e` (`e2e`) y `lint:backend` (`backend`, `scripts` y `dev`) son de solo lectura y `lint` los encadena; `format:frontend` aplica `--fix` solo a `src` y `e2e`; `prettier/prettier` se desactiva en `backend/**` y `scripts/**` y `_adjuntos/**` queda fuera del lint y de Prettier. Sustituye el alcance de `lint:frontend` descrito en DC-70 y DC-71. |
 | DC-77 | Hoja de ruta activa en el relevo §0: cuando una serie ordenada de iteraciones se agrupa en una issue padre con sub-issues nativas en el Project, §0 puede enlazar únicamente a esa issue padre —sin copiar su tabla, estados, ramas ni PRs—; se edita solo al activarla y al cerrarla para poner o retirar ese enlace, y el avance intermedio lo marcan los `Closes` de cada PR (precisa DC-61 y DC-69). |
 
