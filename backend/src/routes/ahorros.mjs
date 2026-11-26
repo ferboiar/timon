@@ -24,7 +24,7 @@ router.get('/', autorizar('ahorros', 'lectura'), async (req, res) => {
         const savings = await getSavings();
         res.json(filtrarVisibles(req.usuario, savings, 'ahorros'));
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener los ahorros' });
+        responderError(res, error, 'No se pudieron obtener los ahorros.', { contexto: 'ahorros - GET' });
     }
 });
 
@@ -71,7 +71,7 @@ router.get('/periodicidades', autorizar('ahorros', 'lectura'), async (req, res) 
         const periodicidades = await getPeriodicidades();
         res.json(periodicidades);
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener las periodicidades' });
+        responderError(res, error, 'No se pudieron obtener las periodicidades.', { contexto: 'ahorros - GET periodicidades' });
     }
 });
 

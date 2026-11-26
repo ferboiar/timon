@@ -52,7 +52,7 @@ Devuelve un array con los tipos de cuentas definidos en el esquema de la base de
 Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
 
 1. **Error de negocio** (`ErrorDeNegocio` o una clase heredada): se devuelve su mensaje con el código HTTP que lleva (400, 404 o 409). El IBAN duplicado responde **409** con el mensaje «El IBAN … ya está asignado a la cuenta «…»» y `codigo: "IBAN_DUPLICADO"`.
-2. **Error técnico**: se responde **500** con un texto genérico («No se pudo guardar la cuenta.», «No se pudieron eliminar las cuentas.»), sin detalle interno ni traza. El detalle completo queda en el log del servidor.
+2. **Error técnico**: se responde **500** con un texto genérico («No se pudieron obtener las cuentas.», «No se pudieron obtener los tipos.», «No se pudo guardar la cuenta.», «No se pudieron eliminar las cuentas.»), sin detalle interno ni traza. El detalle saneado queda en el log del servidor con el contexto de la operación (`cuentas - GET`, `cuentas - GET tipos`, `cuentas - POST`, …; F-60, DC-09). Las dos lecturas usan la utilidad común desde F-60; antes respondían 500 con texto propio.
 
 ## Dependencias
 

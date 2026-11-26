@@ -18,6 +18,7 @@ Este módulo implementa las rutas de la API REST para la gestión de categorías
 - Ordenación alfabética de categorías con "Otros" siempre al final
 - Validación de parámetros obligatorios
 - Manejo detallado de errores con mensajes descriptivos
+- La lectura responde a un fallo técnico con la utilidad común `responderError`, sin texto 500 propio (F-60)
 - Soporte para operaciones en lote (eliminación múltiple)
 
 ## Detalles de Implementación
@@ -58,7 +59,7 @@ La API implementa las siguientes validaciones:
 Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
 
 1. **Error de negocio** (`ErrorDeNegocio`): se devuelve su mensaje con su código HTTP. Un nombre repetido responde 400 con «Ya existe otra categoría con el nombre «nombre».»; una categoría en uso responde 409.
-2. **Error técnico**: se responde **500** con un texto genérico («No se pudo guardar la categoría.», «No se pudieron eliminar las categorías.»), sin detalle interno. El detalle queda en el log del servidor.
+2. **Error técnico**: se responde **500** con un texto genérico («No se pudieron obtener las categorías.», «No se pudo guardar la categoría.», «No se pudieron eliminar las categorías.»), sin detalle interno. El detalle saneado queda en el log del servidor con el contexto de la operación (`categorias - GET`, `categorias - POST`, …; F-60, DC-09).
 
 ## Dependencias
 

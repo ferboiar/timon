@@ -208,3 +208,74 @@ describe('DC-75: guarda estática de la regla de privacidad', () => {
         assert.equal(texto.includes('async function aplicarPrivacidadEnCadena'), true);
     });
 });
+
+describe('F-60: las lecturas no responden 500 con texto propio', () => {
+    /** Única excepción documentada: el fallo al enviar un volcado ya generado. */
+    const EXCEPCION = 'mantenimientoDB';
+
+    /** Textos propios que sustituye la utilidad común. */
+    const TEXTOS_RETIRADOS = [
+        'Error al obtener los ahorros',
+        'Error al obtener las periodicidades',
+        'Error al obtener las categorías',
+        'Error al obtener las cuentas',
+        'Error al obtener los tipos'
+    ];
+
+    /** Contextos de log que fijan el uso de responderError en cada lectura. */
+    const CONTEXTOS = [
+        ['ahorros', 'ahorros - GET'],
+        ['ahorros', 'ahorros - GET periodicidades'],
+        ['categorias', 'categorias - GET'],
+        ['cuentas', 'cuentas - GET'],
+        ['cuentas', 'cuentas - GET tipos']
+    ];
+
+    /** Respuestas 500 escritas a mano en la ruta. */
+    function respuestas500(texto) {
+        return texto.split('\n').filter((linea) => linea.includes('res.status(500)'));
+    }
+
+    test('ninguna ruta incluida responde con res.status(500) propio', () => {
+        const problemas = [];
+
+        for (const nombre of RUTAS) {
+            const propias = respuestas500(leerRuta(nombre));
+
+            if (nombre === EXCEPCION) {
+                assert.equal(propias.length, 1, `${nombre}.mjs debe conservar solo la excepción documentada`);
+                continue;
+            }
+
+            if (propias.length) problemas.push(`${nombre}.mjs: ${propias.map((linea) => linea.trim()).join(' | ')}`);
+        }
+
+        assert.deepEqual(problemas, []);
+    });
+
+    test('la excepción de mantenimientoDB está en el envío del volcado y deja traza', () => {
+        const texto = leerRuta(EXCEPCION);
+        const envio = texto.indexOf('res.download(');
+        const respuesta = texto.indexOf('res.status(500)');
+
+        assert.ok(envio !== -1, 'no envía el volcado con res.download');
+        assert.ok(respuesta > envio, 'el 500 no está dentro del callback de res.download');
+
+        const tramo = texto.slice(envio, respuesta);
+        assert.equal(tramo.includes('detalleParaLog(err)'), true, 'el fallo de transmisión no deja el detalle en el log');
+        assert.equal(tramo.includes('!res.headersSent'), true, 'no comprueba si la descarga ya había empezado');
+    });
+
+    test('ahorros, categorías y cuentas usan responderError en sus lecturas', () => {
+        for (const [nombre, contexto] of CONTEXTOS) {
+            assert.equal(leerRuta(nombre).includes(`contexto: '${contexto}'`), true, `${nombre}.mjs no registra «${contexto}»`);
+        }
+
+        for (const nombre of RUTAS) {
+            const texto = leerRuta(nombre);
+            for (const retirado of TEXTOS_RETIRADOS) {
+                assert.equal(texto.includes(retirado), false, `${nombre}.mjs conserva «${retirado}»`);
+            }
+        }
+    });
+});
