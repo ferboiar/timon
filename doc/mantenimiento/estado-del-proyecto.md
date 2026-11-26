@@ -14,9 +14,11 @@ solo si cambia una decisión vigente o el mapa. El histórico está en el
   actual (36 s, exit 0), con copia previa `conta_hogar_pre_0010_20261122T101717Z.sql` (58 212 B,
   SHA-256 `7ce6fced…28d2`) y ensayo en una base `_test`; no se aplicó desde cero, eso lo cubre la suite.
   La 0008 exige iniciar sesión de nuevo: los tokens anteriores no llevan `ver`.
-  La 0011 (bloqueo compartido del recibo de origen en `generar_recibos_anio`, F-63) está versionada y
-  probada sobre bases `_test`, pero **no se ha aplicado** en `conta_hogar`: según DC-73, su PR no se
-  fusiona hasta aplicarla.
+  La 0011 (bloqueo compartido del recibo de origen en `generar_recibos_anio`, F-63) se aplicó el
+  2026-11-26 sobre el esquema actual (exit 0), con copia previa
+  `conta_hogar_pre_0011_20261126T200713Z.sql` (60 156 B, SHA-256 `244c6e70…c0bb`) y ensayo de
+  restauración y doble aplicación en una base `_test`; el procedimiento queda con 8 326 B y
+  `LOCK IN SHARE MODE`, a nombre de `timon_admin`.
 - Siguiente trabajo y bloqueos: los issues del Project (hoja de ruta activa: [#197](https://github.com/ferboiar/timon/issues/197), DC-77).
 - Identificadores: `npm run iter:ids` da el último de cada familia antes de asignar uno nuevo.
 
