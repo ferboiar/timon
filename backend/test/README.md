@@ -106,3 +106,7 @@ La prueba fija `process.env.DB_*` y `DB_CONFIG_PATH` sobre un fichero temporal: 
 - `verifyCredentials.test.mjs` (F-59) crea una base `*_test` propia, siembra un usuario con hash bcrypt real y, espiando `bcrypt.compare`, comprueba que el camino de usuario inexistente ejecuta bcrypt una vez (contra un hash ficticio de coste 10) y que el de contraseña incorrecta también.
 - `recibosFueraDeAnio.test.mjs` (S-20) monta la ruta real `POST /api/recibos` en un Express propio y, por HTTP con JWT real, comprueba que un usuario no administrador con `permitirFueraDeAnio: true` recibe el 400 de DC-14 y que un administrador recibe 201 (control).
 - Ambas necesitan la base `*_test`; cada una crea y destruye la suya.
+
+## Reparto al editar un pago (F-62)
+
+`repartoPagoEditado.test.mjs` (base `conta_hogar_f62_test`) comprueba que editar fecha e importe de un pago pendiente en la misma petición conserva el importe pedido y reparte solo entre las demás cuotas. No fija importes a mano: siembra dos anticipos idénticos, edita el de referencia conservando la fecha original y usa el resultado real del algoritmo como referencia. Las invariantes generales de suma y redondeo son de F-58 (#116).

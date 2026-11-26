@@ -128,7 +128,7 @@ before(async () => {
         return Number(r.insertId);
     };
 
-    anticipoA = await crearAnticipo('s26 anticipo a', 10);
+    anticipoA = await crearAnticipo('s26 anticipo a', 100);
     anticipoB = await crearAnticipo('s26 anticipo b', 20);
     anticipoC = await crearAnticipo('s26 anticipo c', 30);
     anticipoD = await crearAnticipo('s26 anticipo d', 40);
@@ -279,13 +279,9 @@ test('POST /api/anticipos/pagos rechaza el cruce con 400 PADRE_INCORRECTO', asyn
 });
 
 test('POST /api/anticipos/pagos guarda la edición del pago en su propio anticipo', async () => {
-    // Importe primero y fecha después: cambiar las dos cosas en la misma petición dispara el reparto de
-    // recalculatePostEditPayments (el pago editado pasa a contar como posterior por su fecha nueva) y desvía el importe.
-    const respuestaImporte = await postRuta('/api/anticipos/pagos', { id: pagoA, anticipo_id: anticipoA, importe: 12, fecha: '2026-02-01', tipo: 'regular', descripcion: 'editado en A', estado: 'pendiente', cuenta_destino_id: 1 });
-    assert.equal(respuestaImporte.estado, 201, JSON.stringify(respuestaImporte.cuerpo));
+    const respuesta = await postRuta('/api/anticipos/pagos', { id: pagoA, anticipo_id: anticipoA, importe: 12, fecha: '2026-02-05', tipo: 'regular', descripcion: 'editado en A', estado: 'pendiente', cuenta_destino_id: 1 });
 
-    const respuestaFecha = await postRuta('/api/anticipos/pagos', { id: pagoA, anticipo_id: anticipoA, importe: 12, fecha: '2026-02-05', tipo: 'regular', descripcion: 'editado en A', estado: 'pendiente', cuenta_destino_id: 1 });
-    assert.equal(respuestaFecha.estado, 201, JSON.stringify(respuestaFecha.cuerpo));
+    assert.equal(respuesta.estado, 201, JSON.stringify(respuesta.cuerpo));
 
     const propio = await leerPago(pagoA);
     assert.equal(Number(propio.importe), 12);
