@@ -22,7 +22,7 @@ router.get('/', autorizar('cuentas', 'lectura'), async (req, res) => {
         const accounts = await getAccounts();
         res.json(accounts);
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener las cuentas' });
+        responderError(res, error, 'No se pudieron obtener las cuentas.', { contexto: 'cuentas - GET' });
     }
 });
 
@@ -55,7 +55,7 @@ router.get('/tipos', autorizar('cuentas', 'lectura'), async (req, res) => {
         const tipos = await getTipos();
         res.json(tipos);
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener los tipos' });
+        responderError(res, error, 'No se pudieron obtener los tipos.', { contexto: 'cuentas - GET tipos' });
     }
 });
 

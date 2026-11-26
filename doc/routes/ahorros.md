@@ -21,6 +21,7 @@ Este módulo implementa las rutas de la API REST para la gestión de ahorros y s
 - Gestión completa de ahorros y sus movimientos asociados 
 - El borrado valida la lista de IDs con leerListaEnterosPositivos y los movimientos validan sus identificadores antes de la base (F-43); pushSaving normaliza a NULL los campos opcionales (F-52)
 - Manejo detallado de errores con mensajes descriptivos
+- Las lecturas responden a un fallo técnico con la utilidad común `responderError`, sin textos 500 propios (F-60)
 - Soporte para operaciones en lote (eliminación múltiple)
 - Endpoints específicos para obtener valores enumerados (periodicidades)
 
@@ -82,7 +83,7 @@ Las operaciones sobre ahorros y movimientos escriben sus pasos en el log del bac
 Las rutas usan la utilidad común `backend/src/utils/errorDeNegocio.mjs` (F-47):
 
 1. **Error de negocio** (`ErrorDeNegocio` o una clase heredada): se devuelve su mensaje con su código HTTP (400, 404 o 409). Un ahorro con movimientos no admite cambiar `ahorrado` (409) y un ahorro o movimiento en uso no se puede borrar (409).
-2. **Error técnico**: se responde **500** con un texto genérico («No se pudo guardar el ahorro.», «No se pudieron eliminar los ahorros.», «No se pudo guardar el movimiento.», «No se pudo eliminar el movimiento.»), sin detalle interno. El detalle queda en el log del servidor.
+2. **Error técnico**: se responde **500** con un texto genérico («No se pudieron obtener los ahorros.», «No se pudieron obtener las periodicidades.», «No se pudo guardar el ahorro.», «No se pudieron eliminar los ahorros.», «No se pudo guardar el movimiento.», «No se pudo eliminar el movimiento.»), sin detalle interno. El detalle saneado queda en el log del servidor con el contexto de la operación (`ahorros - GET`, `ahorros - GET periodicidades`, `ahorros - POST`, …; F-60, DC-09).
 
 ## Dependencias
 

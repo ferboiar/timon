@@ -21,7 +21,7 @@ router.get('/', autorizar('categorias', 'lectura'), async (req, res) => {
         const categorias = await getCategorias();
         res.json(categorias);
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener las categorías' });
+        responderError(res, error, 'No se pudieron obtener las categorías.', { contexto: 'categorias - GET' });
     }
 });
 
