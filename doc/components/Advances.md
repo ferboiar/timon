@@ -33,13 +33,13 @@ El botón Guardar exige concepto, cuenta y fecha inicial; pago sugerido y period
 | Función | Comportamiento actual |
 |---|---|
 | `fetchPagos(id)` / `fetchAllPagos()` | Cargan uno o todos los conjuntos de pagos; la segunda usa Promise.all |
-| `openNewPago(id)` | Propone el sugerido, la cuenta origen como destino y un mes después del último pago; sin pagos, un mes después de hoy |
+| `openNewPago(id)` | Propone el sugerido, la cuenta origen como destino y la fecha siguiente según la periodicidad del anticipo (F-40; un mes si no la tiene), anclada en el día de `fecha_inicio` (F-46); sin pagos, desde hoy |
 | `editPago(p)` | Copia los datos, normaliza la fecha y guarda el importe original |
 | `savePago()` | Para nuevos pagos limita el importe al importe pendiente no cubierto por los pagos pendientes; al editar envía directamente el formulario; si es una sustitución llama a `AdvService.replacePago`, una sola petición atómica (F-27, DC-39) |
 | `deletePago(p)` | Prepara el diálogo, excluye el pago elegido de los pendientes y calcula el aviso de importe no planificado |
 | `confirmDeletePago()` | Borra con `handlePaymentDeletion(id)` sin reparto |
 | `recalculatePayments()` | Borra con `handlePaymentDeletion(id, true)` y muestra los contadores de cuotas ajustadas y nuevas; usa `getApiErrorMessage` en su error |
-| `addNewPayment()` | Prepara un pago sustituto pendiente, de igual importe y con fecha un mes después del último pago restante |
+| `addNewPayment()` | Prepara un pago sustituto pendiente, de igual importe y con la fecha siguiente según la periodicidad del anticipo (F-40), anclada en `fecha_inicio` y calculada desde el último pago restante; sin restantes, desde hoy |
 
 `isPagoFormValid` comprueba fecha y tipo; Guardar exige además cuenta destino, pero no valida importe positivo en ese computed. El botón Recalcular pagos solo se deshabilita si faltan sugerido positivo o periodicidad.
 
@@ -73,8 +73,8 @@ Los pies de diálogo usan «Cancelar»/«Guardar» y «No»/«Sí», el título 
 - F-16: las fechas del formulario se mutan antes de confirmar el éxito, y un reintento tras fallo puede fallar por tipo.
 - F-27 (resuelto en el servidor, DC-39): las operaciones compuestas del backend son transaccionales y la sustitución es una sola petición.
 - F-28: los avisos de guardar y borrar anticipos y pagos, generar el plan y recalcular muestran el mensaje del servidor con `getApiErrorMessage` (DC-39); el resto siguen usando `error.message`.
-- F-40: propuestas de fechas manuales incrementan un mes fijo, no la periodicidad del anticipo.
-- F-46 (DC-41, incorporado en el PR #55): las propuestas de fecha de un pago nuevo y de la sustitución usan sumarMesAnclado (`src/utils/fechasAnticipos.js`) con el día de fecha_inicio del anticipo, así que el 31 no desborda al mes siguiente; el plan automático del servidor usa la misma secuencia anclada. Esas propuestas siguen sumando un mes fijo (F-40) y no tienen prueba automática de pantalla.
+- F-40 (corregido): la propuesta manual de fechas usa `mesesDePeriodicidad` (`src/utils/fechasAnticipos.js`), con la tabla del servidor (mensual 1, bimestral 2, trimestral 3, anual 12 y 1 si la periodicidad está vacía). Con un valor no previsto, `openNewPago` avisa con un toast «Error» y no abre el diálogo; en `addNewPayment` avisa el `catch` existente y el diálogo de borrado sigue abierto. `getMonthsFromPeriodicidad` del servidor no está exportada y no se ha tocado.
+- F-46 (DC-41, incorporado en el PR #55): las propuestas de fecha de un pago nuevo y de la sustitución usan sumarMesAnclado (`src/utils/fechasAnticipos.js`) con el día de `fecha_inicio` del anticipo, así que el 31 no desborda al mes siguiente; el plan automático del servidor usa la misma secuencia anclada. La cadencia sale de la periodicidad del anticipo (F-40) y `e2e/tests/anticiposFechaPropuesta.spec.mjs` lo comprueba en pantalla.
 
 Las trazas `savePago` y `recalculatePayments` se escriben en consola; no acreditan atomicidad. Ver [acceso a datos](../db/db_utilsAdv.md), [AdvService](../services/AdvService.md), [AccService](../services/AccService.md) y [zona horaria](../composables/useZonaHoraria.md).
 

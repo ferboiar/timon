@@ -3,8 +3,12 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, test } from 'node:test';
 import { fechaAnclada, fechaISO, siguienteFechaAnclada, sumarMesesAnclado } from '../src/utils/fechasAnticipos.mjs';
+import { mesesDePeriodicidad, sumarMesAnclado } from '../../src/utils/fechasAnticipos.js';
 
 const tzOriginal = process.env.TZ;
+
+/** Fecha local en YYYY-MM-DD, sin toISOString (que dependería de la zona horaria). */
+const isoLocal = (fecha) => [fecha.getFullYear(), String(fecha.getMonth() + 1).padStart(2, '0'), String(fecha.getDate()).padStart(2, '0')].join('-');
 
 afterEach(() => {
     if (tzOriginal === undefined) delete process.env.TZ;
@@ -89,5 +93,35 @@ describe('fechas ancladas de Anticipos (F-46, DC-41)', () => {
             const obtenido = [0, 1, 2, 3].map((k) => fechaAnclada('2026-01-31', k, 1));
             assert.deepEqual(obtenido, esperado, `zona ${tz}`);
         }
+    });
+});
+
+describe('fecha propuesta manual de Anticipos (F-40)', () => {
+    // `getMonthsFromPeriodicidad` de `db_utilsAdv.mjs` no está exportada, así que la tabla
+    // equivalente se fija aquí a partir del enum de `anticipos.periodicidad` (migración 0001).
+    test('mesesDePeriodicidad usa la tabla del servidor', () => {
+        assert.deepEqual(['mensual', 'bimestral', 'trimestral', 'anual'].map(mesesDePeriodicidad), [1, 2, 3, 12]);
+    });
+
+    test('sin periodicidad se mantiene el +1 mes anterior', () => {
+        for (const vacia of [null, undefined, '']) assert.equal(mesesDePeriodicidad(vacia), 1);
+    });
+
+    test('una periodicidad no prevista es un error explícito', () => {
+        assert.throws(() => mesesDePeriodicidad('semestral'), /Periodicidad no válida: semestral/);
+        assert.throws(() => mesesDePeriodicidad(2), /Periodicidad no válida: 2/);
+    });
+
+    test('la propuesta de la pantalla respeta la cadencia, el fin de mes y el bisiesto', () => {
+        // Caso de la E2E: trimestral desde 2027-01-31 con último pago el 2027-03-31
+        assert.equal(isoLocal(sumarMesAnclado(new Date(2027, 2, 31), 31, mesesDePeriodicidad('trimestral'))), '2027-06-30');
+        assert.equal(isoLocal(sumarMesAnclado(new Date(2026, 0, 31), 31, mesesDePeriodicidad('bimestral'))), '2026-03-31');
+        assert.equal(isoLocal(sumarMesAnclado(new Date(2026, 0, 31), 31, mesesDePeriodicidad('mensual'))), '2026-02-28');
+        assert.equal(isoLocal(sumarMesAnclado(new Date(2026, 0, 31), 31, mesesDePeriodicidad('anual'))), '2027-01-31');
+        assert.equal(isoLocal(sumarMesAnclado(new Date(2026, 0, 31), 31, mesesDePeriodicidad(null))), '2026-02-28');
+        assert.equal(isoLocal(sumarMesAnclado(new Date(2024, 1, 29), 29, mesesDePeriodicidad('anual'))), '2025-02-28');
+        assert.equal(isoLocal(sumarMesAnclado(new Date(2026, 11, 31), 31, mesesDePeriodicidad('mensual'))), '2027-01-31');
+        // El día recortado del último pago no arrastra el anclaje al mes siguiente
+        assert.equal(isoLocal(sumarMesAnclado(new Date(2026, 1, 28), 31, mesesDePeriodicidad('mensual'))), '2026-03-31');
     });
 });

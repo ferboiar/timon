@@ -6,7 +6,7 @@ import { getApiErrorMessage } from '@/utils/apiError';
 import { construirCsv } from '@/utils/csv';
 import { fechaIsoDeCalendario } from '@/utils/fechasFormulario';
 import { cargarZonaHoraria, fechaDeCalendario, hoyEnZona } from '@/composables/useZonaHoraria';
-import { sumarMesAnclado } from '@/utils/fechasAnticipos';
+import { mesesDePeriodicidad, sumarMesAnclado } from '@/utils/fechasAnticipos';
 import { useToast } from 'primevue/usetoast';
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 
@@ -308,7 +308,13 @@ function openNewPago(anticipoId) {
     // Calcular la fecha del nuevo pago (siguiente a la última fecha de los pagos existentes)
     const ultimaFechaPago = pagosAnticipo.length > 0 ? new Date(Math.max(...pagosAnticipo.map((p) => fechaDeCalendario(p.fecha).getTime()))) : hoyEnZona();
     const diaAnclaNuevoPago = anticipo.fecha_inicio ? fechaDeCalendario(anticipo.fecha_inicio).getDate() : ultimaFechaPago.getDate();
-    const fechaNuevoPago = sumarMesAnclado(ultimaFechaPago, diaAnclaNuevoPago);
+    let fechaNuevoPago;
+    try {
+        fechaNuevoPago = sumarMesAnclado(ultimaFechaPago, diaAnclaNuevoPago, mesesDePeriodicidad(anticipo.periodicidad));
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: `No se puede proponer la fecha del nuevo pago: ${error.message}`, life: 5000 });
+        return;
+    }
 
     // Precargar los datos del nuevo pago
     pago.value = {
@@ -510,7 +516,7 @@ const addNewPayment = async () => {
         const nuevaFecha = ultimoPago ? fechaDeCalendario(ultimoPago.fecha) : hoyEnZona();
         const anticipoSustituido = advances.value.find((a) => a.id === anticipoId);
         const diaAnclaSustitucion = anticipoSustituido && anticipoSustituido.fecha_inicio ? fechaDeCalendario(anticipoSustituido.fecha_inicio).getDate() : nuevaFecha.getDate();
-        const fechaSustitucion = sumarMesAnclado(nuevaFecha, diaAnclaSustitucion);
+        const fechaSustitucion = sumarMesAnclado(nuevaFecha, diaAnclaSustitucion, mesesDePeriodicidad(anticipoSustituido?.periodicidad));
 
         // Precargar los datos del nuevo pago
         pago.value = {
