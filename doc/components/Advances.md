@@ -4,13 +4,13 @@ Fuente: `src/views/pages/Advances.vue`. Revisión estática completa: 2026-10-23
 
 ## Alcance
 
-Gestiona anticipos y sus pagos: alta, edición, borrado individual, generación o ampliación del plan, edición de pagos y borrado con tres alternativas. La tabla muestra «Importe» (el principal, `importe_original`) y «Pendiente» (el importe pendiente, calculado por el servidor); el formulario edita el importe (DC-38). El estado «completado» se deduce del importe pendiente y no se elige. Exporta anticipos, no sus pagos, a CSV.
+Gestiona anticipos y sus pagos: alta, edición, borrado individual y borrado múltiple desde la barra, generación o ampliación del plan, edición de pagos y borrado con tres alternativas. La tabla muestra «Importe» (el principal, `importe_original`) y «Pendiente» (el importe pendiente, calculado por el servidor); el formulario edita el importe (DC-38). El estado «completado» se deduce del importe pendiente y no se elige. Exporta anticipos, no sus pagos, a CSV.
 
 ## Estado y carga
 
 `advances`, `selectedAdvances` y `advance` contienen la lista, la selección y el formulario. `pagos` relaciona cada ID de anticipo con sus pagos; `pago` es el formulario de pago. `originalImporte` e `isImporteModificado` detectan cambios de importe. `selectedPayment`, `isReplacingPayment`, `puedeRecalcular`, `dialogMessage` y `pagosPendientesCount` controlan el diálogo de borrado. `saldoRestante` se retiró por no usarse (F-17 ampliado).
 
-Los diálogos son `advanceDialog`, `advancePagoDialog`, `deleteAdvanceDialog`, `deletePaymentDialog` y `confirmPaymentPlanDialog`. Existe también `deleteSelectedAdvancesDialog`, pero no hay un diálogo correspondiente en el template (F-39).
+Los diálogos son `advanceDialog`, `advancePagoDialog`, `deleteAdvanceDialog`, `deleteSelectedAdvancesDialog`, `deletePaymentDialog` y `confirmPaymentPlanDialog`. El borrado múltiple abre `deleteSelectedAdvancesDialog` desde el botón «Borrar» de la barra, que está deshabilitado mientras `selectedAdvances` esté vacía.
 
 Al montar: `cargarZonaHoraria`, `fetchAdvances`, `fetchPeriodicidades`, `fetchAllPagos` y `fetchCuentas`, en ese orden. Las periodicidades proceden del servidor; la lista añade una opción vacía. Las fechas de anticipos y pagos se convierten con `fechaDeCalendario`; «Nuevo» usa `hoyEnZona` (DC-25). `updateAdvances` solo recarga los anticipos.
 
@@ -22,6 +22,7 @@ Al montar: `cargarZonaHoraria`, `fetchAdvances`, `fetchPeriodicidades`, `fetchAl
 | `editAdvance(adv)` | Copia el anticipo al formulario y guarda una copia (`advanceOriginal`, con `snapshotAdvance`) para detectar «guardar sin cambios» (DC-30) |
 | `saveAdvance()` | Si se edita un anticipo y no se ha cambiado nada, avisa «No se ha cambiado nada.» y cierra sin enviar nada (DC-30). Si no, convierte las fechas del formulario a texto, convierte periodicidad vacía a NULL y llama a `AdvService.saveAdvance`; después recarga anticipos y pagos. El servidor guarda el concepto en minúsculas (DC-31) y la pantalla lo capitaliza al mostrarlo |
 | `confirmDeleteAdvance(adv)` / `deleteAdvance()` | Preparan y ejecutan el borrado individual; si el anticipo no tiene ID válido, `confirmDeleteAdvance` registra el error en consola y termina con `return` sin abrir el diálogo (F-17 corregido) |
+| `deleteSelectedAdvances()` | Borra en una sola petición los anticipos seleccionados con `AdvService.deleteAdvances`; el servidor elimina también sus pagos en la misma transacción. Limpia la selección, recarga anticipos y pagos, cierra el diálogo y avisa con «Éxito»; si falla avisa con «Error» y `getApiErrorMessage`, conserva las filas y deja el diálogo abierto para reintentar (F-39) |
 | `confirmCreatePaymentPlan(id)` / `handleCreatePaymentPlan()` | Piden confirmación y llaman a `createPaymentPlan` |
 | `createPaymentPlan(id)` | Exige anticipo existente y pago sugerido numérico mayor que cero, llama a `recalculatePaymentPlan` del servicio y recarga listas |
 
@@ -72,7 +73,6 @@ Los pies de diálogo usan «Cancelar»/«Guardar» y «No»/«Sí», el título 
 - F-16: las fechas del formulario se mutan antes de confirmar el éxito, y un reintento tras fallo puede fallar por tipo.
 - F-27 (resuelto en el servidor, DC-39): las operaciones compuestas del backend son transaccionales y la sustitución es una sola petición.
 - F-28: los avisos de guardar y borrar anticipos y pagos, generar el plan y recalcular muestran el mensaje del servidor con `getApiErrorMessage` (DC-39); el resto siguen usando `error.message`.
-- F-39: botón de borrado múltiple sin diálogo/ejecución completos.
 - F-40: propuestas de fechas manuales incrementan un mes fijo, no la periodicidad del anticipo.
 - F-46 (DC-41, incorporado en el PR #55): las propuestas de fecha de un pago nuevo y de la sustitución usan sumarMesAnclado (`src/utils/fechasAnticipos.js`) con el día de fecha_inicio del anticipo, así que el 31 no desborda al mes siguiente; el plan automático del servidor usa la misma secuencia anclada. Esas propuestas siguen sumando un mes fijo (F-40) y no tienen prueba automática de pantalla.
 
