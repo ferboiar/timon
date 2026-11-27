@@ -16,7 +16,8 @@
  * - Uno de los dos anticipos lleva un pago: el borrado en lote se lleva también sus pagos.
  *
  * Datos: dos anticipos `e2e_f39_ant_AAAAMMDD_HHMMSS` (`anticipos.concepto` es `varchar(30)`); se
- * borran por API en `afterEach` y se exige que no queden restos. No se toca ningún otro dato.
+ * borran por API en `afterEach`, que avisa y anota en el test si quedan restos (no lo hace fallar).
+ * No se toca ningún otro dato.
  */
 import { test, expect } from './fixtures.mjs';
 import { adjuntarDiagnostico } from './helpers/diagnostico.mjs';
@@ -133,6 +134,16 @@ async function anticiposPorConcepto(page, { api, concepto }) {
 /** IDs del anticipo por concepto. */
 async function idsDeConcepto(page, { api, concepto }) {
     return (await anticiposPorConcepto(page, { api, concepto })).map((anticipo) => anticipo.id);
+}
+
+/** IDs ordenados de los anticipos cuyo concepto no es uno de los del test en curso. */
+async function idsAjenos(page) {
+    const conceptos = new Set(estado.conceptos ?? []);
+
+    return (await listado(page, `${estado.api}/api/anticipos`))
+        .filter((anticipo) => !conceptos.has(anticipo.concepto))
+        .map((anticipo) => anticipo.id)
+        .sort((a, b) => a - b);
 }
 
 /** Crea un anticipo activo por API; con `conPago`, le añade un pago pendiente. */
@@ -258,8 +269,8 @@ test.describe('Anticipos: borrado múltiple desde la barra (F-39)', () => {
     test('cancelar conserva las filas y confirmar borra los dos anticipos', async ({ paginaSesion: page }) => {
         const [conPago, sinPago] = estado.conceptos;
 
-        await crearAnticipo(page, { api: estado.api, concepto: conPago, cuentaId: estado.cuentaId, conPago: true });
-        await crearAnticipo(page, { api: estado.api, concepto: sinPago, cuentaId: estado.cuentaId });
+        const idConPago = await crearAnticipo(page, { api: estado.api, concepto: conPago, cuentaId: estado.cuentaId, conPago: true });
+        const idSinPago = await crearAnticipo(page, { api: estado.api, concepto: sinPago, cuentaId: estado.cuentaId });
 
         const [filaConPago, filaSinPago] = await recargarYEsperarFilas(page, estado.conceptos);
         const borrar = page.getByRole('button', { name: 'Borrar', exact: true });
@@ -275,8 +286,15 @@ test.describe('Anticipos: borrado múltiple desde la barra (F-39)', () => {
 
         // «No» cierra el diálogo, no envía ninguna petición y conserva la selección
         let borrados = 0;
+        const cuerpos = [];
         const contarBorrados = (peticion) => {
-            if (peticion.method() === 'DELETE' && /\/api\/anticipos$/.test(peticion.url())) borrados += 1;
+            if (peticion.method() !== 'DELETE' || !/\/api\/anticipos$/.test(peticion.url())) return;
+
+            borrados += 1;
+
+            const cuerpo = peticion.postDataJSON();
+
+            if (cuerpo) cuerpos.push(cuerpo);
         };
 
         page.on('request', contarBorrados);
@@ -289,12 +307,14 @@ test.describe('Anticipos: borrado múltiple desde la barra (F-39)', () => {
         await dialogo.getByRole('button', { name: 'No' }).click();
         await expect(dialogo).toBeHidden();
 
-        page.off('request', contarBorrados);
         expect(borrados, 'cancelar el borrado múltiple no debe enviar ninguna petición').toBe(0);
         await expect(filaConPago).toBeVisible();
         await expect(filaSinPago).toBeVisible();
         await expect(filaConPago).toHaveAttribute('data-p-selected', 'true');
         await expect(filaSinPago).toHaveAttribute('data-p-selected', 'true');
+
+        // Antes de confirmar se guardan los anticipos ajenos: el lote no debe tocarlos
+        const ajenosAntes = await idsAjenos(page);
 
         // «Sí» envía un único DELETE con los dos IDs y recarga la lista
         const respuestas = [];
@@ -309,8 +329,14 @@ test.describe('Anticipos: borrado múltiple desde la barra (F-39)', () => {
         await dialogo.getByRole('button', { name: 'Sí' }).click();
 
         await expect.poll(() => respuestas.length, { timeout: 30_000 }).toBe(1);
+        await expect.poll(() => borrados, { timeout: 30_000 }).toBe(1);
         page.off('response', recoger);
+        page.off('request', contarBorrados);
         expect(respuestas).toEqual([200]);
+
+        // El cuerpo lleva exactamente los dos IDs seleccionados, en cualquier orden
+        expect(cuerpos, 'debe registrarse un único DELETE').toHaveLength(1);
+        expect([...cuerpos[0].advances].sort((a, b) => a - b), 'el DELETE debe llevar exactamente los dos IDs seleccionados').toEqual([idConPago, idSinPago].sort((a, b) => a - b));
 
         const aviso = page.locator('.p-toast-message').filter({ hasText: 'Anticipos eliminados' });
 
@@ -323,6 +349,7 @@ test.describe('Anticipos: borrado múltiple desde la barra (F-39)', () => {
 
         expect(await idsDeConcepto(page, { api: estado.api, concepto: conPago })).toEqual([]);
         expect(await idsDeConcepto(page, { api: estado.api, concepto: sinPago })).toEqual([]);
+        expect(await idsAjenos(page), 'el borrado en lote no debe tocar los anticipos ajenos').toEqual(ajenosAntes);
     });
 
     test('un 500 del servidor muestra Error y conserva las filas y el diálogo', async ({ paginaSesion: page }) => {
