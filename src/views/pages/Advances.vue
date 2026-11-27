@@ -195,6 +195,23 @@ async function deleteAdvance() {
     }
 }
 
+// F-39: borrado múltiple desde la barra; la API ya admite IDs en lote (DELETE /api/anticipos)
+async function deleteSelectedAdvances() {
+    try {
+        const ids = selectedAdvances.value.map((adv) => adv.id);
+        await AdvService.deleteAdvances(ids);
+        selectedAdvances.value = [];
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Anticipos eliminados', life: 3000 });
+        await fetchAdvances(); // Actualizar la lista de anticipos
+        await fetchAllPagos(); // Actualizar los pagos relacionados
+        deleteSelectedAdvancesDialog.value = false;
+    } catch (error) {
+        // El diálogo sigue abierto para poder reintentar; las filas no se tocan
+        toast.add({ severity: 'error', summary: 'Error', detail: getApiErrorMessage(error), life: 5000 });
+        console.error('deleteSelectedAdvances - Error al eliminar los anticipos:', error);
+    }
+}
+
 // Gestión de pagos asociados al anticipo
 const advancePagoDialog = ref(false);
 const pago = ref({
@@ -924,6 +941,16 @@ async function handleCreatePaymentPlan() {
             <template #footer>
                 <Button label="No" icon="pi pi-times" autofocus text @click="deleteAdvanceDialog = false" />
                 <Button label="Sí" icon="pi pi-check" @click="deleteAdvance" />
+            </template>
+        </Dialog>
+        <Dialog v-model:visible="deleteSelectedAdvancesDialog" :style="{ width: '450px' }" header="Confirmar" :modal="true">
+            <div class="flex items-center gap-4">
+                <i class="pi pi-exclamation-triangle !text-3xl" />
+                <span v-if="selectedAdvances.length">¿Seguro que quieres borrar los anticipos seleccionados?</span>
+            </div>
+            <template #footer>
+                <Button label="No" icon="pi pi-times" autofocus text @click="deleteSelectedAdvancesDialog = false" />
+                <Button label="Sí" icon="pi pi-check" @click="deleteSelectedAdvances" />
             </template>
         </Dialog>
         <Dialog v-model:visible="deletePaymentDialog" :style="{ width: '450px' }" header="Eliminar Pago" :modal="true">
