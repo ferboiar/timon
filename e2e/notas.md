@@ -66,11 +66,11 @@ Permitir acceso al puerto del portproxy (9222) solo desde la LAN:
 
 ```powershell
 New-NetFirewallRule `
-  -DisplayName 'Edge CDP E2E - solo LAN 10.0.1.0/24' `
+  -DisplayName 'Edge CDP E2E - LAN 10.0.1.0/24, 192.168.0.0/24 y Tailscale 100.64.0.0/10' `
   -Direction Inbound `
   -Protocol TCP `
   -LocalPort 9222 `
-  -RemoteAddress 10.0.1.0/24 `
+  -RemoteAddress 10.0.1.0/24,192.168.0.0/24,100.64.0.0/10 `
   -Action Allow
 ```
 
