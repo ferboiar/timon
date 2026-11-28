@@ -19,7 +19,7 @@ solo si cambia una decisión vigente o el mapa. El histórico está en el
   `conta_hogar_pre_0011_20261126T200713Z.sql` (60 156 B, SHA-256 `244c6e70…c0bb`) y ensayo de
   restauración y doble aplicación en una base `_test`; el procedimiento queda con 8 326 B y
   `LOCK IN SHARE MODE`, a nombre de `timon_admin`.
-- Siguiente trabajo y bloqueos: los issues del Project (hoja de ruta activa: [#197](https://github.com/ferboiar/timon/issues/197), DC-77).
+- Siguiente trabajo y bloqueos: los issues del Project (DC-77).
 - Identificadores: `npm run iter:ids` da el último de cada familia antes de asignar uno nuevo.
 
 ## 1. Decisiones vigentes
