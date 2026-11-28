@@ -116,6 +116,55 @@ export async function asegurarSesion(page, credencialesUsuario = credenciales())
 }
 
 /**
+ * Revalida la sesión de la página y la rehace si el token ya no vale.
+ *
+ * `auth.spec.mjs` cierra sesión y el servidor incrementa `users.token_version` (S-04a, DC-62):
+ * la pestaña compartida del worker sigue abierta, pero su token queda revocado y el guard la
+ * manda al login. Se valida con `GET /api/auth/verify` desde Node, sin navegar si responde 200
+ * (~5 ms), y solo se limpia el almacenamiento y se inicia sesión una vez cuando no hay token o
+ * responde 401.
+ */
+export async function asegurarSesionViva(page, credencialesUsuario = credenciales()) {
+    const token = await tokenDePagina(page);
+    let valido = false;
+
+    if (token) {
+        try {
+            const respuesta = await fetch(`${urlDeApi()}/api/auth/verify`, {
+                headers: { Authorization: `Bearer ${token}` },
+                // Sin límite, una conexión colgada bloquearía el hook que pide `paginaSesion`.
+                signal: AbortSignal.timeout(5_000)
+            });
+            valido = respuesta.ok;
+        } catch (error) {
+            // Un fallo de red no demuestra que el token esté revocado; el login de abajo lo resuelve o falla claro.
+            valido = false;
+        }
+    }
+
+    if (valido) return { loginHecho: false };
+
+    await page
+        .evaluate(() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
+        })
+        .catch(() => {});
+
+    const respuesta = await iniciarSesion(page, credencialesUsuario);
+
+    if (respuesta.status() !== 200) {
+        throw new Error(`Login fallido con estado ${respuesta.status()}`);
+    }
+
+    await expect(page.locator('.layout-footer')).toContainText('logged in as');
+
+    return { loginHecho: true };
+}
+
+/**
  * Abre la gestión de categorías y espera a que la tabla esté disponible.
  *
  * No se espera la respuesta `GET /api/categorias`: en un contexto recién creado la

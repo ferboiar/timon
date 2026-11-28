@@ -44,10 +44,14 @@ Los tres usan datos e2e_ y limpieza en afterAll/afterEach. Se ejecutan con npm r
 - Navegador: el Microsoft Edge real de un equipo remoto, gobernado por CDP
   (`chromium.connectOverCDP`). No se instalan navegadores en el contenedor y no se cierra Edge.
 - Aislamiento: un contexto propio por ejecución (`browser.newContext`) con `viewport: null`; la
-  ventana se maximiza por CDP y se restaura al terminar. `auth.spec.mjs` usa un contexto por
-  test, de modo que su logout no afecta a la sesión compartida.
-- Sesión: una sola sesión por ejecución (`workers: 1`); `asegurarSesion()` solo hace login si
-  falta.
+  ventana se maximiza por CDP y se restaura al terminar. `auth.spec.mjs` usa un contexto por test;
+  su `logout()` revoca el token de `E2E_USER` en el servidor (`users.token_version`, S-04a/DC-62),
+  así que la sesión compartida deja de valer aunque su pestaña siga abierta (O-21).
+- Sesión: una sola sesión compartida por ejecución (`workers: 1`). `asegurarSesion()` la crea la
+  primera vez y `asegurarSesionViva()` la revalida antes de cada uso de `paginaSesion`: un
+  `GET /api/auth/verify` desde Node, sin navegar si el token responde 200, y login limpio una vez
+  si falta o responde 401. `paginaSesion` es un fixture de test, así que `beforeAll` y `afterAll`
+  también lo reciben ya revalidado.
 - Servidores: antes de ejecutar se comprueba `http://localhost:5173` y
   `http://localhost:3000`. Si ya responden, se reutilizan y no se tocan; si falta alguno, se
   comprueba **solo el nombre** de la base configurada en `backend/src/db/.db_connection`

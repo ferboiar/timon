@@ -344,6 +344,11 @@ test.describe('Recibos: selección de trimestrales y borrado (U-15)', () => {
         await recargarRecibos(page);
 
         const tablaTrimestral = tarjeta(page, 'Trimestrales');
+
+        // La tarjeta pagina de 8 en 8: con el año lleno, el recibo nuevo cae en la segunda página.
+        // Se filtra por su concepto antes de localizar la fila, como en el caso bimestral.
+        await filtrarPorBuscador(tablaTrimestral, estado.trimestral);
+
         let filaTrimestral = filasConBorrado(tablaTrimestral).filter({ hasText: estado.trimestral }).first();
 
         await expect(filaTrimestral).toBeVisible({ timeout: 20_000 });
