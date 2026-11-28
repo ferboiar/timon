@@ -21,6 +21,8 @@ El componente `ListBills` permite la administración completa de recibos periód
 - Ejercicio cerrado (año anterior al actual): no se puede añadir ni editar el recibo, y solo se pueden editar los cargos que siguen pendientes; los botones se ven deshabilitados (DC-20)
 - Un cargo pagado solo se puede editar o borrar durante el mes en que vence; después queda cerrado, con el lápiz y la papelera deshabilitados (DC-21)
 - Al añadir fechas, generarlas o actualizar la lista se conservan los recibos expandidos; solo el cambio de año los contrae
+- Un fallo al cargar los recibos muestra un aviso con resumen «Error» y el mensaje del servidor (DC-72): con la carga inicial las tarjetas quedan vacías y, con la recarga de un cambio de año, no se conservan las filas del año anterior (U-27)
+- El concepto se muestra con la inicial en mayúscula (DC-31) en la columna «Concepto» de las cuatro tarjetas y de Inactivos y en la etiqueta del desplegable de cuentas del formulario, sin cambiar el valor guardado ni el filtro (U-29)
 - «+» está activo si al recibo le falta cualquier fecha del año en curso (incluso una ya pasada, para añadirla a mano); «Generar nuevas fechas» solo si faltan fechas posteriores al último cargo o huecos cuya fecha aún no ha llegado (DC-22)
 - Gestión diferenciada según la periodicidad del recibo (anual, trimestral, bimestral, mensual)
 - Selección de cuenta bancaria asociada al recibo
@@ -79,7 +81,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 |---------|-------------|
 | `updateBills(periodicity)` | Actualiza los recibos de la periodicidad especificada |
 | `fetchBills(periodicity)` | Carga los cargos de una periodicidad para el año elegido y, en el año en curso, añade los atrasados marcados con `atrasado` |
-| `reloadBills()` | Recarga en silencio todas las periodicidades (la usan los botones de año) |
+| `reloadBills()` | Recarga en silencio todas las periodicidades (la usan los botones de año). Por defecto conserva los recibos expandidos; `changeYear` y `resetYear` la llaman con `conservarExpansion: false`, que contrae las filas y, si la recarga falla, vacía las cuatro listas para no dejar las filas del año anterior bajo la etiqueta del año nuevo (U-27) |
 | `changeYear(delta)` / `resetYear()` | Cambian el año mostrado o vuelven al año en curso |
 | `puedeEditarCargo(cargo)` | Indica si el lápiz y la papelera de un cargo están activos: siempre si está pendiente; si está pagado, solo durante su mes o con la opción de sesión «Permitir editar/borrar recibos pagados» de Ajustes (DC-21) |
 | `puedeAnadirFecha(grupo)` / `puedeGenerarFechas(grupo)` | Activan el «+» (falta cualquier fecha) y «Generar nuevas fechas» (faltan fechas generables); replican `fechasFaltantes` del backend |
@@ -95,7 +97,7 @@ El componente `ListBills` permite la administración completa de recibos periód
 
 | Función | Descripción |
 |---------|-------------|
-| `onMounted` | Carga primero los recibos y después, en bloques `try/catch` separados, las categorías con `CatsService.getCategorias()` y las cuentas con `AccService.getAccounts()`. Si un catálogo falla al cargar, la pantalla sigue funcionando y muestra un aviso (U-18); la lectura de cuentas y categorías está disponible con cualquier sesión válida (DC-49); no existen funciones `fetchCategories` ni `fetchAccounts` |
+| `onMounted` | Carga primero los recibos y después, en bloques `try/catch` separados, las categorías con `CatsService.getCategorias()` y las cuentas con `AccService.getAccounts()`. Si la carga de recibos falla, avisa con un toast «Error» y el mensaje del servidor y deja las cinco listas vacías (U-27). Si un catálogo falla al cargar, la pantalla sigue funcionando y muestra un aviso (U-18); la lectura de cuentas y categorías está disponible con cualquier sesión válida (DC-49); no existen funciones `fetchCategories` ni `fetchAccounts` |
 
 ## Asociación con Cuentas Bancarias
 
@@ -205,6 +207,12 @@ Cada tabla de periodicidad mantiene **su propia** selección: `selectedAnualBill
 El diálogo de confirmación muestra el **concepto** del recibo (`bill.concepto`). Hasta F-31 usaba `bill.name`, un campo que no existe en los datos, así que el nombre salía vacío. Lo cubren la guarda estática `backend/test/plantillasRecibos.test.mjs` y el spec `e2e/tests/recibosBorrado.spec.mjs`, que abre el diálogo de un recibo real y cancela sin borrar nada.
 
 U-22 amplía la cobertura del mismo spec: crea un `e2e_anual_…` y un `e2e_mensual_…`, activa la multiselección de las dos tarjetas, comprueba que las selecciones son independientes (`selectedAnualBills` frente a `selectedMonthlyBills`), que cancelar el borrado múltiple no envía ninguna petición y que confirmarlo borra los dos recibos. `e2e/tests/recibosTrimestrales.spec.mjs` crea siempre su `e2e_bimestral_…` de apoyo y filtra las tarjetas por el buscador. El guardado sin cambios y el paso a modo de fechas automático (F-45, DC-30) y la normalización a minúsculas (F-44) se cubren en `e2e/tests/guardadoYNormalizacion.spec.mjs`, que cuenta las peticiones con `page.route`.
+
+## Carga, fallos y capitalización (U-27, U-29)
+
+- **Fallos de carga (U-27).** `onMounted` y `reloadBills` avisan con un toast `severity: 'error'`, resumen `Error` y `getApiErrorMessage(error)` (DC-72). Un fallo de la carga inicial deja las cinco listas vacías; un fallo de la recarga de un cambio de año (`conservarExpansion` en falso) vacía las cuatro listas de periodicidad, así que nunca se ven filas del año anterior bajo la etiqueta del año nuevo. Las recargas que conservan la expansión (después de guardar o de generar fechas) no vacían nada y `inactiveBills` no se toca al cambiar de año.
+- **Capitalización (U-29, DC-31).** `capitalizar(texto)` pone la inicial en mayúscula **solo en la plantilla**: columna «Concepto» de Anuales, Trimestrales, Bimestrales, Mensuales e Inactivos y etiqueta del desplegable de cuentas, con el mismo criterio que `Accounts.vue`. Los datos no se mapean: el valor guardado, el filtro global, la exportación CSV y la comparación de DC-30 siguen viendo el concepto en minúsculas. Fuera de este cambio quedan el subheader de grupo de las tarjetas agrupadas (lo pinta el `DataTable` con `groupField="concepto"`), el diálogo de borrado («¿Seguro que quieres borrar el recibo …?») y los campos del formulario, que muestran el valor guardado.
+- **Cobertura.** `e2e/tests/recibosCargaYCapitalizacion.spec.mjs` intercepta `GET /api/recibos` con 500 en la carga inicial y solo en la petición del año anterior al cambiar de año, y comprueba la capitalización en la tarjeta, en Inactivos y en el desplegable de cuentas.
 
 ## Referencias
 
