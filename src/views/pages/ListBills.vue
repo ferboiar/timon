@@ -142,6 +142,11 @@ function puedeGenerarFechas(grupo) {
     return fechasFaltantesDelGrupo(grupo).some((f) => f.generable);
 }
 
+// DC-31: la base guarda los textos identificativos en minúsculas y la pantalla capitaliza la inicial al mostrarlos
+function capitalizar(texto) {
+    return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : texto;
+}
+
 // DC-18: la vista muestra los cargos del año elegido y, en el año en curso, los pendientes de años anteriores (atrasados)
 async function fetchBills(periodicity) {
     const [delAnio, atrasados] = await Promise.all([BillService.getBillsByPeriodicity(periodicity, selectedYear.value), selectedYear.value === currentYear.value ? BillService.getOverdueBills(periodicity, selectedYear.value) : Promise.resolve([])]);
@@ -170,6 +175,8 @@ async function reloadBills({ conservarExpansion = true } = {}) {
             contraer('all');
         }
     } catch (error) {
+        // U-27: un cambio de año fallido no puede dejar las filas del año anterior bajo la etiqueta del nuevo
+        if (!conservarExpansion) [annualBills.value, quarterlyBills.value, bimonthlyBills.value, monthlyBills.value] = [[], [], [], []];
         toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los recibos del año ' + selectedYear.value + ': ' + getApiErrorMessage(error), life: 5000 });
         console.error('reloadBills(). Error:', error);
     }
@@ -199,6 +206,9 @@ onMounted(async () => {
             BillService.getInactiveBills() // Nuevo endpoint para obtener recibos inactivos
         ]);
     } catch (error) {
+        // U-27: un fallo de la carga inicial dejaba las cuatro tarjetas vacías sin ninguna explicación
+        [annualBills.value, quarterlyBills.value, bimonthlyBills.value, monthlyBills.value, inactiveBills.value] = [[], [], [], [], []];
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Error al cargar los recibos: ' + getApiErrorMessage(error), life: 5000 });
         console.error('onMounted. Error al cargar los recibos:', error);
     }
 
@@ -218,7 +228,8 @@ onMounted(async () => {
     try {
         const cuentasData = await AccService.getAccounts();
         cuentas.value = cuentasData.map((cuenta) => ({
-            label: cuenta.nombre,
+            // DC-31: mismo criterio que la tabla de Cuentas
+            label: capitalizar(cuenta.nombre),
             value: cuenta.id
         }));
     } catch (error) {
@@ -1031,7 +1042,7 @@ const inactiveBillsCount = (periodicity) => {
                         <Column v-if="showSelectionColumn.anual" selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
                             <template #body="anualSlotProps">
-                                <i v-if="anualSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ anualSlotProps.data.concepto }}
+                                <i v-if="anualSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ capitalizar(anualSlotProps.data.concepto) }}
                             </template>
                         </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
@@ -1134,7 +1145,7 @@ const inactiveBillsCount = (periodicity) => {
                         <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
                             <template #body="trimestralSlotProps">
-                                <i v-if="trimestralSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ trimestralSlotProps.data.concepto }}
+                                <i v-if="trimestralSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ capitalizar(trimestralSlotProps.data.concepto) }}
                             </template>
                         </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
@@ -1278,7 +1289,7 @@ const inactiveBillsCount = (periodicity) => {
                         <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
                             <template #body="bimestralSlotProps">
-                                <i v-if="bimestralSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ bimestralSlotProps.data.concepto }}
+                                <i v-if="bimestralSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ capitalizar(bimestralSlotProps.data.concepto) }}
                             </template>
                         </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
@@ -1421,7 +1432,7 @@ const inactiveBillsCount = (periodicity) => {
                         <Column expander style="width: 5rem" />
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
                             <template #body="mensualSlotProps">
-                                <i v-if="mensualSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ mensualSlotProps.data.concepto }}
+                                <i v-if="mensualSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ capitalizar(mensualSlotProps.data.concepto) }}
                                 <Tag v-if="mensualSlotProps.data.bills.some((b) => b.atrasado)" value="Atrasado" severity="warn" style="font-size: calc(0.875rem - 1pt)" class="ml-2" v-tooltip="'Tiene cargos pendientes de años anteriores'" />
                             </template>
                         </Column>
@@ -1545,7 +1556,7 @@ const inactiveBillsCount = (periodicity) => {
                         </template>
                         <Column field="concepto" header="Concepto" sortable style="min-width: 10rem">
                             <template #body="inactiveSlotProps">
-                                <i v-if="inactiveSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ inactiveSlotProps.data.concepto }}
+                                <i v-if="inactiveSlotProps.data.es_privado === 1" class="pi pi-lock mr-2" v-tooltip.top="'Privado: solo lo ven su propietario y los administradores'"></i>{{ capitalizar(inactiveSlotProps.data.concepto) }}
                             </template>
                         </Column>
                         <Column field="importe" header="Importe" sortable style="min-width: 3rem">
