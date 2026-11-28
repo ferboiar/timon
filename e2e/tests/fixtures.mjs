@@ -7,18 +7,22 @@
  *   `artifactsDir` dentro del runtime para que Playwright no deje carpetas sueltas en la
  *   raíz de `/tmp`. Nunca se cierra: `browser.close()` cerraría Edge.
  * - `paginaAuth` (test): **contexto propio** (`browser.newContext`, incógnito) con
- *   `viewport: null`. Aísla los tests de autenticación del perfil del usuario y de la
- *   sesión compartida: el logout de `auth.spec.mjs` no afecta a nadie.
- * - `contextoSesion` (worker): **un** contexto y **una** pestaña para toda la ejecución,
- *   con la sesión asegurada una sola vez (`asegurarSesion`). Es lo que permite que los
- *   specs de categorías y el smoke no repitan el login.
+ *   `viewport: null`. Aísla los tests de autenticación del perfil del usuario: el logout de
+ *   `auth.spec.mjs` no cierra la pestaña de nadie, pero su `POST /api/auth/logout` sí revoca el
+ *   token de `E2E_USER` en el servidor (`users.token_version`, S-04a/DC-62), así que la sesión
+ *   compartida deja de valer aunque su contexto siga abierto.
+ * - `contextoSesion` (worker): **un** contexto y **una** pestaña para toda la ejecución.
+ * - `paginaSesion` (test): entrega esa pestaña y **revalida la sesión antes de cada uso**
+ *   (`asegurarSesionViva`): con el token vigente solo hace un `GET /api/auth/verify` (~5 ms) sin
+ *   navegar; si está revocado o falta, limpia el almacenamiento y hace login una vez. Cada
+ *   `beforeAll`, test y `afterAll` recibe su propia instancia del fixture.
  * - La ventana se maximiza por CDP al empezar (si `E2E_MAXIMIZAR_VENTANA` no es `0`) y se
  *   restaura al terminar con los límites originales.
  */
 import { test as base, chromium, expect } from '@playwright/test';
 
 import { baseUrl, debeMaximizarVentana, rutaRuntime } from '../scripts/entorno.mjs';
-import { asegurarSesion } from './helpers/timon.mjs';
+import { asegurarSesion, asegurarSesionViva } from './helpers/timon.mjs';
 import { observarPagina } from './helpers/diagnostico.mjs';
 
 /** Maximiza la ventana de la pestaña mediante el protocolo CDP. */
@@ -112,13 +116,12 @@ export const test = base.extend({
         { scope: 'worker' }
     ],
 
-    /** Pestaña de la sesión compartida (misma para todos los tests del worker). */
-    paginaSesion: [
-        async ({ contextoSesion }, use) => {
-            await use(contextoSesion.pagina);
-        },
-        { scope: 'worker' }
-    ]
+    /** Pestaña de la sesión compartida, con la sesión revalidada antes de cada uso. */
+    paginaSesion: async ({ contextoSesion }, use) => {
+        await asegurarSesionViva(contextoSesion.pagina);
+
+        await use(contextoSesion.pagina);
+    }
 });
 
 export { expect };

@@ -192,8 +192,9 @@ function borrarRecibo(page, id) {
 }
 
 test.describe.serial('Autorización en servidor (S-01, S-06, S-12, DC-48)', () => {
-    // Cada caso abre varios contextos con login; el límite por defecto (60 s) no alcanza
-    test.describe.configure({ timeout: 180_000 });
+    // Cada caso abre varios contextos con login (~7) y el Edge remoto añade latencia: 180 s
+    // dejaba el caso de propiedad y privacidad en ~150 s, demasiado cerca del límite.
+    test.describe.configure({ timeout: 300_000 });
     test.beforeAll(async ({ conexion, paginaSesion: page }) => {
         // Origen de la API a partir de una respuesta real de la aplicación
         const respuestas = [];

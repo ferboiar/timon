@@ -100,9 +100,16 @@ Comandos: npm run e2e:trazabilidad, npm run e2e:validacionUsuarios y npm run e2e
   con `viewport: null` (se respeta el tamaño de la ventana) y sin tocar el perfil del
   usuario. Al terminar se cierra el contexto y la pestaña; nunca se llama a
   `browser.close()`.
-- `auth.spec.mjs` usa su propio contexto: su logout no invalida la sesión compartida.
-- Los demás specs comparten **una única sesión** por ejecución (`workers: 1`), creada por
-  `asegurarSesion()` solo la primera vez.
+- `auth.spec.mjs` usa su propio contexto, pero su `logout()` **sí** revoca el token de `E2E_USER`
+  en el servidor (`users.token_version`, S-04a/DC-62): desde ese momento la sesión compartida ya
+  no vale aunque su pestaña siga abierta.
+- `paginaSesion` es un fixture de test que entrega la pestaña de `contextoSesion` (worker) y
+  **revalida la sesión antes de cada uso** con `asegurarSesionViva()`: `GET /api/auth/verify`
+  desde Node, sin navegar si responde 200, y login limpio una sola vez si falta el token o
+  responde 401 (O-21). Por eso `beforeAll`/`afterAll` pueden pedirla aunque `auth.spec.mjs` ya
+  haya revocado la sesión.
+- El resto de specs comparten **una única sesión** por ejecución (`workers: 1`), creada por
+  `asegurarSesion()` la primera vez y revalidada en cada uso.
 - La ventana se maximiza por CDP al empezar y se restaura al terminar.
 
 ## Datos E2E
