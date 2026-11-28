@@ -29,3 +29,25 @@ export function sumarMesAnclado(fecha, diaAncla, meses = 1) {
     const dia = Math.min(diaAncla, ultimoDia);
     return new Date(anio, mes, dia);
 }
+
+/**
+ * Meses por periodo de la periodicidad del anticipo (F-40), con la misma tabla que
+ * `getMonthsFromPeriodicidad` del servidor. Sin periodicidad se mantiene un mes.
+ * @param {string|null|undefined} periodicidad - Valor de `anticipos.periodicidad`
+ * @returns {number} Meses por periodo
+ */
+export function mesesDePeriodicidad(periodicidad) {
+    if (periodicidad === null || periodicidad === undefined || periodicidad === '') return 1;
+    switch (periodicidad) {
+        case 'mensual':
+            return 1;
+        case 'bimestral':
+            return 2;
+        case 'trimestral':
+            return 3;
+        case 'anual':
+            return 12;
+        default:
+            throw new Error(`Periodicidad no válida: ${periodicidad}`);
+    }
+}
